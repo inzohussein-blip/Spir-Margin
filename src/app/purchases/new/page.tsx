@@ -1,14 +1,15 @@
 import Link from "next/link";
-import { getProducts, getSuppliers, getWarehouses } from "@/lib/queries";
+import { getProducts, getSuppliers, getWarehouses, getPaymentTerms } from "@/lib/queries";
 import { PurchaseForm } from "@/components/purchasing/PurchaseForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewPurchasePage() {
-  const [products, suppliers, warehouses] = await Promise.all([
+  const [products, suppliers, warehouses, terms] = await Promise.all([
     getProducts(),
     getSuppliers(),
     getWarehouses(),
+    getPaymentTerms(),
   ]);
 
   return (
@@ -26,6 +27,7 @@ export default async function NewPurchasePage() {
           buy: Number(p.default_buy_price),
         }))}
         warehouses={warehouses.map((w) => ({ id: w.id, label: w.name }))}
+        terms={terms.map((t) => ({ id: t.id, label: t.name }))}
       />
     </div>
   );

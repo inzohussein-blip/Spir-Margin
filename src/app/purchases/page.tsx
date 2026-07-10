@@ -10,6 +10,7 @@ interface Row {
   id: string;
   reference_no: string | null;
   posting_date: string;
+  due_date: string | null;
   status: string;
   total_amount: number;
   companies: { name: string } | null;
@@ -27,7 +28,7 @@ export default async function PurchasesPage() {
   const [{ data }, { data: summary }] = await Promise.all([
     supabase
       .from("purchase_invoices")
-      .select("id, reference_no, posting_date, status, total_amount, companies(name), purchase_items(id)")
+      .select("id, reference_no, posting_date, due_date, status, total_amount, companies(name), purchase_items(id)")
       .order("posting_date", { ascending: false }),
     supabase.from("v_purchase_summary").select("*").single(),
   ]);
@@ -38,9 +39,12 @@ export default async function PurchasesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-ink-gray-8">Purchases</h1>
-        <Link href="/purchases/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">
-          + New purchase
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/payment-terms" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Payment terms</Link>
+          <Link href="/purchases/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">
+            + New purchase
+          </Link>
+        </div>
       </div>
 
       {s && (
@@ -62,6 +66,7 @@ export default async function PurchasesPage() {
                   <th className="px-4 py-2">Ref</th>
                   <th className="px-4 py-2">Supplier</th>
                   <th className="px-4 py-2">Date</th>
+                  <th className="px-4 py-2">Due</th>
                   <th className="px-4 py-2">Items</th>
                   <th className="px-4 py-2">Total</th>
                   <th className="px-4 py-2">Status</th>
@@ -74,6 +79,7 @@ export default async function PurchasesPage() {
                     <td className="px-4 py-2 font-medium">{p.reference_no ?? "—"}</td>
                     <td className="px-4 py-2">{p.companies?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{p.posting_date}</td>
+                    <td className="px-4 py-2 text-ink-gray-5">{p.due_date ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{p.purchase_items?.length ?? 0}</td>
                     <td className="px-4 py-2">{Number(p.total_amount).toLocaleString()}</td>
                     <td className="px-4 py-2">

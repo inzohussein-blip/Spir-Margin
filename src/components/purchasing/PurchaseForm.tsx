@@ -18,10 +18,12 @@ export function PurchaseForm({
   suppliers,
   products,
   warehouses,
+  terms,
 }: {
   suppliers: Opt[];
   products: ProductOpt[];
   warehouses: Opt[];
+  terms: Opt[];
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -31,6 +33,7 @@ export function PurchaseForm({
       supplier_id: "",
       posting_date: new Date().toISOString().slice(0, 10),
       reference_no: "",
+      payment_term_id: "",
       notes: "",
       items: [{ product_id: "", qty: 1, rate: 0 }],
     },
@@ -63,6 +66,13 @@ export function PurchaseForm({
             <select {...register("supplier_id")} className={cls}>
               <option value="">— none —</option>
               {suppliers.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            <span className="font-medium text-ink-gray-8">Payment term</span>
+            <select {...register("payment_term_id")} className={cls}>
+              <option value="">— none —</option>
+              {terms.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
             </select>
           </label>
           <label className="block">

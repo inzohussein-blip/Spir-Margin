@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export interface PurchaseLineInput {
@@ -15,6 +16,7 @@ export interface PurchaseInput {
   supplier_id: string | null;
   posting_date: string;
   reference_no?: string;
+  payment_term_id?: string | null;
   notes?: string;
   items: PurchaseLineInput[];
 }
@@ -32,6 +34,7 @@ export async function savePurchase(input: PurchaseInput) {
       supplier_id: input.supplier_id || null,
       posting_date: input.posting_date || new Date().toISOString().slice(0, 10),
       reference_no: input.reference_no || null,
+      payment_term_id: input.payment_term_id || null,
       notes: input.notes || null,
     })
     .select("id")
@@ -77,6 +80,25 @@ export async function cancelPurchase(id: string) {
   if (error) return { ok: false as const, error: error.message };
   revalidatePath("/purchases");
   return { ok: true as const };
+}
+
+/** Create a reusable payment term (ported from ERPNext "Payment Term"). */
+export async function createPaymentTerm(fd: FormData) {
+  const supabase = createClient();
+  const name = String(fd.get("name") ?? "").trim();
+  if (!name) throw new Error('Field "name" is required');
+  const { error } = await supabase.from("payment_terms").insert({
+    name,
+    due_date_based_on: String(fd.get("due_date_based_on") ?? "day_after_invoice"),
+    credit_days: Number(fd.get("credit_days") ?? 0),
+    credit_months: Number(fd.get("credit_months") ?? 0),
+    invoice_portion: Number(fd.get("invoice_portion") ?? 100),
+    mode_of_payment: (String(fd.get("mode_of_payment") ?? "").trim() || null),
+    description: (String(fd.get("description") ?? "").trim() || null),
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/payment-terms");
+  redirect("/payment-terms");
 }
 
 /** FormData wrapper so the receive/cancel buttons can be plain <form> posts. */

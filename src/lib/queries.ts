@@ -42,6 +42,15 @@ export async function getSuppliers() {
   return data ?? [];
 }
 
+export async function getPaymentTerms() {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("payment_terms")
+    .select("id, name, due_date_based_on, credit_days, credit_months")
+    .order("name");
+  return data ?? [];
+}
+
 export async function getKitBatches() {
   const supabase = createClient();
   const { data } = await supabase
