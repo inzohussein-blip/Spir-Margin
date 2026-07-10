@@ -1,0 +1,109 @@
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { receivePurchaseForm, cancelPurchaseForm } from "@/app/actions/purchasing";
+
+export const dynamic = "force-dynamic";
+
+interface Row {
+  id: string;
+  reference_no: string | null;
+  posting_date: string;
+  status: string;
+  total_amount: number;
+  companies: { name: string } | null;
+  purchase_items: { id: string }[];
+}
+
+const statusBadge: Record<string, string> = {
+  draft: "bg-slate-100 text-slate-600",
+  received: "bg-emerald-100 text-emerald-700",
+  cancelled: "bg-red-100 text-red-700",
+};
+
+export default async function PurchasesPage() {
+  const supabase = createClient();
+  const [{ data }, { data: summary }] = await Promise.all([
+    supabase
+      .from("purchase_invoices")
+      .select("id, reference_no, posting_date, status, total_amount, companies(name), purchase_items(id)")
+      .order("posting_date", { ascending: false }),
+    supabase.from("v_purchase_summary").select("*").single(),
+  ]);
+  const rows = (data as unknown as Row[]) ?? [];
+  const s = (summary as { total_received_cost: number; total_draft_cost: number; received_count: number; draft_count: number }) ?? null;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-800">Purchases</h1>
+        <Link href="/purchases/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">
+          + New purchase
+        </Link>
+      </div>
+
+      {s && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatCard label="Received cost" value={Number(s.total_received_cost).toLocaleString()} hint={`${s.received_count} received`} accent="green" />
+          <StatCard label="Draft cost" value={Number(s.total_draft_cost).toLocaleString()} hint={`${s.draft_count} draft`} accent="amber" />
+          <StatCard label="Purchases" value={String(rows.length)} accent="brand" />
+        </div>
+      )}
+
+      <Panel title={`All Purchases (${rows.length})`}>
+        {rows.length === 0 ? (
+          <EmptyRow text="No purchases yet — record buying kits/devices from a supplier" />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase text-slate-400">
+                  <th className="px-4 py-2">Ref</th>
+                  <th className="px-4 py-2">Supplier</th>
+                  <th className="px-4 py-2">Date</th>
+                  <th className="px-4 py-2">Items</th>
+                  <th className="px-4 py-2">Total</th>
+                  <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {rows.map((p) => (
+                  <tr key={p.id}>
+                    <td className="px-4 py-2 font-medium">{p.reference_no ?? "—"}</td>
+                    <td className="px-4 py-2">{p.companies?.name ?? "—"}</td>
+                    <td className="px-4 py-2 text-slate-500">{p.posting_date}</td>
+                    <td className="px-4 py-2 text-slate-500">{p.purchase_items?.length ?? 0}</td>
+                    <td className="px-4 py-2">{Number(p.total_amount).toLocaleString()}</td>
+                    <td className="px-4 py-2">
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[p.status] ?? "bg-slate-100"}`}>
+                        {p.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2">
+                      {p.status === "draft" ? (
+                        <div className="flex gap-2">
+                          <form action={receivePurchaseForm}>
+                            <input type="hidden" name="id" value={p.id} />
+                            <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">Receive</button>
+                          </form>
+                          <form action={cancelPurchaseForm}>
+                            <input type="hidden" name="id" value={p.id} />
+                            <button className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
+                          </form>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
+    </div>
+  );
+}

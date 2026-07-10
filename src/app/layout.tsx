@@ -17,6 +17,7 @@ const nav = [
   { href: "/products", label: "Products" },
   { href: "/warehouses", label: "Warehouses" },
   { href: "/companies", label: "Companies" },
+  { href: "/purchases", label: "Purchases" },
   { href: "/banking", label: "Banking" },
 ];
 

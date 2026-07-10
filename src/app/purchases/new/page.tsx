@@ -1,0 +1,32 @@
+import Link from "next/link";
+import { getProducts, getSuppliers, getWarehouses } from "@/lib/queries";
+import { PurchaseForm } from "@/components/purchasing/PurchaseForm";
+
+export const dynamic = "force-dynamic";
+
+export default async function NewPurchasePage() {
+  const [products, suppliers, warehouses] = await Promise.all([
+    getProducts(),
+    getSuppliers(),
+    getWarehouses(),
+  ]);
+
+  return (
+    <div className="space-y-4">
+      <div className="text-sm text-slate-500">
+        <Link href="/purchases" className="hover:text-brand">← Purchases</Link>
+      </div>
+      <h1 className="text-2xl font-bold text-slate-800">New Purchase</h1>
+      <PurchaseForm
+        suppliers={suppliers.map((s) => ({ id: s.id, label: s.name }))}
+        products={products.map((p) => ({
+          id: p.id,
+          label: `${p.name} (${p.item_code})`,
+          type: p.product_type,
+          buy: Number(p.default_buy_price),
+        }))}
+        warehouses={warehouses.map((w) => ({ id: w.id, label: w.name }))}
+      />
+    </div>
+  );
+}
