@@ -184,6 +184,89 @@ export async function createRule(fd: FormData) {
 }
 
 // ========================================================================
+// Advanced rule editor — create/update a rule with multiple conditions
+// (ported from the original RuleForm useFieldArray behaviour)
+// ========================================================================
+export interface RuleConditionInput {
+  field: string;
+  operator: string;
+  value: string;
+}
+export interface RuleInput {
+  id?: string;
+  rule_name: string;
+  transaction_type: string;
+  priority: number;
+  min_amount: number | null;
+  max_amount: number | null;
+  classify_as: string;
+  party: string | null; // "company:<id>" | "lab:<id>" | null
+  conditions: RuleConditionInput[];
+}
+
+function partyFromString(s: string | null): {
+  party_type: "company" | "lab" | null;
+  party_company_id: string | null;
+  party_lab_id: string | null;
+} {
+  if (!s) return { party_type: null, party_company_id: null, party_lab_id: null };
+  const [type, id] = s.split(":");
+  return {
+    party_type: type as "company" | "lab",
+    party_company_id: type === "company" ? id : null,
+    party_lab_id: type === "lab" ? id : null,
+  };
+}
+
+export async function saveRule(input: RuleInput) {
+  const supabase = createClient();
+  const base = {
+    rule_name: input.rule_name,
+    transaction_type: input.transaction_type,
+    priority: input.priority || 1,
+    min_amount: input.min_amount,
+    max_amount: input.max_amount,
+    classify_as: input.classify_as,
+    ...partyFromString(input.party),
+    updated_at: new Date().toISOString(),
+  };
+
+  let ruleId = input.id;
+  if (ruleId) {
+    const { error } = await supabase.from("bank_transaction_rules").update(base).eq("id", ruleId);
+    if (error) return { ok: false as const, error: error.message };
+    await supabase.from("bank_rule_conditions").delete().eq("rule_id", ruleId);
+  } else {
+    const { data, error } = await supabase
+      .from("bank_transaction_rules")
+      .insert(base)
+      .select("id")
+      .single();
+    if (error) return { ok: false as const, error: error.message };
+    ruleId = data.id;
+  }
+
+  const conds = input.conditions
+    .filter((c) => c.value.trim() !== "")
+    .map((c) => ({ rule_id: ruleId, field: c.field, operator: c.operator, value: c.value.trim() }));
+  if (conds.length) {
+    const { error } = await supabase.from("bank_rule_conditions").insert(conds);
+    if (error) return { ok: false as const, error: error.message };
+  }
+
+  revalidatePath("/banking/rules");
+  return { ok: true as const, ruleId };
+}
+
+export async function deleteRule(id: string) {
+  const supabase = createClient();
+  const { error } = await supabase.from("bank_transaction_rules").delete().eq("id", id);
+  if (error) return { ok: false as const, error: error.message };
+  revalidatePath("/banking/rules");
+  return { ok: true as const };
+}
+
+// ========================================================================
 // CSV statement import — insert parsed rows as bank transactions
 // ========================================================================
 export interface ImportRow {

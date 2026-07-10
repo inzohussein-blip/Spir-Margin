@@ -43,9 +43,14 @@ export default async function RulesPage() {
                     <span className="mr-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">#{r.priority}</span>
                     {r.rule_name}
                   </div>
-                  <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                    {r.classify_as.replace(/_/g, " ")}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                      {r.classify_as.replace(/_/g, " ")}
+                    </span>
+                    <Link href={`/banking/rules/${r.id}/edit`} className="text-xs font-medium text-brand hover:underline">
+                      Edit
+                    </Link>
+                  </div>
                 </div>
                 <div className="mt-1 text-xs text-slate-400">
                   {r.transaction_type}
