@@ -236,6 +236,58 @@ export async function createRule(fd: FormData) {
   redirect("/banking/rules");
 }
 
+/**
+ * Internal transfer between two of the company's own bank accounts (ported
+ * from the "Transfer" modal). Records the withdrawal leg on the source
+ * account and the deposit leg on the destination account, tied by a shared
+ * reference, plus an internal_transfer payment entry for the audit trail.
+ */
+export async function createInternalTransfer(fd: FormData) {
+  const supabase = createClient();
+  const fromId = req(fd, "from_account_id");
+  const toId = req(fd, "to_account_id");
+  if (fromId === toId) throw new Error("Source and destination must differ");
+  const amount = num(fd, "amount");
+  if (amount <= 0) throw new Error("Amount must be positive");
+  const date = str(fd, "date") ?? new Date().toISOString().slice(0, 10);
+  const ref = str(fd, "reference_no") ?? `XFER-${Date.now()}`;
+
+  const { error: peErr } = await supabase.from("payment_entries").insert({
+    payment_type: "internal_transfer",
+    posting_date: date,
+    bank_account_id: fromId,
+    paid_amount: amount,
+    received_amount: amount,
+    reference_no: ref,
+    remarks: str(fd, "remarks"),
+    is_reconciled: false,
+  });
+  if (peErr) throw new Error(peErr.message);
+
+  const { error: btErr } = await supabase.from("bank_transactions").insert([
+    {
+      bank_account_id: fromId,
+      date,
+      withdrawal: amount,
+      description: `Internal transfer out (${ref})`,
+      reference_number: ref,
+      transaction_id: `${ref}-OUT`,
+    },
+    {
+      bank_account_id: toId,
+      date,
+      deposit: amount,
+      description: `Internal transfer in (${ref})`,
+      reference_number: ref,
+      transaction_id: `${ref}-IN`,
+    },
+  ]);
+  if (btErr) throw new Error(btErr.message);
+
+  revalidatePath("/banking");
+  redirect("/banking");
+}
+
 // ========================================================================
 // Advanced rule editor — create/update a rule with multiple conditions
 // (ported from the original RuleForm useFieldArray behaviour)

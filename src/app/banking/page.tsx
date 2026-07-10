@@ -31,6 +31,7 @@ export default async function BankingPage() {
         <div className="flex flex-wrap gap-2">
           <Link href="/banking/reconcile" className="rounded-md bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-dark">⇄ Reconcile</Link>
           <Link href="/banking/payments" className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Payments</Link>
+          <Link href="/banking/transfer" className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Transfer</Link>
           <Link href="/banking/rules" className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Rules</Link>
           <Link href="/banking/import" className="rounded-md border border-brand px-3 py-2 text-sm font-medium text-brand hover:bg-blue-50">Import statement</Link>
           <Link href="/banking/accounts/new" className="rounded-md bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ Bank account</Link>
