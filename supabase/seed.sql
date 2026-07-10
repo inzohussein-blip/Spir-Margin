@@ -58,3 +58,32 @@ insert into stock_movements (kit_batch_id, lab_id, type, qty, buy_price, sell_pr
 select b.id, '00000000-0000-0000-0000-0000000000c1', 'withdrawal', 5, b.buy_price, b.sell_price, now() - interval '3 days'
 from kit_batches b where b.batch_no = 'B-GLU-2401'
 on conflict do nothing;
+
+-- =====================================================================
+-- Banking demo data (migrations 0007-0009)
+-- =====================================================================
+insert into bank_accounts (id, account_name, bank, account_type, account_no, currency, is_company_account) values
+    ('00000000-0000-0000-0000-0000000000e1', 'Main Operating', 'Trade Bank of Iraq', 'Current', '0011-2233', 'USD', true)
+on conflict do nothing;
+
+-- a received payment from a lab, awaiting a matching bank line
+insert into payment_entries (id, naming_series, payment_type, party_type, party_lab_id, party_name, received_amount, bank_account_id, reference_no, posting_date) values
+    ('00000000-0000-0000-0000-0000000000f1', 'ACC-PAY-0001', 'receive', 'lab', '00000000-0000-0000-0000-0000000000c1', 'Al-Kindy Teaching Lab', 5200, '00000000-0000-0000-0000-0000000000e1', 'WIRE-778', current_date - 2),
+    ('00000000-0000-0000-0000-0000000000f2', 'ACC-PAY-0002', 'pay',     'company', null, 'Roche Diagnostics', 0, '00000000-0000-0000-0000-0000000000e1', 'PO-5521', current_date - 6)
+on conflict do nothing;
+update payment_entries set paid_amount = 3100 where id = '00000000-0000-0000-0000-0000000000f2';
+
+-- imported bank statement lines
+insert into bank_transactions (id, date, bank_account_id, deposit, withdrawal, description, reference_number, transaction_id) values
+    ('00000000-0000-0000-0000-0000000000d1', current_date - 2, '00000000-0000-0000-0000-0000000000e1', 5200, 0, 'INWARD WIRE AL-KINDY LAB', 'WIRE-778', 'BNK-1001'),
+    ('00000000-0000-0000-0000-0000000000d2', current_date - 6, '00000000-0000-0000-0000-0000000000e1', 0, 3100, 'OUTWARD ROCHE DIAGNOSTICS', 'PO-5521', 'BNK-1002'),
+    ('00000000-0000-0000-0000-0000000000d3', current_date - 1, '00000000-0000-0000-0000-0000000000e1', 0, 90,  'CARD FEE BANK CHARGES',     null,      'BNK-1003')
+on conflict do nothing;
+
+-- a matching rule: bank charges -> classify as bank entry
+insert into bank_transaction_rules (id, rule_name, transaction_type, priority, classify_as) values
+    ('00000000-0000-0000-0000-0000000000c9', 'Bank charges', 'withdrawal', 1, 'bank_entry')
+on conflict do nothing;
+insert into bank_rule_conditions (rule_id, field, operator, value) values
+    ('00000000-0000-0000-0000-0000000000c9', 'description', 'contains', 'BANK CHARGES')
+on conflict do nothing;
