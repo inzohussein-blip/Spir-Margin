@@ -14,6 +14,9 @@ const nav = [
   { href: "/labs", label: "Labs" },
   { href: "/devices", label: "Devices" },
   { href: "/kits", label: "Kits" },
+  { href: "/products", label: "Products" },
+  { href: "/warehouses", label: "Warehouses" },
+  { href: "/companies", label: "Companies" },
 ];
 
 export default function RootLayout({

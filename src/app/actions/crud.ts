@@ -215,3 +215,89 @@ export async function submitSale(fd: FormData) {
   revalidatePath("/");
   redirect("/");
 }
+
+// =========================================================================
+// Master data — ported from ERPNext Item / Warehouse / Supplier DocTypes
+// =========================================================================
+
+// Products  <- ERPNext "Item"
+export async function createProduct(fd: FormData) {
+  const supabase = createClient();
+  const { error } = await supabase.from("products").insert({
+    item_code: req(fd, "item_code"),
+    name: req(fd, "name"),
+    product_type: req(fd, "product_type"),
+    item_group: str(fd, "item_group"),
+    brand: str(fd, "brand"),
+    uom: str(fd, "uom") ?? "Nos",
+    supplier_id: str(fd, "supplier_id"),
+    shelf_life_in_days: str(fd, "shelf_life_in_days")
+      ? num(fd, "shelf_life_in_days")
+      : null,
+    default_buy_price: num(fd, "default_buy_price"),
+    default_sell_price: num(fd, "default_sell_price"),
+    reorder_level: num(fd, "reorder_level"),
+    description: str(fd, "description"),
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/products");
+  redirect("/products");
+}
+
+export async function updateProduct(id: string, fd: FormData) {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("products")
+    .update({
+      name: req(fd, "name"),
+      item_group: str(fd, "item_group"),
+      brand: str(fd, "brand"),
+      uom: str(fd, "uom") ?? "Nos",
+      supplier_id: str(fd, "supplier_id"),
+      shelf_life_in_days: str(fd, "shelf_life_in_days")
+        ? num(fd, "shelf_life_in_days")
+        : null,
+      default_buy_price: num(fd, "default_buy_price"),
+      default_sell_price: num(fd, "default_sell_price"),
+      reorder_level: num(fd, "reorder_level"),
+      description: str(fd, "description"),
+      is_disabled: bool(fd, "is_disabled"),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/products");
+  redirect("/products");
+}
+
+// Warehouses  <- ERPNext "Warehouse"
+export async function createWarehouse(fd: FormData) {
+  const supabase = createClient();
+  const { error } = await supabase.from("warehouses").insert({
+    name: req(fd, "name"),
+    warehouse_type: str(fd, "warehouse_type"),
+    city: str(fd, "city"),
+    address: str(fd, "address"),
+    phone: str(fd, "phone"),
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/warehouses");
+  redirect("/warehouses");
+}
+
+// Companies  <- ERPNext "Supplier"
+export async function createCompany(fd: FormData) {
+  const supabase = createClient();
+  const { error } = await supabase.from("companies").insert({
+    name: req(fd, "name"),
+    role: str(fd, "role") ?? "supplier",
+    supplier_type: str(fd, "supplier_type") ?? "company",
+    tax_id: str(fd, "tax_id"),
+    email: str(fd, "email"),
+    phone: str(fd, "phone"),
+    country: str(fd, "country"),
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/companies");
+  redirect("/companies");
+}
