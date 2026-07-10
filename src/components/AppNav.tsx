@@ -12,6 +12,7 @@ import {
   Building2Icon,
   ShoppingCartIcon,
   LandmarkIcon,
+  TagIcon,
 } from "lucide-react";
 
 const nav = [
@@ -20,6 +21,7 @@ const nav = [
   { href: "/devices", label: "Devices", icon: MonitorIcon },
   { href: "/kits", label: "Kits", icon: BoxesIcon },
   { href: "/products", label: "Products", icon: PackageIcon },
+  { href: "/prices", label: "Prices", icon: TagIcon },
   { href: "/warehouses", label: "Warehouses", icon: WarehouseIcon },
   { href: "/companies", label: "Companies", icon: Building2Icon },
   { href: "/purchases", label: "Purchases", icon: ShoppingCartIcon },
