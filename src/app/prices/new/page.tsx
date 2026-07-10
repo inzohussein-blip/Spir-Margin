@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createItemPrice } from "@/app/actions/pricing";
-import { getProducts, getLabs, getSuppliers } from "@/lib/queries";
+import { getProducts, getLabs, getSuppliers, getPriceLists } from "@/lib/queries";
 import {
   Field,
   TextInput,
@@ -14,10 +14,11 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function NewItemPricePage() {
-  const [products, labs, suppliers] = await Promise.all([
+  const [products, labs, suppliers, priceLists] = await Promise.all([
     getProducts(),
     getLabs(),
     getSuppliers(),
+    getPriceLists(),
   ]);
 
   return (
@@ -37,7 +38,10 @@ export default async function NewItemPricePage() {
             </Select>
           </Field>
           <Field label="Price list">
-            <TextInput name="price_list" defaultValue="Standard Selling" />
+            <TextInput name="price_list" list="price-lists" defaultValue="Standard Selling" />
+            <datalist id="price-lists">
+              {priceLists.map((p) => <option key={p} value={p} />)}
+            </datalist>
           </Field>
           <Field label="Rate" required>
             <TextInput name="rate" type="number" step="0.01" required />

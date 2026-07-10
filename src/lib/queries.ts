@@ -64,6 +64,16 @@ export async function getItemGroups() {
   return (data ?? []).map((g) => g.name as string);
 }
 
+export async function getPriceLists() {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("price_lists")
+    .select("price_list_name")
+    .eq("enabled", true)
+    .order("price_list_name");
+  return (data ?? []).map((p) => p.price_list_name as string);
+}
+
 export async function getModesOfPayment() {
   const supabase = createClient();
   const { data } = await supabase
