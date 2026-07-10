@@ -88,13 +88,20 @@ npm install
 # 2. Configure Supabase
 cp .env.example .env.local   # fill in your project URL + anon key
 
-# 3. Apply the schema (Supabase CLI, or paste each file in the SQL editor)
-supabase db push             # or: run migrations 0001-0005 in order
+# 3. Apply the schema — run every file in supabase/migrations in order
+#    (0001 → 0009), via the Supabase SQL editor or the CLI:
+supabase db push             # or paste 0001..0009 in order in the SQL editor
 psql "$DATABASE_URL" -f supabase/seed.sql   # optional demo data
 
 # 4. Run
 npm run dev                  # http://localhost:3000
 ```
+
+> **Connecting a Supabase project.** Create a dedicated project (keep it
+> separate from any unrelated app), then copy its **Project URL** and **anon
+> key** (Project Settings → API) into `.env.local` — and into the same two
+> Vercel environment variables for deployment. Apply migrations `0001`–`0009`
+> in order before first run.
 
 ## Deploy to Vercel
 
