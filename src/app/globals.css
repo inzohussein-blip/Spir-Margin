@@ -1,6 +1,10 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Custom brand color, migrated from the v3 tailwind.config theme.extend */
+@theme {
+  --color-brand: #2563eb;
+  --color-brand-dark: #1e40af;
+}
 
 :root {
   --background: #f8fafc;
