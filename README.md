@@ -65,6 +65,20 @@ Plus list pages for Labs, Devices and Kits.
 
 ---
 
+## Banking module (ported from Frappe Banking)
+
+A bank-reconciliation module lives under `/banking`:
+
+- **Bank accounts**, **payment entries**, and imported **bank transactions**
+- **Match & Reconcile** screen — allocate payments to statement lines
+  (`fn_reconcile_transaction` / `fn_unreconcile_transaction`)
+- **Matching rules** engine (`fn_apply_rules`) to auto-classify lines by
+  description / amount
+- **CSV statement import** with client-side column mapping
+
+Schema: `supabase/migrations/0007_banking.sql`, `0008_banking_logic.sql`,
+`0009_banking_rls.sql`.
+
 ## Getting started
 
 ```bash
