@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createPaymentEntry } from "@/app/actions/banking";
 import { getBankAccounts, getPartyOptions } from "@/lib/banking";
+import { getModesOfPayment } from "@/lib/queries";
 import {
   Field,
   TextInput,
@@ -12,9 +13,10 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function NewPaymentPage() {
-  const [accounts, parties] = await Promise.all([
+  const [accounts, parties, modes] = await Promise.all([
     getBankAccounts(),
     getPartyOptions(),
+    getModesOfPayment(),
   ]);
 
   return (
@@ -50,7 +52,10 @@ export default async function NewPaymentPage() {
             <TextInput name="amount" type="number" step="0.01" required />
           </Field>
           <Field label="Mode of payment">
-            <TextInput name="mode_of_payment" placeholder="Wire / Cash / Cheque" />
+            <TextInput name="mode_of_payment" list="modes" placeholder="Wire / Cash / Cheque" />
+            <datalist id="modes">
+              {modes.map((m) => <option key={m} value={m} />)}
+            </datalist>
           </Field>
           <Field label="Bank account">
             <Select name="bank_account_id" defaultValue="">

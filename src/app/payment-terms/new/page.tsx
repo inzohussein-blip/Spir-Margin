@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createPaymentTerm } from "@/app/actions/purchasing";
+import { getModesOfPayment } from "@/lib/queries";
 import {
   Field,
   TextInput,
@@ -9,7 +10,10 @@ import {
   FormCard,
 } from "@/components/form/Fields";
 
-export default function NewPaymentTermPage() {
+export const dynamic = "force-dynamic";
+
+export default async function NewPaymentTermPage() {
+  const modes = await getModesOfPayment();
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
@@ -32,7 +36,10 @@ export default function NewPaymentTermPage() {
             </Select>
           </Field>
           <Field label="Mode of payment">
-            <TextInput name="mode_of_payment" placeholder="Wire / Cheque" />
+            <TextInput name="mode_of_payment" list="pt-modes" placeholder="Wire / Cheque" />
+            <datalist id="pt-modes">
+              {modes.map((m) => <option key={m} value={m} />)}
+            </datalist>
           </Field>
           <Field label="Credit days">
             <TextInput name="credit_days" type="number" defaultValue="0" />

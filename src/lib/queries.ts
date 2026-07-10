@@ -42,6 +42,38 @@ export async function getSuppliers() {
   return data ?? [];
 }
 
+export async function getUoms() {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("uoms")
+    .select("uom_name")
+    .eq("enabled", true)
+    .order("uom_name");
+  return (data ?? []).map((u) => u.uom_name as string);
+}
+
+export async function getBrands() {
+  const supabase = createClient();
+  const { data } = await supabase.from("brands").select("name").order("name");
+  return (data ?? []).map((b) => b.name as string);
+}
+
+export async function getItemGroups() {
+  const supabase = createClient();
+  const { data } = await supabase.from("item_groups").select("name").order("name");
+  return (data ?? []).map((g) => g.name as string);
+}
+
+export async function getModesOfPayment() {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("modes_of_payment")
+    .select("name")
+    .eq("enabled", true)
+    .order("name");
+  return (data ?? []).map((m) => m.name as string);
+}
+
 export async function getPaymentTerms() {
   const supabase = createClient();
   const { data } = await supabase

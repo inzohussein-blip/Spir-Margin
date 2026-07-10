@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createProduct } from "@/app/actions/crud";
-import { getSuppliers } from "@/lib/queries";
+import { getSuppliers, getUoms, getBrands, getItemGroups } from "@/lib/queries";
 import {
   Field,
   TextInput,
@@ -13,7 +13,12 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function NewProductPage() {
-  const suppliers = await getSuppliers();
+  const [suppliers, uoms, brands, itemGroups] = await Promise.all([
+    getSuppliers(),
+    getUoms(),
+    getBrands(),
+    getItemGroups(),
+  ]);
 
   return (
     <div className="space-y-4">
@@ -46,13 +51,22 @@ export default async function NewProductPage() {
             </Select>
           </Field>
           <Field label="Item group">
-            <TextInput name="item_group" placeholder="Reagents" />
+            <TextInput name="item_group" list="item-groups" placeholder="Reagents" />
+            <datalist id="item-groups">
+              {itemGroups.map((g) => <option key={g} value={g} />)}
+            </datalist>
           </Field>
           <Field label="Brand">
-            <TextInput name="brand" />
+            <TextInput name="brand" list="brands" />
+            <datalist id="brands">
+              {brands.map((b) => <option key={b} value={b} />)}
+            </datalist>
           </Field>
           <Field label="UOM">
-            <TextInput name="uom" defaultValue="Nos" />
+            <TextInput name="uom" list="uoms" defaultValue="Nos" />
+            <datalist id="uoms">
+              {uoms.map((u) => <option key={u} value={u} />)}
+            </datalist>
           </Field>
           <Field label="Default supplier">
             <Select name="supplier_id" defaultValue="">
