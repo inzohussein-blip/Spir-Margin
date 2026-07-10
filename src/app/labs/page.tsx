@@ -13,7 +13,7 @@ export default async function LabsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Labs</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">Labs</h1>
         <Link
           href="/labs/new"
           className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
@@ -28,7 +28,7 @@ export default async function LabsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-slate-400">
+                <tr className="text-left text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">Code</th>
                   <th className="px-4 py-2">Name</th>
                   <th className="px-4 py-2">City</th>
@@ -37,13 +37,13 @@ export default async function LabsPage() {
                   <th className="px-4 py-2">Last activity</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-outline-gray-1">
                 {labs.map((l) => (
                   <tr key={l.id}>
                     <td className="px-4 py-2 font-medium">{l.code}</td>
                     <td className="px-4 py-2">{l.name}</td>
-                    <td className="px-4 py-2 text-slate-500">{l.city ?? "—"}</td>
-                    <td className="px-4 py-2 text-slate-500">
+                    <td className="px-4 py-2 text-ink-gray-5">{l.city ?? "—"}</td>
+                    <td className="px-4 py-2 text-ink-gray-5">
                       {l.contact_name ?? "—"}
                     </td>
                     <td className="px-4 py-2">
@@ -51,13 +51,13 @@ export default async function LabsPage() {
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                           l.status === "active"
                             ? "bg-emerald-100 text-emerald-700"
-                            : "bg-slate-100 text-slate-500"
+                            : "bg-surface-gray-2 text-ink-gray-5"
                         }`}
                       >
                         {l.status}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-slate-500">
+                    <td className="px-4 py-2 text-ink-gray-5">
                       {l.last_activity_at
                         ? new Date(l.last_activity_at).toLocaleDateString()
                         : "—"}

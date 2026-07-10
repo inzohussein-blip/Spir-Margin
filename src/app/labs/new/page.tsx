@@ -12,12 +12,12 @@ import {
 export default function NewLabPage() {
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm text-slate-500">
+      <div className="flex items-center gap-2 text-sm text-ink-gray-5">
         <Link href="/labs" className="hover:text-brand">
           ← Labs
         </Link>
       </div>
-      <h1 className="text-2xl font-bold text-slate-800">New Lab</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">New Lab</h1>
 
       <FormCard title="Lab details">
         <form action={createLab} className="grid grid-cols-1 gap-4 sm:grid-cols-2">

@@ -1,25 +1,13 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import Link from "next/link";
+import { AppNav } from "@/components/AppNav";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MedDevice — Medical Device & Lab Management",
+  title: "Spir-Margin — Medical Device & Lab Management",
   description:
-    "Lightweight system for medical-device sales, lab tracking, spare parts and reagent kits.",
+    "Lightweight system for medical-device sales, lab tracking, spare parts, reagent kits and bank reconciliation.",
 };
-
-const nav = [
-  { href: "/", label: "Dashboard" },
-  { href: "/labs", label: "Labs" },
-  { href: "/devices", label: "Devices" },
-  { href: "/kits", label: "Kits" },
-  { href: "/products", label: "Products" },
-  { href: "/warehouses", label: "Warehouses" },
-  { href: "/companies", label: "Companies" },
-  { href: "/purchases", label: "Purchases" },
-  { href: "/banking", label: "Banking" },
-];
 
 export default function RootLayout({
   children,
@@ -28,25 +16,21 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen">
+      <body className="min-h-screen bg-surface-gray-1 text-ink-gray-8 antialiased">
         <div className="flex min-h-screen">
-          <aside className="w-56 shrink-0 border-r border-slate-200 bg-white">
-            <div className="px-5 py-5 text-lg font-bold text-brand">
-              🩺 MedDevice
+          <aside className="flex w-56 shrink-0 flex-col border-r border-outline-gray-2 bg-surface-white">
+            <div className="flex items-center gap-2 px-5 py-4 text-lg font-semibold text-ink-gray-8">
+              <span className="grid size-7 place-items-center rounded-md bg-brand text-white">S</span>
+              Spir-Margin
             </div>
-            <nav className="flex flex-col gap-1 px-3">
-              {nav.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
+            <AppNav />
           </aside>
-          <main className="flex-1 p-8">{children}</main>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <header className="flex h-12 items-center border-b border-outline-gray-2 bg-surface-white px-6 text-sm text-ink-gray-5">
+              Medical device sales, lab tracking &amp; banking
+            </header>
+            <main className="flex-1 p-6">{children}</main>
+          </div>
         </div>
       </body>
     </html>

@@ -31,7 +31,7 @@ export default async function CompaniesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Companies</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">Companies</h1>
         <Link
           href="/companies/new"
           className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
@@ -46,7 +46,7 @@ export default async function CompaniesPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-slate-400">
+                <tr className="text-left text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">Name</th>
                   <th className="px-4 py-2">Role</th>
                   <th className="px-4 py-2">Type</th>
@@ -55,29 +55,29 @@ export default async function CompaniesPage() {
                   <th className="px-4 py-2">Phone</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((c) => (
                   <tr key={c.id}>
                     <td className="px-4 py-2 font-medium">{c.name}</td>
                     <td className="px-4 py-2">
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          roleBadge[c.role] ?? "bg-slate-100"
+                          roleBadge[c.role] ?? "bg-surface-gray-2"
                         }`}
                       >
                         {c.role}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-slate-500">
+                    <td className="px-4 py-2 text-ink-gray-5">
                       {c.supplier_type ?? "—"}
                     </td>
-                    <td className="px-4 py-2 text-slate-500">
+                    <td className="px-4 py-2 text-ink-gray-5">
                       {c.tax_id ?? "—"}
                     </td>
-                    <td className="px-4 py-2 text-slate-500">
+                    <td className="px-4 py-2 text-ink-gray-5">
                       {c.country ?? "—"}
                     </td>
-                    <td className="px-4 py-2 text-slate-500">{c.phone ?? "—"}</td>
+                    <td className="px-4 py-2 text-ink-gray-5">{c.phone ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>

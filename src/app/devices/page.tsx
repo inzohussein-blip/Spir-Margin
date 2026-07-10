@@ -16,10 +16,10 @@ interface DeviceRow {
 
 const statusColor: Record<string, string> = {
   installed: "bg-emerald-100 text-emerald-700",
-  in_stock: "bg-slate-100 text-slate-600",
+  in_stock: "bg-surface-gray-2 text-ink-gray-6",
   in_maintenance: "bg-amber-100 text-amber-700",
   out_of_order: "bg-red-100 text-red-700",
-  retired: "bg-slate-100 text-slate-400",
+  retired: "bg-surface-gray-2 text-ink-gray-4",
 };
 
 export default async function DevicesPage() {
@@ -35,7 +35,7 @@ export default async function DevicesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Devices</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">Devices</h1>
         <Link
           href="/devices/new"
           className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
@@ -50,7 +50,7 @@ export default async function DevicesPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-slate-400">
+                <tr className="text-left text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">Asset code</th>
                   <th className="px-4 py-2">Product</th>
                   <th className="px-4 py-2">Serial</th>
@@ -59,27 +59,27 @@ export default async function DevicesPage() {
                   <th className="px-4 py-2">Next maintenance</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-outline-gray-1">
                 {devices.map((d) => (
                   <tr key={d.id}>
                     <td className="px-4 py-2 font-medium">{d.asset_code}</td>
                     <td className="px-4 py-2">{d.products?.name ?? "—"}</td>
-                    <td className="px-4 py-2 text-slate-500">
+                    <td className="px-4 py-2 text-ink-gray-5">
                       {d.serial_no ?? "—"}
                     </td>
-                    <td className="px-4 py-2 text-slate-500">
+                    <td className="px-4 py-2 text-ink-gray-5">
                       {d.labs?.name ?? "unassigned"}
                     </td>
                     <td className="px-4 py-2">
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          statusColor[d.status] ?? "bg-slate-100 text-slate-600"
+                          statusColor[d.status] ?? "bg-surface-gray-2 text-ink-gray-6"
                         }`}
                       >
                         {d.status.replace(/_/g, " ")}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-slate-500">
+                    <td className="px-4 py-2 text-ink-gray-5">
                       {d.next_maintenance_date ?? "—"}
                     </td>
                   </tr>

@@ -17,10 +17,10 @@ export default async function TransferPage() {
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-slate-500">
+      <div className="text-sm text-ink-gray-5">
         <Link href="/banking" className="hover:text-brand">← Banking</Link>
       </div>
-      <h1 className="text-2xl font-bold text-slate-800">Internal Transfer</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">Internal Transfer</h1>
       {accounts.length < 2 ? (
         <div className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-700">
           Add at least two bank accounts to record a transfer.

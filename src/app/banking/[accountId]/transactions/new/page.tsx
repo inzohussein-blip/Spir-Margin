@@ -9,10 +9,10 @@ export default function NewTransactionPage({
 }) {
   return (
     <div className="space-y-4">
-      <div className="text-sm text-slate-500">
+      <div className="text-sm text-ink-gray-5">
         <Link href={`/banking/${params.accountId}`} className="hover:text-brand">← Reconcile</Link>
       </div>
-      <h1 className="text-2xl font-bold text-slate-800">New Bank Transaction</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">New Bank Transaction</h1>
       <FormCard title="Statement line (manual)">
         <form action={createBankTransaction} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <input type="hidden" name="bank_account_id" value={params.accountId} />

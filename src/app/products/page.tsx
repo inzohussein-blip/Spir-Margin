@@ -20,7 +20,7 @@ interface ProductRow {
 const typeBadge: Record<string, string> = {
   device: "bg-blue-100 text-blue-700",
   kit: "bg-purple-100 text-purple-700",
-  spare_part: "bg-slate-100 text-slate-600",
+  spare_part: "bg-surface-gray-2 text-ink-gray-6",
 };
 
 export default async function ProductsPage() {
@@ -36,7 +36,7 @@ export default async function ProductsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Products (Items)</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">Products (Items)</h1>
         <Link
           href="/products/new"
           className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
@@ -51,7 +51,7 @@ export default async function ProductsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-slate-400">
+                <tr className="text-left text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">Code</th>
                   <th className="px-4 py-2">Name</th>
                   <th className="px-4 py-2">Type</th>
@@ -62,7 +62,7 @@ export default async function ProductsPage() {
                   <th className="px-4 py-2">Sell</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-outline-gray-1">
                 {products.map((p) => (
                   <tr key={p.id} className={p.is_disabled ? "opacity-50" : ""}>
                     <td className="px-4 py-2 font-medium">{p.item_code}</td>
@@ -70,23 +70,23 @@ export default async function ProductsPage() {
                     <td className="px-4 py-2">
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          typeBadge[p.product_type] ?? "bg-slate-100"
+                          typeBadge[p.product_type] ?? "bg-surface-gray-2"
                         }`}
                       >
                         {p.product_type.replace(/_/g, " ")}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-slate-500">
+                    <td className="px-4 py-2 text-ink-gray-5">
                       {p.item_group ?? "—"}
                     </td>
-                    <td className="px-4 py-2 text-slate-500">
+                    <td className="px-4 py-2 text-ink-gray-5">
                       {p.brand ?? "—"}
                     </td>
-                    <td className="px-4 py-2 text-slate-500">{p.uom}</td>
-                    <td className="px-4 py-2 text-slate-500">
+                    <td className="px-4 py-2 text-ink-gray-5">{p.uom}</td>
+                    <td className="px-4 py-2 text-ink-gray-5">
                       {p.default_buy_price}
                     </td>
-                    <td className="px-4 py-2 text-slate-500">
+                    <td className="px-4 py-2 text-ink-gray-5">
                       {p.default_sell_price}
                     </td>
                   </tr>

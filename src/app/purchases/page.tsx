@@ -17,7 +17,7 @@ interface Row {
 }
 
 const statusBadge: Record<string, string> = {
-  draft: "bg-slate-100 text-slate-600",
+  draft: "bg-surface-gray-2 text-ink-gray-6",
   received: "bg-emerald-100 text-emerald-700",
   cancelled: "bg-red-100 text-red-700",
 };
@@ -37,7 +37,7 @@ export default async function PurchasesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Purchases</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">Purchases</h1>
         <Link href="/purchases/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">
           + New purchase
         </Link>
@@ -58,7 +58,7 @@ export default async function PurchasesPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-slate-400">
+                <tr className="text-left text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">Ref</th>
                   <th className="px-4 py-2">Supplier</th>
                   <th className="px-4 py-2">Date</th>
@@ -68,16 +68,16 @@ export default async function PurchasesPage() {
                   <th className="px-4 py-2">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((p) => (
                   <tr key={p.id}>
                     <td className="px-4 py-2 font-medium">{p.reference_no ?? "—"}</td>
                     <td className="px-4 py-2">{p.companies?.name ?? "—"}</td>
-                    <td className="px-4 py-2 text-slate-500">{p.posting_date}</td>
-                    <td className="px-4 py-2 text-slate-500">{p.purchase_items?.length ?? 0}</td>
+                    <td className="px-4 py-2 text-ink-gray-5">{p.posting_date}</td>
+                    <td className="px-4 py-2 text-ink-gray-5">{p.purchase_items?.length ?? 0}</td>
                     <td className="px-4 py-2">{Number(p.total_amount).toLocaleString()}</td>
                     <td className="px-4 py-2">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[p.status] ?? "bg-slate-100"}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[p.status] ?? "bg-surface-gray-2"}`}>
                         {p.status}
                       </span>
                     </td>
@@ -90,11 +90,11 @@ export default async function PurchasesPage() {
                           </form>
                           <form action={cancelPurchaseForm}>
                             <input type="hidden" name="id" value={p.id} />
-                            <button className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
+                            <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">Cancel</button>
                           </form>
                         </div>
                       ) : (
-                        <span className="text-xs text-slate-400">—</span>
+                        <span className="text-xs text-ink-gray-4">—</span>
                       )}
                     </td>
                   </tr>

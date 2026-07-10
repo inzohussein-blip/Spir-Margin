@@ -12,7 +12,7 @@ interface Opt { id: string; label: string; }
 interface ProductOpt extends Opt { type: string; buy: number; }
 
 const cls =
-  "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
+  "mt-1 w-full rounded-md border border-outline-gray-2 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
 
 export function PurchaseForm({
   suppliers,
@@ -59,22 +59,22 @@ export function PurchaseForm({
         <CardHeader><CardTitle>Purchase</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           <label className="block">
-            <span className="font-medium text-foreground">Supplier</span>
+            <span className="font-medium text-ink-gray-8">Supplier</span>
             <select {...register("supplier_id")} className={cls}>
               <option value="">— none —</option>
               {suppliers.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
             </select>
           </label>
           <label className="block">
-            <span className="font-medium text-foreground">Posting date</span>
+            <span className="font-medium text-ink-gray-8">Posting date</span>
             <input type="date" {...register("posting_date")} className={cls} />
           </label>
           <label className="block">
-            <span className="font-medium text-foreground">Supplier invoice no.</span>
+            <span className="font-medium text-ink-gray-8">Supplier invoice no.</span>
             <input {...register("reference_no")} className={cls} />
           </label>
           <label className="block">
-            <span className="font-medium text-foreground">Notes</span>
+            <span className="font-medium text-ink-gray-8">Notes</span>
             <input {...register("notes")} className={cls} />
           </label>
         </CardContent>
@@ -87,25 +87,25 @@ export function PurchaseForm({
             const prod = products.find((p) => p.id === items?.[i]?.product_id);
             const isKit = prod?.type === "kit";
             return (
-              <div key={f.id} className="rounded-lg border border-slate-100 p-3">
+              <div key={f.id} className="rounded-lg border border-outline-gray-1 p-3">
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
                   <label className="col-span-2 block text-xs">
-                    <span className="text-muted-foreground">Product</span>
+                    <span className="text-ink-gray-5">Product</span>
                     <select value={items?.[i]?.product_id ?? ""} onChange={(e) => onProduct(i, e.target.value)} className={cls}>
                       <option value="">Select…</option>
                       {products.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
                     </select>
                   </label>
                   <label className="block text-xs">
-                    <span className="text-muted-foreground">Qty</span>
+                    <span className="text-ink-gray-5">Qty</span>
                     <input type="number" step="0.01" {...register(`items.${i}.qty`)} className={cls} />
                   </label>
                   <label className="block text-xs">
-                    <span className="text-muted-foreground">Rate</span>
+                    <span className="text-ink-gray-5">Rate</span>
                     <input type="number" step="0.01" {...register(`items.${i}.rate`)} className={cls} />
                   </label>
                   <label className="block text-xs">
-                    <span className="text-muted-foreground">Warehouse</span>
+                    <span className="text-ink-gray-5">Warehouse</span>
                     <select {...register(`items.${i}.warehouse_id`)} className={cls}>
                       <option value="">—</option>
                       {warehouses.map((w) => <option key={w.id} value={w.id}>{w.label}</option>)}
@@ -120,11 +120,11 @@ export function PurchaseForm({
                 {isKit && (
                   <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                     <label className="block text-xs">
-                      <span className="text-muted-foreground">Batch no. (kit)</span>
+                      <span className="text-ink-gray-5">Batch no. (kit)</span>
                       <input {...register(`items.${i}.batch_no`)} className={cls} placeholder="auto if empty" />
                     </label>
                     <label className="block text-xs">
-                      <span className="text-muted-foreground">Expiry date (kit)</span>
+                      <span className="text-ink-gray-5">Expiry date (kit)</span>
                       <input type="date" {...register(`items.${i}.expiry_date`)} className={cls} />
                     </label>
                   </div>

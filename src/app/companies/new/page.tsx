@@ -11,12 +11,12 @@ import {
 export default function NewCompanyPage() {
   return (
     <div className="space-y-4">
-      <div className="text-sm text-slate-500">
+      <div className="text-sm text-ink-gray-5">
         <Link href="/companies" className="hover:text-brand">
           ← Companies
         </Link>
       </div>
-      <h1 className="text-2xl font-bold text-slate-800">New Company</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">New Company</h1>
 
       <FormCard title="Company details">
         <form

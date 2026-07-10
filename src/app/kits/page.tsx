@@ -28,7 +28,7 @@ export default async function KitsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Reagent Kits</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">Reagent Kits</h1>
         <div className="flex gap-2">
           <Link
             href="/kits/withdraw"
@@ -51,7 +51,7 @@ export default async function KitsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-slate-400">
+                <tr className="text-left text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">Batch</th>
                   <th className="px-4 py-2">Product</th>
                   <th className="px-4 py-2">Warehouse</th>
@@ -62,23 +62,23 @@ export default async function KitsPage() {
                   <th className="px-4 py-2">Expiry</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-outline-gray-1">
                 {kits.map((k) => {
                   const margin = Number(k.sell_price) - Number(k.buy_price);
                   return (
                     <tr key={k.id}>
                       <td className="px-4 py-2 font-medium">{k.batch_no}</td>
                       <td className="px-4 py-2">{k.products?.name ?? "—"}</td>
-                      <td className="px-4 py-2 text-slate-500">
+                      <td className="px-4 py-2 text-ink-gray-5">
                         {k.warehouses?.name ?? "—"}
                       </td>
                       <td className="px-4 py-2">{Number(k.qty_available)}</td>
-                      <td className="px-4 py-2 text-slate-500">{k.buy_price}</td>
-                      <td className="px-4 py-2 text-slate-500">{k.sell_price}</td>
+                      <td className="px-4 py-2 text-ink-gray-5">{k.buy_price}</td>
+                      <td className="px-4 py-2 text-ink-gray-5">{k.sell_price}</td>
                       <td className="px-4 py-2 font-medium text-emerald-600">
                         +{margin}
                       </td>
-                      <td className="px-4 py-2 text-slate-500">
+                      <td className="px-4 py-2 text-ink-gray-5">
                         {k.expiry_date ?? "—"}
                       </td>
                     </tr>

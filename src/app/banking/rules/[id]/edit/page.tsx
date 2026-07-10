@@ -47,10 +47,10 @@ export default async function EditRulePage({
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-slate-500">
+      <div className="text-sm text-ink-gray-5">
         <Link href="/banking/rules" className="hover:text-brand">← Rules</Link>
       </div>
-      <h1 className="text-2xl font-bold text-slate-800">Edit Rule</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">Edit Rule</h1>
       <RuleForm parties={parties} initial={initial} />
     </div>
   );

@@ -10,12 +10,12 @@ export default async function NewSalePage() {
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-slate-500">
+      <div className="text-sm text-ink-gray-5">
         <Link href="/" className="hover:text-brand">
           ← Dashboard
         </Link>
       </div>
-      <h1 className="text-2xl font-bold text-slate-800">Record Sale</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">Record Sale</h1>
       <FormCard title="Sell a product to a lab">
         <SaleForm products={products as never} labs={labs as never} />
       </FormCard>

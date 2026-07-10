@@ -20,12 +20,12 @@ export default async function NewKitBatchPage() {
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-slate-500">
+      <div className="text-sm text-ink-gray-5">
         <Link href="/kits" className="hover:text-brand">
           ← Kits
         </Link>
       </div>
-      <h1 className="text-2xl font-bold text-slate-800">New Kit Batch</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">New Kit Batch</h1>
 
       <FormCard title="Batch details">
         <form

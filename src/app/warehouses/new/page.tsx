@@ -12,12 +12,12 @@ import {
 export default function NewWarehousePage() {
   return (
     <div className="space-y-4">
-      <div className="text-sm text-slate-500">
+      <div className="text-sm text-ink-gray-5">
         <Link href="/warehouses" className="hover:text-brand">
           ← Warehouses
         </Link>
       </div>
-      <h1 className="text-2xl font-bold text-slate-800">New Warehouse</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">New Warehouse</h1>
 
       <FormCard title="Warehouse details">
         <form

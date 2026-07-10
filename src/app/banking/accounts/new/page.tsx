@@ -12,10 +12,10 @@ import {
 export default function NewBankAccountPage() {
   return (
     <div className="space-y-4">
-      <div className="text-sm text-slate-500">
+      <div className="text-sm text-ink-gray-5">
         <Link href="/banking" className="hover:text-brand">← Banking</Link>
       </div>
-      <h1 className="text-2xl font-bold text-slate-800">New Bank Account</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">New Bank Account</h1>
       <FormCard title="Account details">
         <form action={createBankAccount} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Account name" required>

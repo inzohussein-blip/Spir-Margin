@@ -24,7 +24,7 @@ export default async function WarehousesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Warehouses</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">Warehouses</h1>
         <Link
           href="/warehouses/new"
           className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
@@ -39,22 +39,22 @@ export default async function WarehousesPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-slate-400">
+                <tr className="text-left text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">Name</th>
                   <th className="px-4 py-2">Type</th>
                   <th className="px-4 py-2">City</th>
                   <th className="px-4 py-2">Phone</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((w) => (
                   <tr key={w.id} className={w.is_disabled ? "opacity-50" : ""}>
                     <td className="px-4 py-2 font-medium">{w.name}</td>
-                    <td className="px-4 py-2 text-slate-500">
+                    <td className="px-4 py-2 text-ink-gray-5">
                       {w.warehouse_type ?? "—"}
                     </td>
-                    <td className="px-4 py-2 text-slate-500">{w.city ?? "—"}</td>
-                    <td className="px-4 py-2 text-slate-500">{w.phone ?? "—"}</td>
+                    <td className="px-4 py-2 text-ink-gray-5">{w.city ?? "—"}</td>
+                    <td className="px-4 py-2 text-ink-gray-5">{w.phone ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>

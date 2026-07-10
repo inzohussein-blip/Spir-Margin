@@ -64,7 +64,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">Dashboard</h1>
         <Link
           href="/sales/new"
           className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
@@ -109,19 +109,19 @@ export default async function DashboardPage() {
           {labs.length === 0 ? (
             <EmptyRow text="No active labs" />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-outline-gray-1">
               {labs.map((l) => (
                 <li
                   key={l.id}
                   className="flex items-center justify-between px-4 py-3 text-sm"
                 >
                   <div>
-                    <div className="font-medium text-slate-800">{l.name}</div>
-                    <div className="text-xs text-slate-400">
+                    <div className="font-medium text-ink-gray-8">{l.name}</div>
+                    <div className="text-xs text-ink-gray-4">
                       {l.code} · {l.city ?? "—"}
                     </div>
                   </div>
-                  <div className="text-right text-xs text-slate-500">
+                  <div className="text-right text-xs text-ink-gray-5">
                     <div>{l.device_count} devices</div>
                     <div>{Number(l.total_withdrawn)} withdrawn</div>
                   </div>
@@ -136,17 +136,17 @@ export default async function DashboardPage() {
           {alerts.length === 0 ? (
             <EmptyRow text="No devices need maintenance" />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-outline-gray-1">
               {alerts.map((a) => (
                 <li
                   key={a.id}
                   className="flex items-center justify-between px-4 py-3 text-sm"
                 >
                   <div>
-                    <div className="font-medium text-slate-800">
+                    <div className="font-medium text-ink-gray-8">
                       {a.product_name}
                     </div>
-                    <div className="text-xs text-slate-400">
+                    <div className="text-xs text-ink-gray-4">
                       {a.asset_code} · {a.lab_name ?? "unassigned"}
                     </div>
                   </div>
@@ -178,7 +178,7 @@ export default async function DashboardPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-slate-400">
+                <tr className="text-left text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">Batch</th>
                   <th className="px-4 py-2">Product</th>
                   <th className="px-4 py-2">Warehouse</th>
@@ -187,12 +187,12 @@ export default async function DashboardPage() {
                   <th className="px-4 py-2">Days left</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-outline-gray-1">
                 {kits.map((k) => (
                   <tr key={k.id}>
                     <td className="px-4 py-2 font-medium">{k.batch_no}</td>
                     <td className="px-4 py-2">{k.product_name}</td>
-                    <td className="px-4 py-2 text-slate-500">
+                    <td className="px-4 py-2 text-ink-gray-5">
                       {k.warehouse_name ?? "—"}
                     </td>
                     <td className="px-4 py-2">{Number(k.qty_available)}</td>

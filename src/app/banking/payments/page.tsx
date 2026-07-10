@@ -21,9 +21,9 @@ export default async function PaymentsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Payment Entries</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">Payment Entries</h1>
         <div className="flex gap-2">
-          <Link href="/banking" className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">← Banking</Link>
+          <Link href="/banking" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">← Banking</Link>
           <Link href="/banking/payments/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New payment</Link>
         </div>
       </div>
@@ -34,7 +34,7 @@ export default async function PaymentsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-slate-400">
+                <tr className="text-left text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">Ref</th>
                   <th className="px-4 py-2">Type</th>
                   <th className="px-4 py-2">Party</th>
@@ -43,7 +43,7 @@ export default async function PaymentsPage() {
                   <th className="px-4 py-2">Reconciled</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((p) => (
                   <tr key={p.id}>
                     <td className="px-4 py-2 font-medium">{p.naming_series ?? p.reference_no ?? "—"}</td>
@@ -52,9 +52,9 @@ export default async function PaymentsPage() {
                     <td className="px-4 py-2">
                       {Number(p.received_amount || p.paid_amount).toLocaleString()}
                     </td>
-                    <td className="px-4 py-2 text-slate-500">{p.posting_date}</td>
+                    <td className="px-4 py-2 text-ink-gray-5">{p.posting_date}</td>
                     <td className="px-4 py-2">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.is_reconciled ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.is_reconciled ? "bg-emerald-100 text-emerald-700" : "bg-surface-gray-2 text-ink-gray-5"}`}>
                         {p.is_reconciled ? "yes" : "no"}
                       </span>
                     </td>

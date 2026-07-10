@@ -13,10 +13,10 @@ export default async function NewPurchasePage() {
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-slate-500">
+      <div className="text-sm text-ink-gray-5">
         <Link href="/purchases" className="hover:text-brand">← Purchases</Link>
       </div>
-      <h1 className="text-2xl font-bold text-slate-800">New Purchase</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">New Purchase</h1>
       <PurchaseForm
         suppliers={suppliers.map((s) => ({ id: s.id, label: s.name }))}
         products={products.map((p) => ({

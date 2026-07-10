@@ -8,8 +8,8 @@ export function Panel({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <header className="border-b border-slate-100 px-5 py-3 text-sm font-semibold text-slate-700">
+    <section className="rounded-xl border border-outline-gray-2 bg-surface-white shadow-sm">
+      <header className="border-b border-outline-gray-1 px-5 py-3 text-sm font-semibold text-ink-gray-7">
         {title}
       </header>
       <div className="p-2">{children}</div>
@@ -18,5 +18,5 @@ export function Panel({
 }
 
 export function EmptyRow({ text }: { text: string }) {
-  return <div className="px-4 py-6 text-center text-sm text-slate-400">{text}</div>;
+  return <div className="px-4 py-6 text-center text-sm text-ink-gray-4">{text}</div>;
 }

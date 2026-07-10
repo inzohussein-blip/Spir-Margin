@@ -11,15 +11,15 @@ export function StatCard({
 }) {
   const accents: Record<string, string> = {
     brand: "text-brand",
-    green: "text-emerald-600",
-    amber: "text-amber-600",
-    red: "text-red-600",
+    green: "text-ink-green-3",
+    amber: "text-ink-amber-3",
+    red: "text-ink-red-3",
   };
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="text-sm font-medium text-slate-500">{label}</div>
+    <div className="rounded-xl border border-outline-gray-2 bg-surface-white p-5 shadow-sm">
+      <div className="text-sm font-medium text-ink-gray-5">{label}</div>
       <div className={`mt-2 text-3xl font-bold ${accents[accent]}`}>{value}</div>
-      {hint && <div className="mt-1 text-xs text-slate-400">{hint}</div>}
+      {hint && <div className="mt-1 text-xs text-ink-gray-4">{hint}</div>}
     </div>
   );
 }

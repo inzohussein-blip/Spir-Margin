@@ -10,12 +10,12 @@ export default async function WithdrawPage() {
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-slate-500">
+      <div className="text-sm text-ink-gray-5">
         <Link href="/kits" className="hover:text-brand">
           ← Kits
         </Link>
       </div>
-      <h1 className="text-2xl font-bold text-slate-800">Record Withdrawal</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">Record Withdrawal</h1>
       <FormCard title="Lab pulls kits from stock">
         <WithdrawalForm batches={batches as never} labs={labs as never} />
       </FormCard>

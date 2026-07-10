@@ -179,9 +179,9 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-sm text-ink-gray-5">
           <LandmarkIcon size={16} />
-          <span className="font-medium text-foreground">Bank Reconciliation</span>
+          <span className="font-medium text-ink-gray-8">Bank Reconciliation</span>
           <Badge theme="violet" variant="subtle">Beta</Badge>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -190,7 +190,7 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
             onChange={(e) =>
               setSelectedBank(accounts.find((a) => a.id === e.target.value) ?? null)
             }
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm"
+            className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm"
           >
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>{a.account_name} — {a.bank}</option>
@@ -200,13 +200,13 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
             type="date"
             value={dateRange.from}
             onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
-            className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+            className="rounded-md border border-outline-gray-2 px-2 py-1.5 text-sm"
           />
           <input
             type="date"
             value={dateRange.to}
             onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
-            className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+            className="rounded-md border border-outline-gray-2 px-2 py-1.5 text-sm"
           />
         </div>
       </div>
@@ -221,7 +221,7 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
         {/* Match & Reconcile */}
         <TabsContent value="match" className="pt-4">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-ink-gray-5">
               Select a bank line, then match a payment. Unreconciled:{" "}
               <span className="font-semibold text-amber-600">{money(unreconciledAmount)}</span>
             </p>
@@ -233,22 +233,22 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
 
           {selectedTxn && (
             <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-brand/40 bg-blue-50 px-4 py-3 text-sm">
-              <span className="text-muted-foreground">Selected line:</span>
-              <span className="font-medium text-foreground">
+              <span className="text-ink-gray-5">Selected line:</span>
+              <span className="font-medium text-ink-gray-8">
                 {selectedTxn.description ?? selectedTxn.reference_number ?? selectedTxn.date} ·{" "}
                 {money(selectedTxn.deposit || selectedTxn.withdrawal)}
               </span>
-              <span className="text-muted-foreground">— no matching payment?</span>
+              <span className="text-ink-gray-5">— no matching payment?</span>
               <input
                 value={voucherParty}
                 onChange={(e) => setVoucherParty(e.target.value)}
                 placeholder="party name (optional)"
-                className="rounded-md border border-slate-300 px-2 py-1 text-sm"
+                className="rounded-md border border-outline-gray-2 px-2 py-1 text-sm"
               />
               <Button variant="subtle" size="sm" onClick={createVoucher} disabled={pending}>
                 Create payment &amp; reconcile
               </Button>
-              <button onClick={() => setSelectedTxn(null)} className="text-xs text-muted-foreground hover:underline">
+              <button onClick={() => setSelectedTxn(null)} className="text-xs text-ink-gray-5 hover:underline">
                 clear
               </button>
             </div>
@@ -258,7 +258,7 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
             <Card>
               <CardHeader><CardTitle>Unreconciled transactions ({txns.length})</CardTitle></CardHeader>
               <CardContent className="p-0">
-                <ul className="divide-y divide-slate-100">
+                <ul className="divide-y divide-outline-gray-1">
                   {txns.length === 0 && (
                     <li className="flex items-center gap-2 px-4 py-6 text-sm text-emerald-600">
                       <CheckCircleIcon size={16} /> All reconciled
@@ -268,13 +268,13 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
                     <li key={t.id}>
                       <button
                         onClick={() => setSelectedTxn(t)}
-                        className={`flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-slate-50 ${
+                        className={`flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-surface-gray-1 ${
                           selectedTxn?.id === t.id ? "bg-blue-50 ring-1 ring-inset ring-brand" : ""
                         }`}
                       >
                         <div>
-                          <div className="font-medium text-foreground">{t.description ?? "—"}</div>
-                          <div className="text-xs text-muted-foreground">{t.date} · {t.reference_number ?? "no ref"}</div>
+                          <div className="font-medium text-ink-gray-8">{t.description ?? "—"}</div>
+                          <div className="text-xs text-ink-gray-5">{t.date} · {t.reference_number ?? "no ref"}</div>
                         </div>
                         <span className={t.deposit > 0 ? "font-semibold text-emerald-600" : "font-semibold text-red-600"}>
                           {t.deposit > 0 ? "+" : "-"}{money(t.deposit || t.withdrawal)}
@@ -289,17 +289,17 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
             <Card>
               <CardHeader><CardTitle>Open payments ({payments.length})</CardTitle></CardHeader>
               <CardContent className="p-0">
-                <ul className="divide-y divide-slate-100">
+                <ul className="divide-y divide-outline-gray-1">
                   {payments.length === 0 && (
-                    <li className="px-4 py-6 text-center text-sm text-muted-foreground">No open payments</li>
+                    <li className="px-4 py-6 text-center text-sm text-ink-gray-5">No open payments</li>
                   )}
                   {payments.map((p) => {
                     const good = selectedTxn && fits(selectedTxn, p);
                     return (
                       <li key={p.id} className={`flex items-center justify-between px-4 py-3 text-sm ${good ? "bg-emerald-50" : ""}`}>
                         <div>
-                          <div className="font-medium text-foreground">{p.party_name ?? "—"} <span className="text-xs text-muted-foreground">({p.payment_type})</span></div>
-                          <div className="text-xs text-muted-foreground">{p.posting_date} · {p.reference_no ?? "no ref"}</div>
+                          <div className="font-medium text-ink-gray-8">{p.party_name ?? "—"} <span className="text-xs text-ink-gray-5">({p.payment_type})</span></div>
+                          <div className="text-xs text-ink-gray-5">{p.posting_date} · {p.reference_no ?? "no ref"}</div>
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="font-semibold">{money(p.received_amount || p.paid_amount)}</span>
@@ -320,16 +320,16 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
             <CardHeader><CardTitle>Reconciliation statement</CardTitle></CardHeader>
             <CardContent className="space-y-3 text-sm">
               <label className="flex items-center gap-3">
-                <span className="w-56 text-muted-foreground">Closing balance as per bank statement</span>
+                <span className="w-56 text-ink-gray-5">Closing balance as per bank statement</span>
                 <input type="number" value={closing} onChange={(e) => setClosing(Number(e.target.value))}
-                  className="w-40 rounded-md border border-slate-300 px-2 py-1.5 text-sm" />
+                  className="w-40 rounded-md border border-outline-gray-2 px-2 py-1.5 text-sm" />
               </label>
-              <div className="flex justify-between border-t border-slate-100 pt-2">
-                <span className="text-muted-foreground">Unreconciled amount</span>
+              <div className="flex justify-between border-t border-outline-gray-1 pt-2">
+                <span className="text-ink-gray-5">Unreconciled amount</span>
                 <span className="font-semibold text-amber-600">{money(unreconciledAmount)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Difference (closing − unreconciled)</span>
+                <span className="text-ink-gray-5">Difference (closing − unreconciled)</span>
                 <span className="font-semibold">{money(closing - unreconciledAmount)}</span>
               </div>
             </CardContent>
@@ -341,12 +341,12 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
           <Card>
             <CardHeader><CardTitle>Action log ({log.length})</CardTitle></CardHeader>
             <CardContent className="p-0">
-              <ul className="divide-y divide-slate-100">
-                {log.length === 0 && <li className="px-4 py-6 text-center text-sm text-muted-foreground">No actions yet</li>}
+              <ul className="divide-y divide-outline-gray-1">
+                {log.length === 0 && <li className="px-4 py-6 text-center text-sm text-ink-gray-5">No actions yet</li>}
                 {log.map((l, i) => (
                   <li key={i} className="flex items-center justify-between px-4 py-2 text-sm">
                     <span>{l.detail}</span>
-                    <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-2 text-xs text-ink-gray-5">
                       <Badge theme={l.action === "unmatch" ? "red" : l.action === "rules" ? "blue" : "green"} variant="subtle">{l.action}</Badge>
                       {new Date(l.at).toLocaleTimeString()}
                     </span>

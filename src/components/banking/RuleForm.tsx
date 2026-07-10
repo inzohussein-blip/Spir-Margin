@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 interface PartyOpt { value: string; label: string; }
 
 const inputCls =
-  "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
+  "mt-1 w-full rounded-md border border-outline-gray-2 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
 
 export function RuleForm({
   parties,
@@ -57,16 +57,16 @@ export function RuleForm({
         <CardHeader><CardTitle>Rule</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           <label className="block">
-            <span className="font-medium text-foreground">Rule name *</span>
+            <span className="font-medium text-ink-gray-8">Rule name *</span>
             <input {...register("rule_name", { required: true })} className={inputCls} placeholder="Al-Kindy inflows" />
             {errors.rule_name && <span className="text-xs text-red-500">Required</span>}
           </label>
           <label className="block">
-            <span className="font-medium text-foreground">Priority</span>
+            <span className="font-medium text-ink-gray-8">Priority</span>
             <input type="number" {...register("priority")} className={inputCls} />
           </label>
           <label className="block">
-            <span className="font-medium text-foreground">Applies to</span>
+            <span className="font-medium text-ink-gray-8">Applies to</span>
             <select {...register("transaction_type")} className={inputCls}>
               <option value="any">any</option>
               <option value="deposit">deposit</option>
@@ -74,7 +74,7 @@ export function RuleForm({
             </select>
           </label>
           <label className="block">
-            <span className="font-medium text-foreground">Classify as</span>
+            <span className="font-medium text-ink-gray-8">Classify as</span>
             <select {...register("classify_as")} className={inputCls}>
               <option value="payment_entry">payment entry</option>
               <option value="bank_entry">bank entry</option>
@@ -82,15 +82,15 @@ export function RuleForm({
             </select>
           </label>
           <label className="block">
-            <span className="font-medium text-foreground">Min amount</span>
+            <span className="font-medium text-ink-gray-8">Min amount</span>
             <input type="number" step="0.01" {...register("min_amount")} className={inputCls} />
           </label>
           <label className="block">
-            <span className="font-medium text-foreground">Max amount</span>
+            <span className="font-medium text-ink-gray-8">Max amount</span>
             <input type="number" step="0.01" {...register("max_amount")} className={inputCls} />
           </label>
           <label className="block sm:col-span-2">
-            <span className="font-medium text-foreground">Set party (optional)</span>
+            <span className="font-medium text-ink-gray-8">Set party (optional)</span>
             <select {...register("party")} className={inputCls}>
               <option value="">— none —</option>
               {parties.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
@@ -105,14 +105,14 @@ export function RuleForm({
           {fields.map((f, i) => (
             <div key={f.id} className="flex flex-wrap items-end gap-2">
               <label className="block text-sm">
-                <span className="text-muted-foreground">Field</span>
+                <span className="text-ink-gray-5">Field</span>
                 <select {...register(`conditions.${i}.field`)} className={inputCls}>
                   <option value="description">description</option>
                   <option value="reference_number">reference number</option>
                 </select>
               </label>
               <label className="block text-sm">
-                <span className="text-muted-foreground">Operator</span>
+                <span className="text-ink-gray-5">Operator</span>
                 <select {...register(`conditions.${i}.operator`)} className={inputCls}>
                   <option value="contains">contains</option>
                   <option value="equals">equals</option>
@@ -120,7 +120,7 @@ export function RuleForm({
                 </select>
               </label>
               <label className="block flex-1 text-sm">
-                <span className="text-muted-foreground">Value</span>
+                <span className="text-ink-gray-5">Value</span>
                 <input {...register(`conditions.${i}.value`)} className={inputCls} placeholder="AL-KINDY" />
               </label>
               <Button type="button" variant="subtle" size="sm" onClick={() => remove(i)} disabled={fields.length === 1}>

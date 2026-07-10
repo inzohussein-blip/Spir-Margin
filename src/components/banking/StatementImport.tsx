@@ -169,9 +169,9 @@ export function StatementImport({ accounts }: { accounts: Account[] }) {
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="block text-sm">
-          <span className="font-medium text-foreground">Bank account</span>
+          <span className="font-medium text-ink-gray-8">Bank account</span>
           <select value={accountId} onChange={(e) => setAccountId(e.target.value)}
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+            className="mt-1 w-full rounded-md border border-outline-gray-2 px-3 py-2 text-sm">
             {accounts.map((a) => <option key={a.id} value={a.id}>{a.account_name} ({a.currency})</option>)}
           </select>
         </label>
@@ -180,13 +180,13 @@ export function StatementImport({ accounts }: { accounts: Account[] }) {
       {/* Dropzone */}
       <div {...getRootProps()}
         className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-8 text-center text-sm ${
-          isDragActive ? "border-brand bg-blue-50" : "border-slate-300 bg-white"
+          isDragActive ? "border-brand bg-blue-50" : "border-outline-gray-2 bg-surface-white"
         }`}>
         <input {...getInputProps()} />
-        <UploadCloudIcon className="text-slate-400" />
+        <UploadCloudIcon className="text-ink-gray-4" />
         {fileName
-          ? <span className="flex items-center gap-2 font-medium text-foreground"><FileTextIcon size={14} /> {fileName}</span>
-          : <span className="text-muted-foreground">Drop a CSV statement here, or click to choose</span>}
+          ? <span className="flex items-center gap-2 font-medium text-ink-gray-8"><FileTextIcon size={14} /> {fileName}</span>
+          : <span className="text-ink-gray-5">Drop a CSV statement here, or click to choose</span>}
       </div>
 
       {header.length > 0 && (
@@ -196,18 +196,18 @@ export function StatementImport({ accounts }: { accounts: Account[] }) {
             <CardHeader><CardTitle>Detected format</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-3 text-sm">
               <label className="block">
-                <span className="text-muted-foreground">Amount format</span>
+                <span className="text-ink-gray-5">Amount format</span>
                 <select value={amountMode} onChange={(e) => setAmountMode(e.target.value as AmountMode)}
-                  className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5">
+                  className="mt-1 w-full rounded-md border border-outline-gray-2 px-2 py-1.5">
                   <option value="separate">Separate deposit / withdrawal columns</option>
                   <option value="signed">Single signed amount column</option>
                   <option value="debit_credit">Amount + Debit/Credit flag</option>
                 </select>
               </label>
               <label className="block">
-                <span className="text-muted-foreground">Date order</span>
+                <span className="text-ink-gray-5">Date order</span>
                 <select value={preferDMY ? "dmy" : "mdy"} onChange={(e) => setPreferDMY(e.target.value === "dmy")}
-                  className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5">
+                  className="mt-1 w-full rounded-md border border-outline-gray-2 px-2 py-1.5">
                   <option value="dmy">Day/Month/Year</option>
                   <option value="mdy">Month/Day/Year</option>
                 </select>
@@ -224,9 +224,9 @@ export function StatementImport({ accounts }: { accounts: Account[] }) {
             <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {COLS.map((col) => (
                 <label key={col} className="block text-sm">
-                  <span className="text-muted-foreground">{COL_LABELS[col]}</span>
+                  <span className="text-ink-gray-5">{COL_LABELS[col]}</span>
                   <select value={map[col]} onChange={(e) => setMap({ ...map, [col]: Number(e.target.value) })}
-                    className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5">
+                    className="mt-1 w-full rounded-md border border-outline-gray-2 px-2 py-1.5">
                     <option value={-1}>—</option>
                     {header.map((h, i) => <option key={i} value={i}>{h || `col ${i + 1}`}</option>)}
                   </select>
@@ -240,25 +240,25 @@ export function StatementImport({ accounts }: { accounts: Account[] }) {
             <CardHeader><CardTitle>Statement summary</CardTitle></CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div><div className="text-xs text-muted-foreground">Rows</div><div className="font-semibold">{valid.length}</div></div>
-                <div><div className="text-xs text-muted-foreground">Credits</div><div className="font-semibold text-emerald-600">{totals.credits.toLocaleString()}</div></div>
-                <div><div className="text-xs text-muted-foreground">Debits</div><div className="font-semibold text-red-600">{totals.debits.toLocaleString()}</div></div>
-                <div><div className="text-xs text-muted-foreground">Period</div><div className="font-semibold">{totals.from} → {totals.to}</div></div>
+                <div><div className="text-xs text-ink-gray-5">Rows</div><div className="font-semibold">{valid.length}</div></div>
+                <div><div className="text-xs text-ink-gray-5">Credits</div><div className="font-semibold text-emerald-600">{totals.credits.toLocaleString()}</div></div>
+                <div><div className="text-xs text-ink-gray-5">Debits</div><div className="font-semibold text-red-600">{totals.debits.toLocaleString()}</div></div>
+                <div><div className="text-xs text-ink-gray-5">Period</div><div className="font-semibold">{totals.from} → {totals.to}</div></div>
               </div>
-              <div className="overflow-x-auto rounded-lg border border-slate-200">
+              <div className="overflow-x-auto rounded-lg border border-outline-gray-2">
                 <table className="w-full text-sm">
-                  <thead><tr className="text-left text-xs uppercase text-muted-foreground">
+                  <thead><tr className="text-left text-xs uppercase text-ink-gray-5">
                     <th className="px-3 py-2">Date</th><th className="px-3 py-2">Description</th>
                     <th className="px-3 py-2">Deposit</th><th className="px-3 py-2">Withdrawal</th><th className="px-3 py-2">Ref</th>
                   </tr></thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-outline-gray-1">
                     {rows.slice(0, 6).map((r, i) => (
                       <tr key={i}>
                         <td className="px-3 py-1.5">{r.date || <span className="text-red-500">?</span>}</td>
                         <td className="px-3 py-1.5">{r.description}</td>
                         <td className="px-3 py-1.5 text-emerald-600">{r.deposit || ""}</td>
                         <td className="px-3 py-1.5 text-red-600">{r.withdrawal || ""}</td>
-                        <td className="px-3 py-1.5 text-muted-foreground">{r.reference_number}</td>
+                        <td className="px-3 py-1.5 text-ink-gray-5">{r.reference_number}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -274,7 +274,7 @@ export function StatementImport({ accounts }: { accounts: Account[] }) {
         </>
       )}
 
-      {msg && <div className="rounded-md bg-slate-100 px-3 py-2 text-sm text-slate-700">{msg}</div>}
+      {msg && <div className="rounded-md bg-surface-gray-2 px-3 py-2 text-sm text-ink-gray-7">{msg}</div>}
     </div>
   );
 }
