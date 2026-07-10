@@ -13,7 +13,12 @@ import {
   Loader2Icon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { reconcile, unreconcile, applyRulesForAccount } from "@/app/actions/banking";
+import {
+  reconcile,
+  unreconcile,
+  applyRulesForAccount,
+  createVoucherAndReconcile,
+} from "@/app/actions/banking";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -79,6 +84,7 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
   const [txns, setTxns] = useState<Txn[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [selectedTxn, setSelectedTxn] = useState<Txn | null>(null);
+  const [voucherParty, setVoucherParty] = useState("");
   const [pending, start] = useTransition();
 
   // default the selected bank once
@@ -132,6 +138,24 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
       if (res.ok) {
         addLog("match", `${p.party_name ?? "payment"} → ${selectedTxn.reference_number ?? selectedTxn.date}`);
         setSelectedTxn(null);
+        await load();
+        router.refresh();
+      }
+    });
+  }
+
+  function createVoucher() {
+    if (!selectedTxn || !selectedBank) return;
+    start(async () => {
+      const res = await createVoucherAndReconcile({
+        txnId: selectedTxn.id,
+        accountId: selectedBank.id,
+        partyName: voucherParty || undefined,
+      });
+      if (res.ok) {
+        addLog("match", `created payment for ${selectedTxn.reference_number ?? selectedTxn.date}`);
+        setSelectedTxn(null);
+        setVoucherParty("");
         await load();
         router.refresh();
       }
@@ -206,6 +230,29 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
               Auto-match by rules
             </Button>
           </div>
+
+          {selectedTxn && (
+            <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-brand/40 bg-blue-50 px-4 py-3 text-sm">
+              <span className="text-muted-foreground">Selected line:</span>
+              <span className="font-medium text-foreground">
+                {selectedTxn.description ?? selectedTxn.reference_number ?? selectedTxn.date} ·{" "}
+                {money(selectedTxn.deposit || selectedTxn.withdrawal)}
+              </span>
+              <span className="text-muted-foreground">— no matching payment?</span>
+              <input
+                value={voucherParty}
+                onChange={(e) => setVoucherParty(e.target.value)}
+                placeholder="party name (optional)"
+                className="rounded-md border border-slate-300 px-2 py-1 text-sm"
+              />
+              <Button variant="subtle" size="sm" onClick={createVoucher} disabled={pending}>
+                Create payment &amp; reconcile
+              </Button>
+              <button onClick={() => setSelectedTxn(null)} className="text-xs text-muted-foreground hover:underline">
+                clear
+              </button>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Card>

@@ -150,6 +150,59 @@ export async function applyRulesForAccount(accountId: string) {
   return { ok: true as const, matched };
 }
 
+/**
+ * Create a payment entry directly from an unreconciled bank transaction and
+ * reconcile it in one step (ported from the original "Record Payment" modal /
+ * create-voucher flow). Direction is inferred: a deposit → Receive, a
+ * withdrawal → Pay.
+ */
+export async function createVoucherAndReconcile(input: {
+  txnId: string;
+  accountId: string;
+  partyName?: string;
+  party?: string; // "company:<id>" | "lab:<id>"
+}) {
+  const supabase = createClient();
+
+  const { data: txn, error: tErr } = await supabase
+    .from("bank_transactions")
+    .select("id, deposit, withdrawal, description, reference_number, date, unallocated_amount")
+    .eq("id", input.txnId)
+    .single();
+  if (tErr) return { ok: false as const, error: tErr.message };
+
+  const isDeposit = Number(txn.deposit) > 0;
+  const amount = Number(txn.unallocated_amount) || Number(txn.deposit) + Number(txn.withdrawal);
+
+  const { data: pe, error: pErr } = await supabase
+    .from("payment_entries")
+    .insert({
+      payment_type: isDeposit ? "receive" : "pay",
+      posting_date: txn.date,
+      party_name: input.partyName ?? null,
+      ...partyFromString(input.party ?? null),
+      bank_account_id: input.accountId,
+      paid_amount: isDeposit ? 0 : amount,
+      received_amount: isDeposit ? amount : 0,
+      reference_no: txn.reference_number,
+      remarks: `Auto-created from bank line: ${txn.description ?? ""}`.trim(),
+    })
+    .select("id")
+    .single();
+  if (pErr) return { ok: false as const, error: pErr.message };
+
+  const { error: rErr } = await supabase.rpc("fn_reconcile_transaction", {
+    p_txn_id: input.txnId,
+    p_payment_id: pe.id,
+    p_amount: null,
+  });
+  if (rErr) return { ok: false as const, error: rErr.message };
+
+  revalidatePath(`/banking/${input.accountId}`);
+  revalidatePath("/banking");
+  return { ok: true as const, paymentId: pe.id };
+}
+
 // ========================================================================
 // Matching rules  <- BankTransactionRule
 // ========================================================================
