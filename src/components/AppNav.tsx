@@ -14,6 +14,7 @@ import {
   ShoppingCartIcon,
   LandmarkIcon,
   TagIcon,
+  ShieldCheckIcon,
 } from "lucide-react";
 
 const nav = [
@@ -27,6 +28,7 @@ const nav = [
   { href: "/warehouses", label: "Warehouses", icon: WarehouseIcon },
   { href: "/companies", label: "Companies", icon: Building2Icon },
   { href: "/purchases", label: "Purchases", icon: ShoppingCartIcon },
+  { href: "/warranty", label: "Warranty", icon: ShieldCheckIcon },
   { href: "/banking", label: "Banking", icon: LandmarkIcon },
 ];
 
