@@ -40,6 +40,8 @@ export async function createLab(fd: FormData) {
     contact_name: str(fd, "contact_name"),
     phone: str(fd, "phone"),
     email: str(fd, "email"),
+    territory: str(fd, "territory"),
+    customer_group: str(fd, "customer_group"),
     latitude: str(fd, "latitude") ? num(fd, "latitude") : null,
     longitude: str(fd, "longitude") ? num(fd, "longitude") : null,
   });

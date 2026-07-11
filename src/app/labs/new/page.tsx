@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createLab } from "@/app/actions/crud";
+import { getTerritories, getCustomerGroups } from "@/lib/queries";
 import {
   Field,
   TextInput,
@@ -9,7 +10,13 @@ import {
   FormCard,
 } from "@/components/form/Fields";
 
-export default function NewLabPage() {
+export const dynamic = "force-dynamic";
+
+export default async function NewLabPage() {
+  const [territories, groups] = await Promise.all([
+    getTerritories(),
+    getCustomerGroups(),
+  ]);
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-sm text-ink-gray-5">
@@ -44,6 +51,18 @@ export default function NewLabPage() {
           </Field>
           <Field label="Email">
             <TextInput name="email" type="email" />
+          </Field>
+          <Field label="Territory">
+            <TextInput name="territory" list="territories" />
+            <datalist id="territories">
+              {territories.map((t) => <option key={t} value={t} />)}
+            </datalist>
+          </Field>
+          <Field label="Customer group">
+            <TextInput name="customer_group" list="cust-groups" />
+            <datalist id="cust-groups">
+              {groups.map((g) => <option key={g} value={g} />)}
+            </datalist>
           </Field>
           <Field label="Latitude">
             <TextInput name="latitude" type="number" step="any" />

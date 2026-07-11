@@ -64,6 +64,18 @@ export async function getItemGroups() {
   return (data ?? []).map((g) => g.name as string);
 }
 
+export async function getTerritories() {
+  const supabase = createClient();
+  const { data } = await supabase.from("territories").select("name").order("name");
+  return (data ?? []).map((t) => t.name as string);
+}
+
+export async function getCustomerGroups() {
+  const supabase = createClient();
+  const { data } = await supabase.from("customer_groups").select("name").order("name");
+  return (data ?? []).map((g) => g.name as string);
+}
+
 export async function getPriceLists() {
   const supabase = createClient();
   const { data } = await supabase
