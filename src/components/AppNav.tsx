@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboardIcon,
   UserPlusIcon,
+  TargetIcon,
   FlaskConicalIcon,
   MonitorIcon,
   HashIcon,
@@ -22,6 +23,7 @@ import {
 const nav = [
   { href: "/", label: "Dashboard", icon: LayoutDashboardIcon },
   { href: "/leads", label: "Leads", icon: UserPlusIcon },
+  { href: "/opportunities", label: "Opportunities", icon: TargetIcon },
   { href: "/labs", label: "Labs", icon: FlaskConicalIcon },
   { href: "/devices", label: "Devices", icon: MonitorIcon },
   { href: "/serials", label: "Serials", icon: HashIcon },
