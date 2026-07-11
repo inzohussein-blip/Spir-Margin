@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createWarehouse } from "@/app/actions/crud";
+import { createClient } from "@/lib/supabase/server";
 import {
   Field,
   TextInput,
@@ -9,7 +10,12 @@ import {
   FormCard,
 } from "@/components/form/Fields";
 
-export default function NewWarehousePage() {
+export const dynamic = "force-dynamic";
+
+export default async function NewWarehousePage() {
+  const supabase = createClient();
+  const { data } = await supabase.from("warehouse_types").select("name").order("name");
+  const types = (data ?? []).map((t) => t.name as string);
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
@@ -30,10 +36,7 @@ export default function NewWarehousePage() {
           <Field label="Type">
             <Select name="warehouse_type" defaultValue="">
               <option value="">— none —</option>
-              <option value="Stock">Stock</option>
-              <option value="Cold">Cold</option>
-              <option value="Transit">Transit</option>
-              <option value="Rejected">Rejected</option>
+              {types.map((t) => <option key={t} value={t}>{t}</option>)}
             </Select>
           </Field>
           <Field label="City">
