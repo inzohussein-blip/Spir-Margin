@@ -19,6 +19,7 @@ import {
   LandmarkIcon,
   TagIcon,
   ShieldCheckIcon,
+  CoinsIcon,
 } from "lucide-react";
 
 const nav = [
@@ -38,6 +39,7 @@ const nav = [
   { href: "/purchases", label: "Purchases", icon: ShoppingCartIcon },
   { href: "/warranty", label: "Warranty", icon: ShieldCheckIcon },
   { href: "/banking", label: "Banking", icon: LandmarkIcon },
+  { href: "/currency", label: "Currency", icon: CoinsIcon },
 ];
 
 export function AppNav() {
