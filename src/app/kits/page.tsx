@@ -31,6 +31,12 @@ export default async function KitsPage() {
         <h1 className="text-2xl font-bold text-ink-gray-8">Reagent Kits</h1>
         <div className="flex gap-2">
           <Link
+            href="/delivery-notes"
+            className="rounded-md border border-outline-gray-2 px-4 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1"
+          >
+            Delivery notes
+          </Link>
+          <Link
             href="/stock-reconciliation"
             className="rounded-md border border-outline-gray-2 px-4 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1"
           >
