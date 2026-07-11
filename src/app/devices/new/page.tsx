@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createDevice } from "@/app/actions/crud";
-import { getProducts, getLabs } from "@/lib/queries";
+import { getProducts, getLabs, getAssetCategories } from "@/lib/queries";
 import {
   Field,
   TextInput,
@@ -13,9 +13,10 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function NewDevicePage() {
-  const [products, labs] = await Promise.all([
+  const [products, labs, assetCategories] = await Promise.all([
     getProducts("device"),
     getLabs(),
+    getAssetCategories(),
   ]);
 
   return (
@@ -71,6 +72,12 @@ export default async function NewDevicePage() {
           </Field>
           <Field label="Custodian">
             <TextInput name="custodian_name" />
+          </Field>
+          <Field label="Asset category">
+            <TextInput name="asset_category" list="asset-cats" />
+            <datalist id="asset-cats">
+              {assetCategories.map((c) => <option key={c} value={c} />)}
+            </datalist>
           </Field>
           <Field label="Purchase date">
             <TextInput name="purchase_date" type="date" />

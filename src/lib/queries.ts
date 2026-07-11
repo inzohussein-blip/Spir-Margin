@@ -64,6 +64,18 @@ export async function getItemGroups() {
   return (data ?? []).map((g) => g.name as string);
 }
 
+export async function getAssetCategories() {
+  const supabase = createClient();
+  const { data } = await supabase.from("asset_categories").select("name").order("name");
+  return (data ?? []).map((a) => a.name as string);
+}
+
+export async function getSupplierGroups() {
+  const supabase = createClient();
+  const { data } = await supabase.from("supplier_groups").select("name").order("name");
+  return (data ?? []).map((g) => g.name as string);
+}
+
 export async function getTerritories() {
   const supabase = createClient();
   const { data } = await supabase.from("territories").select("name").order("name");
