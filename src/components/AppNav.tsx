@@ -23,6 +23,7 @@ import {
   BookOpenIcon,
   FactoryIcon,
   WrenchIcon,
+  StethoscopeIcon,
 } from "lucide-react";
 
 const nav = [
@@ -32,6 +33,7 @@ const nav = [
   { href: "/labs", label: "Labs", icon: FlaskConicalIcon },
   { href: "/devices", label: "Devices", icon: MonitorIcon },
   { href: "/serials", label: "Serials", icon: HashIcon },
+  { href: "/maintenance-visits", label: "Maintenance", icon: StethoscopeIcon },
   { href: "/kits", label: "Kits", icon: BoxesIcon },
   { href: "/boms", label: "BOMs", icon: FactoryIcon },
   { href: "/work-orders", label: "Work Orders", icon: WrenchIcon },

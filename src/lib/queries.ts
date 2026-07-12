@@ -126,3 +126,14 @@ export async function getKitBatches() {
     .order("batch_no");
   return data ?? [];
 }
+
+export async function getDevices(labId?: string) {
+  const supabase = createClient();
+  let q = supabase
+    .from("devices")
+    .select("id, asset_code, serial_no, lab_id, products(name)")
+    .order("asset_code");
+  if (labId) q = q.eq("lab_id", labId);
+  const { data } = await q;
+  return data ?? [];
+}
