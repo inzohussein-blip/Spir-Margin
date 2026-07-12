@@ -24,6 +24,7 @@ import {
   FactoryIcon,
   WrenchIcon,
   StethoscopeIcon,
+  ArrowLeftRightIcon,
 } from "lucide-react";
 
 const nav = [
@@ -40,6 +41,7 @@ const nav = [
   { href: "/products", label: "Products", icon: PackageIcon },
   { href: "/prices", label: "Prices", icon: TagIcon },
   { href: "/warehouses", label: "Warehouses", icon: WarehouseIcon },
+  { href: "/stock-entries", label: "Stock Entries", icon: ArrowLeftRightIcon },
   { href: "/companies", label: "Companies", icon: Building2Icon },
   { href: "/quotations", label: "Quotations", icon: FileTextIcon },
   { href: "/sales-orders", label: "Sales Orders", icon: ClipboardListIcon },
