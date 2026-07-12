@@ -29,6 +29,7 @@ import {
   MapPinIcon,
   HammerIcon,
   ReceiptIcon,
+  ScrollTextIcon,
 } from "lucide-react";
 
 const nav = [
@@ -53,6 +54,7 @@ const nav = [
   { href: "/quotations", label: "Quotations", icon: FileTextIcon },
   { href: "/sales-orders", label: "Sales Orders", icon: ClipboardListIcon },
   { href: "/sales-invoices", label: "Sales Invoices", icon: ReceiptIcon },
+  { href: "/purchase-orders", label: "Purchase Orders", icon: ScrollTextIcon },
   { href: "/purchases", label: "Purchases", icon: ShoppingCartIcon },
   { href: "/warranty", label: "Warranty", icon: ShieldCheckIcon },
   { href: "/banking", label: "Banking", icon: LandmarkIcon },
