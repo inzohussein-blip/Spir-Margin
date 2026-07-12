@@ -25,6 +25,7 @@ import {
   WrenchIcon,
   StethoscopeIcon,
   ArrowLeftRightIcon,
+  ClipboardCheckIcon,
 } from "lucide-react";
 
 const nav = [
@@ -38,6 +39,7 @@ const nav = [
   { href: "/kits", label: "Kits", icon: BoxesIcon },
   { href: "/boms", label: "BOMs", icon: FactoryIcon },
   { href: "/work-orders", label: "Work Orders", icon: WrenchIcon },
+  { href: "/quality-inspections", label: "Quality", icon: ClipboardCheckIcon },
   { href: "/products", label: "Products", icon: PackageIcon },
   { href: "/prices", label: "Prices", icon: TagIcon },
   { href: "/warehouses", label: "Warehouses", icon: WarehouseIcon },
