@@ -209,8 +209,15 @@ class Query implements PromiseLike<Result> {
     if (this.filters.length === 0) return "";
     const clauses = this.filters.map((f) => {
       if (f.op === "in") {
-        params.push(f.val);
-        return `${q(f.col)} = ANY($${params.length})`;
+        // Expand to `col IN ($1,$2,…)` — binding a JS array to a single param
+        // mis-serializes in PGlite and breaks for enum columns.
+        const arr = Array.isArray(f.val) ? f.val : [f.val];
+        if (arr.length === 0) return "false";
+        const placeholders = arr.map((v) => {
+          params.push(v);
+          return `$${params.length}`;
+        });
+        return `${q(f.col)} in (${placeholders.join(", ")})`;
       }
       if (f.op === "is") {
         return `${q(f.col)} is ${f.val === null ? "null" : f.val ? "true" : "false"}`;

@@ -19,36 +19,51 @@ function money(n: number) {
   }).format(n || 0);
 }
 
-// Renders a friendly notice if Supabase env vars are missing.
-function needsConfig() {
-  return (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
+interface InvoiceRow {
+  id: string;
+  invoice_no: string;
+  outstanding: number;
+  status: string;
+  labs: { name: string } | null;
+}
+interface PoRow {
+  id: string;
+  po_no: string;
+  total_amount: number;
+  status: string;
+  companies: { name: string } | null;
 }
 
 export default async function DashboardPage() {
-  if (needsConfig()) {
-    return (
-      <div className="max-w-xl rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-800">
-        <h1 className="text-lg font-bold">⚙️ Setup required</h1>
-        <p className="mt-2 text-sm">
-          Add <code>NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
-          <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> to your environment (see{" "}
-          <code>.env.example</code>), then run the migrations in{" "}
-          <code>supabase/migrations</code>.
-        </p>
-      </div>
-    );
-  }
-
   const supabase = createClient();
 
-  const [profitRes, labsRes, maintRes, kitsRes] = await Promise.all([
+  const [
+    profitRes,
+    labsRes,
+    maintRes,
+    kitsRes,
+    invRes,
+    poRes,
+    woRes,
+    repairRes,
+  ] = await Promise.all([
     supabase.from("v_profit_summary").select("*").single(),
     supabase.from("v_active_labs").select("*").order("name"),
     supabase.from("v_maintenance_alerts").select("*").limit(10),
     supabase.from("v_expiring_kits").select("*").limit(10),
+    supabase
+      .from("sales_invoices")
+      .select("id, invoice_no, outstanding, status, labs(name)")
+      .neq("status", "cancelled")
+      .gt("outstanding", 0)
+      .order("outstanding", { ascending: false }),
+    supabase
+      .from("purchase_orders")
+      .select("id, po_no, total_amount, status, companies:supplier_id(name)")
+      .in("status", ["draft", "submitted"])
+      .order("total_amount", { ascending: false }),
+    supabase.from("work_orders").select("status").in("status", ["draft", "in_process"]),
+    supabase.from("asset_repairs").select("status").eq("status", "pending"),
   ]);
 
   const profit = (profitRes.data as ProfitSummary) ?? {
@@ -60,6 +75,13 @@ export default async function DashboardPage() {
   const labs = (labsRes.data as ActiveLab[]) ?? [];
   const alerts = (maintRes.data as MaintenanceAlert[]) ?? [];
   const kits = (kitsRes.data as ExpiringKit[]) ?? [];
+  const invoices = (invRes.data as InvoiceRow[]) ?? [];
+  const pos = (poRes.data as PoRow[]) ?? [];
+  const openWorkOrders = (woRes.data as { status: string }[])?.length ?? 0;
+  const pendingRepairs = (repairRes.data as { status: string }[])?.length ?? 0;
+
+  const outstandingTotal = invoices.reduce((s, i) => s + Number(i.outstanding), 0);
+  const poTotal = pos.reduce((s, p) => s + Number(p.total_amount), 0);
 
   return (
     <div className="space-y-6">
@@ -101,6 +123,79 @@ export default async function DashboardPage() {
           hint="batches expiring ≤ 90 days"
           accent="red"
         />
+      </div>
+
+      {/* Operations KPI row */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="Outstanding Receivables"
+          value={money(outstandingTotal)}
+          hint={`${invoices.length} open invoice${invoices.length === 1 ? "" : "s"}`}
+          accent="amber"
+        />
+        <StatCard
+          label="Open Purchase Orders"
+          value={String(pos.length)}
+          hint={`value ${money(poTotal)}`}
+          accent="brand"
+        />
+        <StatCard
+          label="Active Work Orders"
+          value={String(openWorkOrders)}
+          hint="kit assembly in progress"
+          accent="green"
+        />
+        <StatCard
+          label="Pending Repairs"
+          value={String(pendingRepairs)}
+          hint="devices under repair"
+          accent="red"
+        />
+      </div>
+
+      {/* Receivables + open POs */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Panel title="Outstanding Invoices">
+          {invoices.length === 0 ? (
+            <EmptyRow text="No open receivables" />
+          ) : (
+            <ul className="divide-y divide-outline-gray-1">
+              {invoices.slice(0, 8).map((inv) => (
+                <li key={inv.id} className="flex items-center justify-between px-4 py-3 text-sm">
+                  <div>
+                    <div className="font-medium text-ink-gray-8">{inv.invoice_no}</div>
+                    <div className="text-xs text-ink-gray-4">{inv.labs?.name ?? "—"}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium text-ink-gray-8">{money(Number(inv.outstanding))}</div>
+                    <div className="text-xs text-ink-gray-4">{inv.status.replace("_", " ")}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+
+        <Panel title="Open Purchase Orders">
+          {pos.length === 0 ? (
+            <EmptyRow text="No open purchase orders" />
+          ) : (
+            <ul className="divide-y divide-outline-gray-1">
+              {pos.slice(0, 8).map((p) => (
+                <li key={p.id} className="flex items-center justify-between px-4 py-3 text-sm">
+                  <div>
+                    <div className="font-medium text-ink-gray-8">{p.po_no}</div>
+                    <div className="text-xs text-ink-gray-4">{p.companies?.name ?? "—"}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium text-ink-gray-8">{money(Number(p.total_amount))}</div>
+                    <div className="text-xs text-ink-gray-4">{p.status}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

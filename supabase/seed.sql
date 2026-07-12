@@ -87,3 +87,37 @@ on conflict do nothing;
 insert into bank_rule_conditions (rule_id, field, operator, value) values
     ('00000000-0000-0000-0000-0000000000c9', 'description', 'contains', 'BANK CHARGES')
 on conflict do nothing;
+
+-- Demo receivables + procurement (drives the dashboard operations panels) ----
+do $$
+declare v_lab uuid; v_prod uuid; v_inv uuid; v_sup uuid; v_po uuid;
+begin
+    select id into v_lab from labs where code = 'LAB-001';
+    select id into v_prod from products where product_type = 'kit' limit 1;
+    select id into v_sup from companies limit 1;
+
+    -- a partly-paid invoice -> shows under Outstanding Receivables
+    if v_lab is not null and v_prod is not null
+       and not exists (select 1 from sales_invoices where invoice_no = 'SI-2601') then
+        insert into sales_invoices (invoice_no, lab_id) values ('SI-2601', v_lab) returning id into v_inv;
+        insert into sales_invoice_items (invoice_id, product_id, qty, rate) values (v_inv, v_prod, 20, 130);
+        perform fn_submit_sales_invoice(v_inv);
+        perform fn_record_invoice_payment(v_inv, 1000);   -- 2600 billed, 1600 outstanding
+    end if;
+
+    -- an unpaid invoice
+    if v_lab is not null and v_prod is not null
+       and not exists (select 1 from sales_invoices where invoice_no = 'SI-2602') then
+        insert into sales_invoices (invoice_no, lab_id) values ('SI-2602', v_lab) returning id into v_inv;
+        insert into sales_invoice_items (invoice_id, product_id, qty, rate) values (v_inv, v_prod, 8, 130);
+        perform fn_submit_sales_invoice(v_inv);
+    end if;
+
+    -- a submitted purchase order -> shows under Open Purchase Orders
+    if v_sup is not null and v_prod is not null
+       and not exists (select 1 from purchase_orders where po_no = 'PO-2601') then
+        insert into purchase_orders (po_no, supplier_id) values ('PO-2601', v_sup) returning id into v_po;
+        insert into purchase_order_items (po_id, product_id, qty, rate) values (v_po, v_prod, 50, 80);
+        perform fn_submit_purchase_order(v_po);
+    end if;
+end $$;
