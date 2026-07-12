@@ -30,6 +30,7 @@ import {
   HammerIcon,
   ReceiptIcon,
   ScrollTextIcon,
+  PackagePlusIcon,
 } from "lucide-react";
 
 const nav = [
@@ -47,6 +48,7 @@ const nav = [
   { href: "/work-orders", label: "Work Orders", icon: WrenchIcon },
   { href: "/quality-inspections", label: "Quality", icon: ClipboardCheckIcon },
   { href: "/products", label: "Products", icon: PackageIcon },
+  { href: "/product-bundles", label: "Bundles", icon: PackagePlusIcon },
   { href: "/prices", label: "Prices", icon: TagIcon },
   { href: "/warehouses", label: "Warehouses", icon: WarehouseIcon },
   { href: "/stock-entries", label: "Stock Entries", icon: ArrowLeftRightIcon },
