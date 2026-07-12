@@ -32,6 +32,7 @@ import {
   ScrollTextIcon,
   PackagePlusIcon,
   PlugIcon,
+  CalendarClockIcon,
 } from "lucide-react";
 
 const nav = [
@@ -42,6 +43,7 @@ const nav = [
   { href: "/devices", label: "Devices", icon: MonitorIcon },
   { href: "/serials", label: "Serials", icon: HashIcon },
   { href: "/maintenance-visits", label: "Maintenance", icon: StethoscopeIcon },
+  { href: "/maintenance-schedules", label: "PM Schedules", icon: CalendarClockIcon },
   { href: "/asset-movements", label: "Movements", icon: MapPinIcon },
   { href: "/installation-notes", label: "Installations", icon: PlugIcon },
   { href: "/asset-repairs", label: "Repairs", icon: HammerIcon },
