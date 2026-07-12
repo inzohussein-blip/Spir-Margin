@@ -440,3 +440,36 @@ export async function importTransactions(
   revalidatePath("/banking");
   return { ok: true as const, inserted: count ?? payload.length };
 }
+
+/**
+ * Load the reconcile-workbench datasets (unreconciled transactions for an
+ * account + open payment entries). Runs server-side against the embedded DB so
+ * the client component needs no direct database client.
+ */
+export async function loadReconcileData(input: {
+  bankAccountId: string;
+  dateFrom?: string;
+  dateTo?: string;
+}) {
+  const supabase = createClient();
+  let tq = supabase
+    .from("bank_transactions")
+    .select("*")
+    .eq("bank_account_id", input.bankAccountId)
+    .neq("status", "reconciled")
+    .neq("status", "cancelled")
+    .order("date", { ascending: false });
+  if (input.dateFrom) tq = tq.gte("date", input.dateFrom);
+  if (input.dateTo) tq = tq.lte("date", input.dateTo);
+  const [{ data: t }, { data: p }] = await Promise.all([
+    tq,
+    supabase
+      .from("payment_entries")
+      .select(
+        "id, payment_type, party_name, paid_amount, received_amount, reference_no, posting_date, is_reconciled"
+      )
+      .eq("is_reconciled", false)
+      .order("posting_date", { ascending: false }),
+  ]);
+  return { txns: (t as unknown[]) ?? [], payments: (p as unknown[]) ?? [] };
+}

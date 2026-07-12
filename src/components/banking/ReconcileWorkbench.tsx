@@ -12,12 +12,12 @@ import {
   CheckCircleIcon,
   Loader2Icon,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import {
   reconcile,
   unreconcile,
   applyRulesForAccount,
   createVoucherAndReconcile,
+  loadReconcileData,
 } from "@/app/actions/banking";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -94,26 +94,11 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
 
   const load = useCallback(async () => {
     if (!selectedBank) return;
-    const supabase = createClient();
-    let tq = supabase
-      .from("bank_transactions")
-      .select("*")
-      .eq("bank_account_id", selectedBank.id)
-      .neq("status", "reconciled")
-      .neq("status", "cancelled")
-      .order("date", { ascending: false });
-    if (dateRange.from) tq = tq.gte("date", dateRange.from);
-    if (dateRange.to) tq = tq.lte("date", dateRange.to);
-    const [{ data: t }, { data: p }] = await Promise.all([
-      tq,
-      supabase
-        .from("payment_entries")
-        .select(
-          "id, payment_type, party_name, paid_amount, received_amount, reference_no, posting_date, is_reconciled"
-        )
-        .eq("is_reconciled", false)
-        .order("posting_date", { ascending: false }),
-    ]);
+    const { txns: t, payments: p } = await loadReconcileData({
+      bankAccountId: selectedBank.id,
+      dateFrom: dateRange.from || undefined,
+      dateTo: dateRange.to || undefined,
+    });
     setTxns((t as Txn[]) ?? []);
     setPayments((p as Payment[]) ?? []);
   }, [selectedBank, dateRange]);

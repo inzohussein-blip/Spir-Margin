@@ -5,8 +5,9 @@ labs, and managing spare parts and reagent kits** — re-imagined from
 [ERPNext](https://github.com/frappe/erpnext) without the weight of a full ERP.
 
 - **Framework:** Next.js 14 (App Router) + Tailwind CSS
-- **Database:** Supabase (PostgreSQL)
-- **Hosting:** Vercel
+- **Database:** embedded Postgres (PGlite) out of the box — no external service
+  needed; swappable for hosted Supabase (PostgreSQL)
+- **Hosting:** local / any Node server (Vercel with a hosted DB)
 
 ---
 
@@ -79,29 +80,43 @@ A bank-reconciliation module lives under `/banking`:
 Schema: `supabase/migrations/0007_banking.sql`, `0008_banking_logic.sql`,
 `0009_banking_rls.sql`.
 
-## Getting started
+## Getting started — no external database required
+
+The app ships with an **embedded Postgres** ([PGlite](https://pglite.dev), a
+WASM build of Postgres) that runs this project's own SQL migrations and
+`plpgsql` functions **in-process**. There is nothing to provision:
 
 ```bash
-# 1. Install deps
 npm install
-
-# 2. Configure Supabase
-cp .env.example .env.local   # fill in your project URL + anon key
-
-# 3. Apply the schema — run every file in supabase/migrations in order
-#    (0001 → 0009), via the Supabase SQL editor or the CLI:
-supabase db push             # or paste 0001..0009 in order in the SQL editor
-psql "$DATABASE_URL" -f supabase/seed.sql   # optional demo data
-
-# 4. Run
-npm run dev                  # http://localhost:3000
+npm run dev        # http://localhost:3000
 ```
 
-> **Connecting a Supabase project.** Create a dedicated project (keep it
-> separate from any unrelated app), then copy its **Project URL** and **anon
-> key** (Project Settings → API) into `.env.local` — and into the same two
-> Vercel environment variables for deployment. Apply migrations `0001`–`0009`
-> in order before first run.
+On first start it creates a local `./.pglite-data/` directory, applies every
+file in `supabase/migrations/` in order, and loads `supabase/seed.sql` for demo
+data. Rows persist across restarts. **Delete `./.pglite-data/` to reset** to a
+clean seeded state.
+
+- The data client lives in `src/lib/db/` and exposes the small supabase-js
+  surface the app uses (`.from(...).select()/insert()/update()/delete()`,
+  filters, embedded resources, and `.rpc()`), so pages and server actions are
+  unchanged. Swapping back to hosted Supabase is a one-file change in
+  `src/lib/supabase/server.ts`.
+- All business logic (kit-margin profit, lab active-status, invoicing,
+  work-order completion, etc.) runs as real Postgres functions/triggers — the
+  same SQL whether embedded or hosted.
+
+> **Persistence note.** PGlite writes to a local file, so it is ideal for local
+> development or a **persistent Node server**. On Vercel's ephemeral serverless
+> runtime those writes do not survive between invocations — point
+> `src/lib/supabase/server.ts` back at a hosted Postgres/Supabase for that
+> deployment target.
+
+### Optional: use a hosted Supabase project instead
+
+Create a dedicated project, copy its **Project URL** and **anon key** into
+`.env.local`, apply the files in `supabase/migrations/` in order (Supabase SQL
+editor or `supabase db push`), then restore the Supabase client in
+`src/lib/supabase/server.ts`.
 
 ## Deploy to Vercel
 

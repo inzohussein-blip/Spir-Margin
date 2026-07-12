@@ -9,6 +9,11 @@
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
+    // The data client (src/lib/db) returns dynamically-typed rows (like
+    // supabase-js's loose types), so `(data ?? []).map(row => …)` callbacks
+    // have no inferable element type. Relax implicit-any while keeping the
+    // rest of strict mode.
+    "noImplicitAny": false,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
