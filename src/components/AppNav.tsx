@@ -34,6 +34,7 @@ import {
   PlugIcon,
   CalendarClockIcon,
   LifeBuoyIcon,
+  FileSignatureIcon,
 } from "lucide-react";
 
 const nav = [
@@ -65,6 +66,7 @@ const nav = [
   { href: "/purchases", label: "Purchases", icon: ShoppingCartIcon },
   { href: "/warranty", label: "Warranty", icon: ShieldCheckIcon },
   { href: "/issues", label: "Support", icon: LifeBuoyIcon },
+  { href: "/contracts", label: "Contracts", icon: FileSignatureIcon },
   { href: "/banking", label: "Banking", icon: LandmarkIcon },
   { href: "/accounts", label: "Accounts", icon: BookOpenIcon },
   { href: "/currency", label: "Currency", icon: CoinsIcon },

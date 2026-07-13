@@ -147,3 +147,16 @@ begin
                 'open', 'High', 'Hardware', 'Device fails self-test intermittently.');
     end if;
 end $$;
+
+-- Demo service contract (drives the dashboard 'Expiring contracts' card) -----
+do $$
+declare v_lab uuid; v_dev uuid;
+begin
+    select id, (select id from devices where lab_id = labs.id limit 1)
+      into v_lab, v_dev from labs where code = 'LAB-001';
+    if v_lab is not null and not exists (select 1 from contracts where contract_no = 'AMC-2601') then
+        insert into contracts (contract_no, lab_id, device_id, status, start_date, end_date, contract_value, signee, signed_on, contract_terms)
+        values ('AMC-2601', v_lab, v_dev, 'active', current_date - 305, current_date + 30, 2400,
+                'Dr. Sara', current_date - 305, 'Annual maintenance: 2 preventive visits + breakdown support.');
+    end if;
+end $$;

@@ -60,6 +60,7 @@ export default async function DashboardPage() {
     woRes,
     repairRes,
     issuesRes,
+    contractsRes,
     pmRes,
   ] = await Promise.all([
     supabase.from("v_profit_summary").select("*").single(),
@@ -80,6 +81,7 @@ export default async function DashboardPage() {
     supabase.from("work_orders").select("status").in("status", ["draft", "in_process"]),
     supabase.from("asset_repairs").select("status").eq("status", "pending"),
     supabase.from("issues").select("status").in("status", ["open", "replied", "on_hold"]),
+    supabase.from("v_expiring_contracts").select("*").limit(10),
     // upcoming preventive-maintenance visits (next 60 days, not yet done)
     supabase
       .from("maintenance_schedule_details")
@@ -107,6 +109,9 @@ export default async function DashboardPage() {
   const openWorkOrders = (woRes.data as { status: string }[])?.length ?? 0;
   const pendingRepairs = (repairRes.data as { status: string }[])?.length ?? 0;
   const openIssues = (issuesRes.data as { status: string }[])?.length ?? 0;
+  const expiringContracts =
+    (contractsRes.data as { id: string; contract_no: string; end_date: string; days_left: number; lab_name: string | null; asset_code: string | null }[]) ??
+    [];
   const pmVisits = (pmRes.data as PmVisitRow[]) ?? [];
   const daysUntil = (d: string) =>
     Math.round((new Date(d).getTime() - Date.now()) / 86400_000);
@@ -345,6 +350,48 @@ export default async function DashboardPage() {
                     </tr>
                   );
                 })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
+
+      {/* Expiring service contracts — full width */}
+      <Panel title="Expiring Contracts (AMC · ≤ 60 days)">
+        {expiringContracts.length === 0 ? (
+          <EmptyRow text="No contracts expiring in the next 60 days" />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase text-ink-gray-4">
+                  <th className="px-4 py-2">Contract</th>
+                  <th className="px-4 py-2">Lab</th>
+                  <th className="px-4 py-2">Device</th>
+                  <th className="px-4 py-2">Ends</th>
+                  <th className="px-4 py-2">In</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-gray-1">
+                {expiringContracts.map((c) => (
+                  <tr key={c.id}>
+                    <td className="px-4 py-2 font-medium">
+                      <Link href="/contracts" className="text-brand hover:underline">{c.contract_no}</Link>
+                    </td>
+                    <td className="px-4 py-2 text-ink-gray-5">{c.lab_name ?? "—"}</td>
+                    <td className="px-4 py-2 text-ink-gray-5">{c.asset_code ?? "—"}</td>
+                    <td className="px-4 py-2 text-ink-gray-5">{c.end_date}</td>
+                    <td className="px-4 py-2">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          Number(c.days_left) <= 14 ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+                        }`}
+                      >
+                        {Number(c.days_left)}d
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
