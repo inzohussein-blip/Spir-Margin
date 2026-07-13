@@ -175,3 +175,15 @@ begin
         if v_s2 is not null then insert into rfq_suppliers (rfq_id, supplier_id) values (v_rfq, v_s2); end if;
     end if;
 end $$;
+
+-- Demo appointment ----------------------------------------------------------
+do $$
+declare v_lab uuid; v_dev uuid;
+begin
+    select id, (select id from devices where lab_id = labs.id limit 1)
+      into v_lab, v_dev from labs where code = 'LAB-001';
+    if v_lab is not null and not exists (select 1 from appointments where appointment_no = 'APT-2601') then
+        insert into appointments (appointment_no, lab_id, device_id, purpose, scheduled_time, status, contact_name)
+        values ('APT-2601', v_lab, v_dev, 'service', now() + interval '3 days', 'confirmed', 'Dr. Sara');
+    end if;
+end $$;
