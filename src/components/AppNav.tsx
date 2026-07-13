@@ -33,6 +33,7 @@ import {
   PackagePlusIcon,
   PlugIcon,
   CalendarClockIcon,
+  LifeBuoyIcon,
 } from "lucide-react";
 
 const nav = [
@@ -63,6 +64,7 @@ const nav = [
   { href: "/purchase-orders", label: "Purchase Orders", icon: ScrollTextIcon },
   { href: "/purchases", label: "Purchases", icon: ShoppingCartIcon },
   { href: "/warranty", label: "Warranty", icon: ShieldCheckIcon },
+  { href: "/issues", label: "Support", icon: LifeBuoyIcon },
   { href: "/banking", label: "Banking", icon: LandmarkIcon },
   { href: "/accounts", label: "Accounts", icon: BookOpenIcon },
   { href: "/currency", label: "Currency", icon: CoinsIcon },

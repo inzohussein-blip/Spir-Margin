@@ -48,3 +48,48 @@ export async function resolveWarrantyClaimForm(fd: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath("/warranty");
 }
+
+/** Create a support issue (ported from ERPNext "Issue"). */
+export async function createIssue(fd: FormData) {
+  const supabase = createClient();
+  const subject = str(fd, "subject");
+  if (!subject) throw new Error("Subject is required");
+  const { error } = await supabase.from("issues").insert({
+    issue_no: str(fd, "issue_no"),
+    subject,
+    lab_id: str(fd, "lab_id"),
+    device_id: str(fd, "device_id"),
+    raised_by: str(fd, "raised_by"),
+    priority: str(fd, "priority"),
+    issue_type: str(fd, "issue_type"),
+    description: str(fd, "description"),
+    opening_date: str(fd, "opening_date") ?? new Date().toISOString().slice(0, 10),
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/issues");
+  redirect("/issues");
+}
+
+/** Change an issue's status from the list (stamps resolved_on when closed out). */
+export async function setIssueStatusForm(fd: FormData) {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("fn_set_issue_status", {
+    p_id: String(fd.get("id")),
+    p_status: String(fd.get("status")),
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/issues");
+}
+
+/** Save resolution details on an issue (from the detail page). */
+export async function resolveIssueForm(fd: FormData) {
+  const supabase = createClient();
+  const id = String(fd.get("id"));
+  await supabase
+    .from("issues")
+    .update({ resolution_details: str(fd, "resolution_details"), updated_at: new Date().toISOString() })
+    .eq("id", id);
+  await supabase.rpc("fn_set_issue_status", { p_id: id, p_status: "resolved" });
+  revalidatePath("/issues");
+  redirect("/issues");
+}

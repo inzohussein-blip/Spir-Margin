@@ -134,3 +134,16 @@ begin
         perform fn_generate_maintenance_schedule(v_sched);
     end if;
 end $$;
+
+-- Demo support issue -------------------------------------------------------
+do $$
+declare v_lab uuid; v_dev uuid;
+begin
+    select id, (select id from devices where lab_id = labs.id limit 1)
+      into v_lab, v_dev from labs where code = 'LAB-001';
+    if v_lab is not null and not exists (select 1 from issues where issue_no = 'ISS-0001') then
+        insert into issues (issue_no, subject, lab_id, device_id, status, priority, issue_type, description)
+        values ('ISS-0001', 'Analyzer shows error E-14 on startup', v_lab, v_dev,
+                'open', 'High', 'Hardware', 'Device fails self-test intermittently.');
+    end if;
+end $$;

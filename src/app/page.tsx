@@ -59,6 +59,7 @@ export default async function DashboardPage() {
     poRes,
     woRes,
     repairRes,
+    issuesRes,
     pmRes,
   ] = await Promise.all([
     supabase.from("v_profit_summary").select("*").single(),
@@ -78,6 +79,7 @@ export default async function DashboardPage() {
       .order("total_amount", { ascending: false }),
     supabase.from("work_orders").select("status").in("status", ["draft", "in_process"]),
     supabase.from("asset_repairs").select("status").eq("status", "pending"),
+    supabase.from("issues").select("status").in("status", ["open", "replied", "on_hold"]),
     // upcoming preventive-maintenance visits (next 60 days, not yet done)
     supabase
       .from("maintenance_schedule_details")
@@ -104,6 +106,7 @@ export default async function DashboardPage() {
   const pos = (poRes.data as PoRow[]) ?? [];
   const openWorkOrders = (woRes.data as { status: string }[])?.length ?? 0;
   const pendingRepairs = (repairRes.data as { status: string }[])?.length ?? 0;
+  const openIssues = (issuesRes.data as { status: string }[])?.length ?? 0;
   const pmVisits = (pmRes.data as PmVisitRow[]) ?? [];
   const daysUntil = (d: string) =>
     Math.round((new Date(d).getTime() - Date.now()) / 86400_000);
@@ -178,6 +181,12 @@ export default async function DashboardPage() {
           value={String(pendingRepairs)}
           hint="devices under repair"
           accent="red"
+        />
+        <StatCard
+          label="Open Issues"
+          value={String(openIssues)}
+          hint="support tickets awaiting action"
+          accent="amber"
         />
       </div>
 
