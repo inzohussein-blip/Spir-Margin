@@ -160,3 +160,18 @@ begin
                 'Dr. Sara', current_date - 305, 'Annual maintenance: 2 preventive visits + breakdown support.');
     end if;
 end $$;
+
+-- Demo RFQ with two suppliers -----------------------------------------------
+do $$
+declare v_prod uuid; v_rfq uuid; v_s1 uuid; v_s2 uuid;
+begin
+    select id into v_prod from products where product_type='kit' limit 1;
+    select id into v_s1 from companies order by name limit 1;
+    select id into v_s2 from companies order by name offset 1 limit 1;
+    if v_prod is not null and v_s1 is not null and not exists (select 1 from rfqs where rfq_no='RFQ-2601') then
+        insert into rfqs (rfq_no, status, message) values ('RFQ-2601','submitted','Please quote your best price + lead time.') returning id into v_rfq;
+        insert into rfq_items (rfq_id, product_id, qty) values (v_rfq, v_prod, 100);
+        insert into rfq_suppliers (rfq_id, supplier_id) values (v_rfq, v_s1);
+        if v_s2 is not null then insert into rfq_suppliers (rfq_id, supplier_id) values (v_rfq, v_s2); end if;
+    end if;
+end $$;
