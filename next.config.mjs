@@ -8,7 +8,7 @@ const nextConfig = {
   // PGlite ships a WASM Postgres; keep it (and its assets) out of the bundler
   // so it loads as a normal Node dependency at runtime.
   experimental: {
-    serverComponentsExternalPackages: ["@electric-sql/pglite"],
+    serverComponentsExternalPackages: ["@electric-sql/pglite", "pg"],
   },
 };
 export default nextConfig;

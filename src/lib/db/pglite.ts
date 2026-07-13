@@ -5,39 +5,49 @@ import fs from "node:fs";
 import path from "node:path";
 
 /**
- * Embedded Postgres (PGlite / WASM) that runs the project's own SQL migrations
- * and plpgsql functions in-process — no external Supabase/Postgres needed.
+ * Data-source layer. Two interchangeable backends behind one `Db` interface:
  *
- * The instance is a singleton, persisted to a local data directory so rows
- * survive restarts. Delete that directory to reset to a clean seeded state.
+ *   • Embedded Postgres (PGlite/WASM) — the default. Runs this project's own
+ *     SQL migrations + plpgsql functions in-process, persisted to a local data
+ *     directory. Zero setup; ideal for local dev / a persistent Node server.
+ *
+ *   • Hosted Postgres (node-postgres) — used when DATABASE_URL is set (e.g. a
+ *     Supabase/Neon connection string for a Vercel deployment). Migrations are
+ *     assumed already applied to that database.
+ *
+ * Both expose `query(sql, params) -> { rows, affectedRows }`, and date/time
+ * types are returned as strings (matching PostgREST) so pages render them.
  */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+export interface Db {
+  query<T = any>(sql: string, params?: unknown[]): Promise<{ rows: T[]; affectedRows?: number }>;
+}
+
+export interface FkMeta {
+  outgoing: Record<string, { column: string; ftable: string }[]>;
+  columns: Record<string, Set<string>>;
+  tables: Set<string>;
+}
 
 const DATA_DIR = process.env.PGLITE_DATA_DIR || path.join(process.cwd(), ".pglite-data");
 const MIGRATIONS_DIR = path.join(process.cwd(), "supabase", "migrations");
 const SEED_FILE = path.join(process.cwd(), "supabase", "seed.sql");
 
-export interface FkMeta {
-  // outgoing[table] = [{ column, ftable }]  (this table references ftable via column)
-  outgoing: Record<string, { column: string; ftable: string }[]>;
-  // columns[table] = Set of column names
-  columns: Record<string, Set<string>>;
-  tables: Set<string>;
-}
+// date, time, timestamp, timestamptz, timetz -> keep as text (not JS Date)
+const DATE_OIDS = [1082, 1083, 1114, 1184, 1266];
+const asText = (v: string) => v;
 
-let instance: PGlite | null = null;
 let fkMeta: FkMeta | null = null;
-let bootPromise: Promise<{ db: PGlite; meta: FkMeta }> | null = null;
+let dbRef: Db | null = null;
+let bootPromise: Promise<{ db: Db; meta: FkMeta }> | null = null;
 
-async function introspect(db: PGlite): Promise<FkMeta> {
+async function introspect(db: Db): Promise<FkMeta> {
   const cols = await db.query<{ table_name: string; column_name: string }>(
-    `select table_name, column_name from information_schema.columns
-     where table_schema = 'public'`
+    `select table_name, column_name from information_schema.columns where table_schema = 'public'`
   );
-  const fks = await db.query<{
-    table_name: string;
-    column_name: string;
-    foreign_table_name: string;
-  }>(
+  const fks = await db.query<{ table_name: string; column_name: string; foreign_table_name: string }>(
     `select tc.table_name, kcu.column_name, ccu.table_name as foreign_table_name
      from information_schema.table_constraints tc
      join information_schema.key_column_usage kcu
@@ -52,73 +62,72 @@ async function introspect(db: PGlite): Promise<FkMeta> {
     (meta.columns[r.table_name] ??= new Set()).add(r.column_name);
   }
   for (const r of fks.rows) {
-    (meta.outgoing[r.table_name] ??= []).push({
-      column: r.column_name,
-      ftable: r.foreign_table_name,
-    });
+    (meta.outgoing[r.table_name] ??= []).push({ column: r.column_name, ftable: r.foreign_table_name });
   }
   return meta;
 }
 
-// Return date/time types as their Postgres text form (strings) instead of JS
-// Date objects, matching what supabase-js/PostgREST hands the app (pages render
-// these values directly, and a Date object is not a valid React child).
-const asText = (v: string) => v;
-const DATE_OIDS = {
-  1082: asText, // date
-  1083: asText, // time
-  1114: asText, // timestamp
-  1184: asText, // timestamptz
-  1266: asText, // timetz
-};
+// ---- embedded PGlite backend ----------------------------------------------
 
-async function bootstrap(): Promise<{ db: PGlite; meta: FkMeta }> {
-  const db = new PGlite({
+async function bootPglite(): Promise<Db> {
+  const pg = new PGlite({
     dataDir: DATA_DIR,
     extensions: { pgcrypto },
-    parsers: DATE_OIDS,
+    parsers: Object.fromEntries(DATE_OIDS.map((oid) => [oid, asText])),
   });
-  await db.waitReady;
+  await pg.waitReady;
 
   // RLS policies reference the "authenticated" role — it must exist. Queries
   // run as the bootstrap superuser, so RLS is bypassed (single-tenant app).
-  await db.exec(`do $$ begin
-    if not exists (select 1 from pg_roles where rolname = 'authenticated') then
-      create role authenticated;
-    end if;
+  await pg.exec(`do $$ begin
+    if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if;
   end $$;`);
 
-  const already = await db.query<{ n: number }>(
-    `select count(*)::int as n from information_schema.tables
-     where table_schema = 'public' and table_name = '_spir_meta'`
+  const already = await pg.query<{ n: number }>(
+    `select count(*)::int as n from information_schema.tables where table_schema='public' and table_name='_spir_meta'`
   );
-  const bootstrapped = (already.rows[0]?.n ?? 0) > 0;
-
-  if (!bootstrapped) {
-    const files = fs
-      .readdirSync(MIGRATIONS_DIR)
-      .filter((f) => f.endsWith(".sql"))
-      .sort();
-    for (const f of files) {
-      const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, f), "utf8");
-      await db.exec(sql);
+  if ((already.rows[0]?.n ?? 0) === 0) {
+    for (const f of fs.readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith(".sql")).sort()) {
+      await pg.exec(fs.readFileSync(path.join(MIGRATIONS_DIR, f), "utf8"));
     }
-    if (fs.existsSync(SEED_FILE)) {
-      await db.exec(fs.readFileSync(SEED_FILE, "utf8"));
-    }
-    await db.exec(`create table if not exists _spir_meta (k text primary key);
+    if (fs.existsSync(SEED_FILE)) await pg.exec(fs.readFileSync(SEED_FILE, "utf8"));
+    await pg.exec(`create table if not exists _spir_meta (k text primary key);
       insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;`);
   }
+  return pg as unknown as Db;
+}
 
+// ---- hosted Postgres backend (node-postgres) ------------------------------
+
+async function bootPostgres(url: string): Promise<Db> {
+  const pgLib = (await import("pg")).default as typeof import("pg");
+  // return date/time types as strings, matching PGlite + PostgREST
+  for (const oid of DATE_OIDS) pgLib.types.setTypeParser(oid, asText);
+  const pool = new pgLib.Pool({
+    connectionString: url,
+    ssl: process.env.PGSSL === "disable" ? undefined : { rejectUnauthorized: false },
+    max: Number(process.env.PGPOOL_MAX ?? 5),
+  });
+  return {
+    async query<T = any>(sql: string, params: unknown[] = []) {
+      const r = await pool.query(sql, params as any[]);
+      return { rows: r.rows as T[], affectedRows: r.rowCount ?? undefined };
+    },
+  };
+}
+
+async function bootstrap(): Promise<{ db: Db; meta: FkMeta }> {
+  const url = process.env.DATABASE_URL;
+  const db = url ? await bootPostgres(url) : await bootPglite();
   const meta = await introspect(db);
   return { db, meta };
 }
 
-export async function getDb(): Promise<{ db: PGlite; meta: FkMeta }> {
-  if (instance && fkMeta) return { db: instance, meta: fkMeta };
+export async function getDb(): Promise<{ db: Db; meta: FkMeta }> {
+  if (dbRef && fkMeta) return { db: dbRef, meta: fkMeta };
   bootPromise ??= bootstrap();
   const res = await bootPromise;
-  instance = res.db;
+  dbRef = res.db;
   fkMeta = res.meta;
   return res;
 }

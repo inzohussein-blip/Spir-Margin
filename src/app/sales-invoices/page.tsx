@@ -76,7 +76,9 @@ export default async function SalesInvoicesPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((inv) => (
                   <tr key={inv.id}>
-                    <td className="px-4 py-2 font-medium">{inv.invoice_no}</td>
+                    <td className="px-4 py-2 font-medium">
+                      <Link href={`/sales-invoices/${inv.id}`} className="text-brand hover:underline">{inv.invoice_no}</Link>
+                    </td>
                     <td className="px-4 py-2">{inv.labs?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{inv.posting_date}</td>
                     <td className="px-4 py-2">{Number(inv.total_amount).toLocaleString()}</td>

@@ -118,13 +118,24 @@ Create a dedicated project, copy its **Project URL** and **anon key** into
 editor or `supabase db push`), then restore the Supabase client in
 `src/lib/supabase/server.ts`.
 
-## Deploy to Vercel
+## Deploy to Vercel (with a hosted database)
 
-1. Import the repository in Vercel. The Next.js app is at the **repository
-   root**, so no Root Directory setting is required — Vercel auto-detects it.
-2. Framework Preset: **Next.js**.
-3. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (and
-   `SUPABASE_SERVICE_ROLE_KEY` for privileged actions) as project env vars.
+Vercel's serverless runtime is ephemeral, so the embedded PGlite file would not
+persist between invocations. For a deployment, point the app at a **hosted
+Postgres** — the code automatically uses it whenever `DATABASE_URL` is set
+(via `node-postgres`); no code change required.
+
+1. **Create a Postgres database** (Supabase, Neon, RDS, …) and grab its
+   connection string.
+2. **Apply the schema** — run every file in `supabase/migrations/` in order
+   against that database (Supabase SQL editor, `psql`, or `supabase db push`).
+   Optionally load `supabase/seed.sql` for demo data.
+3. **Import the repo in Vercel.** The Next.js app is at the **repository root**
+   (no Root Directory setting needed); Framework Preset **Next.js**.
+4. **Set the env var** `DATABASE_URL` to your connection string. Optional:
+   `PGSSL=disable` (local/no-TLS), `PGPOOL_MAX` (pool size).
+
+Locally, leave `DATABASE_URL` unset to keep using embedded PGlite.
 
 ---
 

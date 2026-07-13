@@ -34,8 +34,21 @@ interface PoRow {
   companies: { name: string } | null;
 }
 
+interface PmVisitRow {
+  id: string;
+  scheduled_date: string;
+  maintenance_schedules: {
+    schedule_no: string;
+    devices: { asset_code: string; products: { name: string } | null } | null;
+    labs: { name: string } | null;
+  } | null;
+}
+
 export default async function DashboardPage() {
   const supabase = createClient();
+
+  const today = new Date().toISOString().slice(0, 10);
+  const horizon = new Date(Date.now() + 60 * 86400_000).toISOString().slice(0, 10);
 
   const [
     profitRes,
@@ -46,6 +59,7 @@ export default async function DashboardPage() {
     poRes,
     woRes,
     repairRes,
+    pmRes,
   ] = await Promise.all([
     supabase.from("v_profit_summary").select("*").single(),
     supabase.from("v_active_labs").select("*").order("name"),
@@ -64,6 +78,17 @@ export default async function DashboardPage() {
       .order("total_amount", { ascending: false }),
     supabase.from("work_orders").select("status").in("status", ["draft", "in_process"]),
     supabase.from("asset_repairs").select("status").eq("status", "pending"),
+    // upcoming preventive-maintenance visits (next 60 days, not yet done)
+    supabase
+      .from("maintenance_schedule_details")
+      .select(
+        "id, scheduled_date, maintenance_schedules(schedule_no, devices(asset_code, products(name)), labs(name))"
+      )
+      .eq("completion_status", "pending")
+      .gte("scheduled_date", today)
+      .lte("scheduled_date", horizon)
+      .order("scheduled_date", { ascending: true })
+      .limit(12),
   ]);
 
   const profit = (profitRes.data as ProfitSummary) ?? {
@@ -79,6 +104,9 @@ export default async function DashboardPage() {
   const pos = (poRes.data as PoRow[]) ?? [];
   const openWorkOrders = (woRes.data as { status: string }[])?.length ?? 0;
   const pendingRepairs = (repairRes.data as { status: string }[])?.length ?? 0;
+  const pmVisits = (pmRes.data as PmVisitRow[]) ?? [];
+  const daysUntil = (d: string) =>
+    Math.round((new Date(d).getTime() - Date.now()) / 86400_000);
 
   const outstandingTotal = invoices.reduce((s, i) => s + Number(i.outstanding), 0);
   const poTotal = pos.reduce((s, p) => s + Number(p.total_amount), 0);
@@ -264,6 +292,55 @@ export default async function DashboardPage() {
           )}
         </Panel>
       </div>
+
+      {/* Upcoming preventive maintenance — full width */}
+      <Panel title="Upcoming Maintenance (PM Schedule · ≤ 60 days)">
+        {pmVisits.length === 0 ? (
+          <EmptyRow text="No scheduled visits in the next 60 days" />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase text-ink-gray-4">
+                  <th className="px-4 py-2">Due</th>
+                  <th className="px-4 py-2">Device</th>
+                  <th className="px-4 py-2">Lab</th>
+                  <th className="px-4 py-2">Schedule</th>
+                  <th className="px-4 py-2">In</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-gray-1">
+                {pmVisits.map((v) => {
+                  const sc = v.maintenance_schedules;
+                  const d = daysUntil(v.scheduled_date);
+                  return (
+                    <tr key={v.id}>
+                      <td className="px-4 py-2 font-medium">{v.scheduled_date}</td>
+                      <td className="px-4 py-2">
+                        {sc?.devices?.asset_code ?? "—"}
+                        {sc?.devices?.products?.name ? (
+                          <span className="text-ink-gray-4"> · {sc.devices.products.name}</span>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-2 text-ink-gray-5">{sc?.labs?.name ?? "—"}</td>
+                      <td className="px-4 py-2 text-ink-gray-5">{sc?.schedule_no ?? "—"}</td>
+                      <td className="px-4 py-2">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                            d <= 7 ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+                          }`}
+                        >
+                          {d}d
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
 
       {/* Expiring kits — full width */}
       <Panel title="Kits Near Expiry (≤ 90 days)">

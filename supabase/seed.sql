@@ -121,3 +121,16 @@ begin
         perform fn_submit_purchase_order(v_po);
     end if;
 end $$;
+
+-- Demo preventive-maintenance schedule (drives the dashboard PM panel) -------
+do $$
+declare v_dev uuid; v_lab uuid; v_sched uuid;
+begin
+    select id, lab_id into v_dev, v_lab from devices order by asset_code limit 1;
+    if v_dev is not null and not exists (select 1 from maintenance_schedules where schedule_no = 'MS-DEMO-1') then
+        insert into maintenance_schedules (schedule_no, lab_id, device_id, periodicity, start_date, no_of_visits)
+        values ('MS-DEMO-1', v_lab, v_dev, 'monthly', current_date + 10, 6)
+        returning id into v_sched;
+        perform fn_generate_maintenance_schedule(v_sched);
+    end if;
+end $$;

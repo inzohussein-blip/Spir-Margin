@@ -74,7 +74,9 @@ export default async function PurchaseOrdersPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((o) => (
                   <tr key={o.id}>
-                    <td className="px-4 py-2 font-medium">{o.po_no}</td>
+                    <td className="px-4 py-2 font-medium">
+                      <Link href={`/purchase-orders/${o.id}`} className="text-brand hover:underline">{o.po_no}</Link>
+                    </td>
                     <td className="px-4 py-2">{o.companies?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{o.transaction_date}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{o.purchase_order_items?.length ?? 0}</td>
