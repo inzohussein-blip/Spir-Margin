@@ -205,3 +205,6 @@ begin
             (v_team, 'Annual calibration', 'calibration', 'Yearly', current_date, 'planned');
     end if;
 end $$;
+
+-- Demo credit limit (LAB-001 has invoices ~2640 outstanding; set a low limit) -
+update labs set credit_limit = 2000 where code = 'LAB-001';

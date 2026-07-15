@@ -37,6 +37,7 @@ import {
   FileSignatureIcon,
   CalendarDaysIcon,
   UsersIcon,
+  CreditCardIcon,
 } from "lucide-react";
 
 const nav = [
@@ -65,6 +66,7 @@ const nav = [
   { href: "/quotations", label: "Quotations", icon: FileTextIcon },
   { href: "/sales-orders", label: "Sales Orders", icon: ClipboardListIcon },
   { href: "/sales-invoices", label: "Sales Invoices", icon: ReceiptIcon },
+  { href: "/credit-limits", label: "Credit Limits", icon: CreditCardIcon },
   { href: "/rfqs", label: "RFQs", icon: FileTextIcon },
   { href: "/purchase-orders", label: "Purchase Orders", icon: ScrollTextIcon },
   { href: "/purchases", label: "Purchases", icon: ShoppingCartIcon },
