@@ -7,11 +7,11 @@ in **features** and **look/design**, and exactly what was carried over vs. delib
 controllers in Python, the Desk UI in JS, reports, print formats, workspaces, patches, tests).
 Spir-Margin is a **lightweight, domain-focused** re-implementation for medical-device sales, lab
 tracking, spare parts and reagent kits. It re-implements the **domain-relevant subset natively**
-(Next.js + Postgres) — **~56 DocTypes across 96 tables, 51 migrations, 106 routes** — and wraps it in
+(Next.js + Postgres) — **~60 DocTypes across 101 tables, 55 migrations, 113 routes** — and wraps it in
 an **ERPNext-style "Desk" UI**. It is *not* a 1:1 clone of all of ERPNext, by design. The full ERPNext
 source stays public upstream for anything not carried over.
 
-Snapshot: 51 migrations · 96 tables · 106 routes · verified running on embedded Postgres (PGlite).
+Snapshot: 55 migrations · 101 tables · 113 routes · verified running on embedded Postgres (PGlite).
 
 ---
 
@@ -29,8 +29,9 @@ Snapshot: 51 migrations · 96 tables · 106 routes · verified running on embedd
 | Report view / print formats / desk customization | ➖ not reproduced (Frappe-framework features) |
 
 *List chrome is applied to the primary transactional lists (labs, devices, kits, products, contracts,
-appointments, issues, sales-orders, quotations, sales-invoices, purchase-orders, opportunities,
-work-orders); the remaining lists share the same Espresso card styling.*
+appointments, issues, sales-orders, quotations, sales-invoices, purchase-orders, purchase-receipts,
+payment-requests, blanket-orders, stock-balance, opportunities, work-orders); the remaining lists share
+the same Espresso card styling.*
 
 ---
 
@@ -57,16 +58,18 @@ Legend: ✅ ported · ➖ intentionally excluded (out of scope for a lightweight
 | Product Bundle | ✅ | 0041 · `/product-bundles` |
 | Installation Note | ✅ | 0042 · `/installation-notes` |
 | Sales Person / Partner | ✅ | 0031 · `/sales-team` |
-| Blanket Order, SMS Center, Party Specific Item | ➖ | secondary, out of scope |
+| Blanket Order (+ item, draw-down) | ✅ | 0056 · `/blanket-orders` |
+| SMS Center, Party Specific Item | ➖ | secondary, out of scope |
 
 ### Buying
 | Supplier → **Company** | ✅ | 0001 · `/companies` |
 | Purchase Order (+ item) | ✅ | 0040 · `/purchase-orders` (+ `[id]`) |
 | Purchase Invoice (+ item) | ✅ | 0010 · `/purchases` |
+| Purchase Receipt (+ item, receive to stock) | ✅ | 0054 · `/purchase-receipts` |
 | Supplier Quotation (+ item) | ✅ | 0030 · `/supplier-quotations` |
 | Request for Quotation (+ item, + supplier) | ✅ | 0047 · `/rfqs` (+ `[id]`) |
 | Payment Term | ✅ | 0010 · `/payment-terms` |
-| Purchase Receipt, Supplier Scorecard, RFQ portal | ➖ | receiving covered by Purchase Invoice; scorecard out of scope |
+| Supplier Scorecard, RFQ portal | ➖ | scorecard/portal out of scope |
 
 ### Stock
 | Item → **Product** (+ Brand, Item Group, UOM) | ✅ | 0001 · `/products` |
@@ -79,6 +82,7 @@ Legend: ✅ ported · ➖ intentionally excluded (out of scope for a lightweight
 | Stock Reconciliation (+ item) | ✅ | 0016 · `/stock-reconciliation` |
 | Quality Inspection (+ reading) | ✅ | 0036 · `/quality-inspections` |
 | Item Price / Price List | ✅ | 0011-0014 · `/prices` |
+| Stock Balance (report: qty + valuation per product/warehouse) | ✅ | 0053 · `/stock-balance` |
 | Item Variant/Attribute, Landed Cost, Pick List, Shipment, Bin/Stock Ledger, Packing, Delivery Trip | ➖ | ERP-heavy stock internals, out of scope |
 
 ### Manufacturing
@@ -108,6 +112,7 @@ Legend: ✅ ported · ➖ intentionally excluded (out of scope for a lightweight
 | Journal Entry (+ account) | ✅ | 0023 · `/journal-entries` |
 | Cost Center | ✅ | 0024 · `/cost-centers` |
 | Payment Entry | ✅ | 0007-0009 (banking) |
+| Payment Request (against a Sales Invoice) | ✅ | 0055 · `/payment-requests` |
 | Bank Account / Bank Transaction / Reconciliation (Banking app) | ✅ | 0007-0009 · `/banking` |
 | Currency Exchange | ✅ | 0025-0026 · `/currency` |
 | Tax Category / Taxes & Charges Template | ✅ | 0032 · `/taxes` |
@@ -129,8 +134,9 @@ re-expressed as Postgres functions/triggers and React pages where relevant.
 
 ## Bottom line
 - **Domain features:** the medical-device / lab / kit / spare-part / reagent workflow is covered
-  end-to-end (procure → receive → QC → install/move → maintain → sell → invoice → collect), plus CRM,
-  banking reconciliation and light accounting.
+  end-to-end — procure (PO / RFQ / blanket order) → **receive (Purchase Receipt → stock)** → QC →
+  install/move → maintain → sell → invoice → **collect (Payment Request → invoice ledger)** — plus CRM,
+  a Stock Balance report, banking reconciliation and light accounting.
 - **Look & design:** an ERPNext-style Desk (workspaces, awesomebar, list/form shells, status
   indicators) on Frappe's own Espresso tokens.
 - **Not carried over (by design):** the ERP-heavy modules (deep accounting, depreciation, shop-floor
