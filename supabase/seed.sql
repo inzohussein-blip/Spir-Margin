@@ -219,3 +219,18 @@ begin
         values ('Bulk kit 10%', v_prod, 50, 10);
     end if;
 end $$;
+
+-- Demo purchase receipt (received into stock) --------------------------------
+do $$
+declare v_sup uuid; v_prod uuid; v_wh uuid; v_r uuid;
+begin
+    select id into v_sup from companies limit 1;
+    select id into v_prod from products where product_type='kit' limit 1;
+    select id into v_wh from warehouses limit 1;
+    if v_prod is not null and not exists (select 1 from purchase_receipts where receipt_no='PR-2601') then
+        insert into purchase_receipts (receipt_no, supplier_id) values ('PR-2601', v_sup) returning id into v_r;
+        insert into purchase_receipt_items (receipt_id, product_id, qty, rate, warehouse_id, batch_no, expiry_date)
+        values (v_r, v_prod, 40, 42, v_wh, 'B-PR-2601', current_date + 200);
+        perform fn_submit_purchase_receipt(v_r);
+    end if;
+end $$;

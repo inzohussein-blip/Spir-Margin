@@ -33,6 +33,7 @@ export const navGroups: NavGroup[] = [
     { href: "/companies", label: "Suppliers", icon: Building2Icon },
     { href: "/rfqs", label: "RFQs", icon: FileTextIcon },
     { href: "/purchase-orders", label: "Purchase Orders", icon: ScrollTextIcon },
+    { href: "/purchase-receipts", label: "Purchase Receipts", icon: PackagePlusIcon },
     { href: "/purchases", label: "Purchases", icon: ShoppingCartIcon },
   ]},
   { label: "Stock", items: [
