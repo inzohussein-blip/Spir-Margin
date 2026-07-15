@@ -187,3 +187,21 @@ begin
         values ('APT-2601', v_lab, v_dev, 'service', now() + interval '3 days', 'confirmed', 'Dr. Sara');
     end if;
 end $$;
+
+-- Demo maintenance team + members + tasks -----------------------------------
+do $$
+declare v_team uuid;
+begin
+    if not exists (select 1 from maintenance_teams where name = 'Field Service Team') then
+        insert into maintenance_teams (name, manager_name, description)
+        values ('Field Service Team', 'Eng. Kareem', 'Handles installs, PM visits and breakdowns.')
+        returning id into v_team;
+        insert into maintenance_team_members (team_id, member_name, role) values
+            (v_team, 'Eng. Kareem', 'Manager'),
+            (v_team, 'Tech. Omar', 'Technician'),
+            (v_team, 'Tech. Lina', 'Technician');
+        insert into maintenance_tasks (team_id, task_name, maintenance_type, periodicity, start_date, status) values
+            (v_team, 'Quarterly PM checklist', 'preventive', 'Quarterly', current_date, 'planned'),
+            (v_team, 'Annual calibration', 'calibration', 'Yearly', current_date, 'planned');
+    end if;
+end $$;
