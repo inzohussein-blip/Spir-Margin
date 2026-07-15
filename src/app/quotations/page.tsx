@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { EmptyRow } from "@/components/dashboard/Panel";
+import { ListShell } from "@/components/desk/ListShell";
 import { convertQuotationForm } from "@/app/actions/quotation";
 
 export const dynamic = "force-dynamic";
@@ -25,15 +26,14 @@ export default async function QuotationsPage() {
     .order("transaction_date", { ascending: false });
   const rows = (data as unknown as Row[]) ?? [];
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Quotations</h1>
-        <div className="flex gap-2">
-          <Link href="/sales-orders" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Sales orders</Link>
-          <Link href="/quotations/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New quotation</Link>
-        </div>
-      </div>
-      <Panel title={`Quotations (${rows.length})`}>
+    <ListShell
+      title="Quotations"
+      breadcrumbs={[{ label: "Home", href: "/" }, { label: "Selling" }]}
+      count={rows.length}
+      newHref="/quotations/new"
+      newLabel="New quotation"
+      actions={<Link href="/sales-orders" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Sales orders</Link>}
+    >
         {rows.length === 0 ? (
           <EmptyRow text="No quotations — quote a lab, then convert to a sales order" />
         ) : (
@@ -68,7 +68,6 @@ export default async function QuotationsPage() {
             </table>
           </div>
         )}
-      </Panel>
-    </div>
+    </ListShell>
   );
 }

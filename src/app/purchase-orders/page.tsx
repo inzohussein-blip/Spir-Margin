@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { ListShell } from "@/components/desk/ListShell";
 import {
   submitPurchaseOrderForm,
   poToPurchaseInvoiceForm,
@@ -40,21 +41,20 @@ export default async function PurchaseOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Purchase Orders</h1>
-        <div className="flex gap-2">
-          <Link href="/purchases" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Purchases</Link>
-          <Link href="/purchase-orders/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New order</Link>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Open orders" value={String(open.length)} accent="amber" />
         <StatCard label="Open value" value={openValue.toLocaleString()} accent="brand" />
         <StatCard label="Total" value={String(rows.length)} accent="green" />
       </div>
 
-      <Panel title={`Orders (${rows.length})`}>
+      <ListShell
+        title="Purchase Orders"
+        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Buying" }]}
+        count={rows.length}
+        newHref="/purchase-orders/new"
+        newLabel="New order"
+        actions={<Link href="/purchases" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Purchases</Link>}
+      >
         {rows.length === 0 ? (
           <EmptyRow text="No purchase orders yet — order kits/devices from a supplier" />
         ) : (
@@ -114,7 +114,7 @@ export default async function PurchaseOrdersPage() {
             </table>
           </div>
         )}
-      </Panel>
+      </ListShell>
     </div>
   );
 }

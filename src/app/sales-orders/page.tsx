@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { EmptyRow } from "@/components/dashboard/Panel";
+import { ListShell } from "@/components/desk/ListShell";
 import { deliverSalesOrderForm, cancelSalesOrderForm } from "@/app/actions/selling";
 
 export const dynamic = "force-dynamic";
@@ -31,14 +32,13 @@ export default async function SalesOrdersPage() {
   const rows = (data as unknown as Row[]) ?? [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Sales Orders</h1>
-        <Link href="/sales-orders/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">
-          + New order
-        </Link>
-      </div>
-      <Panel title={`All Orders (${rows.length})`}>
+    <ListShell
+      title="Sales Orders"
+      breadcrumbs={[{ label: "Home", href: "/" }, { label: "Selling" }]}
+      count={rows.length}
+      newHref="/sales-orders/new"
+      newLabel="New order"
+    >
         {rows.length === 0 ? (
           <EmptyRow text="No sales orders — orders become sales when delivered" />
         ) : (
@@ -90,7 +90,6 @@ export default async function SalesOrdersPage() {
             </table>
           </div>
         )}
-      </Panel>
-    </div>
+    </ListShell>
   );
 }
