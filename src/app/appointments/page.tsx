@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { ListShell } from "@/components/desk/ListShell";
 import { setAppointmentStatusForm } from "@/app/actions/appointment";
 
 export const dynamic = "force-dynamic";
@@ -35,18 +35,19 @@ export default async function AppointmentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Appointments</h1>
-        <Link href="/appointments/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New appointment</Link>
-      </div>
-
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Upcoming" value={String(upcoming)} accent="brand" />
         <StatCard label="Completed" value={String(rows.filter((r) => r.status === "completed").length)} accent="green" />
         <StatCard label="Total" value={String(rows.length)} accent="amber" />
       </div>
 
-      <Panel title={`Appointments (${rows.length})`}>
+      <ListShell
+        title="Appointments"
+        breadcrumbs={[{ label: "Home", href: "/" }, { label: "CRM" }]}
+        count={rows.length}
+        newHref="/appointments/new"
+        newLabel="New appointment"
+      >
         {rows.length === 0 ? (
           <EmptyRow text="No appointments yet — schedule an install or service visit" />
         ) : (
@@ -91,7 +92,7 @@ export default async function AppointmentsPage() {
             </table>
           </div>
         )}
-      </Panel>
+      </ListShell>
     </div>
   );
 }

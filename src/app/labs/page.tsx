@@ -1,6 +1,7 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { EmptyRow } from "@/components/dashboard/Panel";
+import { ListShell } from "@/components/desk/ListShell";
+import { Indicator } from "@/components/desk/Indicator";
 import type { Lab } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -11,20 +12,16 @@ export default async function LabsPage() {
   const labs = (data as Lab[]) ?? [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Labs</h1>
-        <Link
-          href="/labs/new"
-          className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
-        >
-          + New lab
-        </Link>
-      </div>
-      <Panel title={`All Labs (${labs.length})`}>
-        {labs.length === 0 ? (
-          <EmptyRow text="No labs yet" />
-        ) : (
+    <ListShell
+      title="Labs"
+      breadcrumbs={[{ label: "Home", href: "/" }, { label: "Selling" }]}
+      count={labs.length}
+      newHref="/labs/new"
+      newLabel="New lab"
+    >
+      {labs.length === 0 ? (
+        <EmptyRow text="No labs yet" />
+      ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -46,17 +43,7 @@ export default async function LabsPage() {
                     <td className="px-4 py-2 text-ink-gray-5">
                       {l.contact_name ?? "—"}
                     </td>
-                    <td className="px-4 py-2">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          l.status === "active"
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-surface-gray-2 text-ink-gray-5"
-                        }`}
-                      >
-                        {l.status}
-                      </span>
-                    </td>
+                    <td className="px-4 py-2"><Indicator status={l.status} /></td>
                     <td className="px-4 py-2 text-ink-gray-5">
                       {l.last_activity_at
                         ? new Date(l.last_activity_at).toLocaleDateString()
@@ -68,7 +55,6 @@ export default async function LabsPage() {
             </table>
           </div>
         )}
-      </Panel>
-    </div>
+    </ListShell>
   );
 }

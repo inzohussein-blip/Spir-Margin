@@ -1,6 +1,7 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { EmptyRow } from "@/components/dashboard/Panel";
+import { ListShell } from "@/components/desk/ListShell";
+import { Indicator } from "@/components/desk/Indicator";
 
 export const dynamic = "force-dynamic";
 
@@ -14,14 +15,6 @@ interface DeviceRow {
   labs: { name: string } | null;
 }
 
-const statusColor: Record<string, string> = {
-  installed: "bg-emerald-100 text-emerald-700",
-  in_stock: "bg-surface-gray-2 text-ink-gray-6",
-  in_maintenance: "bg-amber-100 text-amber-700",
-  out_of_order: "bg-red-100 text-red-700",
-  retired: "bg-surface-gray-2 text-ink-gray-4",
-};
-
 export default async function DevicesPage() {
   const supabase = createClient();
   const { data } = await supabase
@@ -33,20 +26,16 @@ export default async function DevicesPage() {
   const devices = (data as unknown as DeviceRow[]) ?? [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Devices</h1>
-        <Link
-          href="/devices/new"
-          className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
-        >
-          + New device
-        </Link>
-      </div>
-      <Panel title={`All Devices (${devices.length})`}>
-        {devices.length === 0 ? (
-          <EmptyRow text="No devices yet" />
-        ) : (
+    <ListShell
+      title="Devices"
+      breadcrumbs={[{ label: "Home", href: "/" }, { label: "Assets" }]}
+      count={devices.length}
+      newHref="/devices/new"
+      newLabel="New device"
+    >
+      {devices.length === 0 ? (
+        <EmptyRow text="No devices yet" />
+      ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -70,15 +59,7 @@ export default async function DevicesPage() {
                     <td className="px-4 py-2 text-ink-gray-5">
                       {d.labs?.name ?? "unassigned"}
                     </td>
-                    <td className="px-4 py-2">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          statusColor[d.status] ?? "bg-surface-gray-2 text-ink-gray-6"
-                        }`}
-                      >
-                        {d.status.replace(/_/g, " ")}
-                      </span>
-                    </td>
+                    <td className="px-4 py-2"><Indicator status={d.status} /></td>
                     <td className="px-4 py-2 text-ink-gray-5">
                       {d.next_maintenance_date ?? "—"}
                     </td>
@@ -88,7 +69,6 @@ export default async function DevicesPage() {
             </table>
           </div>
         )}
-      </Panel>
-    </div>
+    </ListShell>
   );
 }

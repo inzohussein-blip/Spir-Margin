@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { ListShell } from "@/components/desk/ListShell";
 import { setContractStatusForm } from "@/app/actions/contract";
 
 export const dynamic = "force-dynamic";
@@ -48,18 +48,19 @@ export default async function ContractsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Service Contracts (AMC)</h1>
-        <Link href="/contracts/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New contract</Link>
-      </div>
-
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Active" value={String(active.length)} accent="green" />
         <StatCard label="Expiring ≤ 60d" value={String(expiring)} accent="amber" />
         <StatCard label="Active value" value={money(annualValue)} accent="brand" />
       </div>
 
-      <Panel title={`Contracts (${rows.length})`}>
+      <ListShell
+        title="Service Contracts (AMC)"
+        breadcrumbs={[{ label: "Home", href: "/" }, { label: "CRM" }]}
+        count={rows.length}
+        newHref="/contracts/new"
+        newLabel="New contract"
+      >
         {rows.length === 0 ? (
           <EmptyRow text="No contracts yet — add an annual maintenance contract" />
         ) : (
@@ -109,7 +110,7 @@ export default async function ContractsPage() {
             </table>
           </div>
         )}
-      </Panel>
+      </ListShell>
     </div>
   );
 }

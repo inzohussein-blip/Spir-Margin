@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { EmptyRow } from "@/components/dashboard/Panel";
+import { ListShell } from "@/components/desk/ListShell";
 
 export const dynamic = "force-dynamic";
 
@@ -25,41 +26,25 @@ export default async function KitsPage() {
     .order("expiry_date");
   const kits = (data as unknown as KitRow[]) ?? [];
 
+  const linkCls = "rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1";
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Reagent Kits</h1>
-        <div className="flex gap-2">
-          <Link
-            href="/delivery-notes"
-            className="rounded-md border border-outline-gray-2 px-4 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1"
-          >
-            Delivery notes
-          </Link>
-          <Link
-            href="/stock-reconciliation"
-            className="rounded-md border border-outline-gray-2 px-4 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1"
-          >
-            Stock count
-          </Link>
-          <Link
-            href="/kits/withdraw"
-            className="rounded-md border border-brand px-4 py-2 text-sm font-medium text-brand hover:bg-blue-50"
-          >
-            Record withdrawal
-          </Link>
-          <Link
-            href="/kits/new"
-            className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
-          >
-            + New batch
-          </Link>
-        </div>
-      </div>
-      <Panel title={`All Batches (${kits.length})`}>
-        {kits.length === 0 ? (
-          <EmptyRow text="No kit batches yet" />
-        ) : (
+    <ListShell
+      title="Reagent Kits"
+      breadcrumbs={[{ label: "Home", href: "/" }, { label: "Stock" }]}
+      count={kits.length}
+      newHref="/kits/new"
+      newLabel="New batch"
+      actions={
+        <>
+          <Link href="/delivery-notes" className={linkCls}>Delivery notes</Link>
+          <Link href="/stock-reconciliation" className={linkCls}>Stock count</Link>
+          <Link href="/kits/withdraw" className="rounded-md border border-brand px-3 py-1.5 text-sm font-medium text-brand hover:bg-blue-50">Record withdrawal</Link>
+        </>
+      }
+    >
+      {kits.length === 0 ? (
+        <EmptyRow text="No kit batches yet" />
+      ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -100,7 +85,6 @@ export default async function KitsPage() {
             </table>
           </div>
         )}
-      </Panel>
-    </div>
+    </ListShell>
   );
 }

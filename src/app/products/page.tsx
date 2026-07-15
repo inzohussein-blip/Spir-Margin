@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { EmptyRow } from "@/components/dashboard/Panel";
+import { ListShell } from "@/components/desk/ListShell";
 
 export const dynamic = "force-dynamic";
 
@@ -34,17 +34,13 @@ export default async function ProductsPage() {
   const products = (data as ProductRow[]) ?? [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Products (Items)</h1>
-        <Link
-          href="/products/new"
-          className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
-        >
-          + New product
-        </Link>
-      </div>
-      <Panel title={`All Products (${products.length})`}>
+    <ListShell
+      title="Products (Items)"
+      breadcrumbs={[{ label: "Home", href: "/" }, { label: "Stock" }]}
+      count={products.length}
+      newHref="/products/new"
+      newLabel="New product"
+    >
         {products.length === 0 ? (
           <EmptyRow text="No products yet" />
         ) : (
@@ -95,7 +91,6 @@ export default async function ProductsPage() {
             </table>
           </div>
         )}
-      </Panel>
-    </div>
+    </ListShell>
   );
 }
