@@ -39,6 +39,7 @@ import {
   UsersIcon,
   CreditCardIcon,
   PercentIcon,
+  ListChecksIcon,
 } from "lucide-react";
 
 const nav = [
@@ -79,6 +80,7 @@ const nav = [
   { href: "/banking", label: "Banking", icon: LandmarkIcon },
   { href: "/accounts", label: "Accounts", icon: BookOpenIcon },
   { href: "/currency", label: "Currency", icon: CoinsIcon },
+  { href: "/masters", label: "Masters", icon: ListChecksIcon },
 ];
 
 export function AppNav() {
