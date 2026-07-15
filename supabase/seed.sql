@@ -208,3 +208,14 @@ end $$;
 
 -- Demo credit limit (LAB-001 has invoices ~2640 outstanding; set a low limit) -
 update labs set credit_limit = 2000 where code = 'LAB-001';
+
+-- Demo pricing rule: 10% off any kit when qty >= 50 --------------------------
+do $$
+declare v_prod uuid;
+begin
+    select id into v_prod from products where product_type='kit' limit 1;
+    if not exists (select 1 from pricing_rules where title='Bulk kit 10%') then
+        insert into pricing_rules (title, product_id, min_qty, discount_percentage)
+        values ('Bulk kit 10%', v_prod, 50, 10);
+    end if;
+end $$;

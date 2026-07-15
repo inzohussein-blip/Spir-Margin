@@ -38,6 +38,7 @@ import {
   CalendarDaysIcon,
   UsersIcon,
   CreditCardIcon,
+  PercentIcon,
 } from "lucide-react";
 
 const nav = [
@@ -60,6 +61,7 @@ const nav = [
   { href: "/products", label: "Products", icon: PackageIcon },
   { href: "/product-bundles", label: "Bundles", icon: PackagePlusIcon },
   { href: "/prices", label: "Prices", icon: TagIcon },
+  { href: "/pricing-rules", label: "Pricing Rules", icon: PercentIcon },
   { href: "/warehouses", label: "Warehouses", icon: WarehouseIcon },
   { href: "/stock-entries", label: "Stock Entries", icon: ArrowLeftRightIcon },
   { href: "/companies", label: "Companies", icon: Building2Icon },
