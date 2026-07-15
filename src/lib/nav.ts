@@ -67,6 +67,7 @@ export const navGroups: NavGroup[] = [
     { href: "/warranty", label: "Warranty", icon: ShieldCheckIcon },
   ]},
   { label: "Accounting", items: [
+    { href: "/payment-requests", label: "Payment Requests", icon: CreditCardIcon },
     { href: "/banking", label: "Banking", icon: LandmarkIcon },
     { href: "/accounts", label: "Accounts", icon: BookOpenIcon },
     { href: "/currency", label: "Currency", icon: CoinsIcon },

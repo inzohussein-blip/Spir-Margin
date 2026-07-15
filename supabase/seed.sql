@@ -234,3 +234,17 @@ begin
         perform fn_submit_purchase_receipt(v_r);
     end if;
 end $$;
+
+-- Demo payment request (requested against an unpaid invoice) ------------------
+do $$
+declare v_inv uuid; v_lab uuid; v_out numeric;
+begin
+    select id, lab_id, outstanding into v_inv, v_lab, v_out
+        from sales_invoices where status in ('unpaid','partly_paid') order by outstanding desc limit 1;
+    if v_inv is not null and v_out > 0
+       and not exists (select 1 from payment_requests where request_no='PREQ-2601') then
+        insert into payment_requests (request_no, invoice_id, lab_id, amount, message)
+        values ('PREQ-2601', v_inv, v_lab, least(v_out, 500), 'Kindly settle the outstanding balance.');
+        perform fn_submit_payment_request((select id from payment_requests where request_no='PREQ-2601'));
+    end if;
+end $$;

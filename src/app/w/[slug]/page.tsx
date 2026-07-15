@@ -42,6 +42,10 @@ const NUMBER_CARDS: Record<string, { label: string; table: string }[]> = {
     { label: "Opportunities", table: "opportunities" },
     { label: "Contracts", table: "contracts" },
   ],
+  accounting: [
+    { label: "Payment Requests", table: "payment_requests" },
+    { label: "Sales Invoices", table: "sales_invoices" },
+  ],
 };
 
 export default async function WorkspacePage({ params }: { params: { slug: string } }) {
