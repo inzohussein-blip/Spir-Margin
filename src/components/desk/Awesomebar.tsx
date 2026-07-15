@@ -6,7 +6,7 @@ import { SearchIcon, PlusIcon, ArrowRightIcon } from "lucide-react";
 import {
   CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem,
 } from "@/components/ui/command";
-import { allNavItems } from "@/components/AppNav";
+import { allNavItems } from "@/lib/nav";
 
 // Routes that have a /new create form (mirrors the app's create pages).
 const HAS_NEW = new Set([
