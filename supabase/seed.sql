@@ -248,3 +248,20 @@ begin
         perform fn_submit_payment_request((select id from payment_requests where request_no='PREQ-2601'));
     end if;
 end $$;
+
+-- Demo blanket order (active selling agreement with a lab) --------------------
+do $$
+declare v_lab uuid; v_prod uuid; v_sell numeric; v_bo uuid;
+begin
+    select id into v_lab from labs limit 1;
+    select id, default_sell_price into v_prod, v_sell from products where product_type='kit' limit 1;
+    if v_lab is not null and v_prod is not null
+       and not exists (select 1 from blanket_orders where order_no='BO-2601') then
+        insert into blanket_orders (order_no, order_type, lab_id, to_date, notes)
+        values ('BO-2601', 'selling', v_lab, current_date + 365, 'Annual reagent-kit supply agreement.')
+        returning id into v_bo;
+        insert into blanket_order_items (order_id, product_id, qty, rate)
+        values (v_bo, v_prod, 500, coalesce(nullif(v_sell,0), 60));
+        perform fn_submit_blanket_order(v_bo);
+    end if;
+end $$;

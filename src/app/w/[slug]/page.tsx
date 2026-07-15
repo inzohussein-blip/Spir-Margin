@@ -11,6 +11,7 @@ const NUMBER_CARDS: Record<string, { label: string; table: string }[]> = {
     { label: "Labs", table: "labs" },
     { label: "Sales Invoices", table: "sales_invoices" },
     { label: "Quotations", table: "quotations" },
+    { label: "Blanket Orders", table: "blanket_orders" },
   ],
   buying: [
     { label: "Suppliers", table: "companies" },
