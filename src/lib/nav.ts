@@ -44,6 +44,7 @@ export const navGroups: NavGroup[] = [
     { href: "/serials", label: "Serials", icon: HashIcon },
     { href: "/warehouses", label: "Warehouses", icon: WarehouseIcon },
     { href: "/stock-entries", label: "Stock Entries", icon: ArrowLeftRightIcon },
+    { href: "/pick-lists", label: "Pick Lists", icon: ClipboardCheckIcon },
     { href: "/stock-balance", label: "Stock Balance", icon: ClipboardListIcon },
     { href: "/prices", label: "Prices", icon: TagIcon },
   ]},

@@ -265,3 +265,19 @@ begin
         perform fn_submit_blanket_order(v_bo);
     end if;
 end $$;
+
+-- Demo pick list (open, released to the floor) -------------------------------
+do $$
+declare v_lab uuid; v_prod uuid; v_wh uuid; v_pl uuid;
+begin
+    select id into v_lab from labs limit 1;
+    select id into v_prod from products where product_type='kit' limit 1;
+    select id into v_wh from warehouses limit 1;
+    if v_prod is not null and not exists (select 1 from pick_lists where pick_no='PICK-2601') then
+        insert into pick_lists (pick_no, lab_id, purpose) values ('PICK-2601', v_lab, 'delivery')
+        returning id into v_pl;
+        insert into pick_list_items (pick_id, product_id, warehouse_id, qty, batch_no)
+        values (v_pl, v_prod, v_wh, 12, 'B-PR-2601');
+        perform fn_open_pick_list(v_pl);
+    end if;
+end $$;

@@ -23,6 +23,7 @@ const NUMBER_CARDS: Record<string, { label: string; table: string }[]> = {
     { label: "Products", table: "products" },
     { label: "Kit Batches", table: "kit_batches" },
     { label: "Warehouses", table: "warehouses" },
+    { label: "Pick Lists", table: "pick_lists" },
   ],
   assets: [
     { label: "Devices", table: "devices" },
