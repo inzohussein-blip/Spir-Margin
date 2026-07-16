@@ -77,25 +77,12 @@ async function bootPglite(): Promise<Db> {
   });
   await pg.waitReady;
 
-  // RLS policies reference the "authenticated" role — it must exist. Queries
-  // run as the bootstrap superuser, so RLS is bypassed (single-tenant app).
-  await pg.exec(`do $$ begin
-    if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if;
-  end $$;`);
-
-  await applyPendingMigrations(pg);
-
-  // Seed runs exactly once, on a genuinely fresh database. The `_spir_meta`
-  // marker (written the first time we ever bootstrap) gates it, so upgrading an
-  // existing data dir with new migrations never re-seeds or duplicates demo rows.
-  const seeded = await pg.query<{ n: number }>(
-    `select count(*)::int as n from information_schema.tables where table_schema='public' and table_name='_spir_meta'`
-  );
-  if ((seeded.rows[0]?.n ?? 0) === 0) {
-    if (fs.existsSync(SEED_FILE)) await pg.exec(fs.readFileSync(SEED_FILE, "utf8"));
-    await pg.exec(`create table if not exists _spir_meta (k text primary key);
-      insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;`);
-  }
+  // Queries run as the bootstrap superuser, so RLS is bypassed (single-tenant
+  // app). pgcrypto is already loaded via the constructor above.
+  await initSchema({
+    exec: (sql) => pg.exec(sql).then(() => undefined),
+    query: (sql, params) => pg.query(sql, params) as Promise<{ rows: any[] }>,
+  });
   return pg as unknown as Db;
 }
 
@@ -120,8 +107,19 @@ async function bootPglite(): Promise<Db> {
 const RELATION_RE =
   /create\s+(?:or\s+replace\s+)?(?:materialized\s+view|view|table)\s+(?:if\s+not\s+exists\s+)?([a-z0-9_]+)/i;
 
-async function applyPendingMigrations(pg: PGlite): Promise<void> {
-  await pg.exec(
+/**
+ * Minimal backend-agnostic runner so the migrator works over both PGlite
+ * (`pg.exec`/`pg.query`) and node-postgres (`client.query`). `exec` runs a
+ * possibly-multi-statement SQL string with no parameters; `query` runs a single
+ * parameterised statement.
+ */
+interface Runner {
+  exec(sql: string): Promise<void>;
+  query<T = any>(sql: string, params?: unknown[]): Promise<{ rows: T[] }>;
+}
+
+async function applyPendingMigrations(run: Runner): Promise<void> {
+  await run.exec(
     `create table if not exists _spir_migrations (
        filename text primary key,
        applied_at timestamptz not null default now()
@@ -129,7 +127,7 @@ async function applyPendingMigrations(pg: PGlite): Promise<void> {
   );
 
   const files = fs.readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith(".sql")).sort();
-  const ledger = await pg.query<{ filename: string }>(`select filename from _spir_migrations`);
+  const ledger = await run.query<{ filename: string }>(`select filename from _spir_migrations`);
   const applied = new Set(ledger.rows.map((r) => r.filename));
 
   // One-time back-fill for databases created before the ledger existed: if the
@@ -138,7 +136,7 @@ async function applyPendingMigrations(pg: PGlite): Promise<void> {
   // first migration whose relation is missing, and record that prefix as applied
   // so it is never re-run.
   if (applied.size === 0) {
-    const bootstrapped = await pg.query<{ n: number }>(
+    const bootstrapped = await run.query<{ n: number }>(
       `select count(*)::int as n from information_schema.tables where table_schema='public' and table_name='_spir_meta'`
     );
     if ((bootstrapped.rows[0]?.n ?? 0) > 0) {
@@ -146,7 +144,7 @@ async function applyPendingMigrations(pg: PGlite): Promise<void> {
       for (let i = 0; i < files.length; i++) {
         const rel = fs.readFileSync(path.join(MIGRATIONS_DIR, files[i]), "utf8").match(RELATION_RE)?.[1];
         if (!rel) continue; // no probeable relation: let its position be decided by neighbours
-        const exists = await pg.query<{ reg: string | null }>(
+        const exists = await run.query<{ reg: string | null }>(
           `select to_regclass('public.' || $1) as reg`,
           [rel]
         );
@@ -156,7 +154,7 @@ async function applyPendingMigrations(pg: PGlite): Promise<void> {
         }
       }
       for (let i = 0; i < boundary; i++) {
-        await pg.query(`insert into _spir_migrations(filename) values ($1) on conflict do nothing`, [files[i]]);
+        await run.query(`insert into _spir_migrations(filename) values ($1) on conflict do nothing`, [files[i]]);
         applied.add(files[i]);
       }
     }
@@ -164,9 +162,31 @@ async function applyPendingMigrations(pg: PGlite): Promise<void> {
 
   for (const f of files) {
     if (applied.has(f)) continue;
-    await pg.exec(fs.readFileSync(path.join(MIGRATIONS_DIR, f), "utf8"));
-    await pg.query(`insert into _spir_migrations(filename) values ($1) on conflict do nothing`, [f]);
+    await run.exec(fs.readFileSync(path.join(MIGRATIONS_DIR, f), "utf8"));
+    await run.query(`insert into _spir_migrations(filename) values ($1) on conflict do nothing`, [f]);
     applied.add(f);
+  }
+}
+
+/** Ensure the `authenticated` role, apply pending migrations, then seed once. */
+async function initSchema(run: Runner): Promise<void> {
+  // RLS policies reference the "authenticated" role — it must exist. On a hosted
+  // Supabase database it already does, so the guard simply no-ops.
+  await run.exec(`do $$ begin
+    if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if;
+  end $$;`);
+
+  await applyPendingMigrations(run);
+
+  // Seed runs exactly once, on a genuinely fresh database, gated by the
+  // `_spir_meta` marker — so redeploys and migration top-ups never re-seed.
+  const seeded = await run.query<{ n: number }>(
+    `select count(*)::int as n from information_schema.tables where table_schema='public' and table_name='_spir_meta'`
+  );
+  if ((seeded.rows[0]?.n ?? 0) === 0) {
+    if (fs.existsSync(SEED_FILE)) await run.exec(fs.readFileSync(SEED_FILE, "utf8"));
+    await run.exec(`create table if not exists _spir_meta (k text primary key);
+      insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;`);
   }
 }
 
@@ -181,6 +201,34 @@ async function bootPostgres(url: string): Promise<Db> {
     ssl: process.env.PGSSL === "disable" ? undefined : { rejectUnauthorized: false },
     max: Number(process.env.PGPOOL_MAX ?? 5),
   });
+
+  // Auto-apply this project's migrations to the hosted database (e.g. Supabase),
+  // so a Vercel deploy "just works" once DATABASE_URL is set. It is idempotent
+  // (a `_spir_migrations` ledger records applied files) and cheap after the first
+  // run. A session advisory lock on a single dedicated connection serialises
+  // concurrent serverless cold starts so only one instance migrates at a time.
+  // Set SPIR_SKIP_MIGRATIONS=1 to opt out (if you apply migrations yourself).
+  if (process.env.SPIR_SKIP_MIGRATIONS !== "1") {
+    const client = await pool.connect();
+    try {
+      await client.query("select pg_advisory_lock($1)", [MIGRATION_LOCK_KEY]);
+      // gen_random_uuid() lives in core on PG13+, but keep pgcrypto available for
+      // any other crypto helpers. Non-fatal if the role lacks CREATE privileges.
+      try {
+        await client.query("create extension if not exists pgcrypto");
+      } catch {
+        /* extension already present or insufficient privilege — safe to ignore */
+      }
+      await initSchema({
+        exec: (sql) => client.query(sql).then(() => undefined),
+        query: (sql, params) => client.query(sql, params as any[]).then((r) => ({ rows: r.rows })),
+      });
+    } finally {
+      await client.query("select pg_advisory_unlock($1)", [MIGRATION_LOCK_KEY]).catch(() => undefined);
+      client.release();
+    }
+  }
+
   return {
     async query<T = any>(sql: string, params: unknown[] = []) {
       const r = await pool.query(sql, params as any[]);
@@ -188,6 +236,9 @@ async function bootPostgres(url: string): Promise<Db> {
     },
   };
 }
+
+// Arbitrary fixed key identifying the schema-migration advisory lock.
+const MIGRATION_LOCK_KEY = 5_713_002;
 
 async function bootstrap(): Promise<{ db: Db; meta: FkMeta }> {
   const url = process.env.DATABASE_URL;
