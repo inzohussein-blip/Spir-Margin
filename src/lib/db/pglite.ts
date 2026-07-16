@@ -83,18 +83,91 @@ async function bootPglite(): Promise<Db> {
     if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if;
   end $$;`);
 
-  const already = await pg.query<{ n: number }>(
+  await applyPendingMigrations(pg);
+
+  // Seed runs exactly once, on a genuinely fresh database. The `_spir_meta`
+  // marker (written the first time we ever bootstrap) gates it, so upgrading an
+  // existing data dir with new migrations never re-seeds or duplicates demo rows.
+  const seeded = await pg.query<{ n: number }>(
     `select count(*)::int as n from information_schema.tables where table_schema='public' and table_name='_spir_meta'`
   );
-  if ((already.rows[0]?.n ?? 0) === 0) {
-    for (const f of fs.readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith(".sql")).sort()) {
-      await pg.exec(fs.readFileSync(path.join(MIGRATIONS_DIR, f), "utf8"));
-    }
+  if ((seeded.rows[0]?.n ?? 0) === 0) {
     if (fs.existsSync(SEED_FILE)) await pg.exec(fs.readFileSync(SEED_FILE, "utf8"));
     await pg.exec(`create table if not exists _spir_meta (k text primary key);
       insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;`);
   }
   return pg as unknown as Db;
+}
+
+/**
+ * Apply any migration file that has not yet been recorded in `_spir_migrations`.
+ *
+ * This replaces the old one-shot bootstrap, which only ran migrations when the
+ * database had never been initialised — meaning migrations added *after* the
+ * first boot were silently skipped on a persisted data dir, and pages querying
+ * the new tables threw "relation does not exist".
+ *
+ * Re-running an already-applied migration is unsafe here: several early
+ * migrations carry unguarded top-level `insert`s (master data) that would
+ * duplicate rows, and view/function migrations use `create or replace` that a
+ * *later* migration may already have superseded (replacing a view with fewer
+ * columns fails). Migrations are a strictly-ordered, contiguously-applied
+ * sequence, so for a pre-existing database that predates the ledger we find the
+ * prefix boundary — the first migration whose table/view does not yet exist —
+ * mark everything before it as applied *without* re-executing, then run only
+ * that boundary and everything after it.
+ */
+const RELATION_RE =
+  /create\s+(?:or\s+replace\s+)?(?:materialized\s+view|view|table)\s+(?:if\s+not\s+exists\s+)?([a-z0-9_]+)/i;
+
+async function applyPendingMigrations(pg: PGlite): Promise<void> {
+  await pg.exec(
+    `create table if not exists _spir_migrations (
+       filename text primary key,
+       applied_at timestamptz not null default now()
+     );`
+  );
+
+  const files = fs.readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith(".sql")).sort();
+  const ledger = await pg.query<{ filename: string }>(`select filename from _spir_migrations`);
+  const applied = new Set(ledger.rows.map((r) => r.filename));
+
+  // One-time back-fill for databases created before the ledger existed: if the
+  // ledger is empty but the DB was already bootstrapped (`_spir_meta` present),
+  // treat the already-applied migrations as the contiguous prefix ending at the
+  // first migration whose relation is missing, and record that prefix as applied
+  // so it is never re-run.
+  if (applied.size === 0) {
+    const bootstrapped = await pg.query<{ n: number }>(
+      `select count(*)::int as n from information_schema.tables where table_schema='public' and table_name='_spir_meta'`
+    );
+    if ((bootstrapped.rows[0]?.n ?? 0) > 0) {
+      let boundary = files.length;
+      for (let i = 0; i < files.length; i++) {
+        const rel = fs.readFileSync(path.join(MIGRATIONS_DIR, files[i]), "utf8").match(RELATION_RE)?.[1];
+        if (!rel) continue; // no probeable relation: let its position be decided by neighbours
+        const exists = await pg.query<{ reg: string | null }>(
+          `select to_regclass('public.' || $1) as reg`,
+          [rel]
+        );
+        if (!exists.rows[0]?.reg) {
+          boundary = i;
+          break;
+        }
+      }
+      for (let i = 0; i < boundary; i++) {
+        await pg.query(`insert into _spir_migrations(filename) values ($1) on conflict do nothing`, [files[i]]);
+        applied.add(files[i]);
+      }
+    }
+  }
+
+  for (const f of files) {
+    if (applied.has(f)) continue;
+    await pg.exec(fs.readFileSync(path.join(MIGRATIONS_DIR, f), "utf8"));
+    await pg.query(`insert into _spir_migrations(filename) values ($1) on conflict do nothing`, [f]);
+    applied.add(f);
+  }
 }
 
 // ---- hosted Postgres backend (node-postgres) ------------------------------
