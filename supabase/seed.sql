@@ -281,3 +281,18 @@ begin
         perform fn_open_pick_list(v_pl);
     end if;
 end $$;
+
+-- Demo delivery trip (in transit, one stop) ----------------------------------
+do $$
+declare v_lab uuid; v_dn uuid; v_trip uuid;
+begin
+    select id into v_lab from labs limit 1;
+    select id into v_dn from delivery_notes order by posting_date desc limit 1;
+    if not exists (select 1 from delivery_trips where trip_no='TRIP-2601') then
+        insert into delivery_trips (trip_no, driver_name, vehicle)
+        values ('TRIP-2601', 'Ahmed K.', 'Van 12-A') returning id into v_trip;
+        insert into delivery_trip_stops (trip_id, lab_id, delivery_note_id, address, seq)
+        values (v_trip, v_lab, v_dn, 'Central district, main road', 1);
+        perform fn_start_delivery_trip(v_trip);
+    end if;
+end $$;

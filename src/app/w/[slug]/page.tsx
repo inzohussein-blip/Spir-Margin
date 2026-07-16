@@ -24,6 +24,7 @@ const NUMBER_CARDS: Record<string, { label: string; table: string }[]> = {
     { label: "Kit Batches", table: "kit_batches" },
     { label: "Warehouses", table: "warehouses" },
     { label: "Pick Lists", table: "pick_lists" },
+    { label: "Delivery Trips", table: "delivery_trips" },
   ],
   assets: [
     { label: "Devices", table: "devices" },

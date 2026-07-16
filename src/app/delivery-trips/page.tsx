@@ -1,0 +1,117 @@
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { EmptyRow } from "@/components/dashboard/Panel";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { ListShell } from "@/components/desk/ListShell";
+import { Indicator } from "@/components/desk/Indicator";
+import {
+  startDeliveryTripForm,
+  completeDeliveryTripForm,
+  cancelDeliveryTripForm,
+} from "@/app/actions/delivery_trip";
+
+export const dynamic = "force-dynamic";
+
+interface Row {
+  id: string;
+  trip_no: string;
+  driver_name: string | null;
+  vehicle: string | null;
+  departure_date: string;
+  status: string;
+  delivery_trip_stops: { id: string; arrived: boolean }[];
+}
+
+export default async function DeliveryTripsPage() {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("delivery_trips")
+    .select("id, trip_no, driver_name, vehicle, departure_date, status, delivery_trip_stops(id, arrived)")
+    .order("departure_date", { ascending: false });
+  const rows = (data as unknown as Row[]) ?? [];
+  const inTransit = rows.filter((r) => r.status === "in_transit");
+  const done = rows.filter((r) => r.status === "completed");
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard label="In transit" value={String(inTransit.length)} accent="amber" />
+        <StatCard label="Completed" value={String(done.length)} accent="green" />
+        <StatCard label="Total" value={String(rows.length)} accent="brand" />
+      </div>
+
+      <ListShell
+        title="Delivery Trips"
+        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Stock" }]}
+        count={rows.length}
+        newHref="/delivery-trips/new"
+        newLabel="New trip"
+        actions={<Link href="/delivery-notes" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Delivery notes</Link>}
+        filterPlaceholder="Filter by trip / driver…"
+      >
+        {rows.length === 0 ? (
+          <EmptyRow text="No delivery trips yet — group delivery notes into a route" />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase text-ink-gray-4">
+                  <th className="px-4 py-2">Trip no.</th>
+                  <th className="px-4 py-2">Driver</th>
+                  <th className="px-4 py-2">Vehicle</th>
+                  <th className="px-4 py-2">Departure</th>
+                  <th className="px-4 py-2 text-right">Stops</th>
+                  <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-gray-1">
+                {rows.map((r) => {
+                  const stops = r.delivery_trip_stops ?? [];
+                  const arrived = stops.filter((s) => s.arrived).length;
+                  return (
+                    <tr key={r.id} className="hover:bg-surface-gray-1">
+                      <td className="px-4 py-2 font-medium">{r.trip_no}</td>
+                      <td className="px-4 py-2">{r.driver_name ?? "—"}</td>
+                      <td className="px-4 py-2 text-ink-gray-5">{r.vehicle ?? "—"}</td>
+                      <td className="px-4 py-2 text-ink-gray-5">{r.departure_date}</td>
+                      <td className="px-4 py-2 text-right text-ink-gray-5">{arrived}/{stops.length}</td>
+                      <td className="px-4 py-2"><Indicator status={r.status} /></td>
+                      <td className="px-4 py-2">
+                        {r.status === "draft" || r.status === "scheduled" ? (
+                          <div className="flex gap-2">
+                            <form action={startDeliveryTripForm}>
+                              <input type="hidden" name="id" value={r.id} />
+                              <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">Start</button>
+                            </form>
+                            <form action={cancelDeliveryTripForm}>
+                              <input type="hidden" name="id" value={r.id} />
+                              <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">Cancel</button>
+                            </form>
+                          </div>
+                        ) : r.status === "in_transit" ? (
+                          <div className="flex gap-2">
+                            <form action={completeDeliveryTripForm}>
+                              <input type="hidden" name="id" value={r.id} />
+                              <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">Complete</button>
+                            </form>
+                            <form action={cancelDeliveryTripForm}>
+                              <input type="hidden" name="id" value={r.id} />
+                              <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">Cancel</button>
+                            </form>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-ink-gray-4">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </ListShell>
+    </div>
+  );
+}
