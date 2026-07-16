@@ -7,11 +7,11 @@ in **features** and **look/design**, and exactly what was carried over vs. delib
 controllers in Python, the Desk UI in JS, reports, print formats, workspaces, patches, tests).
 Spir-Margin is a **lightweight, domain-focused** re-implementation for medical-device sales, lab
 tracking, spare parts and reagent kits. It re-implements the **domain-relevant subset natively**
-(Next.js + Postgres) — **~60 DocTypes across 101 tables, 55 migrations, 113 routes** — and wraps it in
+(Next.js + Postgres) — **~62 DocTypes across 105 tables, 57 migrations, 117 routes** — and wraps it in
 an **ERPNext-style "Desk" UI**. It is *not* a 1:1 clone of all of ERPNext, by design. The full ERPNext
 source stays public upstream for anything not carried over.
 
-Snapshot: 55 migrations · 101 tables · 113 routes · verified running on embedded Postgres (PGlite).
+Snapshot: 57 migrations · 105 tables · 117 routes · verified running on embedded Postgres (PGlite).
 
 ---
 
@@ -30,8 +30,8 @@ Snapshot: 55 migrations · 101 tables · 113 routes · verified running on embed
 
 *List chrome is applied to the primary transactional lists (labs, devices, kits, products, contracts,
 appointments, issues, sales-orders, quotations, sales-invoices, purchase-orders, purchase-receipts,
-payment-requests, blanket-orders, stock-balance, opportunities, work-orders); the remaining lists share
-the same Espresso card styling.*
+payment-requests, blanket-orders, stock-balance, pick-lists, delivery-trips, opportunities,
+work-orders); the remaining lists share the same Espresso card styling.*
 
 ---
 
@@ -83,7 +83,9 @@ Legend: ✅ ported · ➖ intentionally excluded (out of scope for a lightweight
 | Quality Inspection (+ reading) | ✅ | 0036 · `/quality-inspections` |
 | Item Price / Price List | ✅ | 0011-0014 · `/prices` |
 | Stock Balance (report: qty + valuation per product/warehouse) | ✅ | 0053 · `/stock-balance` |
-| Item Variant/Attribute, Landed Cost, Pick List, Shipment, Bin/Stock Ledger, Packing, Delivery Trip | ➖ | ERP-heavy stock internals, out of scope |
+| Pick List (+ item, picked_qty) | ✅ | 0057 · `/pick-lists` |
+| Delivery Trip (+ stops) | ✅ | 0058 · `/delivery-trips` |
+| Item Variant/Attribute, Landed Cost, Shipment, Bin/Stock Ledger, Packing Slip | ➖ | ERP-heavy stock internals, out of scope |
 
 ### Manufacturing
 | BOM (+ item) | ✅ | 0033 · `/boms` |
@@ -135,8 +137,9 @@ re-expressed as Postgres functions/triggers and React pages where relevant.
 ## Bottom line
 - **Domain features:** the medical-device / lab / kit / spare-part / reagent workflow is covered
   end-to-end — procure (PO / RFQ / blanket order) → **receive (Purchase Receipt → stock)** → QC →
-  install/move → maintain → sell → invoice → **collect (Payment Request → invoice ledger)** — plus CRM,
-  a Stock Balance report, banking reconciliation and light accounting.
+  install/move → maintain → sell → **pick (Pick List) → deliver (Delivery Note / Delivery Trip route)** →
+  invoice → **collect (Payment Request → invoice ledger)** — plus CRM, a Stock Balance report, banking
+  reconciliation and light accounting.
 - **Look & design:** an ERPNext-style Desk (workspaces, awesomebar, list/form shells, status
   indicators) on Frappe's own Espresso tokens.
 - **Not carried over (by design):** the ERP-heavy modules (deep accounting, depreciation, shop-floor
