@@ -82,7 +82,10 @@ export const navGroups: NavGroup[] = [
     { href: "/reports/profitability", label: "Profitability", icon: TrendingUpIcon },
     { href: "/stock-balance", label: "Stock Balance", icon: ClipboardListIcon },
   ]},
-  { label: "Setup", items: [{ href: "/masters", label: "Masters", icon: ListChecksIcon }] },
+  { label: "Setup", items: [
+    { href: "/masters", label: "Masters", icon: ListChecksIcon },
+    { href: "/users", label: "Users", icon: UsersIcon },
+  ]},
 ];
 
 /** Flat destination list for the awesomebar. */
