@@ -5,8 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRightIcon } from "lucide-react";
 import { navGroups } from "@/lib/nav";
+import { t, type Locale } from "@/lib/i18n";
 
-export function AppNav() {
+export function AppNav({ locale = "ar" }: { locale?: Locale }) {
   const pathname = usePathname();
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
   const activeGroup = navGroups.find((g) => g.items.some((i) => isActive(i.href)))?.label;
@@ -30,7 +31,7 @@ export function AppNav() {
               }`}
             >
               <Icon size={16} className={active ? "text-brand" : "text-ink-gray-5"} />
-              {item.label}
+              {t(locale, item.label)}
             </Link>
           );
         }
@@ -38,7 +39,7 @@ export function AppNav() {
           <div key={group.label} className="mt-1">
             <div className="flex items-center rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-ink-gray-4">
               <Link href={`/w/${group.label.toLowerCase()}`} className="flex-1 hover:text-ink-gray-6">
-                {group.label}
+                {t(locale, group.label)}
               </Link>
               <button
                 type="button"
@@ -58,12 +59,12 @@ export function AppNav() {
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`flex items-center gap-2.5 rounded-md py-1.5 pl-6 pr-3 text-sm font-medium transition-colors ${
+                      className={`flex items-center gap-2.5 rounded-md py-1.5 ps-6 pe-3 text-sm font-medium transition-colors ${
                         active ? "bg-surface-gray-2 text-ink-gray-8" : "text-ink-gray-6 hover:bg-surface-gray-1 hover:text-ink-gray-8"
                       }`}
                     >
                       <Icon size={15} className={active ? "text-brand" : "text-ink-gray-5"} />
-                      {item.label}
+                      {t(locale, item.label)}
                     </Link>
                   );
                 })}

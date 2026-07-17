@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/command";
 import { allNavItems } from "@/lib/nav";
 import { globalSearch, type SearchHit } from "@/app/actions/search";
+import { t, type Locale } from "@/lib/i18n";
 
 // Routes that have a /new create form (mirrors the app's create pages).
 const HAS_NEW = new Set([
@@ -21,7 +22,7 @@ const HAS_NEW = new Set([
 
 /** ERPNext-style awesomebar: ⌘K global command palette to jump to any list or
  *  start a new document. */
-export function Awesomebar() {
+export function Awesomebar({ locale = "ar" }: { locale?: Locale }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -64,16 +65,16 @@ export function Awesomebar() {
         className="flex w-72 max-w-full items-center gap-2 rounded-md border border-outline-gray-2 bg-surface-gray-1 px-3 py-1.5 text-sm text-ink-gray-4 hover:border-outline-gray-3"
       >
         <SearchIcon size={15} />
-        <span className="flex-1 text-left">Search or jump to…</span>
+        <span className="flex-1 text-start">{t(locale, "Search or jump to…")}</span>
         <kbd className="rounded border border-outline-gray-2 bg-surface-white px-1.5 text-2xs text-ink-gray-5">⌘K</kbd>
       </button>
 
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput value={query} onValueChange={setQuery} placeholder="Search records, lists, or type 'new'…" />
+        <CommandInput value={query} onValueChange={setQuery} placeholder={t(locale, "Search records, lists, or type 'new'…")} />
         <CommandList>
           <CommandEmpty>No results.</CommandEmpty>
           {hits.length > 0 && (
-            <CommandGroup heading="Records">
+            <CommandGroup heading={t(locale, "Records")}>
               {hits.map((h) => (
                 <CommandItem key={`${h.entity}-${h.href}-${h.label}`} value={`record ${query} ${h.label} ${h.sublabel ?? ""}`} onSelect={() => go(h.href)}>
                   <FileTextIcon size={15} className="text-ink-gray-5" />
@@ -84,25 +85,25 @@ export function Awesomebar() {
               ))}
             </CommandGroup>
           )}
-          <CommandGroup heading="Go to">
+          <CommandGroup heading={t(locale, "Go to")}>
             {allNavItems.map((item) => {
               const Icon = item.icon;
               return (
-                <CommandItem key={item.href} value={`goto ${item.label}`} onSelect={() => go(item.href)}>
+                <CommandItem key={item.href} value={`goto ${item.label} ${t(locale, item.label)}`} onSelect={() => go(item.href)}>
                   <Icon size={15} className="text-ink-gray-5" />
-                  <span>{item.label}</span>
+                  <span>{t(locale, item.label)}</span>
                   <ArrowRightIcon size={13} className="ml-auto text-ink-gray-3" />
                 </CommandItem>
               );
             })}
           </CommandGroup>
-          <CommandGroup heading="Create new">
+          <CommandGroup heading={t(locale, "Create new")}>
             {allNavItems
               .filter((i) => HAS_NEW.has(i.href))
               .map((item) => (
-                <CommandItem key={`new-${item.href}`} value={`new ${item.label}`} onSelect={() => go(`${item.href}/new`)}>
+                <CommandItem key={`new-${item.href}`} value={`new ${item.label} ${t(locale, item.label)}`} onSelect={() => go(`${item.href}/new`)}>
                   <PlusIcon size={15} className="text-ink-gray-5" />
-                  <span>New {item.label.replace(/s$/, "")}</span>
+                  <span>{t(locale, item.label)}</span>
                 </CommandItem>
               ))}
           </CommandGroup>

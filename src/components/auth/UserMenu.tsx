@@ -2,8 +2,9 @@ import Link from "next/link";
 import { LogOutIcon, UserIcon } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import type { SessionUser } from "@/lib/auth/session";
+import { t, type Locale } from "@/lib/i18n";
 
-export function UserMenu({ user }: { user: SessionUser }) {
+export function UserMenu({ user, locale = "ar" }: { user: SessionUser; locale?: Locale }) {
   return (
     <div className="flex items-center gap-3">
       <Link href="/account" className="flex items-center gap-2 text-sm text-ink-gray-7 hover:text-brand">
@@ -18,10 +19,10 @@ export function UserMenu({ user }: { user: SessionUser }) {
       <form action={logoutAction}>
         <button
           type="submit"
-          title="Sign out"
+          title={t(locale, "Sign out")}
           className="flex items-center gap-1 rounded-md border border-outline-gray-2 px-2.5 py-1.5 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1"
         >
-          <LogOutIcon size={14} /> <span className="hidden sm:inline">Sign out</span>
+          <LogOutIcon size={14} /> <span className="hidden sm:inline">{t(locale, "Sign out")}</span>
         </button>
       </form>
     </div>
