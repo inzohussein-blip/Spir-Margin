@@ -1206,3 +1206,10 @@ body {
     display: none;
   }
 }
+/* Print: drop the app chrome and print only the document sheet. */
+@media print {
+  @page { margin: 14mm; }
+  body { background: #fff !important; }
+  .no-print { display: none !important; }
+  main { padding: 0 !important; }
+}

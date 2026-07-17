@@ -56,9 +56,14 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
             {inv.due_date ? ` · due ${inv.due_date}` : ""}
           </p>
         </div>
-        <span className={`rounded-full px-3 py-1 text-sm font-medium ${statusBadge[inv.status] ?? "bg-surface-gray-2"}`}>
-          {inv.status.replace("_", " ")}
-        </span>
+        <div className="flex items-center gap-3">
+          <Link href={`/sales-invoices/${inv.id}/print`} className="inline-flex items-center gap-1.5 rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">
+            Print / PDF
+          </Link>
+          <span className={`rounded-full px-3 py-1 text-sm font-medium ${statusBadge[inv.status] ?? "bg-surface-gray-2"}`}>
+            {inv.status.replace("_", " ")}
+          </span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

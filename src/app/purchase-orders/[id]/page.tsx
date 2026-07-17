@@ -53,9 +53,14 @@ export default async function PoDetailPage({ params }: { params: { id: string } 
             {po.required_by ? ` · required by ${po.required_by}` : ""}
           </p>
         </div>
-        <span className={`rounded-full px-3 py-1 text-sm font-medium ${statusBadge[po.status] ?? "bg-surface-gray-2"}`}>
-          {po.status}
-        </span>
+        <div className="flex items-center gap-3">
+          <Link href={`/purchase-orders/${po.id}/print`} className="inline-flex items-center gap-1.5 rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">
+            Print / PDF
+          </Link>
+          <span className={`rounded-full px-3 py-1 text-sm font-medium ${statusBadge[po.status] ?? "bg-surface-gray-2"}`}>
+            {po.status}
+          </span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

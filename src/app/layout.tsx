@@ -30,7 +30,7 @@ export default async function RootLayout({
           children
         ) : (
           <div className="flex min-h-screen">
-            <aside className="sticky top-0 flex h-screen w-56 shrink-0 flex-col overflow-y-auto border-r border-outline-gray-2 bg-surface-white">
+            <aside className="no-print sticky top-0 flex h-screen w-56 shrink-0 flex-col overflow-y-auto border-r border-outline-gray-2 bg-surface-white">
               <div className="flex items-center gap-2 px-5 py-4 text-lg font-semibold text-ink-gray-8">
                 <span className="grid size-7 place-items-center rounded-md bg-brand text-white">S</span>
                 Spir-Margin
@@ -38,7 +38,7 @@ export default async function RootLayout({
               <AppNav />
             </aside>
             <div className="flex min-w-0 flex-1 flex-col">
-              <header className="flex h-12 items-center justify-between gap-4 border-b border-outline-gray-2 bg-surface-white px-6">
+              <header className="no-print flex h-12 items-center justify-between gap-4 border-b border-outline-gray-2 bg-surface-white px-6">
                 <Awesomebar />
                 <UserMenu user={user} />
               </header>
