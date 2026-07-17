@@ -6,7 +6,7 @@ import {
   ClipboardCheckIcon, MapPinIcon, HammerIcon, ReceiptIcon, ScrollTextIcon,
   PackagePlusIcon, PlugIcon, CalendarClockIcon, LifeBuoyIcon, FileSignatureIcon,
   CalendarDaysIcon, UsersIcon, CreditCardIcon, PercentIcon, ListChecksIcon,
-  BarChart3Icon, TrendingUpIcon,
+  BarChart3Icon, TrendingUpIcon, CalculatorIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -81,6 +81,11 @@ export const navGroups: NavGroup[] = [
     { href: "/reports/receivables", label: "Receivables Aging", icon: CoinsIcon },
     { href: "/reports/profitability", label: "Profitability", icon: TrendingUpIcon },
     { href: "/stock-balance", label: "Stock Balance", icon: ClipboardListIcon },
+  ]},
+  { label: "Tools", items: [
+    { href: "/tools/calculator", label: "Calculator", icon: CalculatorIcon },
+    { href: "/tools/profit", label: "Profit Calculator", icon: TrendingUpIcon },
+    { href: "/tools/converter", label: "Currency Converter", icon: ArrowLeftRightIcon },
   ]},
   { label: "Setup", items: [
     { href: "/masters", label: "Masters", icon: ListChecksIcon },

@@ -1,12 +1,5 @@
--- =====================================================================
--- Spir-Margin — combined schema (all 61 migrations + seed)
--- Paste into Supabase -> SQL Editor -> Run ONCE, on an EMPTY project.
--- A few views are redefined across migrations, so replaying the whole file is
--- not supported — the single first run is what matters; afterwards the app
--- applies any new migrations itself. Do NOT run against a DB holding another app.
--- Default login:  admin@spir.local / admin1234  — change it after first sign-in.
--- =====================================================================
-
+-- Spir-Margin — combined schema (all 62 migrations + seed). Run ONCE on an EMPTY DB.
+-- Default login: admin@spir.local / admin1234 — change after first sign-in.
 create extension if not exists pgcrypto;
 do $$ begin if not exists (select 1 from pg_roles where rolname='authenticated') then create role authenticated; end if; end $$;
 
@@ -5038,6 +5031,42 @@ alter table attachments enable row level security;
 drop policy if exists "authenticated_all" on attachments;
 create policy "authenticated_all" on attachments for all to authenticated using (true) with check (true);
 
+-- ===== migration: 0063_iqd_currency.sql =====
+-- =====================================================================
+-- Migration 0063 : Iraqi Dinar (IQD) + daily USD rate
+--
+-- Adds a convenience helper for the owner-managed daily USD -> IQD rate and
+-- seeds a starting rate (the owner updates it daily from the Currency page).
+-- Builds on the existing currency_exchanges table (0024).
+-- =====================================================================
+
+-- Today's effective USD -> IQD rate (latest on/before today); 0 if none set.
+create or replace function fn_usd_iqd_rate()
+returns numeric language sql stable as $$
+    select exchange_rate
+    from currency_exchanges
+    where from_currency = 'USD' and to_currency = 'IQD' and date <= current_date
+    order by date desc
+    limit 1;
+$$;
+
+-- Set / overwrite today's USD -> IQD rate (owner action). Returns the rate.
+create or replace function fn_set_usd_iqd_rate(p_rate numeric)
+returns numeric language plpgsql as $$
+begin
+    if p_rate is null or p_rate <= 0 then raise exception 'Rate must be positive'; end if;
+    insert into currency_exchanges (date, from_currency, to_currency, exchange_rate, for_buying, for_selling)
+    values (current_date, 'USD', 'IQD', p_rate, true, true)
+    on conflict (date, from_currency, to_currency)
+    do update set exchange_rate = excluded.exchange_rate;
+    return p_rate;
+end $$;
+
+-- Seed a starting rate so IQD values render out of the box (owner adjusts daily).
+insert into currency_exchanges (date, from_currency, to_currency, exchange_rate, for_buying, for_selling)
+values (current_date, 'USD', 'IQD', 1310, true, true)
+on conflict (date, from_currency, to_currency) do nothing;
+
 -- ===== seed data (demo) =====
 -- =====================================================================
 -- Seed data for local development / demo
@@ -5338,7 +5367,6 @@ begin
     end if;
 end $$;
 
--- ===== record applied migrations so the app's auto-migrator is a no-op =====
 create table if not exists _spir_migrations (filename text primary key, applied_at timestamptz not null default now());
 insert into _spir_migrations(filename) values
   ('0001_core_entities.sql'),
@@ -5401,7 +5429,8 @@ insert into _spir_migrations(filename) values
   ('0059_auth.sql'),
   ('0060_reports.sql'),
   ('0061_global_search.sql'),
-  ('0062_attachments.sql')
+  ('0062_attachments.sql'),
+  ('0063_iqd_currency.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;
