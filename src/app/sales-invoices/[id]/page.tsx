@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { Attachments } from "@/components/attachments/Attachments";
 
 export const dynamic = "force-dynamic";
 
@@ -136,6 +137,8 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
           </div>
         )}
       </Panel>
+
+      <Attachments entity="sales_invoice" recordId={inv.id} path={`/sales-invoices/${inv.id}`} />
     </div>
   );
 }

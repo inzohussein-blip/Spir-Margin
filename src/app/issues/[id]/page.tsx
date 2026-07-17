@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Panel } from "@/components/dashboard/Panel";
 import { FormShell } from "@/components/desk/FormShell";
+import { Attachments } from "@/components/attachments/Attachments";
 import { resolveIssueForm } from "@/app/actions/support";
 
 export const dynamic = "force-dynamic";
@@ -82,6 +83,8 @@ export default async function IssueDetailPage({ params }: { params: { id: string
             </form>
           )}
         </Panel>
+
+        <Attachments entity="issue" recordId={params.id} path={`/issues/${params.id}`} />
       </div>
     </FormShell>
   );
