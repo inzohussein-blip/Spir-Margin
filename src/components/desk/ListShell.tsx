@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { PlusIcon } from "lucide-react";
 import { ListFilter } from "./ListFilter";
+import { ExportCsvButton } from "./ExportCsvButton";
 
 export interface Crumb { label: string; href?: string; }
 
@@ -68,6 +69,7 @@ export function ListShell({
         {filterable && (
           <div className="flex items-center justify-between gap-3 border-b border-outline-gray-1 px-3 py-2">
             <ListFilter placeholder={filterPlaceholder ?? `Filter ${title.toLowerCase()}…`} />
+            <ExportCsvButton title={title} />
           </div>
         )}
         <div data-desk-list className="overflow-x-auto">{children}</div>

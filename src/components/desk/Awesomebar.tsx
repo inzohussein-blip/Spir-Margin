@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SearchIcon, PlusIcon, ArrowRightIcon } from "lucide-react";
+import { SearchIcon, PlusIcon, ArrowRightIcon, FileTextIcon } from "lucide-react";
 import {
   CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem,
 } from "@/components/ui/command";
 import { allNavItems } from "@/lib/nav";
+import { globalSearch, type SearchHit } from "@/app/actions/search";
 
 // Routes that have a /new create form (mirrors the app's create pages).
 const HAS_NEW = new Set([
@@ -23,6 +24,8 @@ const HAS_NEW = new Set([
 export function Awesomebar() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [hits, setHits] = useState<SearchHit[]>([]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -34,6 +37,20 @@ export function Awesomebar() {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, []);
+
+  // Debounced record search across the main documents.
+  useEffect(() => {
+    if (query.trim().length < 2) { setHits([]); return; }
+    let active = true;
+    const t = setTimeout(async () => {
+      const res = await globalSearch(query);
+      if (active) setHits(res);
+    }, 200);
+    return () => { active = false; clearTimeout(t); };
+  }, [query]);
+
+  // Reset the query when the palette closes.
+  useEffect(() => { if (!open) { setQuery(""); setHits([]); } }, [open]);
 
   const go = (href: string) => {
     setOpen(false);
@@ -52,9 +69,21 @@ export function Awesomebar() {
       </button>
 
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Search lists, or type 'new'…" />
+        <CommandInput value={query} onValueChange={setQuery} placeholder="Search records, lists, or type 'new'…" />
         <CommandList>
           <CommandEmpty>No results.</CommandEmpty>
+          {hits.length > 0 && (
+            <CommandGroup heading="Records">
+              {hits.map((h) => (
+                <CommandItem key={`${h.entity}-${h.href}-${h.label}`} value={`record ${query} ${h.label} ${h.sublabel ?? ""}`} onSelect={() => go(h.href)}>
+                  <FileTextIcon size={15} className="text-ink-gray-5" />
+                  <span>{h.label}</span>
+                  {h.sublabel ? <span className="text-xs text-ink-gray-4">· {h.sublabel}</span> : null}
+                  <span className="ml-auto rounded bg-surface-gray-2 px-1.5 py-0.5 text-2xs uppercase text-ink-gray-5">{h.entityLabel}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
           <CommandGroup heading="Go to">
             {allNavItems.map((item) => {
               const Icon = item.icon;
