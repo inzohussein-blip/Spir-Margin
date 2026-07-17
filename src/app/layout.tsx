@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { headers } from "next/headers";
 import { AppNav } from "@/components/AppNav";
 import { Awesomebar } from "@/components/desk/Awesomebar";
+import { NewButton } from "@/components/desk/NewButton";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import "./globals.css";
@@ -39,7 +40,10 @@ export default async function RootLayout({
             </aside>
             <div className="flex min-w-0 flex-1 flex-col">
               <header className="no-print flex h-12 items-center justify-between gap-4 border-b border-outline-gray-2 bg-surface-white px-6">
-                <Awesomebar />
+                <div className="flex items-center gap-3">
+                  <NewButton />
+                  <Awesomebar />
+                </div>
                 <UserMenu user={user} />
               </header>
               <main className="flex-1 p-6">{children}</main>
