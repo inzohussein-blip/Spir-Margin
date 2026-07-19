@@ -61,6 +61,20 @@ const ar: Record<string, string> = {
   "New lab": "مختبر جديد", "No labs yet": "لا توجد مختبرات بعد", "Contact name": "اسم جهة الاتصال",
   "Products (Items)": "المنتجات (الأصناف)", "Group": "المجموعة", "UOM": "الوحدة",
   "Buy": "شراء", "Sell": "بيع", "Last activity": "آخر نشاط",
+  // dashboard
+  "Record sale": "تسجيل بيع", "Total Profit": "إجمالي الربح", "Active Labs": "المختبرات النشطة",
+  "Maintenance Alerts": "تنبيهات الصيانة", "Expiring Kits": "كِتّات قرب الانتهاء",
+  "Outstanding Receivables": "الذمم المستحقة", "Open Purchase Orders": "أوامر شراء مفتوحة",
+  "Active Work Orders": "أوامر عمل نشطة", "Pending Repairs": "إصلاحات معلّقة", "Open Issues": "تذاكر مفتوحة",
+  "Outstanding Invoices": "الفواتير المستحقة", "No open receivables": "لا ذمم مستحقة",
+  "No open purchase orders": "لا أوامر شراء مفتوحة", "No active labs": "لا مختبرات نشطة",
+  "No devices need maintenance": "لا أجهزة تحتاج صيانة",
+  "Upcoming Maintenance (PM Schedule · ≤ 60 days)": "الصيانة القادمة (خلال ≤ 60 يوماً)",
+  "No scheduled visits in the next 60 days": "لا زيارات مجدولة خلال 60 يوماً",
+  "Expiring Contracts (AMC · ≤ 60 days)": "عقود قرب الانتهاء (خلال ≤ 60 يوماً)",
+  "No contracts expiring in the next 60 days": "لا عقود تنتهي خلال 60 يوماً",
+  "Kits Near Expiry (≤ 90 days)": "كِتّات قرب الانتهاء (خلال ≤ 90 يوماً)",
+  "No kits nearing expiry": "لا كِتّات قرب الانتهاء",
 };
 
 const dict: Record<Locale, Record<string, string>> = { ar, en: {} };

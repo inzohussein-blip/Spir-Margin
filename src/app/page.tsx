@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import type {
   ProfitSummary,
   ActiveLab,
@@ -45,6 +47,7 @@ interface PmVisitRow {
 }
 
 export default async function DashboardPage() {
+  const locale = getLocale();
   const supabase = createClient();
 
   const today = new Date().toISOString().slice(0, 10);
@@ -122,19 +125,19 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Dashboard")}</h1>
         <Link
           href="/sales/new"
           className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
         >
-          + Record sale
+          + {t(locale, "Record sale")}
         </Link>
       </div>
 
       {/* KPI row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="Total Profit"
+          label={t(locale, "Total Profit")}
           value={money(profit.total_profit)}
           hint={`${profit.sales_count} sales · revenue ${money(
             profit.total_revenue
@@ -142,19 +145,19 @@ export default async function DashboardPage() {
           accent="green"
         />
         <StatCard
-          label="Active Labs"
+          label={t(locale, "Active Labs")}
           value={String(labs.length)}
           hint="labs with a live subscription"
           accent="brand"
         />
         <StatCard
-          label="Maintenance Alerts"
+          label={t(locale, "Maintenance Alerts")}
           value={String(alerts.length)}
           hint="devices needing attention"
           accent="amber"
         />
         <StatCard
-          label="Expiring Kits"
+          label={t(locale, "Expiring Kits")}
           value={String(kits.length)}
           hint="batches expiring ≤ 90 days"
           accent="red"
@@ -164,31 +167,31 @@ export default async function DashboardPage() {
       {/* Operations KPI row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="Outstanding Receivables"
+          label={t(locale, "Outstanding Receivables")}
           value={money(outstandingTotal)}
           hint={`${invoices.length} open invoice${invoices.length === 1 ? "" : "s"}`}
           accent="amber"
         />
         <StatCard
-          label="Open Purchase Orders"
+          label={t(locale, "Open Purchase Orders")}
           value={String(pos.length)}
           hint={`value ${money(poTotal)}`}
           accent="brand"
         />
         <StatCard
-          label="Active Work Orders"
+          label={t(locale, "Active Work Orders")}
           value={String(openWorkOrders)}
           hint="kit assembly in progress"
           accent="green"
         />
         <StatCard
-          label="Pending Repairs"
+          label={t(locale, "Pending Repairs")}
           value={String(pendingRepairs)}
           hint="devices under repair"
           accent="red"
         />
         <StatCard
-          label="Open Issues"
+          label={t(locale, "Open Issues")}
           value={String(openIssues)}
           hint="support tickets awaiting action"
           accent="amber"
@@ -197,9 +200,9 @@ export default async function DashboardPage() {
 
       {/* Receivables + open POs */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Panel title="Outstanding Invoices">
+        <Panel title={t(locale, "Outstanding Invoices")}>
           {invoices.length === 0 ? (
-            <EmptyRow text="No open receivables" />
+            <EmptyRow text={t(locale, "No open receivables")} />
           ) : (
             <ul className="divide-y divide-outline-gray-1">
               {invoices.slice(0, 8).map((inv) => (
@@ -218,9 +221,9 @@ export default async function DashboardPage() {
           )}
         </Panel>
 
-        <Panel title="Open Purchase Orders">
+        <Panel title={t(locale, "Open Purchase Orders")}>
           {pos.length === 0 ? (
-            <EmptyRow text="No open purchase orders" />
+            <EmptyRow text={t(locale, "No open purchase orders")} />
           ) : (
             <ul className="divide-y divide-outline-gray-1">
               {pos.slice(0, 8).map((p) => (
@@ -242,9 +245,9 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Active labs */}
-        <Panel title="Active Labs">
+        <Panel title={t(locale, "Active Labs")}>
           {labs.length === 0 ? (
-            <EmptyRow text="No active labs" />
+            <EmptyRow text={t(locale, "No active labs")} />
           ) : (
             <ul className="divide-y divide-outline-gray-1">
               {labs.map((l) => (
@@ -269,9 +272,9 @@ export default async function DashboardPage() {
         </Panel>
 
         {/* Maintenance alerts */}
-        <Panel title="Maintenance Alerts">
+        <Panel title={t(locale, "Maintenance Alerts")}>
           {alerts.length === 0 ? (
-            <EmptyRow text="No devices need maintenance" />
+            <EmptyRow text={t(locale, "No devices need maintenance")} />
           ) : (
             <ul className="divide-y divide-outline-gray-1">
               {alerts.map((a) => (
@@ -308,9 +311,9 @@ export default async function DashboardPage() {
       </div>
 
       {/* Upcoming preventive maintenance — full width */}
-      <Panel title="Upcoming Maintenance (PM Schedule · ≤ 60 days)">
+      <Panel title={t(locale, "Upcoming Maintenance (PM Schedule · ≤ 60 days)")}>
         {pmVisits.length === 0 ? (
-          <EmptyRow text="No scheduled visits in the next 60 days" />
+          <EmptyRow text={t(locale, "No scheduled visits in the next 60 days")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -357,9 +360,9 @@ export default async function DashboardPage() {
       </Panel>
 
       {/* Expiring service contracts — full width */}
-      <Panel title="Expiring Contracts (AMC · ≤ 60 days)">
+      <Panel title={t(locale, "Expiring Contracts (AMC · ≤ 60 days)")}>
         {expiringContracts.length === 0 ? (
-          <EmptyRow text="No contracts expiring in the next 60 days" />
+          <EmptyRow text={t(locale, "No contracts expiring in the next 60 days")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -399,9 +402,9 @@ export default async function DashboardPage() {
       </Panel>
 
       {/* Expiring kits — full width */}
-      <Panel title="Kits Near Expiry (≤ 90 days)">
+      <Panel title={t(locale, "Kits Near Expiry (≤ 90 days)")}>
         {kits.length === 0 ? (
-          <EmptyRow text="No kits nearing expiry" />
+          <EmptyRow text={t(locale, "No kits nearing expiry")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
