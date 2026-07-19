@@ -97,6 +97,26 @@ const ar: Record<string, string> = {
   "Entry no.": "رقم الحركة", "Purpose": "الغرض", "From": "من", "To": "إلى", "Rows": "الأسطر",
   "Serial Numbers": "الأرقام التسلسلية", "Maintenance Visits": "زيارات الصيانة",
   "All Warehouses": "كل المخازن", "All Serials": "كل الأرقام التسلسلية", "Stock entries": "حركات المخزون",
+  // sales orders, maintenance schedules, assets, accounting, rfqs
+  "No sales orders — orders become sales when delivered": "لا أوامر بيع بعد",
+  "Order date": "تاريخ الأمر", "Delivery": "التسليم",
+  "Maintenance Schedules": "جداول الصيانة", "Schedules": "الجداول",
+  "No schedules yet — plan recurring preventive maintenance for a device": "لا جداول بعد",
+  "Schedule no.": "رقم الجدول", "Periodicity": "الدورية", "Start": "البداية", "Done": "المنجز",
+  "Asset Movements": "تنقلات الأصول", "Movement no.": "رقم التنقل",
+  "No movements yet — relocate devices between labs and warehouses": "لا تنقلات بعد",
+  "Asset Repairs": "إصلاحات الأصول", "Pending": "معلّق", "Completed cost": "تكلفة المكتمل",
+  "No repairs yet — raise a breakdown repair for a device": "لا إصلاحات بعد",
+  "Repair no.": "رقم الإصلاح", "Problem": "المشكلة", "Failure": "العطل", "Cost": "التكلفة",
+  "Installation Notes": "ملاحظات التركيب", "Notes": "الملاحظات", "Note no.": "رقم الملاحظة",
+  "No installation notes yet — record installing devices at a lab": "لا ملاحظات تركيب بعد",
+  "Chart of Accounts": "دليل الحسابات", "No accounts yet": "لا حسابات بعد",
+  "Root": "الجذر", "Parent": "الأصل",
+  "Unreconciled amount": "مبلغ غير مسوّى", "Unreconciled lines": "أسطر غير مسوّاة",
+  "Reconciled lines": "أسطر مسوّاة", "Bank Accounts": "الحسابات البنكية",
+  "No bank accounts yet — add one to begin reconciliation": "لا حسابات بنكية بعد",
+  "Requests for Quotation": "طلبات عروض الأسعار", "Received": "المستلمة",
+  "No RFQs yet — ask several suppliers to quote the same items": "لا طلبات عروض بعد",
 };
 
 const dict: Record<Locale, Record<string, string>> = { ar, en: {} };

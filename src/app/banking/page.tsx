@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getRecSummary } from "@/lib/banking";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +20,7 @@ interface Summary {
 }
 
 export default async function BankingPage() {
+  const locale = getLocale();
   const summary = (await getRecSummary()) as Summary[];
 
   const totalUnrec = summary.reduce((s, a) => s + Number(a.unreconciled_amount), 0);
@@ -27,7 +30,7 @@ export default async function BankingPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Banking</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Banking")}</h1>
         <div className="flex flex-wrap gap-2">
           <Link href="/banking/reconcile" className="rounded-md bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-dark">⇄ Reconcile</Link>
           <Link href="/banking/payments" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Payments</Link>
@@ -39,14 +42,14 @@ export default async function BankingPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Unreconciled amount" value={totalUnrec.toLocaleString()} hint="across all accounts" accent="amber" />
-        <StatCard label="Unreconciled lines" value={String(totalUnrecCount)} accent="red" />
-        <StatCard label="Reconciled lines" value={String(totalRecCount)} accent="green" />
+        <StatCard label={t(locale, "Unreconciled amount")} value={totalUnrec.toLocaleString()} hint="across all accounts" accent="amber" />
+        <StatCard label={t(locale, "Unreconciled lines")} value={String(totalUnrecCount)} accent="red" />
+        <StatCard label={t(locale, "Reconciled lines")} value={String(totalRecCount)} accent="green" />
       </div>
 
-      <Panel title={`Bank Accounts (${summary.length})`}>
+      <Panel title={`${t(locale, "Bank Accounts")} (${summary.length})`}>
         {summary.length === 0 ? (
-          <EmptyRow text="No bank accounts yet — add one to begin reconciliation" />
+          <EmptyRow text={t(locale, "No bank accounts yet — add one to begin reconciliation")} />
         ) : (
           <ul className="divide-y divide-outline-gray-1">
             {summary.map((a) => (

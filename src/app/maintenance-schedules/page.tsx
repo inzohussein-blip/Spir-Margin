@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { generateMaintenanceScheduleForm, cancelMaintenanceScheduleForm } from "@/app/actions/maintenance_schedule";
 
@@ -24,6 +26,7 @@ const statusBadge: Record<string, string> = {
 };
 
 export default async function MaintenanceSchedulesPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("maintenance_schedules")
@@ -34,29 +37,29 @@ export default async function MaintenanceSchedulesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Maintenance Schedules</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Maintenance Schedules")}</h1>
         <div className="flex gap-2">
           <Link href="/maintenance-visits" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Visits</Link>
           <Link href="/maintenance-schedules/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New schedule</Link>
         </div>
       </div>
 
-      <Panel title={`Schedules (${rows.length})`}>
+      <Panel title={`${t(locale, "Schedules")} (${rows.length})`}>
         {rows.length === 0 ? (
-          <EmptyRow text="No schedules yet — plan recurring preventive maintenance for a device" />
+          <EmptyRow text={t(locale, "No schedules yet — plan recurring preventive maintenance for a device")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Schedule no.</th>
-                  <th className="px-4 py-2">Device</th>
-                  <th className="px-4 py-2">Periodicity</th>
-                  <th className="px-4 py-2">Start</th>
-                  <th className="px-4 py-2">Visits</th>
-                  <th className="px-4 py-2">Done</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Action</th>
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
+                  <th className="px-4 py-2">{t(locale, "Schedule no.")}</th>
+                  <th className="px-4 py-2">{t(locale, "Device")}</th>
+                  <th className="px-4 py-2">{t(locale, "Periodicity")}</th>
+                  <th className="px-4 py-2">{t(locale, "Start")}</th>
+                  <th className="px-4 py-2">{t(locale, "Visits")}</th>
+                  <th className="px-4 py-2">{t(locale, "Done")}</th>
+                  <th className="px-4 py-2">{t(locale, "Status")}</th>
+                  <th className="px-4 py-2">{t(locale, "Action")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

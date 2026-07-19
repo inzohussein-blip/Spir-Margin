@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +20,7 @@ const rootBadge: Record<string, string> = {
 };
 
 export default async function AccountsPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("accounts")
@@ -28,7 +31,7 @@ export default async function AccountsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Chart of Accounts</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Chart of Accounts")}</h1>
         <div className="flex gap-2">
           <Link href="/journal-entries" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Journal entries</Link>
           <Link href="/cost-centers" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Cost centers</Link>
@@ -36,19 +39,19 @@ export default async function AccountsPage() {
           <Link href="/accounts/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New account</Link>
         </div>
       </div>
-      <Panel title={`Accounts (${rows.length})`}>
+      <Panel title={`${t(locale, "Accounts")} (${rows.length})`}>
         {rows.length === 0 ? (
-          <EmptyRow text="No accounts yet" />
+          <EmptyRow text={t(locale, "No accounts yet")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">No.</th>
-                  <th className="px-4 py-2">Account</th>
-                  <th className="px-4 py-2">Root</th>
-                  <th className="px-4 py-2">Type</th>
-                  <th className="px-4 py-2">Parent</th>
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
+                  <th className="px-4 py-2">{t(locale, "No.")}</th>
+                  <th className="px-4 py-2">{t(locale, "Account")}</th>
+                  <th className="px-4 py-2">{t(locale, "Root")}</th>
+                  <th className="px-4 py-2">{t(locale, "Type")}</th>
+                  <th className="px-4 py-2">{t(locale, "Parent")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

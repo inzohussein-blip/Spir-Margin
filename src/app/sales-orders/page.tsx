@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { ListShell } from "@/components/desk/ListShell";
 import { deliverSalesOrderForm, cancelSalesOrderForm } from "@/app/actions/selling";
@@ -24,6 +26,7 @@ const statusBadge: Record<string, string> = {
 };
 
 export default async function SalesOrdersPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("sales_orders")
@@ -33,26 +36,26 @@ export default async function SalesOrdersPage() {
 
   return (
     <ListShell
-      title="Sales Orders"
-      breadcrumbs={[{ label: "Home", href: "/" }, { label: "Selling" }]}
+      title={t(locale, "Sales Orders")}
+      breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Selling") }]}
       count={rows.length}
       newHref="/sales-orders/new"
-      newLabel="New order"
+      newLabel={t(locale, "New order")}
     >
         {rows.length === 0 ? (
-          <EmptyRow text="No sales orders — orders become sales when delivered" />
+          <EmptyRow text={t(locale, "No sales orders — orders become sales when delivered")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Lab</th>
-                  <th className="px-4 py-2">Order date</th>
-                  <th className="px-4 py-2">Delivery</th>
-                  <th className="px-4 py-2">Items</th>
-                  <th className="px-4 py-2">Total</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Action</th>
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
+                  <th className="px-4 py-2">{t(locale, "Lab")}</th>
+                  <th className="px-4 py-2">{t(locale, "Order date")}</th>
+                  <th className="px-4 py-2">{t(locale, "Delivery")}</th>
+                  <th className="px-4 py-2">{t(locale, "Items")}</th>
+                  <th className="px-4 py-2">{t(locale, "Total")}</th>
+                  <th className="px-4 py-2">{t(locale, "Status")}</th>
+                  <th className="px-4 py-2">{t(locale, "Action")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

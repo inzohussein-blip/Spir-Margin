@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { submitInstallationNoteForm, cancelInstallationNoteForm } from "@/app/actions/installation";
 
@@ -22,6 +24,7 @@ const statusBadge: Record<string, string> = {
 };
 
 export default async function InstallationNotesPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("installation_notes")
@@ -32,27 +35,27 @@ export default async function InstallationNotesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Installation Notes</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Installation Notes")}</h1>
         <div className="flex gap-2">
           <Link href="/devices" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Devices</Link>
           <Link href="/installation-notes/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New note</Link>
         </div>
       </div>
 
-      <Panel title={`Notes (${rows.length})`}>
+      <Panel title={`${t(locale, "Notes")} (${rows.length})`}>
         {rows.length === 0 ? (
-          <EmptyRow text="No installation notes yet — record installing devices at a lab" />
+          <EmptyRow text={t(locale, "No installation notes yet — record installing devices at a lab")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Note no.</th>
-                  <th className="px-4 py-2">Lab</th>
-                  <th className="px-4 py-2">Date</th>
-                  <th className="px-4 py-2">Devices</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Action</th>
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
+                  <th className="px-4 py-2">{t(locale, "Note no.")}</th>
+                  <th className="px-4 py-2">{t(locale, "Lab")}</th>
+                  <th className="px-4 py-2">{t(locale, "Date")}</th>
+                  <th className="px-4 py-2">{t(locale, "Devices")}</th>
+                  <th className="px-4 py-2">{t(locale, "Status")}</th>
+                  <th className="px-4 py-2">{t(locale, "Action")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">
