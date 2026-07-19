@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { ListShell } from "@/components/desk/ListShell";
@@ -38,7 +39,7 @@ export default async function LabsPage() {
                 {labs.map((l) => (
                   <tr key={l.id}>
                     <td className="px-4 py-2 font-medium">{l.code}</td>
-                    <td className="px-4 py-2">{l.name}</td>
+                    <td className="px-4 py-2"><Link href={`/labs/${l.id}`} className="text-brand hover:underline">{l.name}</Link></td>
                     <td className="px-4 py-2 text-ink-gray-5">{l.city ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">
                       {l.contact_name ?? "—"}

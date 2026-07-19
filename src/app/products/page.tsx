@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { ListShell } from "@/components/desk/ListShell";
@@ -62,7 +63,7 @@ export default async function ProductsPage() {
                 {products.map((p) => (
                   <tr key={p.id} className={p.is_disabled ? "opacity-50" : ""}>
                     <td className="px-4 py-2 font-medium">{p.item_code}</td>
-                    <td className="px-4 py-2">{p.name}</td>
+                    <td className="px-4 py-2"><Link href={`/products/${p.id}`} className="text-brand hover:underline">{p.name}</Link></td>
                     <td className="px-4 py-2">
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${

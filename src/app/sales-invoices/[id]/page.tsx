@@ -4,11 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Attachments } from "@/components/attachments/Attachments";
+import { getUsdIqdRate } from "@/app/actions/currency";
 
 export const dynamic = "force-dynamic";
 
 const money = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n || 0);
+const iqd = (n: number, rate: number) =>
+  rate > 0 ? `${new Intl.NumberFormat("en-US").format(Math.round(n * rate))} د.ع` : undefined;
 
 const statusBadge: Record<string, string> = {
   draft: "bg-surface-gray-2 text-ink-gray-6",
@@ -43,6 +46,7 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
 
   const items = inv.sales_invoice_items ?? [];
   const payments = (inv.sales_invoice_payments ?? []).slice().sort((a, b) => a.paid_on.localeCompare(b.paid_on));
+  const rate = await getUsdIqdRate();
 
   return (
     <div className="space-y-6">
@@ -68,9 +72,9 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Total" value={money(Number(inv.total_amount))} accent="brand" />
-        <StatCard label="Paid" value={money(Number(inv.paid_amount))} accent="green" />
-        <StatCard label="Outstanding" value={money(Number(inv.outstanding))} accent="amber" />
+        <StatCard label="Total" value={money(Number(inv.total_amount))} hint={iqd(Number(inv.total_amount), rate)} accent="brand" />
+        <StatCard label="Paid" value={money(Number(inv.paid_amount))} hint={iqd(Number(inv.paid_amount), rate)} accent="green" />
+        <StatCard label="Outstanding" value={money(Number(inv.outstanding))} hint={iqd(Number(inv.outstanding), rate)} accent="amber" />
       </div>
 
       <Panel title={`Line items (${items.length})`}>

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DocumentSheet, type DocLine } from "@/components/print/DocumentSheet";
+import { getUsdIqdRate } from "@/app/actions/currency";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
   if (!inv) notFound();
 
   const currency = inv.currency || "USD";
+  const rate = await getUsdIqdRate();
   const lines: DocLine[] = (inv.sales_invoice_items ?? []).map((it) => ({
     label: it.products?.name ?? "Item",
     sub: it.products?.item_code ?? null,
@@ -55,6 +57,9 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
         { label: "Balance due", value: Number(inv.outstanding), strong: true },
       ]}
       notes={inv.notes}
+      footer={rate > 0
+        ? `Balance due ≈ ${new Intl.NumberFormat("en-US").format(Math.round(Number(inv.outstanding) * rate))} IQD (1 USD = ${new Intl.NumberFormat("en-US").format(rate)} IQD) — Spir-Margin`
+        : undefined}
     />
   );
 }
