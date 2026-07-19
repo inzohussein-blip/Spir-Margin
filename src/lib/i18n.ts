@@ -82,6 +82,21 @@ const ar: Record<string, string> = {
   "Valid till": "صالح حتى", "New quotation": "عرض سعر جديد", "No quotations yet": "لا عروض أسعار بعد",
   "→ Sales order": "← أمر بيع", "Print": "طباعة", "supplier inv#": "رقم فاتورة المورّد",
   "No quotations — quote a lab, then convert to a sales order": "لا عروض أسعار بعد — قدّم عرضاً لمختبر",
+  // stock / assets / maintenance / support lists
+  "New device": "جهاز جديد", "Asset code": "رمز الأصل",
+  "Serial": "التسلسلي", "Next maintenance": "الصيانة القادمة",
+  "Reagent Kits": "كِتّات الكواشف", "New batch": "دفعة جديدة", "No kit batches yet": "لا دفعات بعد",
+  "Batch": "الدفعة", "Warehouse": "المخزن", "Margin": "الهامش", "No warehouses yet": "لا مخازن بعد",
+  "No serial numbers — track individual serialized units here": "لا أرقام تسلسلية بعد",
+  "Support Issues": "تذاكر الدعم", "New issue": "تذكرة جديدة", "No support issues yet": "لا تذاكر دعم بعد",
+  "No.": "الرقم", "Subject": "الموضوع", "Priority": "الأولوية",
+  "Draft": "مسودة", "Completed": "مكتمل", "Breakdowns": "أعطال",
+  "No maintenance visits yet — record a service call to a lab": "لا زيارات صيانة بعد",
+  "Visit no.": "رقم الزيارة", "Person": "الفنّي",
+  "No stock entries yet — receive, issue, or transfer kit batches between warehouses": "لا حركات مخزون بعد",
+  "Entry no.": "رقم الحركة", "Purpose": "الغرض", "From": "من", "To": "إلى", "Rows": "الأسطر",
+  "Serial Numbers": "الأرقام التسلسلية", "Maintenance Visits": "زيارات الصيانة",
+  "All Warehouses": "كل المخازن", "All Serials": "كل الأرقام التسلسلية", "Stock entries": "حركات المخزون",
 };
 
 const dict: Record<Locale, Record<string, string>> = { ar, en: {} };

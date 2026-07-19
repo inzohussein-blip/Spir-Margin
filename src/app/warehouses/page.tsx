@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +16,7 @@ interface WarehouseRow {
 }
 
 export default async function WarehousesPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("warehouses")
@@ -24,7 +27,7 @@ export default async function WarehousesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Warehouses</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Warehouses")}</h1>
         <Link
           href="/warehouses/new"
           className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
@@ -32,18 +35,18 @@ export default async function WarehousesPage() {
           + New warehouse
         </Link>
       </div>
-      <Panel title={`All Warehouses (${rows.length})`}>
+      <Panel title={`${t(locale, "All Warehouses")} (${rows.length})`}>
         {rows.length === 0 ? (
-          <EmptyRow text="No warehouses yet" />
+          <EmptyRow text={t(locale, "No warehouses yet")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Name</th>
-                  <th className="px-4 py-2">Type</th>
-                  <th className="px-4 py-2">City</th>
-                  <th className="px-4 py-2">Phone</th>
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
+                  <th className="px-4 py-2">{t(locale, "Name")}</th>
+                  <th className="px-4 py-2">{t(locale, "Type")}</th>
+                  <th className="px-4 py-2">{t(locale, "City")}</th>
+                  <th className="px-4 py-2">{t(locale, "Phone")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

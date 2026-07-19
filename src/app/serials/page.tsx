@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +25,7 @@ const statusBadge: Record<string, string> = {
 };
 
 export default async function SerialsPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("serial_numbers")
@@ -33,25 +36,25 @@ export default async function SerialsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Serial Numbers</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Serial Numbers")}</h1>
         <Link href="/serials/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">
           + New serial
         </Link>
       </div>
-      <Panel title={`All Serials (${rows.length})`}>
+      <Panel title={`${t(locale, "All Serials")} (${rows.length})`}>
         {rows.length === 0 ? (
-          <EmptyRow text="No serial numbers — track individual serialized units here" />
+          <EmptyRow text={t(locale, "No serial numbers — track individual serialized units here")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Serial</th>
-                  <th className="px-4 py-2">Product</th>
-                  <th className="px-4 py-2">Lab</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Warranty</th>
-                  <th className="px-4 py-2">Expiry</th>
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
+                  <th className="px-4 py-2">{t(locale, "Serial")}</th>
+                  <th className="px-4 py-2">{t(locale, "Product")}</th>
+                  <th className="px-4 py-2">{t(locale, "Lab")}</th>
+                  <th className="px-4 py-2">{t(locale, "Status")}</th>
+                  <th className="px-4 py-2">{t(locale, "Warranty")}</th>
+                  <th className="px-4 py-2">{t(locale, "Expiry")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

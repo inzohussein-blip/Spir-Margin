@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import { ListShell } from "@/components/desk/ListShell";
 import { Indicator } from "@/components/desk/Indicator";
 import { EmptyRow } from "@/components/dashboard/Panel";
@@ -27,6 +29,7 @@ const prioBadge: Record<string, string> = {
 };
 
 export default async function IssuesPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("issues")
@@ -36,25 +39,25 @@ export default async function IssuesPage() {
 
   return (
     <ListShell
-      title="Support Issues"
-      breadcrumbs={[{ label: "Home", href: "/" }, { label: "Support" }]}
+      title={t(locale, "Support Issues")}
+      breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Support") }]}
       count={rows.length}
       newHref="/issues/new"
-      newLabel="New issue"
+      newLabel={t(locale, "New issue")}
     >
       {rows.length === 0 ? (
-        <EmptyRow text="No support issues yet" />
+        <EmptyRow text={t(locale, "No support issues yet")} />
       ) : (
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-xs uppercase text-ink-gray-4">
-              <th className="px-4 py-2">No.</th>
-              <th className="px-4 py-2">Subject</th>
-              <th className="px-4 py-2">Lab</th>
-              <th className="px-4 py-2">Device</th>
-              <th className="px-4 py-2">Priority</th>
-              <th className="px-4 py-2">Date</th>
-              <th className="px-4 py-2">Status</th>
+            <tr className="text-start text-xs uppercase text-ink-gray-4">
+              <th className="px-4 py-2">{t(locale, "No.")}</th>
+              <th className="px-4 py-2">{t(locale, "Subject")}</th>
+              <th className="px-4 py-2">{t(locale, "Lab")}</th>
+              <th className="px-4 py-2">{t(locale, "Device")}</th>
+              <th className="px-4 py-2">{t(locale, "Priority")}</th>
+              <th className="px-4 py-2">{t(locale, "Date")}</th>
+              <th className="px-4 py-2">{t(locale, "Status")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-outline-gray-1">
