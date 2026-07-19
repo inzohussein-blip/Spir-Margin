@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +22,7 @@ const basisLabel: Record<string, string> = {
 };
 
 export default async function PaymentTermsPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("payment_terms")
@@ -30,15 +33,15 @@ export default async function PaymentTermsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Payment Terms</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Payment Terms")}</h1>
         <div className="flex gap-2">
           <Link href="/purchases" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">← Purchases</Link>
           <Link href="/payment-terms/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New term</Link>
         </div>
       </div>
-      <Panel title={`Terms (${rows.length})`}>
+      <Panel title={`${t(locale, "Terms")} (${rows.length})`}>
         {rows.length === 0 ? (
-          <EmptyRow text="No payment terms yet" />
+          <EmptyRow text={t(locale, "No payment terms yet")} />
         ) : (
           <ul className="divide-y divide-outline-gray-1">
             {rows.map((t) => (

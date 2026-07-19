@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { convertMaterialRequestForm } from "@/app/actions/material";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +18,7 @@ const statusBadge: Record<string, string> = {
 };
 
 export default async function MaterialRequestsPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("material_requests")
@@ -25,22 +28,22 @@ export default async function MaterialRequestsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Material Requests</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Material Requests")}</h1>
         <div className="flex gap-2">
           <Link href="/purchases" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Purchases</Link>
           <Link href="/material-requests/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New request</Link>
         </div>
       </div>
-      <Panel title={`Requests (${rows.length})`}>
+      <Panel title={`${t(locale, "Requests")} (${rows.length})`}>
         {rows.length === 0 ? (
-          <EmptyRow text="No material requests — request items, then convert to a purchase" />
+          <EmptyRow text={t(locale, "No material requests — request items, then convert to a purchase")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Date</th><th className="px-4 py-2">Required by</th>
-                  <th className="px-4 py-2">Items</th><th className="px-4 py-2">Status</th><th className="px-4 py-2">Action</th>
+                  <th className="px-4 py-2">{t(locale, "Date")}</th><th className="px-4 py-2">{t(locale, "Required by")}</th>
+                  <th className="px-4 py-2">{t(locale, "Items")}</th><th className="px-4 py-2">{t(locale, "Status")}</th><th className="px-4 py-2">{t(locale, "Action")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

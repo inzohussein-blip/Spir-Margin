@@ -2,10 +2,13 @@ import Link from "next/link";
 import { getKitBatches, getLabs } from "@/lib/queries";
 import { WithdrawalForm } from "@/components/form/WithdrawalForm";
 import { FormCard } from "@/components/form/Fields";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
 export default async function WithdrawPage() {
+  const locale = getLocale();
   const [batches, labs] = await Promise.all([getKitBatches(), getLabs()]);
 
   return (
@@ -15,8 +18,8 @@ export default async function WithdrawPage() {
           ← Kits
         </Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">Record Withdrawal</h1>
-      <FormCard title="Lab pulls kits from stock">
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Record Withdrawal")}</h1>
+      <FormCard title={t(locale, "Lab pulls kits from stock")}>
         <WithdrawalForm batches={batches as never} labs={labs as never} />
       </FormCard>
     </div>

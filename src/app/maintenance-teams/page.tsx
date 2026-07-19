@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +18,7 @@ interface Row {
 }
 
 export default async function MaintenanceTeamsPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("maintenance_teams")
@@ -26,12 +29,12 @@ export default async function MaintenanceTeamsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Maintenance Teams</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Maintenance Teams")}</h1>
         <Link href="/maintenance-teams/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New team</Link>
       </div>
 
       {rows.length === 0 ? (
-        <Panel title="Teams"><EmptyRow text="No maintenance teams yet" /></Panel>
+        <Panel title={t(locale, "Teams")}><EmptyRow text={t(locale, "No maintenance teams yet")} /></Panel>
       ) : (
         rows.map((t) => (
           <Panel key={t.id} title={`${t.name}${t.manager_name ? ` · ${t.manager_name}` : ""}`}>

@@ -4,17 +4,20 @@ import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { Indicator } from "@/components/desk/Indicator";
 import { CreateUserForm } from "@/components/auth/CreateUserForm";
 import { setUserActiveAction } from "@/app/actions/users";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
 interface Row { id: string; email: string; full_name: string | null; role: string; is_active: boolean; created_at: string; }
 
 export default async function UsersPage() {
+  const locale = getLocale();
   const me = await getCurrentUser();
   if (!me || me.role !== "admin") {
     return (
       <div className="rounded-lg border border-outline-gray-2 bg-surface-white p-8 text-center">
-        <h1 className="text-lg font-semibold text-ink-gray-8">Admins only</h1>
+        <h1 className="text-lg font-semibold text-ink-gray-8">{t(locale, "Admins only")}</h1>
         <p className="mt-1 text-sm text-ink-gray-5">You need an administrator account to manage users.</p>
       </div>
     );
@@ -27,21 +30,21 @@ export default async function UsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-ink-gray-8">Users</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Users")}</h1>
         <p className="text-sm text-ink-gray-5">Manage who can sign in and their role.</p>
       </div>
 
-      <Panel title="Add a user">
+      <Panel title={t(locale, "Add a user")}>
         <div className="p-4"><CreateUserForm /></div>
       </Panel>
 
-      <Panel title={`Users (${rows.length})`}>
-        {rows.length === 0 ? <EmptyRow text="No users yet" /> : (
+      <Panel title={`${t(locale, "Users")} (${rows.length})`}>
+        {rows.length === 0 ? <EmptyRow text={t(locale, "No users yet")} /> : (
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs uppercase text-ink-gray-4">
-                <th className="px-4 py-2">Name</th><th className="px-4 py-2">Email</th>
-                <th className="px-4 py-2">Role</th><th className="px-4 py-2">Status</th><th className="px-4 py-2">Action</th>
+                <th className="px-4 py-2">{t(locale, "Name")}</th><th className="px-4 py-2">{t(locale, "Email")}</th>
+                <th className="px-4 py-2">{t(locale, "Role")}</th><th className="px-4 py-2">{t(locale, "Status")}</th><th className="px-4 py-2">{t(locale, "Action")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-gray-1">

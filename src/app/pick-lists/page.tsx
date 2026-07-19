@@ -5,6 +5,8 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { ListShell } from "@/components/desk/ListShell";
 import { Indicator } from "@/components/desk/Indicator";
 import { openPickListForm, completePickListForm, cancelPickListForm } from "@/app/actions/pick_list";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +21,7 @@ interface Row {
 }
 
 export default async function PickListsPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("pick_lists")
@@ -31,34 +34,34 @@ export default async function PickListsPage() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Draft" value={String(draft.length)} accent="amber" />
-        <StatCard label="Open (on floor)" value={String(open.length)} accent="brand" />
-        <StatCard label="Total" value={String(rows.length)} accent="green" />
+        <StatCard label={t(locale, "Draft")} value={String(draft.length)} accent="amber" />
+        <StatCard label={t(locale, "Open (on floor)")} value={String(open.length)} accent="brand" />
+        <StatCard label={t(locale, "Total")} value={String(rows.length)} accent="green" />
       </div>
 
       <ListShell
-        title="Pick Lists"
-        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Stock" }]}
+        title={t(locale, "Pick Lists")}
+        breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Stock") }]}
         count={rows.length}
         newHref="/pick-lists/new"
-        newLabel="New pick list"
+        newLabel={t(locale, "New pick list")}
         actions={<Link href="/delivery-notes" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Delivery notes</Link>}
         filterPlaceholder="Filter by pick / lab…"
       >
         {rows.length === 0 ? (
-          <EmptyRow text="No pick lists yet — create a picking sheet before a delivery" />
+          <EmptyRow text={t(locale, "No pick lists yet — create a picking sheet before a delivery")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Pick no.</th>
-                  <th className="px-4 py-2">Purpose</th>
-                  <th className="px-4 py-2">Lab</th>
-                  <th className="px-4 py-2">Date</th>
-                  <th className="px-4 py-2 text-right">Lines</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Action</th>
+                  <th className="px-4 py-2">{t(locale, "Pick no.")}</th>
+                  <th className="px-4 py-2">{t(locale, "Purpose")}</th>
+                  <th className="px-4 py-2">{t(locale, "Lab")}</th>
+                  <th className="px-4 py-2">{t(locale, "Date")}</th>
+                  <th className="px-4 py-2 text-right">{t(locale, "Lines")}</th>
+                  <th className="px-4 py-2">{t(locale, "Status")}</th>
+                  <th className="px-4 py-2">{t(locale, "Action")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

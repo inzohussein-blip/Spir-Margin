@@ -4,6 +4,8 @@ import { Panel } from "@/components/dashboard/Panel";
 import { FormShell } from "@/components/desk/FormShell";
 import { Attachments } from "@/components/attachments/Attachments";
 import { resolveIssueForm } from "@/app/actions/support";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +26,7 @@ function MetaRow({ label, value }: { label: string; value: string }) {
 }
 
 export default async function IssueDetailPage({ params }: { params: { id: string } }) {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("issues")
@@ -38,18 +41,18 @@ export default async function IssueDetailPage({ params }: { params: { id: string
   return (
     <FormShell
       title={it.issue_no}
-      breadcrumbs={[{ label: "Home", href: "/" }, { label: "Support", href: "/issues" }, { label: it.issue_no }]}
+      breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Support"), href: "/issues" }, { label: it.issue_no }]}
       status={it.status}
       sidebar={
         <dl className="space-y-0.5">
           <div className="mb-2 text-xs font-semibold uppercase text-ink-gray-4">Details</div>
-          <MetaRow label="Lab" value={it.labs?.name ?? "—"} />
-          <MetaRow label="Device" value={it.devices?.asset_code ?? "—"} />
-          <MetaRow label="Priority" value={it.priority ?? "—"} />
-          <MetaRow label="Type" value={it.issue_type ?? "—"} />
-          <MetaRow label="Raised by" value={it.raised_by ?? "—"} />
-          <MetaRow label="Opened" value={it.opening_date} />
-          {it.resolved_on && <MetaRow label="Resolved" value={it.resolved_on} />}
+          <MetaRow label={t(locale, "Lab")} value={it.labs?.name ?? "—"} />
+          <MetaRow label={t(locale, "Device")} value={it.devices?.asset_code ?? "—"} />
+          <MetaRow label={t(locale, "Priority")} value={it.priority ?? "—"} />
+          <MetaRow label={t(locale, "Type")} value={it.issue_type ?? "—"} />
+          <MetaRow label={t(locale, "Raised by")} value={it.raised_by ?? "—"} />
+          <MetaRow label={t(locale, "Opened")} value={it.opening_date} />
+          {it.resolved_on && <MetaRow label={t(locale, "Resolved")} value={it.resolved_on} />}
         </dl>
       }
     >
@@ -64,7 +67,7 @@ export default async function IssueDetailPage({ params }: { params: { id: string
           </div>
         </Panel>
 
-        <Panel title="Resolution">
+        <Panel title={t(locale, "Resolution")}>
           {done && it.resolution_details ? (
             <p className="whitespace-pre-wrap px-4 py-4 text-sm text-ink-gray-7">{it.resolution_details}</p>
           ) : (
@@ -73,7 +76,7 @@ export default async function IssueDetailPage({ params }: { params: { id: string
               <textarea
                 name="resolution_details"
                 rows={3}
-                placeholder="How was it resolved?"
+                placeholder={t(locale, "How was it resolved?")}
                 className="w-full rounded-md border border-outline-gray-2 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
                 defaultValue={it.resolution_details ?? ""}
               />

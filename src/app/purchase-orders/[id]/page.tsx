@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Attachments } from "@/components/attachments/Attachments";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +30,7 @@ interface Po {
 }
 
 export default async function PoDetailPage({ params }: { params: { id: string } }) {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("purchase_orders")
@@ -65,28 +68,28 @@ export default async function PoDetailPage({ params }: { params: { id: string } 
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Total" value={money(Number(po.total_amount))} accent="brand" />
-        <StatCard label="Line items" value={String(items.length)} accent="green" />
+        <StatCard label={t(locale, "Total")} value={money(Number(po.total_amount))} accent="brand" />
+        <StatCard label={t(locale, "Line items")} value={String(items.length)} accent="green" />
         <StatCard
-          label="Billed"
+          label={t(locale, "Billed")}
           value={po.purchase_invoices ? "Yes" : "No"}
           hint={po.purchase_invoices?.reference_no ?? undefined}
           accent="amber"
         />
       </div>
 
-      <Panel title={`Line items (${items.length})`}>
+      <Panel title={`${t(locale, "Line items")} (${items.length})`}>
         {items.length === 0 ? (
-          <EmptyRow text="No line items" />
+          <EmptyRow text={t(locale, "No line items")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Product</th>
-                  <th className="px-4 py-2">Qty</th>
-                  <th className="px-4 py-2">Rate</th>
-                  <th className="px-4 py-2">Amount</th>
+                  <th className="px-4 py-2">{t(locale, "Product")}</th>
+                  <th className="px-4 py-2">{t(locale, "Qty")}</th>
+                  <th className="px-4 py-2">{t(locale, "Rate")}</th>
+                  <th className="px-4 py-2">{t(locale, "Amount")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">
@@ -114,7 +117,7 @@ export default async function PoDetailPage({ params }: { params: { id: string } 
       </Panel>
 
       {po.purchase_invoices ? (
-        <Panel title="Billed to purchase invoice">
+        <Panel title={t(locale, "Billed to purchase invoice")}>
           <div className="px-4 py-3 text-sm">
             <Link href="/purchases" className="font-medium text-brand hover:underline">
               {po.purchase_invoices.reference_no ?? "Purchase invoice"}

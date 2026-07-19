@@ -5,6 +5,8 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { ListShell } from "@/components/desk/ListShell";
 import { Indicator } from "@/components/desk/Indicator";
 import { submitPurchaseReceiptForm, cancelPurchaseReceiptForm } from "@/app/actions/purchase_receipt";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +21,7 @@ interface Row {
 }
 
 export default async function PurchaseReceiptsPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("purchase_receipts")
@@ -32,34 +35,34 @@ export default async function PurchaseReceiptsPage() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Draft" value={String(draft.length)} accent="amber" />
-        <StatCard label="Received" value={String(received.length)} accent="green" />
-        <StatCard label="Total" value={String(rows.length)} accent="brand" />
+        <StatCard label={t(locale, "Draft")} value={String(draft.length)} accent="amber" />
+        <StatCard label={t(locale, "Received")} value={String(received.length)} accent="green" />
+        <StatCard label={t(locale, "Total")} value={String(rows.length)} accent="brand" />
       </div>
 
       <ListShell
-        title="Purchase Receipts"
-        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Buying" }]}
+        title={t(locale, "Purchase Receipts")}
+        breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Buying") }]}
         count={rows.length}
         newHref="/purchase-receipts/new"
-        newLabel="New receipt"
+        newLabel={t(locale, "New receipt")}
         actions={<Link href="/purchase-orders" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Purchase orders</Link>}
         filterPlaceholder="Filter by receipt / supplier…"
       >
         {rows.length === 0 ? (
-          <EmptyRow text="No purchase receipts yet — receive kits/devices into stock" />
+          <EmptyRow text={t(locale, "No purchase receipts yet — receive kits/devices into stock")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Receipt no.</th>
-                  <th className="px-4 py-2">Supplier</th>
-                  <th className="px-4 py-2">Date</th>
-                  <th className="px-4 py-2 text-right">Items</th>
-                  <th className="px-4 py-2 text-right">Value</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Action</th>
+                  <th className="px-4 py-2">{t(locale, "Receipt no.")}</th>
+                  <th className="px-4 py-2">{t(locale, "Supplier")}</th>
+                  <th className="px-4 py-2">{t(locale, "Date")}</th>
+                  <th className="px-4 py-2 text-right">{t(locale, "Items")}</th>
+                  <th className="px-4 py-2 text-right">{t(locale, "Value")}</th>
+                  <th className="px-4 py-2">{t(locale, "Status")}</th>
+                  <th className="px-4 py-2">{t(locale, "Action")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

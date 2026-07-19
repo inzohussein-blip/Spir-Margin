@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { togglePricingRuleForm, deletePricingRuleForm } from "@/app/actions/pricing_rule";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +21,7 @@ interface Row {
 }
 
 export default async function PricingRulesPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("pricing_rules")
@@ -29,25 +32,25 @@ export default async function PricingRulesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Pricing Rules</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Pricing Rules")}</h1>
         <Link href="/pricing-rules/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New rule</Link>
       </div>
 
-      <Panel title={`Rules (${rows.length})`}>
+      <Panel title={`${t(locale, "Rules")} (${rows.length})`}>
         {rows.length === 0 ? (
-          <EmptyRow text="No pricing rules yet — add a lab/quantity discount" />
+          <EmptyRow text={t(locale, "No pricing rules yet — add a lab/quantity discount")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Title</th>
-                  <th className="px-4 py-2">Product</th>
-                  <th className="px-4 py-2">Lab</th>
-                  <th className="px-4 py-2">Qty band</th>
-                  <th className="px-4 py-2">Discount</th>
-                  <th className="px-4 py-2">Valid</th>
-                  <th className="px-4 py-2">Action</th>
+                  <th className="px-4 py-2">{t(locale, "Title")}</th>
+                  <th className="px-4 py-2">{t(locale, "Product")}</th>
+                  <th className="px-4 py-2">{t(locale, "Lab")}</th>
+                  <th className="px-4 py-2">{t(locale, "Qty band")}</th>
+                  <th className="px-4 py-2">{t(locale, "Discount")}</th>
+                  <th className="px-4 py-2">{t(locale, "Valid")}</th>
+                  <th className="px-4 py-2">{t(locale, "Action")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

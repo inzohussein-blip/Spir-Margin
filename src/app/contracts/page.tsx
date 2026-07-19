@@ -3,6 +3,8 @@ import { EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { ListShell } from "@/components/desk/ListShell";
 import { setContractStatusForm } from "@/app/actions/contract";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +35,7 @@ function daysLeft(end: string | null) {
 }
 
 export default async function ContractsPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("contracts")
@@ -49,31 +52,31 @@ export default async function ContractsPage() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Active" value={String(active.length)} accent="green" />
-        <StatCard label="Expiring ≤ 60d" value={String(expiring)} accent="amber" />
-        <StatCard label="Active value" value={money(annualValue)} accent="brand" />
+        <StatCard label={t(locale, "Active")} value={String(active.length)} accent="green" />
+        <StatCard label={t(locale, "Expiring ≤ 60d")} value={String(expiring)} accent="amber" />
+        <StatCard label={t(locale, "Active value")} value={money(annualValue)} accent="brand" />
       </div>
 
       <ListShell
-        title="Service Contracts (AMC)"
-        breadcrumbs={[{ label: "Home", href: "/" }, { label: "CRM" }]}
+        title={t(locale, "Service Contracts (AMC)")}
+        breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "CRM") }]}
         count={rows.length}
         newHref="/contracts/new"
-        newLabel="New contract"
+        newLabel={t(locale, "New contract")}
       >
         {rows.length === 0 ? (
-          <EmptyRow text="No contracts yet — add an annual maintenance contract" />
+          <EmptyRow text={t(locale, "No contracts yet — add an annual maintenance contract")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">No.</th>
-                  <th className="px-4 py-2">Lab</th>
-                  <th className="px-4 py-2">Device</th>
-                  <th className="px-4 py-2">End</th>
-                  <th className="px-4 py-2">Value</th>
-                  <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2">{t(locale, "No.")}</th>
+                  <th className="px-4 py-2">{t(locale, "Lab")}</th>
+                  <th className="px-4 py-2">{t(locale, "Device")}</th>
+                  <th className="px-4 py-2">{t(locale, "End")}</th>
+                  <th className="px-4 py-2">{t(locale, "Value")}</th>
+                  <th className="px-4 py-2">{t(locale, "Status")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

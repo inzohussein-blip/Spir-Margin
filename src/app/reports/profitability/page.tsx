@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { ListShell } from "@/components/desk/ListShell";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { EmptyRow } from "@/components/dashboard/Panel";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 const money = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n || 0);
@@ -10,33 +12,34 @@ const pct = (p: number, r: number) => (r > 0 ? `${Math.round((p / r) * 100)}%` :
 interface Row { product_id: string; item_code: string | null; product_name: string; qty: number; revenue: number; cost: number; profit: number; }
 
 export default async function ProfitabilityReport() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase.from("v_profitability").select("*").order("profit", { ascending: false });
   const rows = (data as unknown as Row[]) ?? [];
-  const t = rows.reduce((a, r) => ({ rev: a.rev + Number(r.revenue), cost: a.cost + Number(r.cost), profit: a.profit + Number(r.profit) }), { rev: 0, cost: 0, profit: 0 });
+  const tot = rows.reduce((a, r) => ({ rev: a.rev + Number(r.revenue), cost: a.cost + Number(r.cost), profit: a.profit + Number(r.profit) }), { rev: 0, cost: 0, profit: 0 });
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <StatCard label="Revenue" value={money(t.rev)} accent="brand" />
-        <StatCard label="Cost" value={money(t.cost)} accent="amber" />
-        <StatCard label="Gross profit" value={money(t.profit)} accent="green" />
-        <StatCard label="Margin" value={pct(t.profit, t.rev)} accent="green" />
+        <StatCard label={t(locale, "Revenue")} value={money(tot.rev)} accent="brand" />
+        <StatCard label={t(locale, "Cost")} value={money(tot.cost)} accent="amber" />
+        <StatCard label={t(locale, "Gross profit")} value={money(tot.profit)} accent="green" />
+        <StatCard label={t(locale, "Margin")} value={pct(tot.profit, tot.rev)} accent="green" />
       </div>
 
       <ListShell
-        title="Profitability by Product"
-        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Reports", href: "/reports" }, { label: "Profitability" }]}
+        title={t(locale, "Profitability by Product")}
+        breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Reports"), href: "/reports" }, { label: t(locale, "Profitability") }]}
         count={rows.length}
         filterPlaceholder="Filter by product…"
       >
-        {rows.length === 0 ? <EmptyRow text="No sales recorded yet" /> : (
+        {rows.length === 0 ? <EmptyRow text={t(locale, "No sales recorded yet")} /> : (
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs uppercase text-ink-gray-4">
-                <th className="px-4 py-2">Product</th><th className="px-4 py-2 text-right">Qty</th>
-                <th className="px-4 py-2 text-right">Revenue</th><th className="px-4 py-2 text-right">Cost</th>
-                <th className="px-4 py-2 text-right">Profit</th><th className="px-4 py-2 text-right">Margin</th>
+                <th className="px-4 py-2">{t(locale, "Product")}</th><th className="px-4 py-2 text-right">{t(locale, "Qty")}</th>
+                <th className="px-4 py-2 text-right">{t(locale, "Revenue")}</th><th className="px-4 py-2 text-right">{t(locale, "Cost")}</th>
+                <th className="px-4 py-2 text-right">{t(locale, "Profit")}</th><th className="px-4 py-2 text-right">{t(locale, "Margin")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-gray-1">
@@ -51,7 +54,7 @@ export default async function ProfitabilityReport() {
                 </tr>
               ))}
             </tbody>
-            <tfoot><tr className="border-t border-outline-gray-2 font-semibold"><td className="px-4 py-2">Total</td><td /><td className="px-4 py-2 text-right">{money(t.rev)}</td><td className="px-4 py-2 text-right">{money(t.cost)}</td><td className="px-4 py-2 text-right">{money(t.profit)}</td><td className="px-4 py-2 text-right">{pct(t.profit, t.rev)}</td></tr></tfoot>
+            <tfoot><tr className="border-t border-outline-gray-2 font-semibold"><td className="px-4 py-2">Total</td><td /><td className="px-4 py-2 text-right">{money(tot.rev)}</td><td className="px-4 py-2 text-right">{money(tot.cost)}</td><td className="px-4 py-2 text-right">{money(tot.profit)}</td><td className="px-4 py-2 text-right">{pct(tot.profit, tot.rev)}</td></tr></tfoot>
           </table>
         )}
       </ListShell>

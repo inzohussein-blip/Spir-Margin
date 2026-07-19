@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import {
   CoinsIcon, PackageIcon, FlaskConicalIcon, TrendingUpIcon, ShoppingCartIcon, ClipboardListIcon,
 } from "lucide-react";
@@ -15,10 +17,11 @@ const REPORTS = [
 ];
 
 export default function ReportsPage() {
+  const locale = getLocale();
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-ink-gray-8">Reports</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Reports")}</h1>
         <p className="text-sm text-ink-gray-5">Financial, sales and stock analytics.</p>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

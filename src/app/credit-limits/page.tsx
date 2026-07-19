@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { setLabCreditLimitForm } from "@/app/actions/credit";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +21,7 @@ interface Row {
 }
 
 export default async function CreditLimitsPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase.from("v_lab_credit").select("*");
   const rows = (data as unknown as Row[]) ?? [];
@@ -28,29 +31,29 @@ export default async function CreditLimitsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Lab Credit Limits</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Lab Credit Limits")}</h1>
         <Link href="/labs" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Labs</Link>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Over limit" value={String(over)} accent="red" />
-        <StatCard label="Total outstanding" value={money(totalOutstanding)} accent="amber" />
-        <StatCard label="Labs" value={String(rows.length)} accent="brand" />
+        <StatCard label={t(locale, "Over limit")} value={String(over)} accent="red" />
+        <StatCard label={t(locale, "Total outstanding")} value={money(totalOutstanding)} accent="amber" />
+        <StatCard label={t(locale, "Labs")} value={String(rows.length)} accent="brand" />
       </div>
 
-      <Panel title={`Credit standing (${rows.length})`}>
+      <Panel title={`${t(locale, "Credit standing")} (${rows.length})`}>
         {rows.length === 0 ? (
-          <EmptyRow text="No labs yet" />
+          <EmptyRow text={t(locale, "No labs yet")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Lab</th>
-                  <th className="px-4 py-2">Outstanding</th>
-                  <th className="px-4 py-2">Credit limit</th>
-                  <th className="px-4 py-2">Standing</th>
-                  <th className="px-4 py-2">Set limit</th>
+                  <th className="px-4 py-2">{t(locale, "Lab")}</th>
+                  <th className="px-4 py-2">{t(locale, "Outstanding")}</th>
+                  <th className="px-4 py-2">{t(locale, "Credit limit")}</th>
+                  <th className="px-4 py-2">{t(locale, "Standing")}</th>
+                  <th className="px-4 py-2">{t(locale, "Set limit")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

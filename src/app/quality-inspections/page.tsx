@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { evaluateQualityInspectionForm, cancelQualityInspectionForm } from "@/app/actions/quality";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +27,7 @@ const statusBadge: Record<string, string> = {
 };
 
 export default async function QualityInspectionsPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("quality_inspections")
@@ -37,32 +40,32 @@ export default async function QualityInspectionsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Quality Inspections</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Quality Inspections")}</h1>
         <Link href="/quality-inspections/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New inspection</Link>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Accepted" value={String(accepted)} accent="green" />
-        <StatCard label="Rejected" value={String(rejected)} accent="brand" />
-        <StatCard label="Total" value={String(rows.length)} accent="amber" />
+        <StatCard label={t(locale, "Accepted")} value={String(accepted)} accent="green" />
+        <StatCard label={t(locale, "Rejected")} value={String(rejected)} accent="brand" />
+        <StatCard label={t(locale, "Total")} value={String(rows.length)} accent="amber" />
       </div>
 
-      <Panel title={`Inspections (${rows.length})`}>
+      <Panel title={`${t(locale, "Inspections")} (${rows.length})`}>
         {rows.length === 0 ? (
-          <EmptyRow text="No inspections yet — record incoming/outgoing QC for kits and devices" />
+          <EmptyRow text={t(locale, "No inspections yet — record incoming/outgoing QC for kits and devices")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">QI no.</th>
-                  <th className="px-4 py-2">Type</th>
-                  <th className="px-4 py-2">Product</th>
-                  <th className="px-4 py-2">Date</th>
-                  <th className="px-4 py-2">Readings</th>
-                  <th className="px-4 py-2">Inspector</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Action</th>
+                  <th className="px-4 py-2">{t(locale, "QI no.")}</th>
+                  <th className="px-4 py-2">{t(locale, "Type")}</th>
+                  <th className="px-4 py-2">{t(locale, "Product")}</th>
+                  <th className="px-4 py-2">{t(locale, "Date")}</th>
+                  <th className="px-4 py-2">{t(locale, "Readings")}</th>
+                  <th className="px-4 py-2">{t(locale, "Inspector")}</th>
+                  <th className="px-4 py-2">{t(locale, "Status")}</th>
+                  <th className="px-4 py-2">{t(locale, "Action")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

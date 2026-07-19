@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { resolveWarrantyClaimForm } from "@/app/actions/support";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +25,7 @@ const statusBadge: Record<string, string> = {
 };
 
 export default async function WarrantyPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("warranty_claims")
@@ -33,25 +36,25 @@ export default async function WarrantyPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Warranty Claims</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Warranty Claims")}</h1>
         <Link href="/warranty/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">
           + New claim
         </Link>
       </div>
-      <Panel title={`All Claims (${rows.length})`}>
+      <Panel title={`${t(locale, "All Claims")} (${rows.length})`}>
         {rows.length === 0 ? (
-          <EmptyRow text="No warranty claims" />
+          <EmptyRow text={t(locale, "No warranty claims")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Date</th>
-                  <th className="px-4 py-2">Product</th>
-                  <th className="px-4 py-2">Lab</th>
-                  <th className="px-4 py-2">Complaint</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Action</th>
+                  <th className="px-4 py-2">{t(locale, "Date")}</th>
+                  <th className="px-4 py-2">{t(locale, "Product")}</th>
+                  <th className="px-4 py-2">{t(locale, "Lab")}</th>
+                  <th className="px-4 py-2">{t(locale, "Complaint")}</th>
+                  <th className="px-4 py-2">{t(locale, "Status")}</th>
+                  <th className="px-4 py-2">{t(locale, "Action")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

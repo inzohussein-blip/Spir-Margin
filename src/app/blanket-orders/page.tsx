@@ -5,6 +5,8 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { ListShell } from "@/components/desk/ListShell";
 import { Indicator } from "@/components/desk/Indicator";
 import { submitBlanketOrderForm, cancelBlanketOrderForm } from "@/app/actions/blanket_order";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +23,7 @@ interface Row {
 }
 
 export default async function BlanketOrdersPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("blanket_orders")
@@ -33,33 +36,33 @@ export default async function BlanketOrdersPage() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Active" value={String(active.length)} accent="green" />
-        <StatCard label="Draft" value={String(rows.filter((r) => r.status === "draft").length)} accent="amber" />
-        <StatCard label="Total" value={String(rows.length)} accent="brand" />
+        <StatCard label={t(locale, "Active")} value={String(active.length)} accent="green" />
+        <StatCard label={t(locale, "Draft")} value={String(rows.filter((r) => r.status === "draft").length)} accent="amber" />
+        <StatCard label={t(locale, "Total")} value={String(rows.length)} accent="brand" />
       </div>
 
       <ListShell
-        title="Blanket Orders"
-        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Selling" }]}
+        title={t(locale, "Blanket Orders")}
+        breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Selling") }]}
         count={rows.length}
         newHref="/blanket-orders/new"
-        newLabel="New blanket order"
+        newLabel={t(locale, "New blanket order")}
         filterPlaceholder="Filter by order / party…"
       >
         {rows.length === 0 ? (
-          <EmptyRow text="No blanket orders yet — set up a long-term agreed rate with a lab or supplier" />
+          <EmptyRow text={t(locale, "No blanket orders yet — set up a long-term agreed rate with a lab or supplier")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Order no.</th>
-                  <th className="px-4 py-2">Type</th>
-                  <th className="px-4 py-2">Party</th>
-                  <th className="px-4 py-2">Valid</th>
-                  <th className="px-4 py-2 text-right">Value</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Action</th>
+                  <th className="px-4 py-2">{t(locale, "Order no.")}</th>
+                  <th className="px-4 py-2">{t(locale, "Type")}</th>
+                  <th className="px-4 py-2">{t(locale, "Party")}</th>
+                  <th className="px-4 py-2">{t(locale, "Valid")}</th>
+                  <th className="px-4 py-2 text-right">{t(locale, "Value")}</th>
+                  <th className="px-4 py-2">{t(locale, "Status")}</th>
+                  <th className="px-4 py-2">{t(locale, "Action")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

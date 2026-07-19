@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { ListShell } from "@/components/desk/ListShell";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { EmptyRow } from "@/components/dashboard/Panel";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +18,7 @@ interface Row {
 const BUCKETS = ["current", "1-30", "31-60", "61-90", "90+"];
 
 export default async function ReceivablesReport() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase.from("v_ar_aging").select("*").order("days_overdue", { ascending: false });
   const rows = (data as unknown as Row[]) ?? [];
@@ -31,21 +34,21 @@ export default async function ReceivablesReport() {
       </div>
 
       <ListShell
-        title="Accounts Receivable Aging"
-        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Reports", href: "/reports" }, { label: "Receivables" }]}
+        title={t(locale, "Accounts Receivable Aging")}
+        breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Reports"), href: "/reports" }, { label: t(locale, "Receivables") }]}
         count={rows.length}
         filterPlaceholder="Filter by invoice / lab…"
       >
         {rows.length === 0 ? (
-          <EmptyRow text="No outstanding invoices — everything is paid up" />
+          <EmptyRow text={t(locale, "No outstanding invoices — everything is paid up")} />
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs uppercase text-ink-gray-4">
-                <th className="px-4 py-2">Invoice</th><th className="px-4 py-2">Lab</th>
-                <th className="px-4 py-2">Date</th><th className="px-4 py-2">Due</th>
-                <th className="px-4 py-2 text-right">Days overdue</th>
-                <th className="px-4 py-2">Bucket</th><th className="px-4 py-2 text-right">Outstanding</th>
+                <th className="px-4 py-2">{t(locale, "Invoice")}</th><th className="px-4 py-2">{t(locale, "Lab")}</th>
+                <th className="px-4 py-2">{t(locale, "Date")}</th><th className="px-4 py-2">{t(locale, "Due")}</th>
+                <th className="px-4 py-2 text-right">{t(locale, "Days overdue")}</th>
+                <th className="px-4 py-2">{t(locale, "Bucket")}</th><th className="px-4 py-2 text-right">{t(locale, "Outstanding")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-gray-1">

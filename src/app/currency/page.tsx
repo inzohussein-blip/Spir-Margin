@@ -4,6 +4,8 @@ import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { DailyRateCard } from "@/components/tools/DailyRateCard";
 import { getUsdIqdRate } from "@/app/actions/currency";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +15,7 @@ interface Row {
 }
 
 export default async function CurrencyPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("currency_exchanges")
@@ -25,24 +28,24 @@ export default async function CurrencyPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Currency Exchange</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Currency Exchange")}</h1>
         <Link href="/currency/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New rate</Link>
       </div>
 
       {canSetRate ? <DailyRateCard currentRate={usdIqd} /> : null}
-      <Panel title={`Rates (${rows.length})`}>
+      <Panel title={`${t(locale, "Rates")} (${rows.length})`}>
         {rows.length === 0 ? (
-          <EmptyRow text="No exchange rates yet" />
+          <EmptyRow text={t(locale, "No exchange rates yet")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Date</th>
-                  <th className="px-4 py-2">From</th>
-                  <th className="px-4 py-2">To</th>
-                  <th className="px-4 py-2">Rate</th>
-                  <th className="px-4 py-2">For</th>
+                  <th className="px-4 py-2">{t(locale, "Date")}</th>
+                  <th className="px-4 py-2">{t(locale, "From")}</th>
+                  <th className="px-4 py-2">{t(locale, "To")}</th>
+                  <th className="px-4 py-2">{t(locale, "Rate")}</th>
+                  <th className="px-4 py-2">{t(locale, "For")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { ListShell } from "@/components/desk/ListShell";
 import { EmptyRow } from "@/components/dashboard/Panel";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +20,7 @@ interface Row {
 }
 
 export default async function StockBalancePage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase.from("v_stock_balance").select("*");
   const rows = (data as unknown as Row[]) ?? [];
@@ -25,23 +28,23 @@ export default async function StockBalancePage() {
 
   return (
     <ListShell
-      title="Stock Balance"
-      breadcrumbs={[{ label: "Home", href: "/" }, { label: "Stock" }]}
+      title={t(locale, "Stock Balance")}
+      breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Stock") }]}
       count={rows.length}
       filterPlaceholder="Filter by product / warehouse…"
     >
       {rows.length === 0 ? (
-        <EmptyRow text="No stock on hand" />
+        <EmptyRow text={t(locale, "No stock on hand")} />
       ) : (
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs uppercase text-ink-gray-4">
-              <th className="px-4 py-2">Item code</th>
-              <th className="px-4 py-2">Product</th>
-              <th className="px-4 py-2">Warehouse</th>
-              <th className="px-4 py-2 text-right">Qty</th>
-              <th className="px-4 py-2 text-right">Batches</th>
-              <th className="px-4 py-2 text-right">Value</th>
+              <th className="px-4 py-2">{t(locale, "Item code")}</th>
+              <th className="px-4 py-2">{t(locale, "Product")}</th>
+              <th className="px-4 py-2">{t(locale, "Warehouse")}</th>
+              <th className="px-4 py-2 text-right">{t(locale, "Qty")}</th>
+              <th className="px-4 py-2 text-right">{t(locale, "Batches")}</th>
+              <th className="px-4 py-2 text-right">{t(locale, "Value")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-outline-gray-1">

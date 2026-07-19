@@ -3,6 +3,8 @@ import { EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { ListShell } from "@/components/desk/ListShell";
 import { setAppointmentStatusForm } from "@/app/actions/appointment";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +27,7 @@ const statusBadge: Record<string, string> = {
 };
 
 export default async function AppointmentsPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("appointments")
@@ -36,32 +39,32 @@ export default async function AppointmentsPage() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Upcoming" value={String(upcoming)} accent="brand" />
-        <StatCard label="Completed" value={String(rows.filter((r) => r.status === "completed").length)} accent="green" />
-        <StatCard label="Total" value={String(rows.length)} accent="amber" />
+        <StatCard label={t(locale, "Upcoming")} value={String(upcoming)} accent="brand" />
+        <StatCard label={t(locale, "Completed")} value={String(rows.filter((r) => r.status === "completed").length)} accent="green" />
+        <StatCard label={t(locale, "Total")} value={String(rows.length)} accent="amber" />
       </div>
 
       <ListShell
-        title="Appointments"
-        breadcrumbs={[{ label: "Home", href: "/" }, { label: "CRM" }]}
+        title={t(locale, "Appointments")}
+        breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "CRM") }]}
         count={rows.length}
         newHref="/appointments/new"
-        newLabel="New appointment"
+        newLabel={t(locale, "New appointment")}
       >
         {rows.length === 0 ? (
-          <EmptyRow text="No appointments yet — schedule an install or service visit" />
+          <EmptyRow text={t(locale, "No appointments yet — schedule an install or service visit")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">No.</th>
-                  <th className="px-4 py-2">When</th>
-                  <th className="px-4 py-2">Purpose</th>
-                  <th className="px-4 py-2">Lab</th>
-                  <th className="px-4 py-2">Device</th>
-                  <th className="px-4 py-2">Contact</th>
-                  <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2">{t(locale, "No.")}</th>
+                  <th className="px-4 py-2">{t(locale, "When")}</th>
+                  <th className="px-4 py-2">{t(locale, "Purpose")}</th>
+                  <th className="px-4 py-2">{t(locale, "Lab")}</th>
+                  <th className="px-4 py-2">{t(locale, "Device")}</th>
+                  <th className="px-4 py-2">{t(locale, "Contact")}</th>
+                  <th className="px-4 py-2">{t(locale, "Status")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

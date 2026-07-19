@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getPaymentEntries } from "@/lib/banking";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -17,30 +19,31 @@ interface PE {
 }
 
 export default async function PaymentsPage() {
+  const locale = getLocale();
   const rows = (await getPaymentEntries()) as PE[];
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Payment Entries</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Payment Entries")}</h1>
         <div className="flex gap-2">
           <Link href="/banking" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">← Banking</Link>
           <Link href="/banking/payments/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New payment</Link>
         </div>
       </div>
-      <Panel title={`All Payments (${rows.length})`}>
+      <Panel title={`${t(locale, "All Payments")} (${rows.length})`}>
         {rows.length === 0 ? (
-          <EmptyRow text="No payment entries yet" />
+          <EmptyRow text={t(locale, "No payment entries yet")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Ref</th>
-                  <th className="px-4 py-2">Type</th>
-                  <th className="px-4 py-2">Party</th>
-                  <th className="px-4 py-2">Amount</th>
-                  <th className="px-4 py-2">Date</th>
-                  <th className="px-4 py-2">Reconciled</th>
+                  <th className="px-4 py-2">{t(locale, "Ref")}</th>
+                  <th className="px-4 py-2">{t(locale, "Type")}</th>
+                  <th className="px-4 py-2">{t(locale, "Party")}</th>
+                  <th className="px-4 py-2">{t(locale, "Amount")}</th>
+                  <th className="px-4 py-2">{t(locale, "Date")}</th>
+                  <th className="px-4 py-2">{t(locale, "Reconciled")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

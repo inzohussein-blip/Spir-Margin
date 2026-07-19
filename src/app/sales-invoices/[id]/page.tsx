@@ -5,6 +5,8 @@ import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Attachments } from "@/components/attachments/Attachments";
 import { getUsdIqdRate } from "@/app/actions/currency";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +35,7 @@ interface Invoice {
 }
 
 export default async function InvoiceDetailPage({ params }: { params: { id: string } }) {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("sales_invoices")
@@ -72,23 +75,23 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Total" value={money(Number(inv.total_amount))} hint={iqd(Number(inv.total_amount), rate)} accent="brand" />
-        <StatCard label="Paid" value={money(Number(inv.paid_amount))} hint={iqd(Number(inv.paid_amount), rate)} accent="green" />
-        <StatCard label="Outstanding" value={money(Number(inv.outstanding))} hint={iqd(Number(inv.outstanding), rate)} accent="amber" />
+        <StatCard label={t(locale, "Total")} value={money(Number(inv.total_amount))} hint={iqd(Number(inv.total_amount), rate)} accent="brand" />
+        <StatCard label={t(locale, "Paid")} value={money(Number(inv.paid_amount))} hint={iqd(Number(inv.paid_amount), rate)} accent="green" />
+        <StatCard label={t(locale, "Outstanding")} value={money(Number(inv.outstanding))} hint={iqd(Number(inv.outstanding), rate)} accent="amber" />
       </div>
 
-      <Panel title={`Line items (${items.length})`}>
+      <Panel title={`${t(locale, "Line items")} (${items.length})`}>
         {items.length === 0 ? (
-          <EmptyRow text="No line items" />
+          <EmptyRow text={t(locale, "No line items")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Product</th>
-                  <th className="px-4 py-2">Qty</th>
-                  <th className="px-4 py-2">Rate</th>
-                  <th className="px-4 py-2">Amount</th>
+                  <th className="px-4 py-2">{t(locale, "Product")}</th>
+                  <th className="px-4 py-2">{t(locale, "Qty")}</th>
+                  <th className="px-4 py-2">{t(locale, "Rate")}</th>
+                  <th className="px-4 py-2">{t(locale, "Amount")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">
@@ -115,17 +118,17 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
         )}
       </Panel>
 
-      <Panel title={`Payment history (${payments.length})`}>
+      <Panel title={`${t(locale, "Payment history")} (${payments.length})`}>
         {payments.length === 0 ? (
-          <EmptyRow text="No payments recorded yet" />
+          <EmptyRow text={t(locale, "No payments recorded yet")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Date</th>
-                  <th className="px-4 py-2">Amount</th>
-                  <th className="px-4 py-2">Note</th>
+                  <th className="px-4 py-2">{t(locale, "Date")}</th>
+                  <th className="px-4 py-2">{t(locale, "Amount")}</th>
+                  <th className="px-4 py-2">{t(locale, "Note")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

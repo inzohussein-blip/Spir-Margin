@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getRules } from "@/lib/banking";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -21,19 +23,20 @@ interface Rule {
 }
 
 export default async function RulesPage() {
+  const locale = getLocale();
   const rules = (await getRules()) as Rule[];
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink-gray-8">Matching Rules</h1>
+        <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Matching Rules")}</h1>
         <div className="flex gap-2">
           <Link href="/banking" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">← Banking</Link>
           <Link href="/banking/rules/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New rule</Link>
         </div>
       </div>
-      <Panel title={`Rules (${rules.length})`}>
+      <Panel title={`${t(locale, "Rules")} (${rules.length})`}>
         {rules.length === 0 ? (
-          <EmptyRow text="No rules yet — rules auto-classify bank lines by description/amount" />
+          <EmptyRow text={t(locale, "No rules yet — rules auto-classify bank lines by description/amount")} />
         ) : (
           <ul className="divide-y divide-outline-gray-1">
             {rules.map((r) => (

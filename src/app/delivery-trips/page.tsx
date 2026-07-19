@@ -4,6 +4,8 @@ import { EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { ListShell } from "@/components/desk/ListShell";
 import { Indicator } from "@/components/desk/Indicator";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import {
   startDeliveryTripForm,
   completeDeliveryTripForm,
@@ -23,6 +25,7 @@ interface Row {
 }
 
 export default async function DeliveryTripsPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("delivery_trips")
@@ -35,34 +38,34 @@ export default async function DeliveryTripsPage() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="In transit" value={String(inTransit.length)} accent="amber" />
-        <StatCard label="Completed" value={String(done.length)} accent="green" />
-        <StatCard label="Total" value={String(rows.length)} accent="brand" />
+        <StatCard label={t(locale, "In transit")} value={String(inTransit.length)} accent="amber" />
+        <StatCard label={t(locale, "Completed")} value={String(done.length)} accent="green" />
+        <StatCard label={t(locale, "Total")} value={String(rows.length)} accent="brand" />
       </div>
 
       <ListShell
-        title="Delivery Trips"
-        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Stock" }]}
+        title={t(locale, "Delivery Trips")}
+        breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Stock") }]}
         count={rows.length}
         newHref="/delivery-trips/new"
-        newLabel="New trip"
+        newLabel={t(locale, "New trip")}
         actions={<Link href="/delivery-notes" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Delivery notes</Link>}
         filterPlaceholder="Filter by trip / driver…"
       >
         {rows.length === 0 ? (
-          <EmptyRow text="No delivery trips yet — group delivery notes into a route" />
+          <EmptyRow text={t(locale, "No delivery trips yet — group delivery notes into a route")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Trip no.</th>
-                  <th className="px-4 py-2">Driver</th>
-                  <th className="px-4 py-2">Vehicle</th>
-                  <th className="px-4 py-2">Departure</th>
-                  <th className="px-4 py-2 text-right">Stops</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Action</th>
+                  <th className="px-4 py-2">{t(locale, "Trip no.")}</th>
+                  <th className="px-4 py-2">{t(locale, "Driver")}</th>
+                  <th className="px-4 py-2">{t(locale, "Vehicle")}</th>
+                  <th className="px-4 py-2">{t(locale, "Departure")}</th>
+                  <th className="px-4 py-2 text-right">{t(locale, "Stops")}</th>
+                  <th className="px-4 py-2">{t(locale, "Status")}</th>
+                  <th className="px-4 py-2">{t(locale, "Action")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

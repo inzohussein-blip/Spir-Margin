@@ -4,6 +4,8 @@ import { EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { ListShell } from "@/components/desk/ListShell";
 import { setOpportunityStatusForm } from "@/app/actions/opportunity";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +29,7 @@ const statusBadge: Record<string, string> = {
 };
 
 export default async function OpportunitiesPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const [{ data }, { data: summary }] = await Promise.all([
     supabase
@@ -43,34 +46,34 @@ export default async function OpportunitiesPage() {
 
       {s && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatCard label="Open pipeline" value={Number(s.open_amount).toLocaleString()} hint={`${s.open_count} open`} accent="brand" />
-          <StatCard label="Weighted value" value={Number(s.weighted_amount).toLocaleString()} hint="amount × probability" accent="amber" />
-          <StatCard label="Won" value={String(s.won_count)} accent="green" />
+          <StatCard label={t(locale, "Open pipeline")} value={Number(s.open_amount).toLocaleString()} hint={`${s.open_count} open`} accent="brand" />
+          <StatCard label={t(locale, "Weighted value")} value={Number(s.weighted_amount).toLocaleString()} hint="amount × probability" accent="amber" />
+          <StatCard label={t(locale, "Won")} value={String(s.won_count)} accent="green" />
         </div>
       )}
 
       <ListShell
-        title="Opportunities"
-        breadcrumbs={[{ label: "Home", href: "/" }, { label: "CRM" }]}
+        title={t(locale, "Opportunities")}
+        breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "CRM") }]}
         count={rows.length}
         newHref="/opportunities/new"
-        newLabel="New opportunity"
+        newLabel={t(locale, "New opportunity")}
         actions={<Link href="/sales-team" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Sales team</Link>}
       >
         {rows.length === 0 ? (
-          <EmptyRow text="No opportunities yet" />
+          <EmptyRow text={t(locale, "No opportunities yet")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Title</th>
-                  <th className="px-4 py-2">Lab</th>
-                  <th className="px-4 py-2">Stage</th>
-                  <th className="px-4 py-2">Amount</th>
-                  <th className="px-4 py-2">Prob.</th>
-                  <th className="px-4 py-2">Closing</th>
-                  <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2">{t(locale, "Title")}</th>
+                  <th className="px-4 py-2">{t(locale, "Lab")}</th>
+                  <th className="px-4 py-2">{t(locale, "Stage")}</th>
+                  <th className="px-4 py-2">{t(locale, "Amount")}</th>
+                  <th className="px-4 py-2">{t(locale, "Prob.")}</th>
+                  <th className="px-4 py-2">{t(locale, "Closing")}</th>
+                  <th className="px-4 py-2">{t(locale, "Status")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

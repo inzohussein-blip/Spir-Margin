@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getPartyOptions } from "@/lib/banking";
 import { RuleForm } from "@/components/banking/RuleForm";
 import type { RuleInput } from "@/app/actions/banking";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +14,7 @@ export default async function EditRulePage({
 }: {
   params: { id: string };
 }) {
+  const locale = getLocale();
   const supabase = createClient();
   const [{ data: rule }, parties] = await Promise.all([
     supabase
@@ -50,7 +53,7 @@ export default async function EditRulePage({
       <div className="text-sm text-ink-gray-5">
         <Link href="/banking/rules" className="hover:text-brand">← Rules</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">Edit Rule</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Edit Rule")}</h1>
       <RuleForm parties={parties} initial={initial} />
     </div>
   );
