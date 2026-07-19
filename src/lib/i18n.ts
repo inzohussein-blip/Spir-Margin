@@ -75,6 +75,13 @@ const ar: Record<string, string> = {
   "No contracts expiring in the next 60 days": "لا عقود تنتهي خلال 60 يوماً",
   "Kits Near Expiry (≤ 90 days)": "كِتّات قرب الانتهاء (خلال ≤ 90 يوماً)",
   "No kits nearing expiry": "لا كِتّات قرب الانتهاء",
+  // purchase orders + quotations lists
+  "Open orders": "أوامر مفتوحة", "Open value": "قيمة مفتوحة", "New order": "أمر جديد",
+  "PO no.": "رقم الأمر", "Supplier": "المورّد", "Items": "الأصناف", "Bill": "فوترة",
+  "No purchase orders yet — order kits/devices from a supplier": "لا أوامر شراء بعد — اطلب من مورّد",
+  "Valid till": "صالح حتى", "New quotation": "عرض سعر جديد", "No quotations yet": "لا عروض أسعار بعد",
+  "→ Sales order": "← أمر بيع", "Print": "طباعة", "supplier inv#": "رقم فاتورة المورّد",
+  "No quotations — quote a lab, then convert to a sales order": "لا عروض أسعار بعد — قدّم عرضاً لمختبر",
 };
 
 const dict: Record<Locale, Record<string, string>> = { ar, en: {} };
