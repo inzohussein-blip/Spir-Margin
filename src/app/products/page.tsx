@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { ListShell } from "@/components/desk/ListShell";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +27,7 @@ const typeBadge: Record<string, string> = {
 };
 
 export default async function ProductsPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("products")
@@ -36,27 +39,27 @@ export default async function ProductsPage() {
 
   return (
     <ListShell
-      title="Products (Items)"
-      breadcrumbs={[{ label: "Home", href: "/" }, { label: "Stock" }]}
+      title={t(locale, "Products (Items)")}
+      breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Stock") }]}
       count={products.length}
       newHref="/products/new"
-      newLabel="New product"
+      newLabel={t(locale, "New product")}
     >
         {products.length === 0 ? (
-          <EmptyRow text="No products yet" />
+          <EmptyRow text={t(locale, "No products yet")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Code</th>
-                  <th className="px-4 py-2">Name</th>
-                  <th className="px-4 py-2">Type</th>
-                  <th className="px-4 py-2">Group</th>
-                  <th className="px-4 py-2">Brand</th>
-                  <th className="px-4 py-2">UOM</th>
-                  <th className="px-4 py-2">Buy</th>
-                  <th className="px-4 py-2">Sell</th>
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
+                  <th className="px-4 py-2">{t(locale, "Code")}</th>
+                  <th className="px-4 py-2">{t(locale, "Name")}</th>
+                  <th className="px-4 py-2">{t(locale, "Type")}</th>
+                  <th className="px-4 py-2">{t(locale, "Group")}</th>
+                  <th className="px-4 py-2">{t(locale, "Brand")}</th>
+                  <th className="px-4 py-2">{t(locale, "UOM")}</th>
+                  <th className="px-4 py-2">{t(locale, "Buy")}</th>
+                  <th className="px-4 py-2">{t(locale, "Sell")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

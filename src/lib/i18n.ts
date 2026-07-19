@@ -51,6 +51,16 @@ const ar: Record<string, string> = {
   "No invoices yet": "لا توجد فواتير بعد", "No devices yet": "لا توجد أجهزة بعد",
   "No stock on hand": "لا يوجد مخزون", "Sales invoices": "فواتير البيع", "Stock batches": "دفعات المخزون",
   "Serial no.": "الرقم التسلسلي", "Qty": "الكمية", "Expiry": "الانتهاء", "Back": "رجوع",
+  // list-page labels
+  "Billed": "المفوتر", "Invoices": "الفواتير", "New invoice": "فاتورة جديدة",
+  "Sales orders": "أوامر البيع", "Invoice no.": "رقم الفاتورة", "Total": "الإجمالي",
+  "Action": "إجراء", "Submit": "اعتماد", "Cancel": "إلغاء", "Pay": "دفع", "amount": "المبلغ",
+  "No invoices yet — bill a lab for kits or devices": "لا توجد فواتير بعد — أنشئ فاتورة لمختبر",
+  "New product": "منتج جديد", "Name": "الاسم", "Spare parts": "قطع غيار",
+  "No products yet": "لا توجد منتجات بعد",
+  "New lab": "مختبر جديد", "No labs yet": "لا توجد مختبرات بعد", "Contact name": "اسم جهة الاتصال",
+  "Products (Items)": "المنتجات (الأصناف)", "Group": "المجموعة", "UOM": "الوحدة",
+  "Buy": "شراء", "Sell": "بيع", "Last activity": "آخر نشاط",
 };
 
 const dict: Record<Locale, Record<string, string>> = { ar, en: {} };
