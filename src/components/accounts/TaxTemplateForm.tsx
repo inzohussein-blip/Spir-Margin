@@ -47,7 +47,7 @@ export function TaxTemplateForm() {
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Tax category")}</span>
-            <input {...register("tax_category")} className={cls} placeholder="Standard" />
+            <input {...register("tax_category")} className={cls} placeholder={t(locale, "Standard")} />
           </label>
         </CardContent>
       </Card>

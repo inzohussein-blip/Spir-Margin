@@ -52,7 +52,7 @@ export function DeliveryTripForm({
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Trip no.")}</span>
-            <input {...register("trip_no")} className={cls} placeholder="auto if blank" />
+            <input {...register("trip_no")} className={cls} placeholder={t(locale, "auto if blank")} />
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Departure date")}</span>
@@ -60,11 +60,11 @@ export function DeliveryTripForm({
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Driver")}</span>
-            <input {...register("driver_name")} className={cls} placeholder="Driver name" />
+            <input {...register("driver_name")} className={cls} placeholder={t(locale, "Driver name")} />
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Vehicle")}</span>
-            <input {...register("vehicle")} className={cls} placeholder="Plate / vehicle" />
+            <input {...register("vehicle")} className={cls} placeholder={t(locale, "Plate / vehicle")} />
           </label>
           <label className="block sm:col-span-2">
             <span className="font-medium text-ink-gray-8">{t(locale, "Notes")}</span>
@@ -104,7 +104,7 @@ export function DeliveryTripForm({
                 </div>
                 <label className="block text-xs sm:col-span-6">
                   <span className="text-ink-gray-5">{t(locale, "Address (optional)")}</span>
-                  <input {...register(`stops.${i}.address`)} className={cls} placeholder="Delivery address / directions" />
+                  <input {...register(`stops.${i}.address`)} className={cls} placeholder={t(locale, "Delivery address / directions")} />
                 </label>
               </div>
             </div>

@@ -27,7 +27,7 @@ export function CreateUserForm() {
     <form action={formAction} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <label className="block text-sm">
         <span className="font-medium text-ink-gray-8">{t(locale, "Full name")}</span>
-        <input name="full_name" className={cls} placeholder="Jane Doe" />
+        <input name="full_name" className={cls} placeholder={t(locale, "Jane Doe")} />
       </label>
       <label className="block text-sm">
         <span className="font-medium text-ink-gray-8">{t(locale, "Email")}</span>
@@ -43,7 +43,7 @@ export function CreateUserForm() {
       </label>
       <label className="block text-sm">
         <span className="font-medium text-ink-gray-8">{t(locale, "Temporary password")}</span>
-        <input name="password" type="text" required minLength={8} className={cls} placeholder="min 8 characters" />
+        <input name="password" type="text" required minLength={8} className={cls} placeholder={t(locale, "min 8 characters")} />
       </label>
       <div className="sm:col-span-2">
         {state?.error ? <p className="mb-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p> : null}

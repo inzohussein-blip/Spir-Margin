@@ -44,7 +44,7 @@ export function MaintenanceTeamForm() {
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Team name")}</span>
-            <input {...register("name")} className={cls} placeholder="Field Service Team" />
+            <input {...register("name")} className={cls} placeholder={t(locale, "Field Service Team")} />
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Manager")}</span>
@@ -68,7 +68,7 @@ export function MaintenanceTeamForm() {
               </label>
               <label className="col-span-2 block text-xs">
                 <span className="text-ink-gray-5">{t(locale, "Role")}</span>
-                <input {...register(`members.${i}.role`)} className={cls} placeholder="Technician" />
+                <input {...register(`members.${i}.role`)} className={cls} placeholder={t(locale, "Technician")} />
               </label>
               <div className="flex items-end justify-end">
                 <Button type="button" variant="subtle" size="sm" onClick={() => members.remove(i)} disabled={members.fields.length === 1}>
@@ -101,7 +101,7 @@ export function MaintenanceTeamForm() {
               </label>
               <label className="block text-xs">
                 <span className="text-ink-gray-5">{t(locale, "Periodicity")}</span>
-                <input {...register(`tasks.${i}.periodicity`)} className={cls} placeholder="Quarterly" />
+                <input {...register(`tasks.${i}.periodicity`)} className={cls} placeholder={t(locale, "Quarterly")} />
               </label>
               <div className="flex items-end justify-end">
                 <Button type="button" variant="subtle" size="sm" onClick={() => tasks.remove(i)} disabled={tasks.fields.length === 1}>

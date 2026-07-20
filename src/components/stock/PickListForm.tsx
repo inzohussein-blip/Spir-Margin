@@ -63,7 +63,7 @@ export function PickListForm({
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Pick no.")}</span>
-            <input {...register("pick_no")} className={cls} placeholder="auto if blank" />
+            <input {...register("pick_no")} className={cls} placeholder={t(locale, "auto if blank")} />
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Purpose")}</span>
@@ -123,7 +123,7 @@ export function PickListForm({
                 </label>
                 <label className="block text-xs">
                   <span className="text-ink-gray-5">{t(locale, "Batch no.")}</span>
-                  <input {...register(`items.${i}.batch_no`)} className={cls} placeholder="optional" />
+                  <input {...register(`items.${i}.batch_no`)} className={cls} placeholder={t(locale, "optional")} />
                 </label>
                 <div className="flex items-end justify-end">
                   <Button type="button" variant="subtle" size="sm" onClick={() => remove(i)} disabled={fields.length === 1}>

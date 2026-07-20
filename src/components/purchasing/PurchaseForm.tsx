@@ -134,7 +134,7 @@ export function PurchaseForm({
                   <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                     <label className="block text-xs">
                       <span className="text-ink-gray-5">{t(locale, "Batch no. (kit)")}</span>
-                      <input {...register(`items.${i}.batch_no`)} className={cls} placeholder="auto if empty" />
+                      <input {...register(`items.${i}.batch_no`)} className={cls} placeholder={t(locale, "auto if empty")} />
                     </label>
                     <label className="block text-xs">
                       <span className="text-ink-gray-5">{t(locale, "Expiry date (kit)")}</span>

@@ -315,6 +315,20 @@ const ar: Record<string, string> = {
   "contract expiring": "عقد قرب الانتهاء", "overdue invoice": "فاتورة متأخّرة",
   // form labels
   // buttons & totals
+  // placeholders
+  "auto if blank": "يُنشأ تلقائيًا إن تُرك فارغًا",
+  "optional": "اختياري",
+  "party name (optional)": "اسم الطرف (اختياري)",
+  "min 8 characters": "٨ أحرف على الأقل",
+  "Please settle this invoice…": "يُرجى تسوية هذه الفاتورة…",
+  "Plate / vehicle": "رقم اللوحة / المركبة",
+  "Driver name": "اسم السائق",
+  "Delivery address / directions": "عنوان التسليم / الإرشادات",
+  "Technician": "فنّي",
+  "Standard": "قياسي",
+  "Quarterly": "ربع سنوي",
+  "Field Service Team": "فريق الخدمة الميدانية",
+  "Jane Doe": "الاسم الكامل",
   "Add item": "إضافة صنف",
   "Add stop": "إضافة محطة",
   "Add line": "إضافة سطر",

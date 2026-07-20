@@ -64,7 +64,7 @@ export function PaymentRequestForm({
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Request no.")}</span>
-            <input {...register("request_no")} className={cls} placeholder="auto if blank" />
+            <input {...register("request_no")} className={cls} placeholder={t(locale, "auto if blank")} />
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Posting date")}</span>
@@ -93,7 +93,7 @@ export function PaymentRequestForm({
           </label>
           <label className="block sm:col-span-2">
             <span className="font-medium text-ink-gray-8">{t(locale, "Message")}</span>
-            <input {...register("message")} className={cls} placeholder="Please settle this invoice…" />
+            <input {...register("message")} className={cls} placeholder={t(locale, "Please settle this invoice…")} />
           </label>
         </CardContent>
       </Card>

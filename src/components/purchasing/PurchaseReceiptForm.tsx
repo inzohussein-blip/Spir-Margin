@@ -117,7 +117,7 @@ export function PurchaseReceiptForm({
                 </div>
                 <label className="block text-xs sm:col-span-3">
                   <span className="text-ink-gray-5">{t(locale, "Batch no. (optional)")}</span>
-                  <input {...register(`items.${i}.batch_no`)} className={cls} placeholder="auto if blank" />
+                  <input {...register(`items.${i}.batch_no`)} className={cls} placeholder={t(locale, "auto if blank")} />
                 </label>
                 <label className="block text-xs sm:col-span-3">
                   <span className="text-ink-gray-5">{t(locale, "Expiry date (optional)")}</span>
