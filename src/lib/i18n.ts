@@ -316,6 +316,25 @@ const ar: Record<string, string> = {
   // form labels
   // buttons & totals
   // placeholders
+  // AMC billing
+  "AMC Billing": "فوترة عقود الصيانة",
+  "Contract no.": "رقم العقد",
+  "Service item": "صنف الخدمة",
+  "Interval": "الفترة",
+  "Next billing date": "تاريخ الفوترة التالي",
+  "Overdue (days)": "متأخر (أيام)",
+  "Period amount": "مبلغ الفترة",
+  "Total due": "إجمالي المستحق",
+  "Generate invoices": "توليد الفواتير",
+  "Generated invoices": "الفواتير المُولّدة",
+  "No contracts were due for billing.": "لا توجد عقود مستحقّة للفوترة.",
+  "No contracts are due for billing.": "لا توجد عقود مستحقّة للفوترة.",
+  "Draft invoices will be created for all contracts due today.": "ستُنشأ فواتير مسودّة لكل العقود المستحقّة اليوم.",
+  "Filter by contract / lab…": "تصفية حسب العقد / المختبر…",
+  "monthly": "شهري",
+  "quarterly": "ربع سنوي",
+  "annually": "سنوي",
+  "none": "بدون",
   "auto if blank": "يُنشأ تلقائيًا إن تُرك فارغًا",
   "optional": "اختياري",
   "party name (optional)": "اسم الطرف (اختياري)",

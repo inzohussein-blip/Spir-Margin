@@ -6,7 +6,7 @@ import {
   ClipboardCheckIcon, MapPinIcon, HammerIcon, ReceiptIcon, ScrollTextIcon,
   PackagePlusIcon, PlugIcon, CalendarClockIcon, LifeBuoyIcon, FileSignatureIcon,
   CalendarDaysIcon, UsersIcon, CreditCardIcon, PercentIcon, ListChecksIcon,
-  BarChart3Icon, TrendingUpIcon, CalculatorIcon,
+  BarChart3Icon, TrendingUpIcon, CalculatorIcon, RepeatIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -72,6 +72,7 @@ export const navGroups: NavGroup[] = [
   ]},
   { label: "Accounting", items: [
     { href: "/payment-requests", label: "Payment Requests", icon: CreditCardIcon },
+    { href: "/amc-billing", label: "AMC Billing", icon: RepeatIcon },
     { href: "/banking", label: "Banking", icon: LandmarkIcon },
     { href: "/accounts", label: "Accounts", icon: BookOpenIcon },
     { href: "/currency", label: "Currency", icon: CoinsIcon },

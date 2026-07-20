@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getLabs, getDevices } from "@/lib/queries";
+import { getLabs, getDevices, getProducts } from "@/lib/queries";
 import { createContract } from "@/app/actions/contract";
 import { Field, TextInput, TextArea, Select, SubmitButton, FormCard } from "@/components/form/Fields";
 
@@ -8,9 +8,10 @@ export const dynamic = "force-dynamic";
 
 export default async function NewContractPage() {
   const supabase = createClient();
-  const [labs, devices, { data: templates }] = await Promise.all([
+  const [labs, devices, products, { data: templates }] = await Promise.all([
     getLabs(),
     getDevices(),
+    getProducts(),
     supabase.from("contract_templates").select("title, contract_terms").order("title"),
   ]);
   const tpl = (templates ?? [])[0];
@@ -57,6 +58,33 @@ export default async function NewContractPage() {
           </Field>
           <Field label="Signee">
             <TextInput name="signee" />
+          </Field>
+          <div className="sm:col-span-2 mt-2 border-t border-outline-gray-1 pt-3">
+            <p className="mb-1 text-xs font-semibold uppercase text-ink-gray-4">Recurring billing (AMC)</p>
+            <p className="text-xs text-ink-gray-5">
+              Set an interval, the service item to charge, and the first billing date to auto-generate invoices from the AMC Billing page.
+            </p>
+          </div>
+          <Field label="Billing interval">
+            <Select name="billing_interval" defaultValue="none">
+              <option value="none">none (no recurring billing)</option>
+              <option value="monthly">monthly</option>
+              <option value="quarterly">quarterly</option>
+              <option value="annually">annually</option>
+            </Select>
+          </Field>
+          <Field label="Service item">
+            <Select name="service_product_id" defaultValue="">
+              <option value="">— none —</option>
+              {products.map((p) => (
+                <option key={p.id as string} value={p.id as string}>
+                  {(p.name as string) ?? (p.item_code as string)}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Next billing date">
+            <TextInput name="next_billing_date" type="date" />
           </Field>
           <div className="sm:col-span-2">
             <Field label="Terms">

@@ -25,6 +25,9 @@ export async function createContract(fd: FormData) {
     contract_value: Number(str(fd, "contract_value") ?? "0"),
     signee: str(fd, "signee"),
     contract_terms: str(fd, "contract_terms"),
+    billing_interval: str(fd, "billing_interval") ?? "none",
+    service_product_id: str(fd, "service_product_id"),
+    next_billing_date: str(fd, "next_billing_date"),
   });
   if (error) throw new Error(error.message);
   revalidatePath("/contracts");

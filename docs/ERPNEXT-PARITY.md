@@ -115,11 +115,12 @@ Legend: ✅ ported · ➖ intentionally excluded (out of scope for a lightweight
 | Cost Center | ✅ | 0024 · `/cost-centers` |
 | Payment Entry | ✅ | 0007-0009 (banking) |
 | Payment Request (against a Sales Invoice) | ✅ | 0055 · `/payment-requests` |
+| Auto Repeat / recurring AMC billing (subset of Subscription) | ✅ | 0064 · `/amc-billing` — contract billing interval + one-click draft-invoice generation |
 | Bank Account / Bank Transaction / Reconciliation (Banking app) | ✅ | 0007-0009 · `/banking` |
 | Currency Exchange | ✅ | 0025-0026 · `/currency` |
 | Tax Category / Taxes & Charges Template | ✅ | 0032 · `/taxes` |
 | Mode of Payment | ✅ | 0010 |
-| GL Entry, POS, Budget, Dunning, Period Closing, Subscription, Payment Reconciliation (175 doctypes) | ➖ | deep double-entry ERP, out of scope |
+| GL Entry, POS, Budget, Dunning, Period Closing, Payment Reconciliation (175 doctypes) | ➖ | deep double-entry ERP, out of scope |
 
 ### Setup / Masters
 | Territory, Customer Group, Supplier Group, Asset Category | ✅ | 0011-0013 |
