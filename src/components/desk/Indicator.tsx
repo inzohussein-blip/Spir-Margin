@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { tStatus, DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
 
 /**
  * ERPNext-style status indicator: a small colored dot + label, exactly like the
@@ -35,14 +36,16 @@ export function Indicator({
   status,
   color,
   label,
+  locale = DEFAULT_LOCALE,
 }: {
   status?: string | null;
   color?: IndicatorColor;
   label?: ReactNode;
+  locale?: Locale;
 }) {
   const key = (status ?? "").toLowerCase();
   const c = color ?? statusColor[key] ?? "gray";
-  const text = label ?? (status ? status.replace(/_/g, " ") : "—");
+  const text = label ?? tStatus(locale, key || null);
   return (
     <span className="inline-flex items-center gap-1.5 text-sm text-ink-gray-7">
       <span className={`size-2 shrink-0 rounded-full ${dot[c]}`} />

@@ -8,7 +8,7 @@ import { DownloadIcon } from "lucide-react";
  * works for every list page without per-page wiring. Columns headed "Action"
  * (in-row buttons) are skipped.
  */
-export function ExportCsvButton({ title }: { title: string }) {
+export function ExportCsvButton({ title, label = "Export" }: { title: string; label?: string }) {
   const ref = useRef<HTMLButtonElement>(null);
 
   function csvCell(v: string) {
@@ -54,7 +54,7 @@ export function ExportCsvButton({ title }: { title: string }) {
       title="Export to CSV"
       className="inline-flex items-center gap-1.5 rounded-md border border-outline-gray-2 px-2.5 py-1.5 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1"
     >
-      <DownloadIcon size={14} /> <span className="hidden sm:inline">Export</span>
+      <DownloadIcon size={14} /> <span className="hidden sm:inline">{label}</span>
     </button>
   );
 }

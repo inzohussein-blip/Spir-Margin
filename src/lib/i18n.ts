@@ -309,6 +309,7 @@ const ar: Record<string, string> = {
   "Won": "مكسوبة",
   "Yield": "الناتج",
   "auto if empty": "تلقائي إذا فُرغ",
+  "New": "جديد", "Export": "تصدير", "Filter": "تصفية",
 };
 
 const dict: Record<Locale, Record<string, string>> = { ar, en: {} };
@@ -316,4 +317,25 @@ const dict: Record<Locale, Record<string, string>> = { ar, en: {} };
 /** Translate a source string for a locale (falls back to the source itself). */
 export function t(locale: Locale, key: string): string {
   return dict[locale]?.[key] ?? key;
+}
+
+// Status-value translations (enum values shown as badges/indicators).
+const statusAr: Record<string, string> = {
+  draft: "مسودة", open: "مفتوح", unsigned: "غير موقّع", pending: "معلّق", planned: "مخطّط",
+  submitted: "معتمد", confirmed: "مؤكّد", replied: "تم الرد", in_process: "قيد التنفيذ",
+  in_progress: "قيد التنفيذ", partly_paid: "مدفوع جزئياً", partly_completed: "مكتمل جزئياً",
+  on_hold: "معلّق", active: "نشط", installed: "مُركّب", completed: "مكتمل", received: "مستلَم",
+  paid: "مدفوع", resolved: "محلولة", fully_completed: "مكتمل بالكامل", accepted: "مقبول",
+  done: "منجز", unpaid: "غير مدفوع", overdue: "متأخّر", cancelled: "ملغى", rejected: "مرفوض",
+  lost: "خاسرة", stopped: "متوقّف", out_of_order: "خارج الخدمة", inactive: "غير نشط",
+  closed: "مغلق", in_stock: "في المخزون", in_maintenance: "قيد الصيانة", retired: "متقاعد",
+  ordered: "تم الطلب", expired: "منتهٍ", delivered: "تم التسليم", scheduled: "مجدول",
+  in_transit: "قيد النقل", material_transfer: "تحويل مواد", delivery: "تسليم", won: "مكسوبة",
+};
+
+/** Translate a status enum value (e.g. "partly_paid"); falls back to a spaced label. */
+export function tStatus(locale: Locale, status: string | null | undefined): string {
+  if (!status) return "—";
+  if (locale === "ar" && statusAr[status]) return statusAr[status];
+  return status.replace(/_/g, " ");
 }

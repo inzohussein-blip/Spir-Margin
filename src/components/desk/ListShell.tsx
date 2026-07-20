@@ -3,6 +3,8 @@ import Link from "next/link";
 import { PlusIcon } from "lucide-react";
 import { ListFilter } from "./ListFilter";
 import { ExportCsvButton } from "./ExportCsvButton";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export interface Crumb { label: string; href?: string; }
 
@@ -32,6 +34,7 @@ export function ListShell({
   filterPlaceholder?: string;
   children: ReactNode;
 }) {
+  const locale = getLocale();
   return (
     <div data-desk-shell className="space-y-4">
       {breadcrumbs.length > 0 && (
@@ -68,8 +71,8 @@ export function ListShell({
       <div className="rounded-xl border border-outline-gray-2 bg-surface-white shadow-sm">
         {filterable && (
           <div className="flex items-center justify-between gap-3 border-b border-outline-gray-1 px-3 py-2">
-            <ListFilter placeholder={filterPlaceholder ?? `Filter ${title.toLowerCase()}…`} />
-            <ExportCsvButton title={title} />
+            <ListFilter placeholder={filterPlaceholder ?? `${t(locale, "Filter")}…`} />
+            <ExportCsvButton title={title} label={t(locale, "Export")} />
           </div>
         )}
         <div data-desk-list className="overflow-x-auto">{children}</div>
