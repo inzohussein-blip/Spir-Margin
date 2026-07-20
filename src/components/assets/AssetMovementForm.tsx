@@ -7,6 +7,8 @@ import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
 import { saveAssetMovement, type AssetMovementInput } from "@/app/actions/asset_movement";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/LocaleProvider";
+import { t } from "@/lib/i18n";
 
 interface Opt { id: string; label: string; }
 
@@ -22,6 +24,7 @@ export function AssetMovementForm({
   labs: Opt[];
   warehouses: Opt[];
 }) {
+  const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
 
@@ -47,14 +50,14 @@ export function AssetMovementForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <Card>
-        <CardHeader><CardTitle>Asset Movement</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Asset Movement")}</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Movement no.</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Movement no.")}</span>
             <input {...register("movement_no")} className={cls} placeholder="AM-0001" />
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Purpose</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Purpose")}</span>
             <select {...register("purpose")} className={cls}>
               <option value="issue">issue (out to a lab)</option>
               <option value="receipt">receipt (back to a warehouse)</option>
@@ -62,18 +65,18 @@ export function AssetMovementForm({
             </select>
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Date</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Date")}</span>
             <input type="date" {...register("transaction_date")} className={cls} />
           </label>
           <label className="block sm:col-span-2">
-            <span className="font-medium text-ink-gray-8">Notes</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Notes")}</span>
             <input {...register("notes")} className={cls} />
           </label>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Devices</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Devices")}</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-ink-gray-5">
             Set the destination — a device sent to a lab is marked <em>installed</em>; one returned to a warehouse is marked <em>in stock</em>.
@@ -82,32 +85,32 @@ export function AssetMovementForm({
             <div key={f.id} className="rounded-lg border border-outline-gray-1 p-3">
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <label className="block text-xs">
-                  <span className="text-ink-gray-5">Device</span>
+                  <span className="text-ink-gray-5">{t(locale, "Device")}</span>
                   <select {...register(`items.${i}.device_id`)} className={cls}>
-                    <option value="">Select…</option>
+                    <option value="">{t(locale, "Select…")}</option>
                     {devices.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
                   </select>
                 </label>
                 {purpose !== "receipt" && (
                   <label className="block text-xs">
-                    <span className="text-ink-gray-5">To lab</span>
+                    <span className="text-ink-gray-5">{t(locale, "To lab")}</span>
                     <select {...register(`items.${i}.target_lab_id`)} className={cls}>
-                      <option value="">—</option>
+                      <option value="">{t(locale, "—")}</option>
                       {labs.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
                     </select>
                   </label>
                 )}
                 {purpose !== "issue" && (
                   <label className="block text-xs">
-                    <span className="text-ink-gray-5">To warehouse</span>
+                    <span className="text-ink-gray-5">{t(locale, "To warehouse")}</span>
                     <select {...register(`items.${i}.target_warehouse_id`)} className={cls}>
-                      <option value="">—</option>
+                      <option value="">{t(locale, "—")}</option>
                       {warehouses.map((w) => <option key={w.id} value={w.id}>{w.label}</option>)}
                     </select>
                   </label>
                 )}
                 <label className="block text-xs">
-                  <span className="text-ink-gray-5">Custodian</span>
+                  <span className="text-ink-gray-5">{t(locale, "Custodian")}</span>
                   <input {...register(`items.${i}.to_custodian`)} className={cls} />
                 </label>
                 <div className="flex items-end justify-end">
@@ -126,7 +129,7 @@ export function AssetMovementForm({
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}
-        Create movement (draft)
+        {t(locale, "Create movement (draft)")}
       </Button>
     </form>
   );

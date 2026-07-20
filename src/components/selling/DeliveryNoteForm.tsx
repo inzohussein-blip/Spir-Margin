@@ -7,6 +7,8 @@ import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
 import { saveDeliveryNote, type DeliveryNoteInput } from "@/app/actions/delivery";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/LocaleProvider";
+import { t } from "@/lib/i18n";
 
 interface Opt { id: string; label: string; }
 interface BatchOpt extends Opt { available: number; }
@@ -15,6 +17,7 @@ const cls =
   "mt-1 w-full rounded-md border border-outline-gray-2 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
 
 export function DeliveryNoteForm({ labs, batches }: { labs: Opt[]; batches: BatchOpt[] }) {
+  const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
   const { register, control, handleSubmit } = useForm<DeliveryNoteInput>({
@@ -37,40 +40,40 @@ export function DeliveryNoteForm({ labs, batches }: { labs: Opt[]; batches: Batc
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <Card>
-        <CardHeader><CardTitle>Delivery</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Delivery")}</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Lab *</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Lab *")}</span>
             <select {...register("lab_id", { required: true })} className={cls}>
-              <option value="">Select…</option>
+              <option value="">{t(locale, "Select…")}</option>
               {labs.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
             </select>
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Posting date</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Posting date")}</span>
             <input type="date" {...register("posting_date")} className={cls} />
           </label>
           <label className="block sm:col-span-2">
-            <span className="font-medium text-ink-gray-8">Notes</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Notes")}</span>
             <input {...register("notes")} className={cls} />
           </label>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Kit batches</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Kit batches")}</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {fields.map((f, i) => (
             <div key={f.id} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
               <label className="col-span-2 block text-xs sm:col-span-4">
-                <span className="text-ink-gray-5">Batch</span>
+                <span className="text-ink-gray-5">{t(locale, "Batch")}</span>
                 <select {...register(`items.${i}.kit_batch_id`)} className={cls}>
-                  <option value="">Select…</option>
+                  <option value="">{t(locale, "Select…")}</option>
                   {batches.map((b) => <option key={b.id} value={b.id}>{b.label} — avail {b.available}</option>)}
                 </select>
               </label>
               <label className="block text-xs">
-                <span className="text-ink-gray-5">Qty</span>
+                <span className="text-ink-gray-5">{t(locale, "Qty")}</span>
                 <input type="number" step="0.01" {...register(`items.${i}.qty`)} className={cls} />
               </label>
               <div className="flex items-end justify-end">
@@ -88,7 +91,7 @@ export function DeliveryNoteForm({ labs, batches }: { labs: Opt[]; batches: Batc
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}
-        Create delivery (draft)
+        {t(locale, "Create delivery (draft)")}
       </Button>
     </form>
   );

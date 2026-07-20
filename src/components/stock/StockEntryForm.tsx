@@ -7,6 +7,8 @@ import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
 import { saveStockEntry, type StockEntryInput } from "@/app/actions/stock_entry";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/LocaleProvider";
+import { t } from "@/lib/i18n";
 
 interface Opt { id: string; label: string; }
 interface BatchOpt extends Opt { avail: number; }
@@ -21,6 +23,7 @@ export function StockEntryForm({
   warehouses: Opt[];
   batches: BatchOpt[];
 }) {
+  const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
 
@@ -52,14 +55,14 @@ export function StockEntryForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <Card>
-        <CardHeader><CardTitle>Stock Entry</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Stock Entry")}</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Entry no.</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Entry no.")}</span>
             <input {...register("entry_no")} className={cls} placeholder="STE-0001" />
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Purpose</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Purpose")}</span>
             <select {...register("purpose")} className={cls}>
               <option value="receipt">receipt (add stock)</option>
               <option value="issue">issue (remove stock)</option>
@@ -67,53 +70,53 @@ export function StockEntryForm({
             </select>
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Posting date</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Posting date")}</span>
             <input type="date" {...register("posting_date")} className={cls} />
           </label>
           {purpose !== "receipt" && (
             <label className="block">
-              <span className="font-medium text-ink-gray-8">From warehouse</span>
+              <span className="font-medium text-ink-gray-8">{t(locale, "From warehouse")}</span>
               <select {...register("from_warehouse")} className={cls}>
-                <option value="">— none —</option>
+                <option value="">{t(locale, "— none —")}</option>
                 {warehouses.map((w) => <option key={w.id} value={w.id}>{w.label}</option>)}
               </select>
             </label>
           )}
           {purpose !== "issue" && (
             <label className="block">
-              <span className="font-medium text-ink-gray-8">To warehouse</span>
+              <span className="font-medium text-ink-gray-8">{t(locale, "To warehouse")}</span>
               <select {...register("to_warehouse")} className={cls}>
-                <option value="">— none —</option>
+                <option value="">{t(locale, "— none —")}</option>
                 {warehouses.map((w) => <option key={w.id} value={w.id}>{w.label}</option>)}
               </select>
             </label>
           )}
           <label className="block sm:col-span-2">
-            <span className="font-medium text-ink-gray-8">Notes</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Notes")}</span>
             <input {...register("notes")} className={cls} />
           </label>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Batches</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Batches")}</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {fields.map((f, i) => (
             <div key={f.id} className="rounded-lg border border-outline-gray-1 p-3">
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
                 <label className="col-span-3 block text-xs">
-                  <span className="text-ink-gray-5">Batch</span>
+                  <span className="text-ink-gray-5">{t(locale, "Batch")}</span>
                   <select {...register(`items.${i}.batch_id`)} className={cls}>
-                    <option value="">Select…</option>
+                    <option value="">{t(locale, "Select…")}</option>
                     {batches.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}
                   </select>
                 </label>
                 <label className="block text-xs">
-                  <span className="text-ink-gray-5">Qty</span>
+                  <span className="text-ink-gray-5">{t(locale, "Qty")}</span>
                   <input type="number" step="0.01" {...register(`items.${i}.qty`)} className={cls} />
                 </label>
                 <label className="block text-xs">
-                  <span className="text-ink-gray-5">Rate</span>
+                  <span className="text-ink-gray-5">{t(locale, "Rate")}</span>
                   <input type="number" step="0.01" {...register(`items.${i}.rate`)} className={cls} />
                 </label>
                 <div className="flex items-end justify-end">
@@ -132,7 +135,7 @@ export function StockEntryForm({
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}
-        Create entry (draft)
+        {t(locale, "Create entry (draft)")}
       </Button>
     </form>
   );

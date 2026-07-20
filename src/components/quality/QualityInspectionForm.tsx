@@ -7,6 +7,8 @@ import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
 import { saveQualityInspection, type QualityInspectionInput } from "@/app/actions/quality";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/LocaleProvider";
+import { t } from "@/lib/i18n";
 
 interface Opt { id: string; label: string; }
 
@@ -20,6 +22,7 @@ export function QualityInspectionForm({
   products: Opt[];
   batches: Opt[];
 }) {
+  const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
 
@@ -52,18 +55,18 @@ export function QualityInspectionForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <Card>
-        <CardHeader><CardTitle>Quality Inspection</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Quality Inspection")}</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           <label className="block">
-            <span className="font-medium text-ink-gray-8">QI no.</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "QI no.")}</span>
             <input {...register("qi_no")} className={cls} placeholder="QI-0001" />
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Report date</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Report date")}</span>
             <input type="date" {...register("report_date")} className={cls} />
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Inspection type</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Inspection type")}</span>
             <select {...register("inspection_type")} className={cls}>
               <option value="incoming">incoming</option>
               <option value="outgoing">outgoing</option>
@@ -71,55 +74,55 @@ export function QualityInspectionForm({
             </select>
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Sample size</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Sample size")}</span>
             <input type="number" step="0.01" {...register("sample_size")} className={cls} />
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Product</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Product")}</span>
             <select {...register("product_id")} className={cls}>
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {products.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
             </select>
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Kit batch</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Kit batch")}</span>
             <select {...register("batch_id")} className={cls}>
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {batches.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}
             </select>
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Inspected by</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Inspected by")}</span>
             <input {...register("inspected_by")} className={cls} />
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Remarks</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Remarks")}</span>
             <input {...register("remarks")} className={cls} />
           </label>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Readings</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Readings")}</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-ink-gray-5">A numeric reading is graded against its min/max on evaluation. Leave min/max blank for a pass-by-default check.</p>
           {fields.map((f, i) => (
             <div key={f.id} className="rounded-lg border border-outline-gray-1 p-3">
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
                 <label className="col-span-2 block text-xs">
-                  <span className="text-ink-gray-5">Parameter</span>
+                  <span className="text-ink-gray-5">{t(locale, "Parameter")}</span>
                   <input {...register(`readings.${i}.parameter`)} className={cls} placeholder="pH" />
                 </label>
                 <label className="block text-xs">
-                  <span className="text-ink-gray-5">Reading</span>
+                  <span className="text-ink-gray-5">{t(locale, "Reading")}</span>
                   <input type="number" step="0.0001" {...register(`readings.${i}.reading_value`)} className={cls} />
                 </label>
                 <label className="block text-xs">
-                  <span className="text-ink-gray-5">Min</span>
+                  <span className="text-ink-gray-5">{t(locale, "Min")}</span>
                   <input type="number" step="0.0001" {...register(`readings.${i}.min_value`)} className={cls} />
                 </label>
                 <label className="block text-xs">
-                  <span className="text-ink-gray-5">Max</span>
+                  <span className="text-ink-gray-5">{t(locale, "Max")}</span>
                   <input type="number" step="0.0001" {...register(`readings.${i}.max_value`)} className={cls} />
                 </label>
                 <div className="flex items-end justify-end">

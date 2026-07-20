@@ -7,6 +7,8 @@ import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
 import { saveMaintenanceVisit, type MaintenanceVisitInput } from "@/app/actions/maintenance";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/LocaleProvider";
+import { t } from "@/lib/i18n";
 
 interface Opt { id: string; label: string; }
 interface DeviceOpt extends Opt { lab_id: string | null; }
@@ -21,6 +23,7 @@ export function MaintenanceVisitForm({
   labs: Opt[];
   devices: DeviceOpt[];
 }) {
+  const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
 
@@ -51,29 +54,29 @@ export function MaintenanceVisitForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <Card>
-        <CardHeader><CardTitle>Maintenance Visit</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Maintenance Visit")}</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Visit no.</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Visit no.")}</span>
             <input {...register("visit_no")} className={cls} placeholder="MV-0001" />
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Lab</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Lab")}</span>
             <select {...register("lab_id")} className={cls}>
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {labs.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
             </select>
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Visit date</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Visit date")}</span>
             <input type="date" {...register("visit_date")} className={cls} />
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Time</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Time")}</span>
             <input type="time" {...register("visit_time")} className={cls} />
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Type</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Type")}</span>
             <select {...register("maintenance_type")} className={cls}>
               <option value="scheduled">scheduled</option>
               <option value="unscheduled">unscheduled</option>
@@ -81,7 +84,7 @@ export function MaintenanceVisitForm({
             </select>
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Completion</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Completion")}</span>
             <select {...register("completion_status")} className={cls}>
               <option value="pending">pending</option>
               <option value="partial">partial</option>
@@ -89,39 +92,39 @@ export function MaintenanceVisitForm({
             </select>
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Service person</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Service person")}</span>
             <input {...register("service_person")} className={cls} />
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Customer feedback</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Customer feedback")}</span>
             <input {...register("customer_feedback")} className={cls} />
           </label>
           <label className="block sm:col-span-2">
-            <span className="font-medium text-ink-gray-8">Notes</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Notes")}</span>
             <input {...register("notes")} className={cls} />
           </label>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Devices serviced</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Devices serviced")}</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {fields.map((f, i) => (
             <div key={f.id} className="rounded-lg border border-outline-gray-1 p-3">
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
                 <label className="col-span-2 block text-xs">
-                  <span className="text-ink-gray-5">Device</span>
+                  <span className="text-ink-gray-5">{t(locale, "Device")}</span>
                   <select {...register(`purposes.${i}.device_id`)} className={cls}>
-                    <option value="">Select…</option>
+                    <option value="">{t(locale, "Select…")}</option>
                     {shown.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
                   </select>
                 </label>
                 <label className="col-span-2 block text-xs">
-                  <span className="text-ink-gray-5">Work done</span>
+                  <span className="text-ink-gray-5">{t(locale, "Work done")}</span>
                   <input {...register(`purposes.${i}.work_done`)} className={cls} />
                 </label>
                 <label className="block text-xs">
-                  <span className="text-ink-gray-5">Next due</span>
+                  <span className="text-ink-gray-5">{t(locale, "Next due")}</span>
                   <input type="date" {...register(`purposes.${i}.next_due_date`)} className={cls} />
                 </label>
                 <div className="flex items-end justify-end">
@@ -140,7 +143,7 @@ export function MaintenanceVisitForm({
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}
-        Create visit (draft)
+        {t(locale, "Create visit (draft)")}
       </Button>
     </form>
   );

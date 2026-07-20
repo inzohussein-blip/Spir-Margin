@@ -7,6 +7,7 @@ import { NewButton } from "@/components/desk/NewButton";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NotificationBell } from "@/components/desk/NotificationBell";
+import { LocaleProvider } from "@/components/LocaleProvider";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getNotifications } from "@/lib/notifications";
 import { getLocale } from "@/lib/i18n-server";
@@ -34,6 +35,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} dir={dir}>
       <body className="min-h-screen bg-surface-gray-1 text-ink-gray-8 antialiased">
+        <LocaleProvider locale={locale}>
         {isBare || !user ? (
           children
         ) : (
@@ -61,6 +63,7 @@ export default async function RootLayout({
             </div>
           </div>
         )}
+        </LocaleProvider>
       </body>
     </html>
   );

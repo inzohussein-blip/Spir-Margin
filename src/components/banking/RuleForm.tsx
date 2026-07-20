@@ -7,6 +7,8 @@ import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
 import { saveRule, type RuleInput } from "@/app/actions/banking";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/LocaleProvider";
+import { t } from "@/lib/i18n";
 
 interface PartyOpt { value: string; label: string; }
 
@@ -20,6 +22,7 @@ export function RuleForm({
   parties: PartyOpt[];
   initial?: RuleInput;
 }) {
+  const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
 
@@ -54,19 +57,19 @@ export function RuleForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <Card>
-        <CardHeader><CardTitle>Rule</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Rule")}</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Rule name *</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Rule name *")}</span>
             <input {...register("rule_name", { required: true })} className={inputCls} placeholder="Al-Kindy inflows" />
             {errors.rule_name && <span className="text-xs text-red-500">Required</span>}
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Priority</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Priority")}</span>
             <input type="number" {...register("priority")} className={inputCls} />
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Applies to</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Applies to")}</span>
             <select {...register("transaction_type")} className={inputCls}>
               <option value="any">any</option>
               <option value="deposit">deposit</option>
@@ -74,7 +77,7 @@ export function RuleForm({
             </select>
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Classify as</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Classify as")}</span>
             <select {...register("classify_as")} className={inputCls}>
               <option value="payment_entry">payment entry</option>
               <option value="bank_entry">bank entry</option>
@@ -82,17 +85,17 @@ export function RuleForm({
             </select>
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Min amount</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Min amount")}</span>
             <input type="number" step="0.01" {...register("min_amount")} className={inputCls} />
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Max amount</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Max amount")}</span>
             <input type="number" step="0.01" {...register("max_amount")} className={inputCls} />
           </label>
           <label className="block sm:col-span-2">
-            <span className="font-medium text-ink-gray-8">Set party (optional)</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Set party (optional)")}</span>
             <select {...register("party")} className={inputCls}>
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {parties.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
             </select>
           </label>
@@ -100,19 +103,19 @@ export function RuleForm({
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Conditions (all must match)</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Conditions (all must match)")}</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {fields.map((f, i) => (
             <div key={f.id} className="flex flex-wrap items-end gap-2">
               <label className="block text-sm">
-                <span className="text-ink-gray-5">Field</span>
+                <span className="text-ink-gray-5">{t(locale, "Field")}</span>
                 <select {...register(`conditions.${i}.field`)} className={inputCls}>
                   <option value="description">description</option>
                   <option value="reference_number">reference number</option>
                 </select>
               </label>
               <label className="block text-sm">
-                <span className="text-ink-gray-5">Operator</span>
+                <span className="text-ink-gray-5">{t(locale, "Operator")}</span>
                 <select {...register(`conditions.${i}.operator`)} className={inputCls}>
                   <option value="contains">contains</option>
                   <option value="equals">equals</option>
@@ -120,7 +123,7 @@ export function RuleForm({
                 </select>
               </label>
               <label className="block flex-1 text-sm">
-                <span className="text-ink-gray-5">Value</span>
+                <span className="text-ink-gray-5">{t(locale, "Value")}</span>
                 <input {...register(`conditions.${i}.value`)} className={inputCls} placeholder="AL-KINDY" />
               </label>
               <Button type="button" variant="subtle" size="sm" onClick={() => remove(i)} disabled={fields.length === 1}>

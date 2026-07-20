@@ -7,11 +7,14 @@ import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
 import { saveMaintenanceTeam, type MaintenanceTeamInput } from "@/app/actions/maintenance_team";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/LocaleProvider";
+import { t } from "@/lib/i18n";
 
 const cls =
   "mt-1 w-full rounded-md border border-outline-gray-2 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
 
 export function MaintenanceTeamForm() {
+  const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
 
@@ -37,34 +40,34 @@ export function MaintenanceTeamForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <Card>
-        <CardHeader><CardTitle>Team</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Team")}</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Team name</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Team name")}</span>
             <input {...register("name")} className={cls} placeholder="Field Service Team" />
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Manager</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Manager")}</span>
             <input {...register("manager_name")} className={cls} />
           </label>
           <label className="block sm:col-span-2">
-            <span className="font-medium text-ink-gray-8">Description</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Description")}</span>
             <input {...register("description")} className={cls} />
           </label>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Members</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Members")}</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {members.fields.map((f, i) => (
             <div key={f.id} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
               <label className="col-span-3 block text-xs">
-                <span className="text-ink-gray-5">Name</span>
+                <span className="text-ink-gray-5">{t(locale, "Name")}</span>
                 <input {...register(`members.${i}.member_name`)} className={cls} />
               </label>
               <label className="col-span-2 block text-xs">
-                <span className="text-ink-gray-5">Role</span>
+                <span className="text-ink-gray-5">{t(locale, "Role")}</span>
                 <input {...register(`members.${i}.role`)} className={cls} placeholder="Technician" />
               </label>
               <div className="flex items-end justify-end">
@@ -81,23 +84,23 @@ export function MaintenanceTeamForm() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Recurring tasks</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Recurring tasks")}</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {tasks.fields.map((f, i) => (
             <div key={f.id} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
               <label className="col-span-3 block text-xs">
-                <span className="text-ink-gray-5">Task</span>
+                <span className="text-ink-gray-5">{t(locale, "Task")}</span>
                 <input {...register(`tasks.${i}.task_name`)} className={cls} />
               </label>
               <label className="block text-xs">
-                <span className="text-ink-gray-5">Type</span>
+                <span className="text-ink-gray-5">{t(locale, "Type")}</span>
                 <select {...register(`tasks.${i}.maintenance_type`)} className={cls}>
                   <option value="preventive">preventive</option>
                   <option value="calibration">calibration</option>
                 </select>
               </label>
               <label className="block text-xs">
-                <span className="text-ink-gray-5">Periodicity</span>
+                <span className="text-ink-gray-5">{t(locale, "Periodicity")}</span>
                 <input {...register(`tasks.${i}.periodicity`)} className={cls} placeholder="Quarterly" />
               </label>
               <div className="flex items-end justify-end">

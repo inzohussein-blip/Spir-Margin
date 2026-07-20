@@ -3,34 +3,38 @@
 import { useFormState, useFormStatus } from "react-dom";
 import { Loader2Icon, PlusIcon } from "lucide-react";
 import { createUserAction } from "@/app/actions/users";
+import { useLocale } from "@/components/LocaleProvider";
+import { t } from "@/lib/i18n";
 
 const cls =
   "mt-1 w-full rounded-md border border-outline-gray-2 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
 
 function SubmitButton() {
+  const locale = useLocale();
   const { pending } = useFormStatus();
   return (
     <button type="submit" disabled={pending} className="inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-60">
       {pending ? <Loader2Icon size={15} className="animate-spin" /> : <PlusIcon size={15} />}
-      Add user
+      {t(locale, "Add user")}
     </button>
   );
 }
 
 export function CreateUserForm() {
+  const locale = useLocale();
   const [state, formAction] = useFormState(createUserAction, null as { error?: string; ok?: boolean; message?: string } | null);
   return (
     <form action={formAction} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <label className="block text-sm">
-        <span className="font-medium text-ink-gray-8">Full name</span>
+        <span className="font-medium text-ink-gray-8">{t(locale, "Full name")}</span>
         <input name="full_name" className={cls} placeholder="Jane Doe" />
       </label>
       <label className="block text-sm">
-        <span className="font-medium text-ink-gray-8">Email</span>
+        <span className="font-medium text-ink-gray-8">{t(locale, "Email")}</span>
         <input name="email" type="email" required className={cls} placeholder="jane@lab.com" />
       </label>
       <label className="block text-sm">
-        <span className="font-medium text-ink-gray-8">Role</span>
+        <span className="font-medium text-ink-gray-8">{t(locale, "Role")}</span>
         <select name="role" className={cls} defaultValue="staff">
           <option value="admin">Admin</option>
           <option value="manager">Manager</option>
@@ -38,7 +42,7 @@ export function CreateUserForm() {
         </select>
       </label>
       <label className="block text-sm">
-        <span className="font-medium text-ink-gray-8">Temporary password</span>
+        <span className="font-medium text-ink-gray-8">{t(locale, "Temporary password")}</span>
         <input name="password" type="text" required minLength={8} className={cls} placeholder="min 8 characters" />
       </label>
       <div className="sm:col-span-2">

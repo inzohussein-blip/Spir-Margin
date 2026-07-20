@@ -7,6 +7,8 @@ import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
 import { saveRfq, type RfqInput } from "@/app/actions/rfq";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/LocaleProvider";
+import { t } from "@/lib/i18n";
 
 interface Opt { id: string; label: string; }
 
@@ -14,6 +16,7 @@ const cls =
   "mt-1 w-full rounded-md border border-outline-gray-2 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
 
 export function RfqForm({ products, suppliers }: { products: Opt[]; suppliers: Opt[] }) {
+  const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
   const [picked, setPicked] = useState<Record<string, boolean>>({});
@@ -41,42 +44,42 @@ export function RfqForm({ products, suppliers }: { products: Opt[]; suppliers: O
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <Card>
-        <CardHeader><CardTitle>Request for Quotation</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Request for Quotation")}</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           <label className="block">
-            <span className="font-medium text-ink-gray-8">RFQ no.</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "RFQ no.")}</span>
             <input {...register("rfq_no")} className={cls} placeholder="RFQ-0001" />
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Date</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Date")}</span>
             <input type="date" {...register("transaction_date")} className={cls} />
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Reply by</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Reply by")}</span>
             <input type="date" {...register("schedule_date")} className={cls} />
           </label>
           <label className="block sm:col-span-2">
-            <span className="font-medium text-ink-gray-8">Message to suppliers</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Message to suppliers")}</span>
             <input {...register("message")} className={cls} />
           </label>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Items</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Items")}</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {fields.map((f, i) => (
             <div key={f.id} className="rounded-lg border border-outline-gray-1 p-3">
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
                 <label className="col-span-4 block text-xs">
-                  <span className="text-ink-gray-5">Product</span>
+                  <span className="text-ink-gray-5">{t(locale, "Product")}</span>
                   <select {...register(`items.${i}.product_id`)} className={cls}>
-                    <option value="">Select…</option>
+                    <option value="">{t(locale, "Select…")}</option>
                     {products.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
                   </select>
                 </label>
                 <label className="block text-xs">
-                  <span className="text-ink-gray-5">Qty</span>
+                  <span className="text-ink-gray-5">{t(locale, "Qty")}</span>
                   <input type="number" step="0.01" {...register(`items.${i}.qty`)} className={cls} />
                 </label>
                 <div className="flex items-end justify-end">
@@ -88,13 +91,13 @@ export function RfqForm({ products, suppliers }: { products: Opt[]; suppliers: O
             </div>
           ))}
           <Button type="button" variant="subtle" size="sm" onClick={() => append({ product_id: "", qty: 1 })}>
-            <PlusIcon size={14} className="mr-1" /> Add item
+            <PlusIcon size={14} className="mr-1" /> {t(locale, "Add item")}
           </Button>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Suppliers to ask</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Suppliers to ask")}</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {suppliers.map((s) => (
             <label key={s.id} className="flex items-center gap-2 text-sm">

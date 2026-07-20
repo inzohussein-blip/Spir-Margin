@@ -7,6 +7,8 @@ import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
 import { saveDeliveryTrip, type DeliveryTripInput } from "@/app/actions/delivery_trip";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/LocaleProvider";
+import { t } from "@/lib/i18n";
 
 interface Opt { id: string; label: string; }
 
@@ -20,6 +22,7 @@ export function DeliveryTripForm({
   labs: Opt[];
   deliveryNotes: Opt[];
 }) {
+  const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
 
@@ -45,52 +48,52 @@ export function DeliveryTripForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <Card>
-        <CardHeader><CardTitle>Delivery Trip</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Delivery Trip")}</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Trip no.</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Trip no.")}</span>
             <input {...register("trip_no")} className={cls} placeholder="auto if blank" />
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Departure date</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Departure date")}</span>
             <input type="date" {...register("departure_date")} className={cls} />
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Driver</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Driver")}</span>
             <input {...register("driver_name")} className={cls} placeholder="Driver name" />
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">Vehicle</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Vehicle")}</span>
             <input {...register("vehicle")} className={cls} placeholder="Plate / vehicle" />
           </label>
           <label className="block sm:col-span-2">
-            <span className="font-medium text-ink-gray-8">Notes</span>
+            <span className="font-medium text-ink-gray-8">{t(locale, "Notes")}</span>
             <input {...register("notes")} className={cls} />
           </label>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Stops (in order)</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t(locale, "Stops (in order)")}</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {fields.map((f, i) => (
             <div key={f.id} className="rounded-lg border border-outline-gray-1 p-3">
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
                 <label className="block text-xs">
-                  <span className="text-ink-gray-5">Seq</span>
+                  <span className="text-ink-gray-5">{t(locale, "Seq")}</span>
                   <input type="number" {...register(`stops.${i}.seq`)} className={cls} />
                 </label>
                 <label className="block text-xs sm:col-span-2">
-                  <span className="text-ink-gray-5">Lab</span>
+                  <span className="text-ink-gray-5">{t(locale, "Lab")}</span>
                   <select {...register(`stops.${i}.lab_id`)} className={cls}>
-                    <option value="">— none —</option>
+                    <option value="">{t(locale, "— none —")}</option>
                     {labs.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
                   </select>
                 </label>
                 <label className="block text-xs sm:col-span-2">
-                  <span className="text-ink-gray-5">Delivery note</span>
+                  <span className="text-ink-gray-5">{t(locale, "Delivery note")}</span>
                   <select {...register(`stops.${i}.delivery_note_id`)} className={cls}>
-                    <option value="">— none —</option>
+                    <option value="">{t(locale, "— none —")}</option>
                     {deliveryNotes.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
                   </select>
                 </label>
@@ -100,21 +103,21 @@ export function DeliveryTripForm({
                   </Button>
                 </div>
                 <label className="block text-xs sm:col-span-6">
-                  <span className="text-ink-gray-5">Address (optional)</span>
+                  <span className="text-ink-gray-5">{t(locale, "Address (optional)")}</span>
                   <input {...register(`stops.${i}.address`)} className={cls} placeholder="Delivery address / directions" />
                 </label>
               </div>
             </div>
           ))}
           <Button type="button" variant="subtle" size="sm" onClick={() => append({ lab_id: "", delivery_note_id: "", address: "", seq: fields.length + 1 })}>
-            <PlusIcon size={14} className="mr-1" /> Add stop
+            <PlusIcon size={14} className="mr-1" /> {t(locale, "Add stop")}
           </Button>
         </CardContent>
       </Card>
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}
-        Create trip (draft)
+        {t(locale, "Create trip (draft)")}
       </Button>
     </form>
   );
