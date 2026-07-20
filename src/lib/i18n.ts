@@ -310,6 +310,9 @@ const ar: Record<string, string> = {
   "Yield": "الناتج",
   "auto if empty": "تلقائي إذا فُرغ",
   "New": "جديد", "Export": "تصدير", "Filter": "تصفية",
+  "Notifications": "الإشعارات", "No alerts": "لا تنبيهات", "days": "يوم",
+  "kit expiring": "كِت قرب الانتهاء", "maintenance due": "صيانة مستحقة",
+  "contract expiring": "عقد قرب الانتهاء", "overdue invoice": "فاتورة متأخّرة",
 };
 
 const dict: Record<Locale, Record<string, string>> = { ar, en: {} };

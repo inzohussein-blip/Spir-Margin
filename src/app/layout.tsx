@@ -6,7 +6,9 @@ import { Awesomebar } from "@/components/desk/Awesomebar";
 import { NewButton } from "@/components/desk/NewButton";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { NotificationBell } from "@/components/desk/NotificationBell";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getNotifications } from "@/lib/notifications";
 import { getLocale } from "@/lib/i18n-server";
 import "./globals.css";
 
@@ -27,6 +29,7 @@ export default async function RootLayout({
   // The login page renders standalone — no sidebar/header shell.
   const isBare = pathname === "/login" || pathname.startsWith("/login/");
   const user = isBare ? null : await getCurrentUser();
+  const notifications = user ? await getNotifications(locale) : [];
 
   return (
     <html lang={locale} dir={dir}>
@@ -49,6 +52,7 @@ export default async function RootLayout({
                   <Awesomebar locale={locale} />
                 </div>
                 <div className="flex items-center gap-3">
+                  <NotificationBell items={notifications} locale={locale} />
                   <LanguageSwitcher locale={locale} />
                   <UserMenu user={user} locale={locale} />
                 </div>
