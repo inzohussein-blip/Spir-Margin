@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import { createBankAccount } from "@/app/actions/banking";
 import {
   Field,
@@ -10,6 +12,7 @@ import {
 } from "@/components/form/Fields";
 
 export default function NewBankAccountPage() {
+  const locale = getLocale();
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
@@ -18,13 +21,13 @@ export default function NewBankAccountPage() {
       <h1 className="text-2xl font-bold text-ink-gray-8">New Bank Account</h1>
       <FormCard title="Account details">
         <form action={createBankAccount} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Account name" required>
+          <Field label={t(locale, "Account name")} required>
             <TextInput name="account_name" required placeholder="Main Operating" />
           </Field>
-          <Field label="Bank" required>
+          <Field label={t(locale, "Bank")} required>
             <TextInput name="bank" required placeholder="Trade Bank of Iraq" />
           </Field>
-          <Field label="Account type">
+          <Field label={t(locale, "Account type")}>
             <Select name="account_type" defaultValue="">
               <option value="">— none —</option>
               <option value="Current">Current</option>
@@ -32,13 +35,13 @@ export default function NewBankAccountPage() {
               <option value="Credit Card">Credit Card</option>
             </Select>
           </Field>
-          <Field label="Account no.">
+          <Field label={t(locale, "Account no.")}>
             <TextInput name="account_no" />
           </Field>
-          <Field label="IBAN">
+          <Field label={t(locale, "IBAN")}>
             <TextInput name="iban" />
           </Field>
-          <Field label="Currency">
+          <Field label={t(locale, "Currency")}>
             <TextInput name="currency" defaultValue="USD" />
           </Field>
           <div className="flex items-end gap-4">
@@ -46,7 +49,7 @@ export default function NewBankAccountPage() {
             <Checkbox name="is_default" label="Default" />
           </div>
           <div className="sm:col-span-2">
-            <SubmitButton>Create account</SubmitButton>
+            <SubmitButton>{t(locale, "Create account")}</SubmitButton>
           </div>
         </form>
       </FormCard>

@@ -63,7 +63,7 @@ export default async function TransferPage() {
               </Field>
             </div>
             <div className="sm:col-span-2">
-              <SubmitButton>Record transfer</SubmitButton>
+              <SubmitButton>{t(locale, "Record transfer")}</SubmitButton>
             </div>
           </form>
         </FormCard>

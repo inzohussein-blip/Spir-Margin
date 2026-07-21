@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/server";
 import { getLabs, getDevices, getProducts } from "@/lib/queries";
 import { createContract } from "@/app/actions/contract";
@@ -7,6 +9,7 @@ import { Field, TextInput, TextArea, Select, SubmitButton, FormCard } from "@/co
 export const dynamic = "force-dynamic";
 
 export default async function NewContractPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const [labs, devices, products, { data: templates }] = await Promise.all([
     getLabs(),
@@ -25,38 +28,38 @@ export default async function NewContractPage() {
 
       <FormCard title="Contract details">
         <form action={createContract} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Contract no." required>
+          <Field label={t(locale, "Contract no.")} required>
             <TextInput name="contract_no" required placeholder="AMC-0001" />
           </Field>
-          <Field label="Status">
+          <Field label={t(locale, "Status")}>
             <Select name="status" defaultValue="unsigned">
               <option value="unsigned">unsigned</option>
               <option value="active">active</option>
               <option value="inactive">inactive</option>
             </Select>
           </Field>
-          <Field label="Lab">
+          <Field label={t(locale, "Lab")}>
             <Select name="lab_id" defaultValue="">
               <option value="">— none —</option>
               {labs.map((l) => <option key={l.id as string} value={l.id as string}>{l.name as string}</option>)}
             </Select>
           </Field>
-          <Field label="Device">
+          <Field label={t(locale, "Device")}>
             <Select name="device_id" defaultValue="">
               <option value="">— none —</option>
               {devices.map((d) => <option key={d.id as string} value={d.id as string}>{d.asset_code as string}</option>)}
             </Select>
           </Field>
-          <Field label="Start date">
+          <Field label={t(locale, "Start date")}>
             <TextInput name="start_date" type="date" />
           </Field>
-          <Field label="End date">
+          <Field label={t(locale, "End date")}>
             <TextInput name="end_date" type="date" />
           </Field>
-          <Field label="Contract value">
+          <Field label={t(locale, "Contract value")}>
             <TextInput name="contract_value" type="number" step="0.01" defaultValue="0" />
           </Field>
-          <Field label="Signee">
+          <Field label={t(locale, "Signee")}>
             <TextInput name="signee" />
           </Field>
           <div className="sm:col-span-2 mt-2 border-t border-outline-gray-1 pt-3">
@@ -65,7 +68,7 @@ export default async function NewContractPage() {
               Set an interval, the service item to charge, and the first billing date to auto-generate invoices from the AMC Billing page.
             </p>
           </div>
-          <Field label="Billing interval">
+          <Field label={t(locale, "Billing interval")}>
             <Select name="billing_interval" defaultValue="none">
               <option value="none">none (no recurring billing)</option>
               <option value="monthly">monthly</option>
@@ -73,7 +76,7 @@ export default async function NewContractPage() {
               <option value="annually">annually</option>
             </Select>
           </Field>
-          <Field label="Service item">
+          <Field label={t(locale, "Service item")}>
             <Select name="service_product_id" defaultValue="">
               <option value="">— none —</option>
               {products.map((p) => (
@@ -83,16 +86,16 @@ export default async function NewContractPage() {
               ))}
             </Select>
           </Field>
-          <Field label="Next billing date">
+          <Field label={t(locale, "Next billing date")}>
             <TextInput name="next_billing_date" type="date" />
           </Field>
           <div className="sm:col-span-2">
-            <Field label="Terms">
+            <Field label={t(locale, "Terms")}>
               <TextArea name="contract_terms" defaultValue={tpl?.contract_terms ?? ""} />
             </Field>
           </div>
           <div className="sm:col-span-2">
-            <SubmitButton>Create contract</SubmitButton>
+            <SubmitButton>{t(locale, "Create contract")}</SubmitButton>
           </div>
         </form>
       </FormCard>

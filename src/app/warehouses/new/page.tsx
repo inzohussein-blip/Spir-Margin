@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import { createWarehouse } from "@/app/actions/crud";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -13,6 +15,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function NewWarehousePage() {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase.from("warehouse_types").select("name").order("name");
   const types = (data ?? []).map((t) => t.name as string);
@@ -30,28 +33,28 @@ export default async function NewWarehousePage() {
           action={createWarehouse}
           className="grid grid-cols-1 gap-4 sm:grid-cols-2"
         >
-          <Field label="Name" required>
+          <Field label={t(locale, "Name")} required>
             <TextInput name="name" required placeholder="Cold Store - Erbil" />
           </Field>
-          <Field label="Type">
+          <Field label={t(locale, "Type")}>
             <Select name="warehouse_type" defaultValue="">
               <option value="">— none —</option>
               {types.map((t) => <option key={t} value={t}>{t}</option>)}
             </Select>
           </Field>
-          <Field label="City">
+          <Field label={t(locale, "City")}>
             <TextInput name="city" />
           </Field>
-          <Field label="Phone">
+          <Field label={t(locale, "Phone")}>
             <TextInput name="phone" />
           </Field>
           <div className="sm:col-span-2">
-            <Field label="Address">
+            <Field label={t(locale, "Address")}>
               <TextArea name="address" />
             </Field>
           </div>
           <div className="sm:col-span-2">
-            <SubmitButton>Create warehouse</SubmitButton>
+            <SubmitButton>{t(locale, "Create warehouse")}</SubmitButton>
           </div>
         </form>
       </FormCard>

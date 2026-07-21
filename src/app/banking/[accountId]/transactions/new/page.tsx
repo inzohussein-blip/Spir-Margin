@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import { createBankTransaction } from "@/app/actions/banking";
 import { Field, TextInput, SubmitButton, FormCard } from "@/components/form/Fields";
 
@@ -7,6 +9,7 @@ export default function NewTransactionPage({
 }: {
   params: { accountId: string };
 }) {
+  const locale = getLocale();
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
@@ -16,28 +19,28 @@ export default function NewTransactionPage({
       <FormCard title="Statement line (manual)">
         <form action={createBankTransaction} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <input type="hidden" name="bank_account_id" value={params.accountId} />
-          <Field label="Date">
+          <Field label={t(locale, "Date")}>
             <TextInput name="date" type="date" />
           </Field>
-          <Field label="Reference number">
+          <Field label={t(locale, "Reference number")}>
             <TextInput name="reference_number" />
           </Field>
-          <Field label="Deposit (money in)">
+          <Field label={t(locale, "Deposit (money in)")}>
             <TextInput name="deposit" type="number" step="0.01" defaultValue="0" />
           </Field>
-          <Field label="Withdrawal (money out)">
+          <Field label={t(locale, "Withdrawal (money out)")}>
             <TextInput name="withdrawal" type="number" step="0.01" defaultValue="0" />
           </Field>
           <div className="sm:col-span-2">
-            <Field label="Description">
+            <Field label={t(locale, "Description")}>
               <TextInput name="description" />
             </Field>
           </div>
-          <Field label="Bank transaction id">
+          <Field label={t(locale, "Bank transaction id")}>
             <TextInput name="transaction_id" placeholder="unique per account" />
           </Field>
           <div className="sm:col-span-2">
-            <SubmitButton>Add transaction</SubmitButton>
+            <SubmitButton>{t(locale, "Add transaction")}</SubmitButton>
           </div>
         </form>
       </FormCard>

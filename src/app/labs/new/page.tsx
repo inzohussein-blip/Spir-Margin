@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import { createLab } from "@/app/actions/crud";
 import { getTerritories, getCustomerGroups } from "@/lib/queries";
 import {
@@ -13,6 +15,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function NewLabPage() {
+  const locale = getLocale();
   const [territories, groups] = await Promise.all([
     getTerritories(),
     getCustomerGroups(),
@@ -28,55 +31,55 @@ export default async function NewLabPage() {
 
       <FormCard title="Lab details">
         <form action={createLab} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Code" required>
+          <Field label={t(locale, "Code")} required>
             <TextInput name="code" required placeholder="LAB-004" />
           </Field>
-          <Field label="Name" required>
+          <Field label={t(locale, "Name")} required>
             <TextInput name="name" required placeholder="City Central Lab" />
           </Field>
-          <Field label="Status">
+          <Field label={t(locale, "Status")}>
             <Select name="status" defaultValue="active">
               <option value="active">active</option>
               <option value="inactive">inactive</option>
             </Select>
           </Field>
-          <Field label="City">
+          <Field label={t(locale, "City")}>
             <TextInput name="city" />
           </Field>
-          <Field label="Contact name">
+          <Field label={t(locale, "Contact name")}>
             <TextInput name="contact_name" />
           </Field>
-          <Field label="Phone">
+          <Field label={t(locale, "Phone")}>
             <TextInput name="phone" />
           </Field>
-          <Field label="Email">
+          <Field label={t(locale, "Email")}>
             <TextInput name="email" type="email" />
           </Field>
-          <Field label="Territory">
+          <Field label={t(locale, "Territory")}>
             <TextInput name="territory" list="territories" />
             <datalist id="territories">
               {territories.map((t) => <option key={t} value={t} />)}
             </datalist>
           </Field>
-          <Field label="Customer group">
+          <Field label={t(locale, "Customer group")}>
             <TextInput name="customer_group" list="cust-groups" />
             <datalist id="cust-groups">
               {groups.map((g) => <option key={g} value={g} />)}
             </datalist>
           </Field>
-          <Field label="Latitude">
+          <Field label={t(locale, "Latitude")}>
             <TextInput name="latitude" type="number" step="any" />
           </Field>
-          <Field label="Longitude">
+          <Field label={t(locale, "Longitude")}>
             <TextInput name="longitude" type="number" step="any" />
           </Field>
           <div className="sm:col-span-2">
-            <Field label="Address">
+            <Field label={t(locale, "Address")}>
               <TextArea name="address" />
             </Field>
           </div>
           <div className="sm:col-span-2">
-            <SubmitButton>Create lab</SubmitButton>
+            <SubmitButton>{t(locale, "Create lab")}</SubmitButton>
           </div>
         </form>
       </FormCard>

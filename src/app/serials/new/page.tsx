@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import { createSerialNumber } from "@/app/actions/serials";
 import { getProducts, getLabs, getWarehouses } from "@/lib/queries";
 import {
@@ -13,6 +15,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function NewSerialPage() {
+  const locale = getLocale();
   const [products, labs, warehouses] = await Promise.all([
     getProducts(),
     getLabs(),
@@ -27,10 +30,10 @@ export default async function NewSerialPage() {
       <h1 className="text-2xl font-bold text-ink-gray-8">New Serial Number</h1>
       <FormCard title="Serial details">
         <form action={createSerialNumber} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Serial no." required>
+          <Field label={t(locale, "Serial no.")} required>
             <TextInput name="serial_no" required placeholder="SN-000123" />
           </Field>
-          <Field label="Product" required>
+          <Field label={t(locale, "Product")} required>
             <Select name="product_id" required defaultValue="">
               <option value="" disabled>Select a product…</option>
               {products.map((p) => (
@@ -38,7 +41,7 @@ export default async function NewSerialPage() {
               ))}
             </Select>
           </Field>
-          <Field label="Status">
+          <Field label={t(locale, "Status")}>
             <Select name="status" defaultValue="active">
               <option value="active">active</option>
               <option value="inactive">inactive</option>
@@ -47,7 +50,7 @@ export default async function NewSerialPage() {
               <option value="expired">expired</option>
             </Select>
           </Field>
-          <Field label="Warranty status">
+          <Field label={t(locale, "Warranty status")}>
             <Select name="maintenance_status" defaultValue="">
               <option value="">— none —</option>
               <option value="under_warranty">under warranty</option>
@@ -56,41 +59,41 @@ export default async function NewSerialPage() {
               <option value="out_of_amc">out of AMC</option>
             </Select>
           </Field>
-          <Field label="Warehouse">
+          <Field label={t(locale, "Warehouse")}>
             <Select name="warehouse_id" defaultValue="">
               <option value="">— none —</option>
               {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
             </Select>
           </Field>
-          <Field label="Lab">
+          <Field label={t(locale, "Lab")}>
             <Select name="lab_id" defaultValue="">
               <option value="">— none —</option>
               {labs.map((l) => <option key={l.id} value={l.id}>{l.name} ({l.code})</option>)}
             </Select>
           </Field>
-          <Field label="Purchase rate">
+          <Field label={t(locale, "Purchase rate")}>
             <TextInput name="purchase_rate" type="number" step="0.01" />
           </Field>
-          <Field label="Warranty period (days)">
+          <Field label={t(locale, "Warranty period (days)")}>
             <TextInput name="warranty_period_days" type="number" />
           </Field>
-          <Field label="Warranty expiry">
+          <Field label={t(locale, "Warranty expiry")}>
             <TextInput name="warranty_expiry_date" type="date" />
           </Field>
-          <Field label="AMC expiry">
+          <Field label={t(locale, "AMC expiry")}>
             <TextInput name="amc_expiry_date" type="date" />
           </Field>
-          <Field label="Batch no.">
+          <Field label={t(locale, "Batch no.")}>
             <TextInput name="batch_no" />
           </Field>
           <div />
           <div className="sm:col-span-2">
-            <Field label="Description">
+            <Field label={t(locale, "Description")}>
               <TextArea name="description" />
             </Field>
           </div>
           <div className="sm:col-span-2">
-            <SubmitButton>Create serial</SubmitButton>
+            <SubmitButton>{t(locale, "Create serial")}</SubmitButton>
           </div>
         </form>
       </FormCard>

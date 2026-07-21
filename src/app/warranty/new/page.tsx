@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import { createWarrantyClaim } from "@/app/actions/support";
 import { getProducts, getLabs } from "@/lib/queries";
 import {
@@ -13,6 +15,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function NewWarrantyClaimPage() {
+  const locale = getLocale();
   const [products, labs] = await Promise.all([getProducts(), getLabs()]);
 
   return (
@@ -23,10 +26,10 @@ export default async function NewWarrantyClaimPage() {
       <h1 className="text-2xl font-bold text-ink-gray-8">New Warranty Claim</h1>
       <FormCard title="Claim details">
         <form action={createWarrantyClaim} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Complaint date">
+          <Field label={t(locale, "Complaint date")}>
             <TextInput name="complaint_date" type="date" />
           </Field>
-          <Field label="Status">
+          <Field label={t(locale, "Status")}>
             <Select name="status" defaultValue="open">
               <option value="open">open</option>
               <option value="work_in_progress">work in progress</option>
@@ -34,19 +37,19 @@ export default async function NewWarrantyClaimPage() {
               <option value="cancelled">cancelled</option>
             </Select>
           </Field>
-          <Field label="Product">
+          <Field label={t(locale, "Product")}>
             <Select name="product_id" defaultValue="">
               <option value="">— none —</option>
               {products.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.item_code})</option>)}
             </Select>
           </Field>
-          <Field label="Lab">
+          <Field label={t(locale, "Lab")}>
             <Select name="lab_id" defaultValue="">
               <option value="">— none —</option>
               {labs.map((l) => <option key={l.id} value={l.id}>{l.name} ({l.code})</option>)}
             </Select>
           </Field>
-          <Field label="Warranty / AMC status">
+          <Field label={t(locale, "Warranty / AMC status")}>
             <Select name="warranty_amc_status" defaultValue="">
               <option value="">— none —</option>
               <option value="under_warranty">under warranty</option>
@@ -55,22 +58,22 @@ export default async function NewWarrantyClaimPage() {
               <option value="out_of_amc">out of AMC</option>
             </Select>
           </Field>
-          <Field label="Raised by">
+          <Field label={t(locale, "Raised by")}>
             <TextInput name="complaint_raised_by" />
           </Field>
-          <Field label="Contact mobile">
+          <Field label={t(locale, "Contact mobile")}>
             <TextInput name="contact_mobile" />
           </Field>
-          <Field label="Contact email">
+          <Field label={t(locale, "Contact email")}>
             <TextInput name="contact_email" type="email" />
           </Field>
           <div className="sm:col-span-2">
-            <Field label="Complaint">
+            <Field label={t(locale, "Complaint")}>
               <TextArea name="complaint" />
             </Field>
           </div>
           <div className="sm:col-span-2">
-            <SubmitButton>Create claim</SubmitButton>
+            <SubmitButton>{t(locale, "Create claim")}</SubmitButton>
           </div>
         </form>
       </FormCard>

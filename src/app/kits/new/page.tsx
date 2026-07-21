@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import { createKitBatch } from "@/app/actions/crud";
 import { getProducts, getWarehouses, getSuppliers } from "@/lib/queries";
 import {
@@ -12,6 +14,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function NewKitBatchPage() {
+  const locale = getLocale();
   const [products, warehouses, suppliers] = await Promise.all([
     getProducts("kit"),
     getWarehouses(),
@@ -32,10 +35,10 @@ export default async function NewKitBatchPage() {
           action={createKitBatch}
           className="grid grid-cols-1 gap-4 sm:grid-cols-2"
         >
-          <Field label="Batch no." required>
+          <Field label={t(locale, "Batch no.")} required>
             <TextInput name="batch_no" required placeholder="B-GLU-2403" />
           </Field>
-          <Field label="Product (kit)" required>
+          <Field label={t(locale, "Product (kit)")} required>
             <Select name="product_id" required defaultValue="">
               <option value="" disabled>
                 Select a kit…
@@ -47,7 +50,7 @@ export default async function NewKitBatchPage() {
               ))}
             </Select>
           </Field>
-          <Field label="Warehouse">
+          <Field label={t(locale, "Warehouse")}>
             <Select name="warehouse_id" defaultValue="">
               <option value="">— none —</option>
               {warehouses.map((w) => (
@@ -57,7 +60,7 @@ export default async function NewKitBatchPage() {
               ))}
             </Select>
           </Field>
-          <Field label="Supplier">
+          <Field label={t(locale, "Supplier")}>
             <Select name="supplier_id" defaultValue="">
               <option value="">— none —</option>
               {suppliers.map((s) => (
@@ -67,24 +70,24 @@ export default async function NewKitBatchPage() {
               ))}
             </Select>
           </Field>
-          <Field label="Manufacturing date">
+          <Field label={t(locale, "Manufacturing date")}>
             <TextInput name="manufacturing_date" type="date" />
           </Field>
-          <Field label="Expiry date">
+          <Field label={t(locale, "Expiry date")}>
             <TextInput name="expiry_date" type="date" />
           </Field>
-          <Field label="Qty received" required>
+          <Field label={t(locale, "Qty received")} required>
             <TextInput name="qty_received" type="number" step="0.01" required />
           </Field>
           <div />
-          <Field label="Buy price (from parent co.)">
+          <Field label={t(locale, "Buy price (from parent co.)")}>
             <TextInput name="buy_price" type="number" step="0.01" />
           </Field>
-          <Field label="Sell price (to lab)">
+          <Field label={t(locale, "Sell price (to lab)")}>
             <TextInput name="sell_price" type="number" step="0.01" />
           </Field>
           <div className="sm:col-span-2">
-            <SubmitButton>Create batch</SubmitButton>
+            <SubmitButton>{t(locale, "Create batch")}</SubmitButton>
           </div>
         </form>
       </FormCard>
