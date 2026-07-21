@@ -60,8 +60,8 @@ function detectAndParseDate(cell: string, preferDMY: boolean): string {
   if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
   const m = s.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})/);
   if (m) {
-    let [, a, b, y] = m;
-    if (y.length === 2) y = "20" + y;
+    const [, a, b, rawYear] = m;
+    const y = rawYear.length === 2 ? "20" + rawYear : rawYear;
     const day = preferDMY ? a : b;
     const mon = preferDMY ? b : a;
     return `${y}-${mon.padStart(2, "0")}-${day.padStart(2, "0")}`;

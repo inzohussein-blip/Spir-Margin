@@ -20,14 +20,6 @@ interface Row {
   labs: { name: string } | null;
 }
 
-const statusBadge: Record<string, string> = {
-  open: "bg-blue-100 text-blue-700",
-  quotation: "bg-amber-100 text-amber-700",
-  converted: "bg-emerald-100 text-emerald-700",
-  lost: "bg-red-100 text-red-700",
-  closed: "bg-surface-gray-2 text-ink-gray-6",
-};
-
 export default async function OpportunitiesPage() {
   const locale = getLocale();
   const supabase = createClient();
