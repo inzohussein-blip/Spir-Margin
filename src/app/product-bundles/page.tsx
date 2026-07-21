@@ -52,8 +52,10 @@ export default async function ProductBundlesPage() {
                 {rows.map((b) => (
                   <tr key={b.id}>
                     <td className="px-4 py-2 font-medium">
-                      {b.products?.name ?? "—"}
-                      {b.products?.item_code ? <span className="text-ink-gray-4"> ({b.products.item_code})</span> : null}
+                      <Link href={`/product-bundles/${b.id}`} className="text-brand hover:underline">
+                        {b.products?.name ?? "—"}
+                        {b.products?.item_code ? <span className="text-ink-gray-4"> ({b.products.item_code})</span> : null}
+                      </Link>
                     </td>
                     <td className="px-4 py-2 text-ink-gray-5">{b.description ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{b.product_bundle_items?.length ?? 0}</td>
