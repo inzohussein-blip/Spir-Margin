@@ -96,6 +96,19 @@ file in `supabase/migrations/` in order, and loads `supabase/seed.sql` for demo
 data. Rows persist across restarts. **Delete `./.pglite-data/` to reset** to a
 clean seeded state.
 
+### Tests
+
+```bash
+npm test        # node --test — no extra dependencies
+```
+
+The suite (`tests/`) boots an in-memory PGlite, applies the real migrations,
+and exercises the database layer end-to-end: every migration and the combined
+`schema.sql` apply cleanly, the recurring AMC billing functions bill and
+advance correctly (and never double-bill a period), and the built-in auth
+functions verify/rotate passwords. It uses Node's built-in test runner, so
+there is nothing to install.
+
 - The data client lives in `src/lib/db/` and exposes the small supabase-js
   surface the app uses (`.from(...).select()/insert()/update()/delete()`,
   filters, embedded resources, and `.rpc()`), so pages and server actions are
