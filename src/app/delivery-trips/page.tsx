@@ -49,7 +49,7 @@ export default async function DeliveryTripsPage() {
         count={rows.length}
         newHref="/delivery-trips/new"
         newLabel={t(locale, "New trip")}
-        actions={<Link href="/delivery-notes" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Delivery notes</Link>}
+        actions={<Link href="/delivery-notes" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Delivery notes")}</Link>}
         filterPlaceholder="Filter by trip / driver…"
       >
         {rows.length === 0 ? (

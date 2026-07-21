@@ -61,7 +61,7 @@ export default async function StockBalancePage() {
           </tbody>
           <tfoot>
             <tr className="border-t border-outline-gray-2 font-semibold">
-              <td className="px-4 py-2" colSpan={5}>Total stock value</td>
+              <td className="px-4 py-2" colSpan={5}>{t(locale, "Total stock value")}</td>
               <td className="px-4 py-2 text-right">{money(totalValue)}</td>
             </tr>
           </tfoot>

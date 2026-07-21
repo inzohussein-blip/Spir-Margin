@@ -58,7 +58,7 @@ export default async function OpportunitiesPage() {
         count={rows.length}
         newHref="/opportunities/new"
         newLabel={t(locale, "New opportunity")}
-        actions={<Link href="/sales-team" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Sales team</Link>}
+        actions={<Link href="/sales-team" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Sales team")}</Link>}
       >
         {rows.length === 0 ? (
           <EmptyRow text={t(locale, "No opportunities yet")} />

@@ -46,7 +46,7 @@ export default async function PurchaseReceiptsPage() {
         count={rows.length}
         newHref="/purchase-receipts/new"
         newLabel={t(locale, "New receipt")}
-        actions={<Link href="/purchase-orders" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Purchase orders</Link>}
+        actions={<Link href="/purchase-orders" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Purchase orders")}</Link>}
         filterPlaceholder="Filter by receipt / supplier…"
       >
         {rows.length === 0 ? (

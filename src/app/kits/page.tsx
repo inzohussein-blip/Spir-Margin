@@ -39,9 +39,9 @@ export default async function KitsPage() {
       newLabel={t(locale, "New batch")}
       actions={
         <>
-          <Link href="/delivery-notes" className={linkCls}>Delivery notes</Link>
-          <Link href="/stock-reconciliation" className={linkCls}>Stock count</Link>
-          <Link href="/kits/withdraw" className="rounded-md border border-brand px-3 py-1.5 text-sm font-medium text-brand hover:bg-blue-50">Record withdrawal</Link>
+          <Link href="/delivery-notes" className={linkCls}>{t(locale, "Delivery notes")}</Link>
+          <Link href="/stock-reconciliation" className={linkCls}>{t(locale, "Stock count")}</Link>
+          <Link href="/kits/withdraw" className="rounded-md border border-brand px-3 py-1.5 text-sm font-medium text-brand hover:bg-blue-50">{t(locale, "Record withdrawal")}</Link>
         </>
       }
     >

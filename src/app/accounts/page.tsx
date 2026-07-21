@@ -33,9 +33,9 @@ export default async function AccountsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Chart of Accounts")}</h1>
         <div className="flex gap-2">
-          <Link href="/journal-entries" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Journal entries</Link>
-          <Link href="/cost-centers" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Cost centers</Link>
-          <Link href="/taxes" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Taxes</Link>
+          <Link href="/journal-entries" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Journal entries")}</Link>
+          <Link href="/cost-centers" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Cost centers")}</Link>
+          <Link href="/taxes" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Taxes")}</Link>
           <Link href="/accounts/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New account</Link>
         </div>
       </div>

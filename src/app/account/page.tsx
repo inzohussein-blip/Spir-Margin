@@ -18,15 +18,15 @@ export default async function AccountPage() {
       <Panel title={t(locale, "Profile")}>
         <dl className="grid grid-cols-1 gap-3 p-4 text-sm sm:grid-cols-3">
           <div>
-            <dt className="text-ink-gray-4">Name</dt>
+            <dt className="text-ink-gray-4">{t(locale, "Name")}</dt>
             <dd className="font-medium text-ink-gray-8">{user.full_name || "—"}</dd>
           </div>
           <div>
-            <dt className="text-ink-gray-4">Email</dt>
+            <dt className="text-ink-gray-4">{t(locale, "Email")}</dt>
             <dd className="font-medium text-ink-gray-8">{user.email}</dd>
           </div>
           <div>
-            <dt className="text-ink-gray-4">Role</dt>
+            <dt className="text-ink-gray-4">{t(locale, "Role")}</dt>
             <dd className="font-medium capitalize text-ink-gray-8">{user.role}</dd>
           </div>
         </dl>

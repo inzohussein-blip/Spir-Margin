@@ -33,10 +33,10 @@ export default async function BankingPage() {
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Banking")}</h1>
         <div className="flex flex-wrap gap-2">
           <Link href="/banking/reconcile" className="rounded-md bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-dark">⇄ Reconcile</Link>
-          <Link href="/banking/payments" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Payments</Link>
-          <Link href="/banking/transfer" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Transfer</Link>
-          <Link href="/banking/rules" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Rules</Link>
-          <Link href="/banking/import" className="rounded-md border border-brand px-3 py-2 text-sm font-medium text-brand hover:bg-blue-50">Import statement</Link>
+          <Link href="/banking/payments" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Payments")}</Link>
+          <Link href="/banking/transfer" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Transfer")}</Link>
+          <Link href="/banking/rules" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Rules")}</Link>
+          <Link href="/banking/import" className="rounded-md border border-brand px-3 py-2 text-sm font-medium text-brand hover:bg-blue-50">{t(locale, "Import statement")}</Link>
           <Link href="/banking/accounts/new" className="rounded-md bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ Bank account</Link>
         </div>
       </div>
@@ -64,13 +64,13 @@ export default async function BankingPage() {
                   </div>
                   <div className="flex items-center gap-6 text-right text-sm">
                     <div>
-                      <div className="text-xs text-ink-gray-4">Unreconciled</div>
+                      <div className="text-xs text-ink-gray-4">{t(locale, "Unreconciled")}</div>
                       <div className="font-semibold text-amber-600">
                         {Number(a.unreconciled_amount).toLocaleString()} ({a.unreconciled_count})
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-ink-gray-4">Reconciled</div>
+                      <div className="text-xs text-ink-gray-4">{t(locale, "Reconciled")}</div>
                       <div className="font-semibold text-emerald-600">{a.reconciled_count}</div>
                     </div>
                     <span className="text-brand">→</span>

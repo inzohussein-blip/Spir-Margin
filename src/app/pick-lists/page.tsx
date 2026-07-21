@@ -45,7 +45,7 @@ export default async function PickListsPage() {
         count={rows.length}
         newHref="/pick-lists/new"
         newLabel={t(locale, "New pick list")}
-        actions={<Link href="/delivery-notes" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Delivery notes</Link>}
+        actions={<Link href="/delivery-notes" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Delivery notes")}</Link>}
         filterPlaceholder="Filter by pick / lab…"
       >
         {rows.length === 0 ? (

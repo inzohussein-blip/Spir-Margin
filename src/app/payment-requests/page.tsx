@@ -50,7 +50,7 @@ export default async function PaymentRequestsPage() {
         count={rows.length}
         newHref="/payment-requests/new"
         newLabel={t(locale, "New request")}
-        actions={<Link href="/sales-invoices" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Sales invoices</Link>}
+        actions={<Link href="/sales-invoices" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Sales invoices")}</Link>}
         filterPlaceholder="Filter by request / invoice / lab…"
       >
         {rows.length === 0 ? (

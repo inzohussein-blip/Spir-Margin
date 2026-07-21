@@ -54,7 +54,7 @@ export default async function WorkOrdersPage() {
         count={rows.length}
         newHref="/work-orders/new"
         newLabel={t(locale, "New work order")}
-        actions={<Link href="/boms" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">BOMs</Link>}
+        actions={<Link href="/boms" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "BOMs")}</Link>}
       >
         {rows.length === 0 ? (
           <EmptyRow text={t(locale, "No work orders yet — assemble a kit from its BOM")} />

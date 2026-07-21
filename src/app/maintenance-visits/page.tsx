@@ -48,7 +48,7 @@ export default async function MaintenanceVisitsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Maintenance Visits")}</h1>
         <div className="flex gap-2">
-          <Link href="/devices" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Devices</Link>
+          <Link href="/devices" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Devices")}</Link>
           <Link href="/maintenance-visits/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New visit</Link>
         </div>
       </div>

@@ -320,6 +320,23 @@ const ar: Record<string, string> = {
   // create-page labels
   // action buttons
   // headings & back-links
+  // cross-nav links
+  "Medical-device sales, lab tracking & banking.": "مبيعات الأجهزة الطبية وتتبّع المختبرات والخدمات المصرفية.",
+  "Cost centers": "مراكز التكلفة",
+  "Delivery notes": "سندات التسليم",
+  "Import statement": "استيراد كشف",
+  "Journal entries": "قيود اليومية",
+  "Material requests": "طلبات المواد",
+  "Payment terms": "شروط الدفع",
+  "Reconciliation": "التسوية",
+  "Record withdrawal": "تسجيل سحب",
+  "Sales team": "فريق المبيعات",
+  "Stock count": "جرد المخزون",
+  "Supplier quotes": "عروض الموردين",
+  "Total stock value": "إجمالي قيمة المخزون",
+  "Transfer": "تحويل",
+  "Unreconciled": "غير مُسوّى",
+  "Import statement ": "استيراد كشف",
   "New Account": "حساب جديد",
   "New Appointment": "موعد جديد",
   "New Asset Movement": "حركة أصل جديدة",

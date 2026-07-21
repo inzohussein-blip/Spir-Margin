@@ -32,7 +32,7 @@ export default async function CreditLimitsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Lab Credit Limits")}</h1>
-        <Link href="/labs" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">Labs</Link>
+        <Link href="/labs" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Labs")}</Link>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
