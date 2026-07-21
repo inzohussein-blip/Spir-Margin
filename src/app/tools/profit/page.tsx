@@ -11,7 +11,7 @@ export default async function ProfitToolPage() {
   const rate = await getUsdIqdRate();
   return (
     <div className="space-y-4">
-      <div className="text-sm text-ink-gray-5"><Link href="/tools" className="hover:text-brand">← Tools</Link></div>
+      <div className="text-sm text-ink-gray-5"><Link href="/tools" className="hover:text-brand">← {t(locale, "Tools")}</Link></div>
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Profit Calculator")}</h1>
       <ProfitCalculator usdToIqd={rate} />
     </div>

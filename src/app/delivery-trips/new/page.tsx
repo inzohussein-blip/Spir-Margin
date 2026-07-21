@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getLabs } from "@/lib/queries";
 import { DeliveryTripForm } from "@/components/stock/DeliveryTripForm";
+import { t } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n-server";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +15,7 @@ interface DnRow {
 }
 
 export default async function NewDeliveryTripPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const [labs, { data: dnData }] = await Promise.all([
     getLabs(),
@@ -31,9 +34,9 @@ export default async function NewDeliveryTripPage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/delivery-trips" className="hover:text-brand">← Delivery trips</Link>
+        <Link href="/delivery-trips" className="hover:text-brand">← {t(locale, "Delivery trips")}</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Delivery Trip</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Delivery Trip")}</h1>
       <DeliveryTripForm labs={labOpts} deliveryNotes={dnOpts} />
     </div>
   );

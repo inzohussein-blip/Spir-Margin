@@ -20,10 +20,10 @@ export default async function NewLeadPage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/leads" className="hover:text-brand">← Leads</Link>
+        <Link href="/leads" className="hover:text-brand">← {t(locale, "Leads")}</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Lead</h1>
-      <FormCard title="Lead details">
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Lead")}</h1>
+      <FormCard title={t(locale, "Lead details")}>
         <form action={createLead} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Lead name")} required>
             <TextInput name="lead_name" required placeholder="Dr. Ahmed" />

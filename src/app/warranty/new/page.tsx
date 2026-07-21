@@ -21,10 +21,10 @@ export default async function NewWarrantyClaimPage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/warranty" className="hover:text-brand">← Warranty Claims</Link>
+        <Link href="/warranty" className="hover:text-brand">← {t(locale, "Warranty Claims")}</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Warranty Claim</h1>
-      <FormCard title="Claim details">
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Warranty Claim")}</h1>
+      <FormCard title={t(locale, "Claim details")}>
         <form action={createWarrantyClaim} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Complaint date")}>
             <TextInput name="complaint_date" type="date" />

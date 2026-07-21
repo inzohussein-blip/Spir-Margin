@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { getProducts, getKitBatches } from "@/lib/queries";
 import { QualityInspectionForm } from "@/components/quality/QualityInspectionForm";
+import { t } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n-server";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewQualityInspectionPage() {
+  const locale = getLocale();
   const [products, batches] = await Promise.all([getProducts(), getKitBatches()]);
   const productOpts = products.map((p) => ({
     id: p.id as string,
@@ -21,9 +24,9 @@ export default async function NewQualityInspectionPage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/quality-inspections" className="hover:text-brand">← Quality inspections</Link>
+        <Link href="/quality-inspections" className="hover:text-brand">← {t(locale, "Quality inspections")}</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Quality Inspection</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Quality Inspection")}</h1>
       <QualityInspectionForm products={productOpts} batches={batchOpts} />
     </div>
   );

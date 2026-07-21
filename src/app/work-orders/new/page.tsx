@@ -21,11 +21,11 @@ export default async function NewWorkOrderPage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/work-orders" className="hover:text-brand">← Work orders</Link>
+        <Link href="/work-orders" className="hover:text-brand">← {t(locale, "Work orders")}</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Work Order</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Work Order")}</h1>
 
-      <FormCard title="Work order details">
+      <FormCard title={t(locale, "Work order details")}>
         <form action={createWorkOrder} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "WO no.")} required>
             <TextInput name="wo_no" required placeholder="WO-0001" />

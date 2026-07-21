@@ -30,9 +30,9 @@ export default async function NewProductPage() {
           ← Products
         </Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Product</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Product")}</h1>
 
-      <FormCard title="Item details">
+      <FormCard title={t(locale, "Item details")}>
         <form
           action={createProduct}
           className="grid grid-cols-1 gap-4 sm:grid-cols-2"

@@ -20,7 +20,7 @@ export default async function SalesTeamPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Sales Team")}</h1>
-        <Link href="/opportunities" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">← Opportunities</Link>
+        <Link href="/opportunities" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">← {t(locale, "Opportunities")}</Link>
       </div>
       <Panel title={`${t(locale, "Sales Persons")} (${ps.length})`}>
         {ps.length === 0 ? <EmptyRow text={t(locale, "No sales persons")} /> : (

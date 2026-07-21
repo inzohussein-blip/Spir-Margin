@@ -28,9 +28,9 @@ export default async function NewKitBatchPage() {
           ← Kits
         </Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Kit Batch</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Kit Batch")}</h1>
 
-      <FormCard title="Batch details">
+      <FormCard title={t(locale, "Batch details")}>
         <form
           action={createKitBatch}
           className="grid grid-cols-1 gap-4 sm:grid-cols-2"

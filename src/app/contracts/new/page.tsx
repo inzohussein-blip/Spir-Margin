@@ -22,11 +22,11 @@ export default async function NewContractPage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/contracts" className="hover:text-brand">← Service contracts</Link>
+        <Link href="/contracts" className="hover:text-brand">← {t(locale, "Service contracts")}</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Service Contract</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Service Contract")}</h1>
 
-      <FormCard title="Contract details">
+      <FormCard title={t(locale, "Contract details")}>
         <form action={createContract} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Contract no.")} required>
             <TextInput name="contract_no" required placeholder="AMC-0001" />

@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { getLabs, getDevices } from "@/lib/queries";
 import { MaintenanceVisitForm } from "@/components/maintenance/MaintenanceVisitForm";
+import { t } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n-server";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewMaintenanceVisitPage() {
+  const locale = getLocale();
   const [labs, devices] = await Promise.all([getLabs(), getDevices()]);
   const labOpts = labs.map((l) => ({ id: l.id as string, label: l.name as string }));
   const deviceOpts = devices.map((d) => {
@@ -19,9 +22,9 @@ export default async function NewMaintenanceVisitPage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/maintenance-visits" className="hover:text-brand">← Maintenance visits</Link>
+        <Link href="/maintenance-visits" className="hover:text-brand">← {t(locale, "Maintenance visits")}</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Maintenance Visit</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Maintenance Visit")}</h1>
       <MaintenanceVisitForm labs={labOpts} devices={deviceOpts} />
     </div>
   );

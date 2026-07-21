@@ -25,10 +25,10 @@ export default async function NewSerialPage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/serials" className="hover:text-brand">← Serials</Link>
+        <Link href="/serials" className="hover:text-brand">← {t(locale, "Serials")}</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Serial Number</h1>
-      <FormCard title="Serial details">
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Serial Number")}</h1>
+      <FormCard title={t(locale, "Serial details")}>
         <form action={createSerialNumber} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Serial no.")} required>
             <TextInput name="serial_no" required placeholder="SN-000123" />

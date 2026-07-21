@@ -9,10 +9,10 @@ export default function NewRatePage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/currency" className="hover:text-brand">← Currency Exchange</Link>
+        <Link href="/currency" className="hover:text-brand">← {t(locale, "Currency Exchange")}</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Exchange Rate</h1>
-      <FormCard title="Rate">
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Exchange Rate")}</h1>
+      <FormCard title={t(locale, "Rate")}>
         <form action={createExchangeRate} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Date")}><TextInput name="date" type="date" /></Field>
           <Field label={t(locale, "Rate")} required><TextInput name="exchange_rate" type="number" step="0.000001" required /></Field>

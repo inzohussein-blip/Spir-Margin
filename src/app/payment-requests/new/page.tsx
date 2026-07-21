@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getModesOfPayment } from "@/lib/queries";
 import { PaymentRequestForm } from "@/components/accounting/PaymentRequestForm";
+import { t } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n-server";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +16,7 @@ interface InvRow {
 }
 
 export default async function NewPaymentRequestPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const [{ data: invData }, modes] = await Promise.all([
     supabase
@@ -35,9 +38,9 @@ export default async function NewPaymentRequestPage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/payment-requests" className="hover:text-brand">← Payment requests</Link>
+        <Link href="/payment-requests" className="hover:text-brand">← {t(locale, "Payment requests")}</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Payment Request</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Payment Request")}</h1>
       <PaymentRequestForm invoices={invoices} modes={modeOpts} />
     </div>
   );

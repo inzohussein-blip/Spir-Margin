@@ -47,7 +47,7 @@ export default async function PoDetailPage({ params }: { params: { id: string } 
   return (
     <div className="space-y-6">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/purchase-orders" className="hover:text-brand">← Purchase orders</Link>
+        <Link href="/purchase-orders" className="hover:text-brand">← {t(locale, "Purchase orders")}</Link>
       </div>
       <div className="flex items-center justify-between">
         <div>

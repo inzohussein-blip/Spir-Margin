@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { getDevices, getLabs, getWarehouses } from "@/lib/queries";
 import { AssetMovementForm } from "@/components/assets/AssetMovementForm";
+import { t } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n-server";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewAssetMovementPage() {
+  const locale = getLocale();
   const [devices, labs, warehouses] = await Promise.all([getDevices(), getLabs(), getWarehouses()]);
   const deviceOpts = devices.map((d) => {
     const prod = (d as { products?: { name?: string } | null }).products;
@@ -19,9 +22,9 @@ export default async function NewAssetMovementPage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/asset-movements" className="hover:text-brand">← Asset movements</Link>
+        <Link href="/asset-movements" className="hover:text-brand">← {t(locale, "Asset movements")}</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Asset Movement</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Asset Movement")}</h1>
       <AssetMovementForm devices={deviceOpts} labs={labOpts} warehouses={warehouseOpts} />
     </div>
   );

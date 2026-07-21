@@ -54,7 +54,7 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
   return (
     <div className="space-y-6">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/sales-invoices" className="hover:text-brand">← Sales invoices</Link>
+        <Link href="/sales-invoices" className="hover:text-brand">← {t(locale, "Sales invoices")}</Link>
       </div>
       <div className="flex items-center justify-between">
         <div>

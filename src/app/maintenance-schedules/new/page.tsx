@@ -14,11 +14,11 @@ export default async function NewMaintenanceSchedulePage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/maintenance-schedules" className="hover:text-brand">← Maintenance schedules</Link>
+        <Link href="/maintenance-schedules" className="hover:text-brand">← {t(locale, "Maintenance schedules")}</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Maintenance Schedule</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Maintenance Schedule")}</h1>
 
-      <FormCard title="Schedule details">
+      <FormCard title={t(locale, "Schedule details")}>
         <form action={createMaintenanceSchedule} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Schedule no.")} required>
             <TextInput name="schedule_no" required placeholder="MS-0001" />

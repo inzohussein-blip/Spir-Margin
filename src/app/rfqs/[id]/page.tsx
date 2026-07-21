@@ -34,7 +34,7 @@ export default async function RfqDetailPage({ params }: { params: { id: string }
   return (
     <div className="space-y-6">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/rfqs" className="hover:text-brand">← Requests for quotation</Link>
+        <Link href="/rfqs" className="hover:text-brand">← {t(locale, "Requests for quotation")}</Link>
       </div>
       <div>
         <h1 className="text-2xl font-bold text-ink-gray-8">{rfq.rfq_no}</h1>

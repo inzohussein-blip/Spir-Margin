@@ -23,9 +23,9 @@ export default async function NewCompanyPage() {
           ← Companies
         </Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Company</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Company")}</h1>
 
-      <FormCard title="Company details">
+      <FormCard title={t(locale, "Company details")}>
         <form
           action={createCompany}
           className="grid grid-cols-1 gap-4 sm:grid-cols-2"

@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { getSuppliers, getProducts, getWarehouses } from "@/lib/queries";
 import { PurchaseReceiptForm } from "@/components/purchasing/PurchaseReceiptForm";
+import { t } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n-server";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewPurchaseReceiptPage() {
+  const locale = getLocale();
   const [suppliers, products, warehouses] = await Promise.all([getSuppliers(), getProducts(), getWarehouses()]);
   const supplierOpts = suppliers.map((s) => ({ id: s.id as string, label: s.name as string }));
   const productOpts = products.map((p) => ({
@@ -17,9 +20,9 @@ export default async function NewPurchaseReceiptPage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/purchase-receipts" className="hover:text-brand">← Purchase receipts</Link>
+        <Link href="/purchase-receipts" className="hover:text-brand">← {t(locale, "Purchase receipts")}</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Purchase Receipt</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Purchase Receipt")}</h1>
       <PurchaseReceiptForm suppliers={supplierOpts} products={productOpts} warehouses={warehouseOpts} />
     </div>
   );

@@ -15,10 +15,10 @@ export default async function NewAccountPage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/accounts" className="hover:text-brand">← Chart of Accounts</Link>
+        <Link href="/accounts" className="hover:text-brand">← {t(locale, "Chart of Accounts")}</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Account</h1>
-      <FormCard title="Account">
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Account")}</h1>
+      <FormCard title={t(locale, "Account")}>
         <form action={createAccount} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Account name")} required><TextInput name="account_name" required /></Field>
           <Field label={t(locale, "Account number")}><TextInput name="account_number" /></Field>

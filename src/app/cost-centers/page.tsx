@@ -15,7 +15,7 @@ export default async function CostCentersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Cost Centers")}</h1>
-        <Link href="/accounts" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">← Accounts</Link>
+        <Link href="/accounts" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">← {t(locale, "Accounts")}</Link>
       </div>
       <Panel title={`${t(locale, "Cost Centers")} (${rows.length})`}>
         {rows.length === 0 ? <EmptyRow text={t(locale, "No cost centers")} /> : (

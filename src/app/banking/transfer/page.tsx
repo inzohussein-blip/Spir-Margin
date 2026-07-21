@@ -21,7 +21,7 @@ export default async function TransferPage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/banking" className="hover:text-brand">← Banking</Link>
+        <Link href="/banking" className="hover:text-brand">← {t(locale, "Banking")}</Link>
       </div>
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Internal Transfer")}</h1>
       {accounts.length < 2 ? (

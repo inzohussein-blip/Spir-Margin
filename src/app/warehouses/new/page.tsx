@@ -26,9 +26,9 @@ export default async function NewWarehousePage() {
           ← Warehouses
         </Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Warehouse</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Warehouse")}</h1>
 
-      <FormCard title="Warehouse details">
+      <FormCard title={t(locale, "Warehouse details")}>
         <form
           action={createWarehouse}
           className="grid grid-cols-1 gap-4 sm:grid-cols-2"

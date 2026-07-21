@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getLabs, getProducts, getWarehouses } from "@/lib/queries";
 import { PickListForm } from "@/components/stock/PickListForm";
+import { t } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n-server";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +15,7 @@ interface SoRow {
 }
 
 export default async function NewPickListPage() {
+  const locale = getLocale();
   const supabase = createClient();
   const [labs, products, warehouses, { data: soData }] = await Promise.all([
     getLabs(),
@@ -39,9 +42,9 @@ export default async function NewPickListPage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/pick-lists" className="hover:text-brand">← Pick lists</Link>
+        <Link href="/pick-lists" className="hover:text-brand">← {t(locale, "Pick lists")}</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Pick List</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Pick List")}</h1>
       <PickListForm labs={labOpts} salesOrders={soOpts} products={productOpts} warehouses={warehouseOpts} />
     </div>
   );

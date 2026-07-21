@@ -16,10 +16,10 @@ export default function NewBankAccountPage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/banking" className="hover:text-brand">← Banking</Link>
+        <Link href="/banking" className="hover:text-brand">← {t(locale, "Banking")}</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Bank Account</h1>
-      <FormCard title="Account details">
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Bank Account")}</h1>
+      <FormCard title={t(locale, "Account details")}>
         <form action={createBankAccount} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Account name")} required>
             <TextInput name="account_name" required placeholder="Main Operating" />

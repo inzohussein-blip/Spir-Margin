@@ -27,9 +27,9 @@ export default async function NewLabPage() {
           ← Labs
         </Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Lab</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Lab")}</h1>
 
-      <FormCard title="Lab details">
+      <FormCard title={t(locale, "Lab details")}>
         <form action={createLab} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Code")} required>
             <TextInput name="code" required placeholder="LAB-004" />

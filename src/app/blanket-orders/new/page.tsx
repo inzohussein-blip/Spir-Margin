@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { getLabs, getSuppliers, getProducts } from "@/lib/queries";
 import { BlanketOrderForm } from "@/components/selling/BlanketOrderForm";
+import { t } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n-server";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewBlanketOrderPage() {
+  const locale = getLocale();
   const [labs, suppliers, products] = await Promise.all([getLabs(), getSuppliers(), getProducts()]);
   const labOpts = labs.map((l) => ({ id: l.id as string, label: l.name as string }));
   const supplierOpts = suppliers.map((s) => ({ id: s.id as string, label: s.name as string }));
@@ -18,9 +21,9 @@ export default async function NewBlanketOrderPage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/blanket-orders" className="hover:text-brand">← Blanket orders</Link>
+        <Link href="/blanket-orders" className="hover:text-brand">← {t(locale, "Blanket orders")}</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Blanket Order</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Blanket Order")}</h1>
       <BlanketOrderForm labs={labOpts} suppliers={supplierOpts} products={productOpts} />
     </div>
   );

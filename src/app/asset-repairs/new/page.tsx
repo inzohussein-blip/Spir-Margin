@@ -14,11 +14,11 @@ export default async function NewAssetRepairPage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
-        <Link href="/asset-repairs" className="hover:text-brand">← Asset repairs</Link>
+        <Link href="/asset-repairs" className="hover:text-brand">← {t(locale, "Asset repairs")}</Link>
       </div>
-      <h1 className="text-2xl font-bold text-ink-gray-8">New Asset Repair</h1>
+      <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Asset Repair")}</h1>
 
-      <FormCard title="Repair details">
+      <FormCard title={t(locale, "Repair details")}>
         <form action={createAssetRepair} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Repair no.")} required>
             <TextInput name="repair_no" required placeholder="AR-0001" />
