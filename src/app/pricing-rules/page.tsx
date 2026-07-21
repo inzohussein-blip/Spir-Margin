@@ -77,7 +77,7 @@ export default async function PricingRulesPage() {
                         </form>
                         <form action={deletePricingRuleForm}>
                           <input type="hidden" name="id" value={r.id} />
-                          <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">Delete</button>
+                          <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Delete")}</button>
                         </form>
                       </div>
                     </td>

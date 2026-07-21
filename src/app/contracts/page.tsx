@@ -102,7 +102,7 @@ export default async function ContractsPage() {
                             <option value="inactive">inactive</option>
                             <option value="cancelled">cancelled</option>
                           </select>
-                          <button className="rounded-md bg-brand px-2 py-1 text-xs font-medium text-white hover:bg-brand-dark">Set</button>
+                          <button className="rounded-md bg-brand px-2 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Set")}</button>
                           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[c.status] ?? "bg-surface-gray-2"}`}>{c.status}</span>
                         </form>
                       </td>

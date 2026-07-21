@@ -69,7 +69,7 @@ export default async function StockReconPage() {
                       {r.status === "draft" ? (
                         <form action={postStockReconciliationForm}>
                           <input type="hidden" name="id" value={r.id} />
-                          <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">Post</button>
+                          <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Post")}</button>
                         </form>
                       ) : (
                         <span className="text-xs text-ink-gray-4">—</span>

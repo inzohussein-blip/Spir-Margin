@@ -318,6 +318,24 @@ const ar: Record<string, string> = {
   // placeholders
   // AMC billing
   // create-page labels
+  // action buttons
+  "Set": "تعيين",
+  "Complete": "إكمال",
+  "remove": "إزالة",
+  "Receive": "استلام",
+  "Post": "ترحيل",
+  "Delete": "حذف",
+  "Send": "إرسال",
+  "Save": "حفظ",
+  "Resolve": "حل",
+  "Record quote": "تسجيل عرض",
+  "Mark paid": "تعليم كمدفوع",
+  "Evaluate": "تقييم",
+  "Deliver": "تسليم",
+  "Convert to lab": "تحويل إلى مختبر",
+  "Add term": "إضافة شرط",
+  "Add": "إضافة",
+  "Activate": "تفعيل",
   "AMC expiry": "انتهاء عقد الصيانة",
   "Account name": "اسم الحساب",
   "Account no.": "رقم الحساب",

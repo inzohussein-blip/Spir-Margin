@@ -79,17 +79,17 @@ export default async function BlanketOrdersPage() {
                         <div className="flex gap-2">
                           <form action={submitBlanketOrderForm}>
                             <input type="hidden" name="id" value={r.id} />
-                            <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">Activate</button>
+                            <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Activate")}</button>
                           </form>
                           <form action={cancelBlanketOrderForm}>
                             <input type="hidden" name="id" value={r.id} />
-                            <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">Cancel</button>
+                            <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Cancel")}</button>
                           </form>
                         </div>
                       ) : r.status === "active" ? (
                         <form action={cancelBlanketOrderForm}>
                           <input type="hidden" name="id" value={r.id} />
-                          <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">Cancel</button>
+                          <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Cancel")}</button>
                         </form>
                       ) : (
                         <span className="text-xs text-ink-gray-4">—</span>

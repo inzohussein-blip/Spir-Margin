@@ -73,7 +73,7 @@ export default async function WarrantyPage() {
                       {w.status !== "closed" && w.status !== "cancelled" ? (
                         <form action={resolveWarrantyClaimForm}>
                           <input type="hidden" name="id" value={w.id} />
-                          <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">Resolve</button>
+                          <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Resolve")}</button>
                         </form>
                       ) : (
                         <span className="text-xs text-ink-gray-4">—</span>

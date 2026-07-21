@@ -66,7 +66,7 @@ export default async function ProductBundlesPage() {
                     <td className="px-4 py-2">
                       <form action={deleteProductBundleForm}>
                         <input type="hidden" name="id" value={b.id} />
-                        <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">Delete</button>
+                        <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Delete")}</button>
                       </form>
                     </td>
                   </tr>

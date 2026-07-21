@@ -57,7 +57,7 @@ export default async function DeliveryNotesPage() {
                       {d.status === "draft" ? (
                         <form action={submitDeliveryNoteForm}>
                           <input type="hidden" name="id" value={d.id} />
-                          <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">Submit</button>
+                          <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Submit")}</button>
                         </form>
                       ) : <span className="text-xs text-ink-gray-4">—</span>}
                     </td>

@@ -89,7 +89,7 @@ export default async function RfqDetailPage({ params }: { params: { id: string }
                           <input type="hidden" name="rfq_supplier_id" value={s.id} />
                           <input type="hidden" name="rfq_id" value={rfq.id} />
                           <input name="quote_no" placeholder={t(locale, "quote no.")} className="w-28 rounded-md border border-outline-gray-2 px-2 py-1 text-xs" />
-                          <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">Record quote</button>
+                          <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Record quote")}</button>
                         </form>
                       )}
                     </td>

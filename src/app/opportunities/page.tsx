@@ -95,7 +95,7 @@ export default async function OpportunitiesPage() {
                           <option value="lost">lost</option>
                           <option value="closed">closed</option>
                         </select>
-                        <button className="rounded-md bg-brand px-2 py-1 text-xs font-medium text-white hover:bg-brand-dark">Set</button>
+                        <button className="rounded-md bg-brand px-2 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Set")}</button>
                       </form>
                     </td>
                   </tr>

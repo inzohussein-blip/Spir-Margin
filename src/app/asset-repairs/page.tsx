@@ -90,11 +90,11 @@ export default async function AssetRepairsPage() {
                         <div className="flex gap-2">
                           <form action={completeAssetRepairForm}>
                             <input type="hidden" name="id" value={r.id} />
-                            <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">Complete</button>
+                            <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Complete")}</button>
                           </form>
                           <form action={cancelAssetRepairForm}>
                             <input type="hidden" name="id" value={r.id} />
-                            <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">Cancel</button>
+                            <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Cancel")}</button>
                           </form>
                         </div>
                       ) : (

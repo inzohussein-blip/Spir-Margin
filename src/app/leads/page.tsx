@@ -78,7 +78,7 @@ export default async function LeadsPage() {
                       ) : (
                         <form action={convertLeadForm}>
                           <input type="hidden" name="id" value={l.id} />
-                          <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">Convert to lab</button>
+                          <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Convert to lab")}</button>
                         </form>
                       )}
                     </td>

@@ -85,7 +85,7 @@ export default async function AppointmentsPage() {
                           <option value="completed">completed</option>
                           <option value="cancelled">cancelled</option>
                         </select>
-                        <button className="rounded-md bg-brand px-2 py-1 text-xs font-medium text-white hover:bg-brand-dark">Set</button>
+                        <button className="rounded-md bg-brand px-2 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Set")}</button>
                         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[a.status] ?? "bg-surface-gray-2"}`}>{a.status}</span>
                       </form>
                     </td>

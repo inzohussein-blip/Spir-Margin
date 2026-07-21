@@ -78,22 +78,22 @@ export default async function PickListsPage() {
                         <div className="flex gap-2">
                           <form action={openPickListForm}>
                             <input type="hidden" name="id" value={r.id} />
-                            <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">Open</button>
+                            <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Open")}</button>
                           </form>
                           <form action={cancelPickListForm}>
                             <input type="hidden" name="id" value={r.id} />
-                            <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">Cancel</button>
+                            <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Cancel")}</button>
                           </form>
                         </div>
                       ) : r.status === "open" ? (
                         <div className="flex gap-2">
                           <form action={completePickListForm}>
                             <input type="hidden" name="id" value={r.id} />
-                            <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">Complete</button>
+                            <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Complete")}</button>
                           </form>
                           <form action={cancelPickListForm}>
                             <input type="hidden" name="id" value={r.id} />
-                            <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">Cancel</button>
+                            <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Cancel")}</button>
                           </form>
                         </div>
                       ) : (

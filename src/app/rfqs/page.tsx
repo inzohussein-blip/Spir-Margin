@@ -77,7 +77,7 @@ export default async function RfqsPage() {
                         {r.status === "draft" ? (
                           <form action={submitRfqForm}>
                             <input type="hidden" name="id" value={r.id} />
-                            <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">Submit</button>
+                            <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Submit")}</button>
                           </form>
                         ) : (
                           <Link href={`/rfqs/${r.id}`} className="text-xs text-brand hover:underline">open</Link>
