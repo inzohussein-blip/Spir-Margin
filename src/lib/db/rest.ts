@@ -13,6 +13,35 @@ type Result = { data: any; error: { message: string } | null; count?: number };
 
 const q = (id: string) => `"${id.replace(/"/g, '""')}"`;
 
+// ---- rpc return-shape metadata ---------------------------------------------
+
+// Cache each function's proretset flag (true = TABLE/SETOF). The catalog never
+// changes at runtime, so one lookup per function name is enough. `undefined`
+// means "not yet looked up".
+const retsetCache = new Map<string, boolean>();
+
+/** True when the named public function returns a set (TABLE/SETOF). */
+async function isSetReturning(
+  db: { query<T = any>(sql: string, params?: unknown[]): Promise<{ rows: T[] }> },
+  fn: string
+): Promise<boolean> {
+  const cached = retsetCache.get(fn);
+  if (cached !== undefined) return cached;
+  try {
+    const r = await db.query<{ proretset: boolean | null }>(
+      `select bool_or(p.proretset) as proretset
+         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where p.proname = $1 and n.nspname = 'public'`,
+      [fn]
+    );
+    const v = !!r.rows[0]?.proretset;
+    retsetCache.set(fn, v);
+    return v;
+  } catch {
+    return false; // fall back to the scalar path + its error-based recovery
+  }
+}
+
 // ---- select-string parsing -------------------------------------------------
 
 interface Field {
@@ -235,11 +264,33 @@ class Query implements PromiseLike<Result> {
     let sql = "";
 
     // rpc(): call a Postgres function. Scalar/void funcs return their value;
-    // set/table-returning funcs return rows (filterable / single()).
+    // set/table-returning funcs return rows (filterable / single()). The two
+    // shapes need different SQL — `select fn()` for scalars, `select * from
+    // fn()` for sets — and picking the wrong one silently corrupts the result
+    // (a TABLE function surfaced via `select fn() as result` collapses to a
+    // single composite string). So route by the catalog's `proretset` flag.
     if (this.rpcSpec) {
       const keys = Object.keys(this.rpcSpec.params);
       const values = keys.map((k) => this.rpcSpec!.params[k]);
       const argSql = keys.map((k, i) => `${q(k)} => $${i + 1}`).join(", ");
+
+      const runSet = async () => {
+        const p2 = [...values];
+        let s2 = `select * from ${q(this.rpcSpec!.fn)}(${argSql})`;
+        s2 += this.whereSql(p2);
+        if (this.singleRow) s2 += " limit 1";
+        const res = await db.query<Record<string, unknown>>(s2, p2);
+        const rows = res.rows ?? [];
+        return { data: this.singleRow ? rows[0] ?? null : rows, error: null };
+      };
+
+      if (await isSetReturning(db, this.rpcSpec.fn)) {
+        try {
+          return await runSet();
+        } catch (e2) {
+          return { data: null, error: { message: e2 instanceof Error ? e2.message : String(e2) } };
+        }
+      }
       try {
         const res = await db.query<{ result: unknown }>(
           `select ${q(this.rpcSpec.fn)}(${argSql}) as result`,
@@ -247,16 +298,13 @@ class Query implements PromiseLike<Result> {
         );
         return { data: res.rows[0]?.result ?? null, error: null };
       } catch (e) {
+        // Safety net: if the metadata lookup was wrong or unavailable, fall
+        // back to the set path when Postgres complains about a set-returning
+        // function used in a scalar context.
         const msg = e instanceof Error ? e.message : String(e);
         if (/set-returning|must appear in the FROM/i.test(msg)) {
           try {
-            const p2 = [...values];
-            let s2 = `select * from ${q(this.rpcSpec.fn)}(${argSql})`;
-            s2 += this.whereSql(p2);
-            if (this.singleRow) s2 += " limit 1";
-            const res = await db.query<Record<string, unknown>>(s2, p2);
-            const rows = res.rows ?? [];
-            return { data: this.singleRow ? rows[0] ?? null : rows, error: null };
+            return await runSet();
           } catch (e2) {
             return { data: null, error: { message: e2 instanceof Error ? e2.message : String(e2) } };
           }
