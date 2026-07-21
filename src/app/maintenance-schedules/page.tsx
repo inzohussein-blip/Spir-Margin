@@ -68,7 +68,7 @@ export default async function MaintenanceSchedulesPage() {
                   const planned = sc.maintenance_schedule_details?.length ?? 0;
                   return (
                     <tr key={sc.id}>
-                      <td className="px-4 py-2 font-medium">{sc.schedule_no}</td>
+                      <td className="px-4 py-2 font-medium"><Link href={`/maintenance-schedules/${sc.id}`} className="text-brand hover:underline">{sc.schedule_no}</Link></td>
                       <td className="px-4 py-2">
                         {sc.devices?.asset_code ?? "—"}
                         {sc.devices?.products?.name ? <span className="text-ink-gray-4"> · {sc.devices.products.name}</span> : null}

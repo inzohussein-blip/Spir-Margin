@@ -72,7 +72,7 @@ export default async function AssetRepairsPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((r) => (
                   <tr key={r.id}>
-                    <td className="px-4 py-2 font-medium">{r.repair_no}</td>
+                    <td className="px-4 py-2 font-medium"><Link href={`/asset-repairs/${r.id}`} className="text-brand hover:underline">{r.repair_no}</Link></td>
                     <td className="px-4 py-2">
                       {r.devices?.asset_code ?? "—"}
                       {r.devices?.products?.name ? <span className="text-ink-gray-4"> · {r.devices.products.name}</span> : null}

@@ -60,7 +60,7 @@ export default async function SerialsPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((s) => (
                   <tr key={s.id}>
-                    <td className="px-4 py-2 font-medium">{s.serial_no}</td>
+                    <td className="px-4 py-2 font-medium"><Link href={`/serials/${s.id}`} className="text-brand hover:underline">{s.serial_no}</Link></td>
                     <td className="px-4 py-2">{s.products?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{s.labs?.name ?? "—"}</td>
                     <td className="px-4 py-2">

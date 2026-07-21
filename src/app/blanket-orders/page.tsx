@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { ListShell } from "@/components/desk/ListShell";
@@ -67,7 +68,7 @@ export default async function BlanketOrdersPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((r) => (
                   <tr key={r.id} className="hover:bg-surface-gray-1">
-                    <td className="px-4 py-2 font-medium">{r.order_no}</td>
+                    <td className="px-4 py-2 font-medium"><Link href={`/blanket-orders/${r.id}`} className="text-brand hover:underline">{r.order_no}</Link></td>
                     <td className="px-4 py-2 capitalize text-ink-gray-5">{r.order_type}</td>
                     <td className="px-4 py-2">{(r.order_type === "purchasing" ? r.companies?.name : r.labs?.name) ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{r.from_date} → {r.to_date}</td>

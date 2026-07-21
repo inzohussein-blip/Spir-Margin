@@ -60,7 +60,7 @@ export default async function WarrantyPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((w) => (
                   <tr key={w.id}>
-                    <td className="px-4 py-2 text-ink-gray-5">{w.complaint_date}</td>
+                    <td className="px-4 py-2 text-ink-gray-5"><Link href={`/warranty/${w.id}`} className="text-brand hover:underline">{w.complaint_date}</Link></td>
                     <td className="px-4 py-2 font-medium">{w.products?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{w.labs?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-6 max-w-xs truncate">{w.complaint ?? "—"}</td>

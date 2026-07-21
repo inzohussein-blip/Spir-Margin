@@ -56,7 +56,7 @@ export default async function JournalEntriesPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((j) => (
                   <tr key={j.id}>
-                    <td className="px-4 py-2 text-ink-gray-5">{j.posting_date}</td>
+                    <td className="px-4 py-2 text-ink-gray-5"><Link href={`/journal-entries/${j.id}`} className="text-brand hover:underline">{j.posting_date}</Link></td>
                     <td className="px-4 py-2">{j.voucher_type}</td>
                     <td className="px-4 py-2 text-ink-gray-5 max-w-xs truncate">{j.user_remark ?? "—"}</td>
                     <td className="px-4 py-2">{Number(j.total_debit).toLocaleString()}</td>

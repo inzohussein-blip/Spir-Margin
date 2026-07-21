@@ -72,7 +72,7 @@ export default async function PaymentRequestsPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((r) => (
                   <tr key={r.id} className="hover:bg-surface-gray-1">
-                    <td className="px-4 py-2 font-medium">{r.request_no}</td>
+                    <td className="px-4 py-2 font-medium"><Link href={`/payment-requests/${r.id}`} className="text-brand hover:underline">{r.request_no}</Link></td>
                     <td className="px-4 py-2 text-ink-gray-5">{r.sales_invoices?.invoice_no ?? "—"}</td>
                     <td className="px-4 py-2">{r.labs?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{r.posting_date}</td>

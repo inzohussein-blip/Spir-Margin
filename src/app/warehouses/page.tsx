@@ -52,7 +52,7 @@ export default async function WarehousesPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((w) => (
                   <tr key={w.id} className={w.is_disabled ? "opacity-50" : ""}>
-                    <td className="px-4 py-2 font-medium">{w.name}</td>
+                    <td className="px-4 py-2 font-medium"><Link href={`/warehouses/${w.id}`} className="text-brand hover:underline">{w.name}</Link></td>
                     <td className="px-4 py-2 text-ink-gray-5">
                       {w.warehouse_type ?? "—"}
                     </td>

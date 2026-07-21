@@ -56,7 +56,7 @@ export default async function PricingRulesPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((r) => (
                   <tr key={r.id} className={r.disabled ? "opacity-50" : ""}>
-                    <td className="px-4 py-2 font-medium">{r.title}</td>
+                    <td className="px-4 py-2 font-medium"><Link href={`/pricing-rules/${r.id}`} className="text-brand hover:underline">{r.title}</Link></td>
                     <td className="px-4 py-2 text-ink-gray-5">{r.products?.name ?? "any"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{r.labs?.name ?? "any"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">

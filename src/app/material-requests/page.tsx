@@ -49,7 +49,7 @@ export default async function MaterialRequestsPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((m) => (
                   <tr key={m.id}>
-                    <td className="px-4 py-2 text-ink-gray-5">{m.transaction_date}</td>
+                    <td className="px-4 py-2 text-ink-gray-5"><Link href={`/material-requests/${m.id}`} className="text-brand hover:underline">{m.transaction_date}</Link></td>
                     <td className="px-4 py-2 text-ink-gray-5">{m.required_by ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{m.material_request_items?.length ?? 0}</td>
                     <td className="px-4 py-2"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[m.status] ?? "bg-surface-gray-2"}`}>{m.status}</span></td>

@@ -52,7 +52,7 @@ export default async function SupplierQuotationsPage() {
                 {rows.map((q) => (
                   <tr key={q.id}>
                     <td className="px-4 py-2 font-medium">{q.companies?.name ?? "—"}</td>
-                    <td className="px-4 py-2 text-ink-gray-5">{q.transaction_date}</td>
+                    <td className="px-4 py-2 text-ink-gray-5"><Link href={`/supplier-quotations/${q.id}`} className="text-brand hover:underline">{q.transaction_date}</Link></td>
                     <td className="px-4 py-2 text-ink-gray-5">{q.valid_till ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{q.supplier_quotation_items?.length ?? 0}</td>
                     <td className="px-4 py-2">{Number(q.total_amount).toLocaleString()}</td>

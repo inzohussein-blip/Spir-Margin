@@ -68,7 +68,7 @@ export default async function PurchaseReceiptsPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((r) => (
                   <tr key={r.id} className="hover:bg-surface-gray-1">
-                    <td className="px-4 py-2 font-medium">{r.receipt_no}</td>
+                    <td className="px-4 py-2 font-medium"><Link href={`/purchase-receipts/${r.id}`} className="text-brand hover:underline">{r.receipt_no}</Link></td>
                     <td className="px-4 py-2">{r.companies?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{r.posting_date}</td>
                     <td className="px-4 py-2 text-right text-ink-gray-5">{r.purchase_receipt_items?.length ?? 0}</td>

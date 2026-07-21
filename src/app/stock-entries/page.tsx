@@ -69,7 +69,7 @@ export default async function StockEntriesPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((e) => (
                   <tr key={e.id}>
-                    <td className="px-4 py-2 font-medium">{e.entry_no}</td>
+                    <td className="px-4 py-2 font-medium"><Link href={`/stock-entries/${e.id}`} className="text-brand hover:underline">{e.entry_no}</Link></td>
                     <td className="px-4 py-2">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${purposeBadge[e.purpose] ?? "bg-surface-gray-2"}`}>
                         {e.purpose}

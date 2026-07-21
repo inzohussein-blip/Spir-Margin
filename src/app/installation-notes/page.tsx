@@ -61,7 +61,7 @@ export default async function InstallationNotesPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((n) => (
                   <tr key={n.id}>
-                    <td className="px-4 py-2 font-medium">{n.inst_no}</td>
+                    <td className="px-4 py-2 font-medium"><Link href={`/installation-notes/${n.id}`} className="text-brand hover:underline">{n.inst_no}</Link></td>
                     <td className="px-4 py-2">{n.labs?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{n.inst_date}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{n.installation_note_items?.length ?? 0}</td>

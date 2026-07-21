@@ -71,7 +71,7 @@ export default async function OpportunitiesPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((o) => (
                   <tr key={o.id}>
-                    <td className="px-4 py-2 font-medium">{o.title}</td>
+                    <td className="px-4 py-2 font-medium"><Link href={`/opportunities/${o.id}`} className="text-brand hover:underline">{o.title}</Link></td>
                     <td className="px-4 py-2 text-ink-gray-5">{o.labs?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{o.sales_stage ?? "—"}</td>
                     <td className="px-4 py-2">{Number(o.opportunity_amount).toLocaleString()}</td>

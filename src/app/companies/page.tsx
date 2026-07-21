@@ -61,7 +61,7 @@ export default async function CompaniesPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((c) => (
                   <tr key={c.id}>
-                    <td className="px-4 py-2 font-medium">{c.name}</td>
+                    <td className="px-4 py-2 font-medium"><Link href={`/companies/${c.id}`} className="text-brand hover:underline">{c.name}</Link></td>
                     <td className="px-4 py-2">
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${

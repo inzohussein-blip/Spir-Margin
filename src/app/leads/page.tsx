@@ -63,7 +63,7 @@ export default async function LeadsPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((l) => (
                   <tr key={l.id}>
-                    <td className="px-4 py-2 font-medium">{l.lead_name}</td>
+                    <td className="px-4 py-2 font-medium"><Link href={`/leads/${l.id}`} className="text-brand hover:underline">{l.lead_name}</Link></td>
                     <td className="px-4 py-2">{l.company_name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{l.city ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{l.territory ?? "—"}</td>

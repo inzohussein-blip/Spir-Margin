@@ -67,7 +67,7 @@ export default async function PickListsPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((r) => (
                   <tr key={r.id} className="hover:bg-surface-gray-1">
-                    <td className="px-4 py-2 font-medium">{r.pick_no}</td>
+                    <td className="px-4 py-2 font-medium"><Link href={`/pick-lists/${r.id}`} className="text-brand hover:underline">{r.pick_no}</Link></td>
                     <td className="px-4 py-2 capitalize text-ink-gray-5">{r.purpose.replace(/_/g, " ")}</td>
                     <td className="px-4 py-2">{r.labs?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{r.posting_date}</td>

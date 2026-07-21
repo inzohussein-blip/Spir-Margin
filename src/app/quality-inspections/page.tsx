@@ -71,7 +71,7 @@ export default async function QualityInspectionsPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((q) => (
                   <tr key={q.id}>
-                    <td className="px-4 py-2 font-medium">{q.qi_no}</td>
+                    <td className="px-4 py-2 font-medium"><Link href={`/quality-inspections/${q.id}`} className="text-brand hover:underline">{q.qi_no}</Link></td>
                     <td className="px-4 py-2 text-ink-gray-5">{q.inspection_type}</td>
                     <td className="px-4 py-2">{q.products?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{q.report_date}</td>

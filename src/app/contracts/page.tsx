@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { ListShell } from "@/components/desk/ListShell";
@@ -85,7 +86,7 @@ export default async function ContractsPage() {
                   const soon = c.status === "active" && d != null && d >= 0 && d <= 60;
                   return (
                     <tr key={c.id}>
-                      <td className="px-4 py-2 font-medium">{c.contract_no}</td>
+                      <td className="px-4 py-2 font-medium"><Link href={`/contracts/${c.id}`} className="text-brand hover:underline">{c.contract_no}</Link></td>
                       <td className="px-4 py-2">{c.labs?.name ?? "—"}</td>
                       <td className="px-4 py-2 text-ink-gray-5">{c.devices?.asset_code ?? "—"}</td>
                       <td className="px-4 py-2 text-ink-gray-5">

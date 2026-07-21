@@ -83,7 +83,7 @@ export default async function PurchasesPage() {
                   <tr key={p.id}>
                     <td className="px-4 py-2 font-medium">{p.reference_no ?? "—"}</td>
                     <td className="px-4 py-2">{p.companies?.name ?? "—"}</td>
-                    <td className="px-4 py-2 text-ink-gray-5">{p.posting_date}</td>
+                    <td className="px-4 py-2 text-ink-gray-5"><Link href={`/purchases/${p.id}`} className="text-brand hover:underline">{p.posting_date}</Link></td>
                     <td className="px-4 py-2 text-ink-gray-5">{p.due_date ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{p.purchase_items?.length ?? 0}</td>
                     <td className="px-4 py-2">{Number(p.total_amount).toLocaleString()}</td>

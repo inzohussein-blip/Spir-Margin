@@ -74,7 +74,7 @@ export default async function DeliveryTripsPage() {
                   const arrived = stops.filter((s) => s.arrived).length;
                   return (
                     <tr key={r.id} className="hover:bg-surface-gray-1">
-                      <td className="px-4 py-2 font-medium">{r.trip_no}</td>
+                      <td className="px-4 py-2 font-medium"><Link href={`/delivery-trips/${r.id}`} className="text-brand hover:underline">{r.trip_no}</Link></td>
                       <td className="px-4 py-2">{r.driver_name ?? "—"}</td>
                       <td className="px-4 py-2 text-ink-gray-5">{r.vehicle ?? "—"}</td>
                       <td className="px-4 py-2 text-ink-gray-5">{r.departure_date}</td>

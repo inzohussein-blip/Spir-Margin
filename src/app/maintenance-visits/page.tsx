@@ -80,7 +80,7 @@ export default async function MaintenanceVisitsPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((v) => (
                   <tr key={v.id}>
-                    <td className="px-4 py-2 font-medium">{v.visit_no}</td>
+                    <td className="px-4 py-2 font-medium"><Link href={`/maintenance-visits/${v.id}`} className="text-brand hover:underline">{v.visit_no}</Link></td>
                     <td className="px-4 py-2">{v.labs?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{v.visit_date}</td>
                     <td className="px-4 py-2">

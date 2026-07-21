@@ -26,6 +26,7 @@ Snapshot: 57 migrations · 105 tables · 117 routes · verified running on embed
 | **List view** (breadcrumb, count, +Add, filter bar) | ✅ `src/components/desk/ListShell.tsx` (primary lists) |
 | **Status indicators** (colored dot + label) | ✅ `src/components/desk/Indicator.tsx` |
 | **Form view** (breadcrumb, status pill, meta sidebar) | ✅ `src/components/desk/FormShell.tsx` |
+| **Record detail / read view** (fields, FK links, child line-items) | ✅ `src/components/desk/RecordDetail.tsx` — a schema-introspecting detail view; every list row links to it |
 | Report view / print formats / desk customization | ➖ not reproduced (Frappe-framework features) |
 
 *List chrome is applied to the primary transactional lists (labs, devices, kits, products, contracts,
