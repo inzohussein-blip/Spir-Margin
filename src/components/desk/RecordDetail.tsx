@@ -115,20 +115,27 @@ export async function RecordDetail({
     }
   }
 
-  // Line-item / child tables that reference this record.
+  // Line-item / child tables that reference this record. The suffix names the
+  // panel (stops / accounts / taxes / items).
+  const SUFFIX_LABEL: Record<string, string> = {
+    _stops: "Stops", _accounts: "Accounts", _taxes: "Taxes", _lines: "Items", _items: "Items",
+  };
   const childTables = Object.entries(meta.outgoing)
     .filter(([ct, fks]) => ct !== table && fks.some((f) => f.ftable === table) &&
       /(_items|_stops|_lines|_accounts|_taxes)$/.test(ct))
-    .map(([ct, fks]) => ({ ct, col: fks.find((f) => f.ftable === table)!.column }));
+    .map(([ct, fks]) => {
+      const suffix = Object.keys(SUFFIX_LABEL).find((s) => ct.endsWith(s))!;
+      return { ct, col: fks.find((f) => f.ftable === table)!.column, titleKey: SUFFIX_LABEL[suffix] };
+    });
 
-  const children: { title: string; cols: string[]; rows: Record<string, unknown>[] }[] = [];
-  for (const { ct, col } of childTables) {
+  const children: { titleKey: string; cols: string[]; rows: Record<string, unknown>[] }[] = [];
+  for (const { ct, col, titleKey } of childTables) {
     const rows = (await db.query<Record<string, unknown>>(
       `select * from "${ct}" where "${col}" = $1 limit 100`, [id]
     )).rows;
     if (!rows.length) continue;
     const cols = Object.keys(rows[0]).filter((c) => !HIDDEN.has(c) && c !== col);
-    children.push({ title: humanize(ct.replace(table.replace(/s$/, ""), "").replace(/^_/, "")) || ct, cols, rows });
+    children.push({ titleKey, cols, rows });
   }
 
   return (
@@ -152,8 +159,8 @@ export async function RecordDetail({
         </dl>
       </Panel>
 
-      {children.map((c) => (
-        <Panel key={c.title} title={`${t(locale, "Items")} (${c.rows.length})`}>
+      {children.map((c, ci) => (
+        <Panel key={ci} title={`${t(locale, c.titleKey)} (${c.rows.length})`}>
           {c.rows.length === 0 ? (
             <EmptyRow text={t(locale, "None yet")} />
           ) : (
