@@ -322,6 +322,26 @@ const ar: Record<string, string> = {
   // headings & back-links
   // cross-nav links
   // detail-view field labels
+  // point of sale
+  "USD": "دولار",
+  "IQD": "دينار",
+  "Point of Sale": "نقطة البيع",
+  "Back to app": "العودة للتطبيق",
+  "Cart": "السلة",
+  "Clear": "تفريغ",
+  "Select a customer (lab)…": "اختر الزبون (المختبر)…",
+  "Select a customer (lab).": "اختر الزبون (المختبر).",
+  "Search products by name or code…": "ابحث عن المنتجات بالاسم أو الرمز…",
+  "No products found.": "لا توجد منتجات.",
+  "Tap a product to add it to the cart.": "انقر على منتج لإضافته إلى السلة.",
+  "Cart is empty.": "السلة فارغة.",
+  "Subtotal": "المجموع الفرعي",
+  "Complete sale": "إتمام البيع",
+  "Sale recorded": "تم تسجيل البيع",
+  "line(s)": "سطر",
+  "قطعة غيار": "قطعة غيار",
+  "عدّة": "عدّة",
+  "جهاز": "جهاز",
   "Account head": "الحساب",
   "Amc expiry date": "تاريخ انتهاء الصيانة",
   "Appointment no": "رقم الموعد",

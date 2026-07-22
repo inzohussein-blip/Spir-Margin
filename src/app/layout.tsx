@@ -29,14 +29,16 @@ export default async function RootLayout({
   const dir = locale === "ar" ? "rtl" : "ltr";
   // The login page renders standalone — no sidebar/header shell.
   const isBare = pathname === "/login" || pathname.startsWith("/login/");
+  // Focused full-screen pages keep auth but provide their own chrome (POS).
+  const isFocused = pathname === "/pos" || pathname.startsWith("/pos/");
   const user = isBare ? null : await getCurrentUser();
-  const notifications = user ? await getNotifications(locale) : [];
+  const notifications = user && !isFocused ? await getNotifications(locale) : [];
 
   return (
     <html lang={locale} dir={dir}>
       <body className="min-h-screen bg-surface-gray-1 text-ink-gray-8 antialiased">
         <LocaleProvider locale={locale}>
-        {isBare || !user ? (
+        {isBare || !user || isFocused ? (
           children
         ) : (
           <div className="flex min-h-screen">

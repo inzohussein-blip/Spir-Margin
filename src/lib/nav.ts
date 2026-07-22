@@ -23,6 +23,7 @@ export const navGroups: NavGroup[] = [
     { href: "/contracts", label: "Contracts", icon: FileSignatureIcon },
   ]},
   { label: "Selling", items: [
+    { href: "/pos", label: "Point of Sale", icon: ShoppingCartIcon },
     { href: "/labs", label: "Labs", icon: FlaskConicalIcon },
     { href: "/quotations", label: "Quotations", icon: FileTextIcon },
     { href: "/sales-orders", label: "Sales Orders", icon: ClipboardListIcon },
