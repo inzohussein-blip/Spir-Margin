@@ -92,6 +92,7 @@ export const navGroups: NavGroup[] = [
   { label: "Setup", items: [
     { href: "/masters", label: "Masters", icon: ListChecksIcon },
     { href: "/users", label: "Users", icon: UsersIcon },
+    { href: "/audit-log", label: "Audit Log", icon: ScrollTextIcon },
   ]},
 ];
 

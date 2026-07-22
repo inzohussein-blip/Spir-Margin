@@ -323,6 +323,19 @@ const ar: Record<string, string> = {
   // cross-nav links
   // detail-view field labels
   // point of sale
+  // audit log
+  "Audit Log": "سجل التدقيق",
+  "You need an administrator account to view the audit log.": "تحتاج حساب مدير لعرض سجل التدقيق.",
+  "Filter by table / actor…": "تصفية حسب الجدول / المستخدم…",
+  "This log is append-only — records can never be edited or deleted.": "هذا السجل للإضافة فقط — لا يمكن تعديل أو حذف أي سجل.",
+  "No changes recorded yet.": "لا تغييرات مُسجّلة بعد.",
+  "Actor": "المستخدم",
+  "Table": "الجدول",
+  "Record": "السجل",
+  "Changed fields": "الحقول المتغيّرة",
+  "إنشاء": "إنشاء",
+  "تعديل": "تعديل",
+  "حذف": "حذف",
   "USD": "دولار",
   "IQD": "دينار",
   "Point of Sale": "نقطة البيع",
