@@ -4,10 +4,11 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import {
   SearchIcon, PlusIcon, MinusIcon, XIcon,
-  ShoppingCartIcon, Loader2Icon, CheckCircle2Icon, ArrowLeftIcon,
+  ShoppingCartIcon, Loader2Icon, CheckCircle2Icon, ArrowLeftIcon, CloudOffIcon,
 } from "lucide-react";
-import { createPosSale } from "@/app/actions/pos";
 import { useLocale } from "@/components/LocaleProvider";
+import { useOffline } from "@/components/offline/OfflineProvider";
+import { SyncStatus } from "@/components/offline/SyncStatus";
 import { t } from "@/lib/i18n";
 
 interface Product {
@@ -31,12 +32,14 @@ export function PosTerminal({
   iqdRate: number;
 }) {
   const locale = useLocale();
+  const { submitSale, online } = useOffline();
   const [labId, setLabId] = useState("");
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<Line[]>([]);
   const [currency, setCurrency] = useState<"USD" | "IQD">("USD");
   const [pending, start] = useTransition();
   const [done, setDone] = useState<{ count: number; total: number } | null>(null);
+  const [queued, setQueued] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
@@ -55,6 +58,7 @@ export function PosTerminal({
 
   function addProduct(p: Product) {
     setDone(null);
+    setQueued(false);
     setCart((c) => {
       const i = c.findIndex((l) => l.product.id === p.id);
       if (i >= 0) {
@@ -73,14 +77,15 @@ export function PosTerminal({
 
   function checkout() {
     setError(null);
+    setQueued(false);
     if (!labId) { setError(t(locale, "Select a customer (lab).")); return; }
     if (cart.length === 0) { setError(t(locale, "Cart is empty.")); return; }
+    const labName = labs.find((l) => l.id === labId)?.name;
+    const lines = cart.map((l) => ({ product_id: l.product.id, qty: l.qty, sell_price: l.sell, name: l.product.name }));
     start(async () => {
-      const res = await createPosSale(
-        labId,
-        cart.map((l) => ({ product_id: l.product.id, qty: l.qty, buy_price: Number(l.product.default_buy_price), sell_price: l.sell })),
-      );
-      if (res.ok) { setDone({ count: res.count, total: res.total }); setCart([]); }
+      const res = await submitSale({ labId, labName, lines });
+      if (res.status === "synced") { setDone({ count: res.count, total: res.total }); setCart([]); }
+      else if (res.status === "queued") { setQueued(true); setDone(null); setCart([]); }
       else setError(res.error);
     });
   }
@@ -101,6 +106,7 @@ export function PosTerminal({
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <SyncStatus />
           <select value={labId} onChange={(e) => setLabId(e.target.value)} className={inputCls}>
             <option value="">{t(locale, "Select a customer (lab)…")}</option>
             {labs.map((l) => <option key={l.id} value={l.id}>{l.name} ({l.code})</option>)}
@@ -166,6 +172,12 @@ export function PosTerminal({
                     <p className="text-xs">{done.count} {t(locale, "line(s)")} · {fmt(done.total)}</p>
                   </div>
                 )}
+                {queued && (
+                  <div className="mt-4 flex flex-col items-center gap-1 rounded-lg bg-amber-50 px-4 py-3 text-amber-700">
+                    <CloudOffIcon size={22} />
+                    <p className="text-sm font-medium">{t(locale, "Saved offline — it will sync automatically when you’re back online.")}</p>
+                  </div>
+                )}
               </div>
             ) : (
               <ul className="divide-y divide-outline-gray-1">
@@ -208,10 +220,16 @@ export function PosTerminal({
               </div>
             </dl>
             {error && <p className="mb-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+            {!online && (
+              <p className="mb-2 flex items-center gap-1.5 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                <CloudOffIcon size={14} className="shrink-0" />
+                {t(locale, "Offline — sales are saved on this device and upload automatically when the connection returns.")}
+              </p>
+            )}
             <button onClick={checkout} disabled={pending || cart.length === 0}
-              className="flex w-full items-center justify-center gap-2 rounded-md bg-brand px-4 py-3 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50">
-              {pending ? <Loader2Icon size={16} className="animate-spin" /> : <CheckCircle2Icon size={16} />}
-              {t(locale, "Complete sale")}
+              className={`flex w-full items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white disabled:opacity-50 ${online ? "bg-brand hover:bg-brand-dark" : "bg-amber-600 hover:bg-amber-700"}`}>
+              {pending ? <Loader2Icon size={16} className="animate-spin" /> : online ? <CheckCircle2Icon size={16} /> : <CloudOffIcon size={16} />}
+              {online ? t(locale, "Complete sale") : t(locale, "Save sale offline")}
             </button>
           </div>
         </aside>

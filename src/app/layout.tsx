@@ -9,6 +9,8 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NotificationBell } from "@/components/desk/NotificationBell";
 import { LocaleProvider } from "@/components/LocaleProvider";
 import { NavProgress } from "@/components/NavProgress";
+import { OfflineProvider } from "@/components/offline/OfflineProvider";
+import { SyncStatus } from "@/components/offline/SyncStatus";
 import { FeatureUnavailable } from "@/components/settings/FeatureUnavailable";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getNotifications } from "@/lib/notifications";
@@ -51,6 +53,7 @@ export default async function RootLayout({
     <html lang={locale} dir={dir}>
       <body className="min-h-screen bg-surface-gray-1 text-ink-gray-8 antialiased">
         <LocaleProvider locale={locale}>
+        <OfflineProvider>
         <NavProgress />
         {isBare || !user || isFocused ? (
           children
@@ -70,6 +73,7 @@ export default async function RootLayout({
                   <Awesomebar locale={locale} blocked={blockedFeatures} />
                 </div>
                 <div className="flex items-center gap-3">
+                  <SyncStatus />
                   <NotificationBell items={notifications} locale={locale} />
                   <LanguageSwitcher locale={locale} />
                   <UserMenu user={user} locale={locale} />
@@ -81,6 +85,7 @@ export default async function RootLayout({
             </div>
           </div>
         )}
+        </OfflineProvider>
         </LocaleProvider>
       </body>
     </html>

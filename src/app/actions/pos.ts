@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -7,64 +8,45 @@ export interface PosLine {
   product_id: string;
   qty: number;
   /** Client-side display only — the server always re-reads the authoritative cost. */
-  buy_price: number;
+  buy_price?: number;
   sell_price: number;
 }
 
 /**
- * Complete a Point-of-Sale transaction: record one sales row per cart line
- * (the same `sales` model the profit dashboard reads), so a POS sale flows
- * straight into revenue/profit reporting.
+ * Complete a Point-of-Sale transaction, booking one `sales` row per cart line
+ * so it flows straight into revenue/profit reporting.
  *
- * Money-integrity rules (this path books real revenue, so it never trusts the
- * client blindly):
- *   - The customer must exist.
- *   - Every product must exist and be enabled.
- *   - The COST (buy_price) is always re-read from products.default_buy_price —
- *     the client cannot forge it, so profit/cost accounting stays correct.
- *   - Quantities must be > 0 and sell prices must be >= 0.
- *   - All lines are inserted in one atomic multi-row insert (all or nothing).
+ * `requestId` is a client-generated UUID that makes the checkout idempotent:
+ * the offline outbox reuses the same id when it replays a queued sale, so a
+ * retry after a lost response can never double-post. All money-integrity rules
+ * live in fn_pos_checkout (migration 0073) and run in a single transaction —
+ * the customer and products must exist, products must be enabled, and the COST
+ * is always re-read from the product, never trusted from the client.
  */
-export async function createPosSale(labId: string, lines: PosLine[]) {
-  if (!labId) return { ok: false as const, error: "Select a customer (lab)." };
+export async function createPosSale(labId: string, lines: PosLine[], requestId?: string) {
   const clean = lines.filter((l) => l.product_id && Number(l.qty) > 0);
+  if (!labId) return { ok: false as const, error: "Select a customer (lab)." };
   if (clean.length === 0) return { ok: false as const, error: "Cart is empty." };
   if (clean.some((l) => Number(l.sell_price) < 0)) {
     return { ok: false as const, error: "Sell price cannot be negative." };
   }
 
   const supabase = createClient();
-
-  // Customer must exist.
-  const { data: lab } = await supabase.from("labs").select("id").eq("id", labId).single();
-  if (!lab) return { ok: false as const, error: "Customer not found." };
-
-  // Authoritative product data — cost is never taken from the client.
-  interface ProdRow { id: string; default_buy_price: number; is_disabled: boolean }
-  const ids = [...new Set(clean.map((l) => l.product_id))];
-  const { data: prods } = await supabase
-    .from("products")
-    .select("id, default_buy_price, is_disabled")
-    .in("id", ids);
-  const byId = new Map(((prods as ProdRow[] | null) ?? []).map((p) => [p.id, p]));
-  for (const l of clean) {
-    const p = byId.get(l.product_id);
-    if (!p) return { ok: false as const, error: "A product in the cart no longer exists." };
-    if (p.is_disabled) return { ok: false as const, error: "A product in the cart is disabled." };
-  }
-
-  const rows = clean.map((l) => ({
-    lab_id: labId,
+  const payload = clean.map((l) => ({
     product_id: l.product_id,
     qty: Number(l.qty),
-    buy_price: Number(byId.get(l.product_id)!.default_buy_price) || 0, // authoritative cost
     sell_price: Number(l.sell_price) || 0,
   }));
-  const { error } = await supabase.from("sales").insert(rows);
+
+  const { data, error } = await supabase.rpc("fn_pos_checkout", {
+    p_request_id: requestId || randomUUID(),
+    p_lab_id: labId,
+    p_lines: JSON.stringify(payload),
+  });
   if (error) return { ok: false as const, error: error.message };
 
+  const row = (data as { n_lines: number; total_amount: number }[] | null)?.[0];
   revalidatePath("/");
   revalidatePath("/sales");
-  const total = rows.reduce((s, r) => s + r.qty * r.sell_price, 0);
-  return { ok: true as const, count: rows.length, total };
+  return { ok: true as const, count: Number(row?.n_lines ?? 0), total: Number(row?.total_amount ?? 0) };
 }

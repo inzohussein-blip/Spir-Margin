@@ -998,6 +998,18 @@ const ar: Record<string, string> = {
   "Off": "متوقّفة",
   "All accounts have full access by default; deny specific features below.":
     "جميع الحسابات لها وصول كامل افتراضياً؛ يمكنك منع ميزات محدّدة أدناه.",
+  // offline / sync
+  "Online": "متصل",
+  "Offline": "غير متصل",
+  "Sync now": "مزامنة الآن",
+  "Syncing…": "جارٍ المزامنة…",
+  "All synced": "كل شيء متزامن",
+  "Saved offline — it will sync automatically when you’re back online.":
+    "حُفظت محلياً — ستتم مزامنتها تلقائياً عند عودة الاتصال.",
+  "Offline — sales are saved on this device and upload automatically when the connection returns.":
+    "غير متصل — تُحفَظ المبيعات على هذا الجهاز وتُرفَع تلقائياً عند عودة الاتصال.",
+  "waiting to sync": "بانتظار المزامنة",
+  "Save sale offline": "حفظ البيع دون اتصال",
 };
 
 const dict: Record<Locale, Record<string, string>> = { ar, en: {} };
