@@ -83,13 +83,11 @@ export function SaleForm({
       </Field>
       <div />
       <Field label="Buy price (cost)">
-        <TextInput
-          name="buy_price"
-          type="number"
-          step="0.01"
-          value={buy}
-          onChange={(e) => setBuy(Number(e.target.value))}
-        />
+        {/* Cost is authoritative from the product — the server re-reads it, so
+            it's shown read-only here (never submitted). */}
+        <div className="rounded-md border border-outline-gray-2 bg-surface-gray-1 px-3 py-2 text-sm text-ink-gray-6">
+          {buy.toLocaleString()} <span className="text-xs text-ink-gray-4">— from product</span>
+        </div>
       </Field>
       <Field label="Sell price">
         <TextInput

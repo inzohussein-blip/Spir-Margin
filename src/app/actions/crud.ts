@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -206,16 +207,20 @@ export async function submitWithdrawal(fd: FormData) {
 
 export async function submitSale(fd: FormData) {
   const supabase = createClient();
-  const { error } = await supabase.from("sales").insert({
-    lab_id: req(fd, "lab_id"),
-    product_id: req(fd, "product_id"),
-    kit_batch_id: str(fd, "kit_batch_id"),
-    qty: num(fd, "qty"),
-    buy_price: num(fd, "buy_price"),
-    sell_price: num(fd, "sell_price"),
+  // Route the "Record Sale" form through the SAME idempotent, cost-authoritative
+  // checkout as the POS terminal, so every sales path books identically: the
+  // customer and product are validated, and the COST is always re-read from the
+  // product on the server (never taken from the form).
+  const { error } = await supabase.rpc("fn_pos_checkout", {
+    p_request_id: randomUUID(),
+    p_lab_id: req(fd, "lab_id"),
+    p_lines: JSON.stringify([
+      { product_id: req(fd, "product_id"), qty: num(fd, "qty"), sell_price: num(fd, "sell_price") },
+    ]),
   });
   if (error) throw new Error(error.message);
   revalidatePath("/");
+  revalidatePath("/reports/sales-by-product");
   redirect("/");
 }
 

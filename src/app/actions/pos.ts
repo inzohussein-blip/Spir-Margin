@@ -47,6 +47,6 @@ export async function createPosSale(labId: string, lines: PosLine[], requestId?:
 
   const row = (data as { n_lines: number; total_amount: number }[] | null)?.[0];
   revalidatePath("/");
-  revalidatePath("/sales");
+  revalidatePath("/reports/sales-by-product");
   return { ok: true as const, count: Number(row?.n_lines ?? 0), total: Number(row?.total_amount ?? 0) };
 }
