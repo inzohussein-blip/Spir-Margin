@@ -1,5 +1,6 @@
 import "server-only";
 import { getDb, type FkMeta } from "./pglite";
+import { withAuditActor } from "@/lib/audit/actor";
 
 /**
  * A small subset of the supabase-js (PostgREST) query builder implemented over
@@ -373,7 +374,12 @@ class Query implements PromiseLike<Result> {
     }
 
     try {
-      const res = await db.query<Record<string, unknown>>(sql, params);
+      // Mutations (insert/update/delete) run with the acting user recorded for
+      // the audit trail; selects run plainly (no actor, no serialization).
+      const res =
+        this.op === "select"
+          ? await db.query<Record<string, unknown>>(sql, params)
+          : await withAuditActor(db, () => db.query<Record<string, unknown>>(sql, params));
       const rows = res.rows ?? [];
       const count = this.wantCount ? res.affectedRows ?? rows.length : undefined;
       if (this.singleRow) {
