@@ -7,7 +7,7 @@ import {
   PlusIcon, Trash2Icon, Loader2Icon, MinusIcon, FlaskConicalIcon,
   CalendarDaysIcon, ScanBarcodeIcon, PackageIcon, StickyNoteIcon, ShoppingCartIcon,
 } from "lucide-react";
-import { saveSalesOrder, type SalesOrderInput } from "@/app/actions/selling";
+import { saveSalesOrder, updateSalesOrder, type SalesOrderInput } from "@/app/actions/selling";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
 
@@ -23,13 +23,21 @@ const field =
 
 const money = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 
-export function SalesOrderForm({ labs, products }: { labs: Opt[]; products: ProductOpt[] }) {
+export function SalesOrderForm({
+  labs, products, orderId, defaults,
+}: {
+  labs: Opt[];
+  products: ProductOpt[];
+  /** When set, the form edits this existing draft order instead of creating one. */
+  orderId?: string;
+  defaults?: SalesOrderInput;
+}) {
   const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
 
   const { register, control, handleSubmit, setValue } = useForm<SalesOrderInput>({
-    defaultValues: {
+    defaultValues: defaults ?? {
       lab_id: "",
       transaction_date: new Date().toISOString().slice(0, 10),
       delivery_date: "",
@@ -53,8 +61,8 @@ export function SalesOrderForm({ labs, products }: { labs: Opt[]; products: Prod
   }
   function onSubmit(values: SalesOrderInput) {
     start(async () => {
-      const res = await saveSalesOrder(values);
-      if (res.ok) router.push("/sales-orders");
+      const res = orderId ? await updateSalesOrder(orderId, values) : await saveSalesOrder(values);
+      if (res.ok) router.push(orderId ? `/sales-orders/${orderId}` : "/sales-orders");
     });
   }
 
@@ -203,7 +211,7 @@ export function SalesOrderForm({ labs, products }: { labs: Opt[]; products: Prod
         className="inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-px hover:bg-brand-dark hover:shadow-lg active:translate-y-0 disabled:opacity-60"
       >
         {pending ? <Loader2Icon size={15} className="animate-spin" /> : <ShoppingCartIcon size={15} />}
-        {t(locale, "Create order (draft)")}
+        {t(locale, orderId ? "Save changes" : "Create order (draft)")}
       </button>
     </form>
   );

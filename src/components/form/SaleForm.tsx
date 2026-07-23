@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { submitSale } from "@/app/actions/crud";
 import { Field, TextInput, Select, SubmitButton } from "./Fields";
+import { useLocale } from "@/components/LocaleProvider";
+import { t } from "@/lib/i18n";
 
 interface ProductOpt {
   id: string;
@@ -24,6 +26,7 @@ export function SaleForm({
   products: ProductOpt[];
   labs: LabOpt[];
 }) {
+  const locale = useLocale();
   const [productId, setProductId] = useState("");
   const [qty, setQty] = useState(1);
   const [buy, setBuy] = useState(0);
@@ -42,10 +45,10 @@ export function SaleForm({
 
   return (
     <form action={submitSale} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <Field label="Lab" required>
+      <Field label={t(locale, "Lab")} required>
         <Select name="lab_id" required defaultValue="">
           <option value="" disabled>
-            Select a lab…
+            {t(locale, "Select a lab…")}
           </option>
           {labs.map((l) => (
             <option key={l.id} value={l.id}>
@@ -54,7 +57,7 @@ export function SaleForm({
           ))}
         </Select>
       </Field>
-      <Field label="Product" required>
+      <Field label={t(locale, "Product")} required>
         <Select
           name="product_id"
           required
@@ -62,7 +65,7 @@ export function SaleForm({
           onChange={(e) => onPickProduct(e.target.value)}
         >
           <option value="" disabled>
-            Select a product…
+            {t(locale, "Select a product…")}
           </option>
           {products.map((p) => (
             <option key={p.id} value={p.id}>
@@ -71,7 +74,7 @@ export function SaleForm({
           ))}
         </Select>
       </Field>
-      <Field label="Quantity" required>
+      <Field label={t(locale, "Quantity")} required>
         <TextInput
           name="qty"
           type="number"
@@ -82,14 +85,14 @@ export function SaleForm({
         />
       </Field>
       <div />
-      <Field label="Buy price (cost)">
+      <Field label={t(locale, "Buy price (cost)")}>
         {/* Cost is authoritative from the product — the server re-reads it, so
             it's shown read-only here (never submitted). */}
         <div className="rounded-md border border-outline-gray-2 bg-surface-gray-1 px-3 py-2 text-sm text-ink-gray-6">
-          {buy.toLocaleString()} <span className="text-xs text-ink-gray-4">— from product</span>
+          {buy.toLocaleString()} <span className="text-xs text-ink-gray-4">— {t(locale, "from product")}</span>
         </div>
       </Field>
-      <Field label="Sell price">
+      <Field label={t(locale, "Sell price")}>
         <TextInput
           name="sell_price"
           type="number"
@@ -99,10 +102,10 @@ export function SaleForm({
         />
       </Field>
       <div className="sm:col-span-2 rounded-md bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
-        Profit on this sale: {profit.toLocaleString()}
+        {t(locale, "Profit on this sale:")} {profit.toLocaleString()}
       </div>
       <div className="sm:col-span-2">
-        <SubmitButton>Record sale</SubmitButton>
+        <SubmitButton>{t(locale, "Record sale")}</SubmitButton>
       </div>
     </form>
   );

@@ -5719,6 +5719,26 @@ create policy "authenticated_all" on app_errors for all to authenticated using (
 create policy "authenticated_all" on connectivity_events for all to authenticated using (true) with check (true);
 create policy "authenticated_all" on sync_events for all to authenticated using (true) with check (true);
 
+-- ===== migration: 0075_audit_orders.sql =====
+-- =====================================================================
+-- Migration 0075 : Audit sales & purchase orders
+-- =====================================================================
+do $$
+declare t text;
+begin
+    foreach t in array array[
+        'sales_orders','sales_order_items','purchase_orders','purchase_order_items'
+    ]
+    loop
+        if to_regclass('public.'||t) is not null then
+            execute format('drop trigger if exists trg_audit on %I', t);
+            execute format(
+                'create trigger trg_audit after insert or update or delete on %I '
+                'for each row execute function fn_audit()', t);
+        end if;
+    end loop;
+end $$;
+
 -- ===== seed data (demo) =====
 -- =====================================================================
 -- Seed data for local development / demo
@@ -6117,7 +6137,8 @@ insert into _spir_migrations(filename) values
   ('0071_sales_order_serial.sql'),
   ('0072_feature_settings.sql'),
   ('0073_pos_idempotency.sql'),
-  ('0074_monitoring.sql')
+  ('0074_monitoring.sql'),
+  ('0075_audit_orders.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;

@@ -4,7 +4,7 @@ import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
-import { savePurchaseOrder, type PurchaseOrderInput } from "@/app/actions/purchase_order";
+import { savePurchaseOrder, updatePurchaseOrder, type PurchaseOrderInput } from "@/app/actions/purchase_order";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleProvider";
@@ -19,16 +19,21 @@ const cls =
 export function PurchaseOrderForm({
   suppliers,
   products,
+  orderId,
+  defaults,
 }: {
   suppliers: Opt[];
   products: ProductOpt[];
+  /** When set, edits this existing draft PO instead of creating one. */
+  orderId?: string;
+  defaults?: PurchaseOrderInput;
 }) {
   const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
 
   const { register, control, handleSubmit, setValue } = useForm<PurchaseOrderInput>({
-    defaultValues: {
+    defaultValues: defaults ?? {
       po_no: "",
       supplier_id: "",
       transaction_date: new Date().toISOString().slice(0, 10),
@@ -48,9 +53,10 @@ export function PurchaseOrderForm({
   }
 
   function onSubmit(values: PurchaseOrderInput) {
+    const payload = { ...values, supplier_id: values.supplier_id || null };
     start(async () => {
-      const res = await savePurchaseOrder({ ...values, supplier_id: values.supplier_id || null });
-      if (res.ok) router.push("/purchase-orders");
+      const res = orderId ? await updatePurchaseOrder(orderId, payload) : await savePurchaseOrder(payload);
+      if (res.ok) router.push(orderId ? `/purchase-orders/${orderId}` : "/purchase-orders");
     });
   }
 
@@ -125,7 +131,7 @@ export function PurchaseOrderForm({
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}
-        {t(locale, "Create order (draft)")}
+        {t(locale, orderId ? "Save changes" : "Create order (draft)")}
       </Button>
     </form>
   );

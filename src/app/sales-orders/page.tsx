@@ -1,10 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { PencilIcon, Trash2Icon } from "lucide-react";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { ListShell } from "@/components/desk/ListShell";
-import { deliverSalesOrderForm, cancelSalesOrderForm } from "@/app/actions/selling";
+import { ConfirmSubmit } from "@/components/settings/ConfirmSubmit";
+import { deliverSalesOrderForm, cancelSalesOrderForm, deleteSalesOrderForm } from "@/app/actions/selling";
 
 export const dynamic = "force-dynamic";
 
@@ -72,20 +74,39 @@ export default async function SalesOrdersPage() {
                       </span>
                     </td>
                     <td className="px-4 py-2">
-                      {o.status === "draft" || o.status === "confirmed" ? (
-                        <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
+                        {(o.status === "draft" || o.status === "confirmed") && (
                           <form action={deliverSalesOrderForm}>
                             <input type="hidden" name="id" value={o.id} />
                             <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Deliver")}</button>
                           </form>
-                          <form action={cancelSalesOrderForm}>
+                        )}
+                        {o.status === "draft" && (
+                          <>
+                            <Link href={`/sales-orders/${o.id}/edit`} className="inline-flex items-center gap-1 rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:border-brand hover:text-brand">
+                              <PencilIcon size={12} /> {t(locale, "Edit")}
+                            </Link>
+                            <form action={cancelSalesOrderForm}>
+                              <input type="hidden" name="id" value={o.id} />
+                              <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Cancel")}</button>
+                            </form>
+                          </>
+                        )}
+                        {(o.status === "draft" || o.status === "cancelled") && (
+                          <form action={deleteSalesOrderForm}>
                             <input type="hidden" name="id" value={o.id} />
-                            <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Cancel")}</button>
+                            <ConfirmSubmit
+                              confirmText={t(locale, "Delete this order permanently? This cannot be undone.")}
+                              className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                            >
+                              <Trash2Icon size={12} /> {t(locale, "Delete")}
+                            </ConfirmSubmit>
                           </form>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-ink-gray-4">—</span>
-                      )}
+                        )}
+                        {o.status !== "draft" && o.status !== "confirmed" && o.status !== "cancelled" && (
+                          <span className="text-xs text-ink-gray-4">—</span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
