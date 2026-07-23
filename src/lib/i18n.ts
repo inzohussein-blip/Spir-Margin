@@ -952,6 +952,51 @@ const ar: Record<string, string> = {
   "Work done": "العمل المُنجز",
   "Yield qty": "كمية الناتج",
   "— none —": "— لا شيء —",
+  // sales-order print + profit detail
+  "Print receipt": "طباعة الوصل",
+  "Profit summary": "ملخّص الربح",
+  "Total revenue": "إجمالي الإيراد",
+  "Total cost": "إجمالي التكلفة",
+  "Total profit": "إجمالي الربح",
+  "Margin %": "نسبة الهامش",
+  "Estimated from current product costs — internal, not shown on the printed receipt.":
+    "تقديري بحسب تكاليف المنتجات الحالية — داخلي، لا يظهر في الوصل المطبوع.",
+  // settings / features / access
+  "Settings": "الإعدادات",
+  "Features": "الميزات",
+  "Access": "الوصول",
+  "Feature access": "صلاحيات الوصول",
+  "Manage which non-essential features are available across the app.":
+    "تحكّم في الميزات غير الأساسية المتاحة في التطبيق.",
+  "Manage per-account access to features, and remove accounts.":
+    "تحكّم في وصول كل حساب إلى الميزات، واحذف الحسابات.",
+  "Non-essential features": "الميزات غير الأساسية",
+  "Enabled": "مفعّلة",
+  "Hidden": "مخفية",
+  "Enable": "تفعيل",
+  "Disable": "إيقاف",
+  "Hide": "إخفاء",
+  "Core": "أساسية",
+  "Always on": "مفعّلة دائماً",
+  "Allowed": "مسموح",
+  "Denied": "ممنوع",
+  "Allow": "سماح",
+  "Deny": "منع",
+  "Delete account": "حذف الحساب",
+  "Delete this account permanently? This cannot be undone.":
+    "حذف هذا الحساب نهائياً؟ لا يمكن التراجع.",
+  "Account deleted": "تم حذف الحساب",
+  "Feature unavailable": "الميزة غير متاحة",
+  "This feature has been disabled by an administrator.":
+    "تم إيقاف هذه الميزة من قِبَل المسؤول.",
+  "You don’t have access to this feature.": "ليس لديك صلاحية الوصول إلى هذه الميزة.",
+  "Ask an administrator to enable it or grant you access.":
+    "اطلب من المسؤول تفعيلها أو منحك الصلاحية.",
+  "Back to dashboard": "العودة إلى لوحة التحكم",
+  "Loading…": "جارٍ التحميل…",
+  "Off": "متوقّفة",
+  "All accounts have full access by default; deny specific features below.":
+    "جميع الحسابات لها وصول كامل افتراضياً؛ يمكنك منع ميزات محدّدة أدناه.",
 };
 
 const dict: Record<Locale, Record<string, string>> = { ar, en: {} };

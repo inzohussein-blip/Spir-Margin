@@ -1,5 +1,7 @@
 import "server-only";
+import type { ReactNode } from "react";
 import Link from "next/link";
+import { PrinterIcon } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getDb } from "@/lib/db/pglite";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
@@ -73,11 +75,17 @@ export async function RecordDetail({
   id,
   listHref,
   listLabel,
+  printHref,
+  extra,
 }: {
   table: string;
   id: string;
   listHref: string;
   listLabel: string;
+  /** When set, shows a "Print receipt" button linking to a printable sheet. */
+  printHref?: string;
+  /** Extra panels rendered right after the Details panel (e.g. a profit summary). */
+  extra?: ReactNode;
 }) {
   const locale = getLocale() as Locale;
   const { db, meta } = await getDb();
@@ -143,9 +151,19 @@ export async function RecordDetail({
       <div className="text-sm text-ink-gray-5">
         <Link href={listHref} className="hover:text-brand">← {t(locale, listLabel)}</Link>
       </div>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-ink-gray-8">{title}</h1>
-        {status ? <Indicator status={status} locale={locale} /> : null}
+        <div className="flex items-center gap-3">
+          {printHref ? (
+            <Link
+              href={printHref}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-outline-gray-2 bg-surface-white px-3 py-1.5 text-sm font-medium text-ink-gray-7 shadow-sm transition-all hover:border-brand hover:text-brand hover:shadow-md active:scale-95"
+            >
+              <PrinterIcon size={15} /> {t(locale, "Print receipt")}
+            </Link>
+          ) : null}
+          {status ? <Indicator status={status} locale={locale} /> : null}
+        </div>
       </div>
 
       <Panel title={t(locale, "Details")}>
@@ -158,6 +176,8 @@ export async function RecordDetail({
           ))}
         </dl>
       </Panel>
+
+      {extra}
 
       {children.map((c, ci) => (
         <Panel key={ci} title={`${t(locale, c.titleKey)} (${c.rows.length})`}>
