@@ -39,6 +39,10 @@ insert into devices (asset_code, product_id, serial_no, status, lab_id, purchase
     ('ACC-ASS-0004', '00000000-0000-0000-0000-0000000000d2', 'XN-550-4472', 'out_of_order',   '00000000-0000-0000-0000-0000000000c3', '2022-09-15', 30000, false, null)
 on conflict do nothing;
 
+-- Reorder levels (feed the reordering-rules suggestions) -----------------
+update products set reorder_level = 200 where id = '00000000-0000-0000-0000-0000000000d3';
+update products set reorder_level = 10  where id = '00000000-0000-0000-0000-0000000000d5';
+
 -- Serial-tracked spare with a demo life cycle (feeds the serial timeline) --
 insert into serial_numbers (id, serial_no, product_id, status, warehouse_id, purchase_rate, warranty_period_days, warranty_expiry_date)
 values ('00000000-0000-0000-0000-0000000000e5', 'SN-PUMP-0001', '00000000-0000-0000-0000-0000000000d5', 'active',

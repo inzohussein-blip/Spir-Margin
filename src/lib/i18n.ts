@@ -325,6 +325,19 @@ const ar: Record<string, string> = {
   // point of sale
   // audit log
   // serial life cycle
+  // reorder rules
+  "Reorder": "إعادة الطلب",
+  "Filter by product / supplier…": "تصفية حسب المنتج / المورّد…",
+  "Draft purchase orders created": "أوامر الشراء المسودّة المُنشأة",
+  "Nothing new to order — everything short is already on an open PO.": "لا جديد للطلب — كل النواقص على أمر شراء مفتوح بالفعل.",
+  "Products below their reorder level. Generating raises one draft PO per supplier.": "منتجات تحت حدّ إعادة الطلب. التوليد يُنشئ أمر شراء مسودّة واحدًا لكل مورّد.",
+  "Generate draft POs": "توليد أوامر شراء مسودّة",
+  "Stock is healthy — nothing to reorder.": "المخزون سليم — لا شيء لإعادة طلبه.",
+  "On hand": "المتوفّر",
+  "Shortfall": "النقص",
+  "Est. cost": "التكلفة التقديرية",
+  "Estimated reorder value": "القيمة التقديرية لإعادة الطلب",
+  "— no supplier —": "— بلا مورّد —",
   "Received into stock": "استُلم في المخزون",
   "Serial removed": "حُذف الرقم التسلسلي",
   "Moved to warehouse": "نُقل إلى مستودع",
