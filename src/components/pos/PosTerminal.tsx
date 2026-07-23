@@ -95,8 +95,8 @@ export function PosTerminal({
           <Link href="/" className="flex items-center gap-1 rounded-md px-2 py-1 text-sm text-ink-gray-5 hover:bg-surface-gray-2">
             <ArrowLeftIcon size={16} /> {t(locale, "Back to app")}
           </Link>
-          <div className="flex items-center gap-2 text-lg font-semibold text-ink-gray-8">
-            <span className="grid size-7 place-items-center rounded-md bg-brand text-white"><ShoppingCartIcon size={16} /></span>
+          <div className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-ink-gray-8">
+            <span className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm"><ShoppingCartIcon size={16} /></span>
             {t(locale, "Point of Sale")}
           </div>
         </div>
@@ -127,7 +127,7 @@ export function PosTerminal({
           <div className="grid min-h-0 flex-1 auto-rows-min grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4">
             {filtered.map((p) => (
               <button key={p.id} onClick={() => addProduct(p)}
-                className="flex flex-col items-start rounded-lg border border-outline-gray-2 bg-surface-white p-3 text-start transition hover:border-brand hover:shadow-sm">
+                className="flex flex-col items-start rounded-xl border border-outline-gray-2 bg-surface-white p-3 text-start transition-all hover:-translate-y-0.5 hover:border-brand hover:shadow-md">
                 <span className="mb-1 rounded bg-surface-gray-2 px-1.5 py-0.5 text-[10px] font-medium text-ink-gray-5">
                   {t(locale, TYPE_LABEL[p.product_type] ?? p.product_type)}
                 </span>

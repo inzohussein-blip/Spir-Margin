@@ -7,10 +7,10 @@ export const dynamic = "force-dynamic";
 export default function LoginPage() {
   const locale = getLocale();
   return (
-    <div className="grid min-h-screen place-items-center bg-surface-gray-1 p-6">
-      <div className="w-full max-w-sm rounded-xl border border-outline-gray-2 bg-surface-white p-8 shadow-sm">
-        <div className="mb-6 flex items-center gap-2 text-lg font-semibold text-ink-gray-8">
-          <span className="grid size-8 place-items-center rounded-md bg-brand text-white">S</span>
+    <div className="grid min-h-screen place-items-center p-6">
+      <div className="w-full max-w-sm rounded-2xl border border-outline-gray-2 bg-surface-white p-8 shadow-md">
+        <div className="mb-6 flex items-center gap-2.5 text-lg font-bold tracking-tight text-ink-gray-8">
+          <span className="grid size-9 place-items-center rounded-lg bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm">S</span>
           Spir-Margin
         </div>
         <h1 className="text-xl font-bold text-ink-gray-9">{t(locale, "Sign in")}</h1>
