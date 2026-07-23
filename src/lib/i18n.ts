@@ -327,6 +327,16 @@ const ar: Record<string, string> = {
   // serial life cycle
   // reorder rules
   // field service board
+  // maintenance forecast
+  "Maintenance Forecast": "توقّعات الصيانة",
+  "Filter by device / lab…": "تصفية حسب الجهاز / المختبر…",
+  "No devices need maintenance in the next 90 days.": "لا أجهزة تحتاج صيانة خلال ٩٠ يومًا.",
+  "Days until due": "أيام حتى الاستحقاق",
+  "Last visit": "آخر زيارة",
+  "Urgency": "الإلحاح",
+  "Overdue": "متأخّرة",
+  "Due this week": "مستحقّة هذا الأسبوع",
+  "Due this month": "مستحقّة هذا الشهر",
   "Drag": "سحب",
   "Move back": "إرجاع",
   "Move forward": "تقديم",
