@@ -328,6 +328,27 @@ const ar: Record<string, string> = {
   // reorder rules
   // field service board
   // maintenance forecast
+  // landed costs
+  "Landed Costs": "التكاليف الإجمالية للاستيراد",
+  "New landed cost": "تكلفة استيراد جديدة",
+  "Import costs": "تكاليف الاستيراد",
+  "Filter by voucher / receipt…": "تصفية حسب السند / الاستلام…",
+  "No landed-cost vouchers yet.": "لا سندات تكاليف استيراد بعد.",
+  "Voucher": "السند",
+  "Allocation": "التوزيع",
+  "Extra cost": "التكلفة الإضافية",
+  "By value": "حسب القيمة",
+  "By quantity": "حسب الكمية",
+  "Applied": "مُطبّق",
+  "Purchase receipt": "سند الاستلام",
+  "Select a received receipt…": "اختر سند استلام مُستلَمًا…",
+  "Freight": "الشحن",
+  "Customs": "الجمارك",
+  "Clearance": "التخليص",
+  "Other": "أخرى",
+  "Allocation method": "طريقة التوزيع",
+  "Create landed cost": "إنشاء تكلفة استيراد",
+  "Voucher no.": "رقم السند",
   "Maintenance Forecast": "توقّعات الصيانة",
   "Filter by device / lab…": "تصفية حسب الجهاز / المختبر…",
   "No devices need maintenance in the next 90 days.": "لا أجهزة تحتاج صيانة خلال ٩٠ يومًا.",

@@ -39,6 +39,7 @@ export const navGroups: NavGroup[] = [
     { href: "/purchase-orders", label: "Purchase Orders", icon: ScrollTextIcon },
     { href: "/purchase-receipts", label: "Purchase Receipts", icon: PackagePlusIcon },
     { href: "/purchases", label: "Purchases", icon: ShoppingCartIcon },
+    { href: "/landed-costs", label: "Landed Costs", icon: CoinsIcon },
   ]},
   { label: "Stock", items: [
     { href: "/products", label: "Products", icon: PackageIcon },
