@@ -13,8 +13,20 @@ export function AppNav({ locale = "ar" }: { locale?: Locale }) {
   const activeGroup = navGroups.find((g) => g.items.some((i) => isActive(i.href)))?.label;
   const [open, setOpen] = useState<Record<string, boolean>>({});
 
+  const itemClass = (active: boolean) =>
+    `group relative flex items-center gap-2.5 rounded-lg text-sm font-medium ${
+      active
+        ? "bg-brand-light text-brand"
+        : "text-ink-gray-6 hover:bg-surface-gray-1 hover:text-ink-gray-8"
+    }`;
+  // Left accent bar on the active item (RTL-aware via logical inset).
+  const accent = (active: boolean) =>
+    active ? (
+      <span className="absolute inset-y-1.5 start-0 w-1 rounded-full bg-brand" aria-hidden />
+    ) : null;
+
   return (
-    <nav className="flex flex-col gap-0.5 px-2 pb-6">
+    <nav className="flex flex-col gap-0.5 px-2.5 pb-6">
       {navGroups.map((group) => {
         const isSingle = group.items.length === 1;
         const expanded = open[group.label] ?? (group.label === activeGroup || group.label === "Home");
@@ -23,31 +35,26 @@ export function AppNav({ locale = "ar" }: { locale?: Locale }) {
           const active = isActive(item.href);
           const Icon = item.icon;
           return (
-            <Link
-              key={group.label}
-              href={item.href}
-              className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                active ? "bg-surface-gray-2 text-ink-gray-8" : "text-ink-gray-6 hover:bg-surface-gray-1 hover:text-ink-gray-8"
-              }`}
-            >
-              <Icon size={16} className={active ? "text-brand" : "text-ink-gray-5"} />
+            <Link key={group.label} href={item.href} className={`${itemClass(active)} px-3 py-2`}>
+              {accent(active)}
+              <Icon size={17} className={active ? "text-brand" : "text-ink-gray-5 group-hover:text-ink-gray-7"} />
               {t(locale, item.label)}
             </Link>
           );
         }
         return (
-          <div key={group.label} className="mt-1">
-            <div className="flex items-center rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-ink-gray-4">
+          <div key={group.label} className="mt-2">
+            <div className="flex items-center px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-ink-gray-4">
               <Link href={`/w/${group.label.toLowerCase()}`} className="flex-1 hover:text-ink-gray-6">
                 {t(locale, group.label)}
               </Link>
               <button
                 type="button"
                 onClick={() => setOpen((o) => ({ ...o, [group.label]: !expanded }))}
-                className="hover:text-ink-gray-6"
+                className="rounded p-0.5 hover:bg-surface-gray-2 hover:text-ink-gray-6"
                 aria-label={`Toggle ${group.label}`}
               >
-                <ChevronRightIcon size={13} className={`transition-transform ${expanded ? "rotate-90" : ""}`} />
+                <ChevronRightIcon size={13} className={`transition-transform duration-200 ${expanded ? "rotate-90" : ""}`} />
               </button>
             </div>
             {expanded && (
@@ -56,14 +63,9 @@ export function AppNav({ locale = "ar" }: { locale?: Locale }) {
                   const active = isActive(item.href);
                   const Icon = item.icon;
                   return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`flex items-center gap-2.5 rounded-md py-1.5 ps-6 pe-3 text-sm font-medium transition-colors ${
-                        active ? "bg-surface-gray-2 text-ink-gray-8" : "text-ink-gray-6 hover:bg-surface-gray-1 hover:text-ink-gray-8"
-                      }`}
-                    >
-                      <Icon size={15} className={active ? "text-brand" : "text-ink-gray-5"} />
+                    <Link key={item.href} href={item.href} className={`${itemClass(active)} py-1.5 ps-5 pe-3`}>
+                      {accent(active)}
+                      <Icon size={16} className={active ? "text-brand" : "text-ink-gray-5 group-hover:text-ink-gray-7"} />
                       {t(locale, item.label)}
                     </Link>
                   );

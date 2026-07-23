@@ -20,6 +20,18 @@ const dot: Record<IndicatorColor, string> = {
   cyan: "bg-cyan-500",
 };
 
+// Soft tinted pill per colour — modern SaaS status badge.
+const pill: Record<IndicatorColor, string> = {
+  gray: "bg-surface-gray-2 text-ink-gray-6",
+  blue: "bg-blue-50 text-blue-700",
+  green: "bg-emerald-50 text-emerald-700",
+  red: "bg-red-50 text-red-700",
+  orange: "bg-orange-50 text-orange-700",
+  amber: "bg-amber-50 text-amber-700",
+  purple: "bg-violet-50 text-violet-700",
+  cyan: "bg-cyan-50 text-cyan-700",
+};
+
 // Sensible defaults for the status vocabularies used across the app.
 const statusColor: Record<string, IndicatorColor> = {
   draft: "gray", open: "orange", unsigned: "gray", pending: "orange", planned: "blue",
@@ -47,8 +59,8 @@ export function Indicator({
   const c = color ?? statusColor[key] ?? "gray";
   const text = label ?? tStatus(locale, key || null);
   return (
-    <span className="inline-flex items-center gap-1.5 text-sm text-ink-gray-7">
-      <span className={`size-2 shrink-0 rounded-full ${dot[c]}`} />
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${pill[c]}`}>
+      <span className={`size-1.5 shrink-0 rounded-full ${dot[c]}`} />
       <span className="capitalize">{text}</span>
     </span>
   );

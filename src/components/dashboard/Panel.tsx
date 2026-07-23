@@ -8,8 +8,8 @@ export function Panel({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-outline-gray-2 bg-surface-white shadow-sm">
-      <header className="border-b border-outline-gray-1 px-5 py-3 text-sm font-semibold text-ink-gray-7">
+    <section className="overflow-hidden rounded-2xl border border-outline-gray-2 bg-surface-white shadow-sm">
+      <header className="border-b border-outline-gray-1 bg-surface-gray-1/40 px-5 py-3 text-sm font-semibold text-ink-gray-7">
         {title}
       </header>
       <div className="p-2">{children}</div>

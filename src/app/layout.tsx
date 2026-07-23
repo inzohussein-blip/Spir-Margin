@@ -45,15 +45,15 @@ export default async function RootLayout({
           children
         ) : (
           <div className="flex min-h-screen">
-            <aside className="no-print sticky top-0 flex h-screen w-56 shrink-0 flex-col overflow-y-auto border-e border-outline-gray-2 bg-surface-white">
-              <div className="flex items-center gap-2 px-5 py-4 text-lg font-semibold text-ink-gray-8">
-                <span className="grid size-7 place-items-center rounded-md bg-brand text-white">S</span>
+            <aside className="no-print sticky top-0 flex h-screen w-60 shrink-0 flex-col overflow-y-auto border-e border-outline-gray-2 bg-surface-white/80 backdrop-blur-xl">
+              <div className="flex items-center gap-2.5 px-5 py-4 text-lg font-bold tracking-tight text-ink-gray-8">
+                <span className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm">S</span>
                 Spir-Margin
               </div>
               <AppNav locale={locale} />
             </aside>
             <div className="flex min-w-0 flex-1 flex-col">
-              <header className="no-print flex h-12 items-center justify-between gap-4 border-b border-outline-gray-2 bg-surface-white px-6">
+              <header className="no-print sticky top-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-outline-gray-2 bg-surface-white/85 px-6 shadow-sm backdrop-blur-xl">
                 <div className="flex items-center gap-3">
                   <NewButton locale={locale} />
                   <Awesomebar locale={locale} />

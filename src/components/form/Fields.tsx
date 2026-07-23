@@ -8,8 +8,8 @@ import type {
 /** Shared input styling + labelled wrappers for the CRUD forms. */
 
 const inputCls =
-  "mt-1 w-full rounded-md border border-outline-gray-2 bg-surface-white px-3 py-2 text-sm text-ink-gray-8 " +
-  "focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
+  "mt-1 w-full rounded-lg border border-outline-gray-2 bg-surface-white px-3 py-2 text-sm text-ink-gray-8 shadow-xs transition-shadow " +
+  "focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25";
 
 export function Field({
   label,
@@ -73,7 +73,7 @@ export function SubmitButton({ children, disabled }: { children: ReactNode; disa
     <button
       type="submit"
       disabled={disabled}
-      className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-60"
+      className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-px hover:bg-brand-dark hover:shadow-md active:translate-y-0 disabled:opacity-60"
     >
       {children}
     </button>
@@ -88,7 +88,7 @@ export function FormCard({
   children: ReactNode;
 }) {
   return (
-    <div className="max-w-2xl rounded-xl border border-outline-gray-2 bg-surface-white p-6 shadow-sm">
+    <div className="max-w-2xl rounded-2xl border border-outline-gray-2 bg-surface-white p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-ink-gray-8">{title}</h2>
       {children}
     </div>
