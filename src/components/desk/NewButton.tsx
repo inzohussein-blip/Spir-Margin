@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { PlusIcon } from "lucide-react";
+import { featureForHref } from "@/lib/nav";
 import { t, type Locale } from "@/lib/i18n";
 
 // Common create targets, Frappe-Desk "+ New" style.
@@ -18,9 +19,14 @@ const CREATE = [
   { href: "/issues/new", label: "Issue" },
 ];
 
-export function NewButton({ locale = "ar" }: { locale?: Locale }) {
+export function NewButton({ locale = "ar", blocked = [] }: { locale?: Locale; blocked?: string[] }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const blockedSet = new Set(blocked);
+  const items = CREATE.filter((c) => {
+    const f = featureForHref(c.href);
+    return !f || !blockedSet.has(f);
+  });
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -42,7 +48,7 @@ export function NewButton({ locale = "ar" }: { locale?: Locale }) {
       {open ? (
         <div className="absolute start-0 z-50 mt-1 w-52 overflow-hidden rounded-md border border-outline-gray-2 bg-surface-white py-1 shadow-lg">
           <p className="px-3 py-1 text-xs uppercase tracking-wide text-ink-gray-4">{t(locale, "Create new")}</p>
-          {CREATE.map((c) => (
+          {items.map((c) => (
             <Link
               key={c.href}
               href={c.href}

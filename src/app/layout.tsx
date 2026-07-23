@@ -44,6 +44,7 @@ export default async function RootLayout({
   const showShell = !isBare && !!user && !isFocused;
   const access = showShell ? await getAccessContext(user!) : null;
   const nav = access ? navFeatureState(access) : { hidden: [], off: [] };
+  const blockedFeatures = [...nav.hidden, ...nav.off];
   const blocked = access ? blockReason(pathname, access) : null;
 
   return (
@@ -65,8 +66,8 @@ export default async function RootLayout({
             <div className="flex min-w-0 flex-1 flex-col">
               <header className="no-print sticky top-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-outline-gray-2 bg-surface-white/85 px-6 shadow-sm backdrop-blur-xl">
                 <div className="flex items-center gap-3">
-                  <NewButton locale={locale} />
-                  <Awesomebar locale={locale} />
+                  <NewButton locale={locale} blocked={blockedFeatures} />
+                  <Awesomebar locale={locale} blocked={blockedFeatures} />
                 </div>
                 <div className="flex items-center gap-3">
                   <NotificationBell items={notifications} locale={locale} />

@@ -44,7 +44,8 @@ export async function setUserAccessAction(fd: FormData) {
   const userId = String(fd.get("user_id") ?? "");
   const feature = String(fd.get("feature") ?? "");
   const deny = String(fd.get("deny") ?? "") === "true";
-  if (!userId || CORE_FEATURES.has(feature)) return;
+  // Only real, non-core features can be denied (guards against crafted requests).
+  if (!userId || !TOGGLEABLE_FEATURES.includes(feature) || CORE_FEATURES.has(feature)) return;
 
   const supabase = createClient();
   // Never restrict an admin account (they always retain full access).

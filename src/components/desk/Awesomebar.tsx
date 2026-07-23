@@ -6,7 +6,7 @@ import { SearchIcon, PlusIcon, ArrowRightIcon, FileTextIcon } from "lucide-react
 import {
   CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem,
 } from "@/components/ui/command";
-import { allNavItems } from "@/lib/nav";
+import { allNavItems, featureForHref } from "@/lib/nav";
 import { globalSearch, type SearchHit } from "@/app/actions/search";
 import { t, type Locale } from "@/lib/i18n";
 
@@ -22,11 +22,18 @@ const HAS_NEW = new Set([
 
 /** ERPNext-style awesomebar: ⌘K global command palette to jump to any list or
  *  start a new document. */
-export function Awesomebar({ locale = "ar" }: { locale?: Locale }) {
+export function Awesomebar({ locale = "ar", blocked = [] }: { locale?: Locale; blocked?: string[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<SearchHit[]>([]);
+
+  // Hide destinations for features this account can't use (hidden or denied).
+  const blockedSet = new Set(blocked);
+  const navItems = allNavItems.filter((i) => {
+    const f = featureForHref(i.href);
+    return !f || !blockedSet.has(f);
+  });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -86,7 +93,7 @@ export function Awesomebar({ locale = "ar" }: { locale?: Locale }) {
             </CommandGroup>
           )}
           <CommandGroup heading={t(locale, "Go to")}>
-            {allNavItems.map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon;
               return (
                 <CommandItem key={item.href} value={`goto ${item.label} ${t(locale, item.label)}`} onSelect={() => go(item.href)}>
@@ -98,7 +105,7 @@ export function Awesomebar({ locale = "ar" }: { locale?: Locale }) {
             })}
           </CommandGroup>
           <CommandGroup heading={t(locale, "Create new")}>
-            {allNavItems
+            {navItems
               .filter((i) => HAS_NEW.has(i.href))
               .map((item) => (
                 <CommandItem key={`new-${item.href}`} value={`new ${item.label} ${t(locale, item.label)}`} onSelect={() => go(`${item.href}/new`)}>

@@ -17,6 +17,7 @@ export function NavProgress() {
   const pathname = usePathname();
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   const doneTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const failsafe = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function bar(): HTMLElement | null {
     return document.getElementById("nav-progress");
@@ -27,6 +28,9 @@ export function NavProgress() {
     if (!el) return;
     if (timer.current) clearInterval(timer.current);
     if (doneTimer.current) clearTimeout(doneTimer.current);
+    if (failsafe.current) clearTimeout(failsafe.current);
+    // Never let the bar hang if a navigation is cancelled or blocked client-side.
+    failsafe.current = setTimeout(() => finish(), 10000);
     el.classList.remove("done");
     el.classList.add("active");
     let width = 8;
@@ -43,6 +47,7 @@ export function NavProgress() {
     const el = bar();
     if (!el) return;
     if (timer.current) { clearInterval(timer.current); timer.current = null; }
+    if (failsafe.current) { clearTimeout(failsafe.current); failsafe.current = null; }
     el.style.width = "100%";
     el.classList.add("done");
     doneTimer.current = setTimeout(() => {
@@ -77,6 +82,7 @@ export function NavProgress() {
       document.removeEventListener("click", onClick, { capture: true });
       if (timer.current) clearInterval(timer.current);
       if (doneTimer.current) clearTimeout(doneTimer.current);
+      if (failsafe.current) clearTimeout(failsafe.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

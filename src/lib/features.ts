@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { navGroups } from "@/lib/nav";
+import { navGroups, featureForHref } from "@/lib/nav";
 import type { SessionUser } from "@/lib/auth/session";
 
 /**
@@ -29,17 +29,8 @@ export const ALL_FEATURES: string[] = navGroups.map((g) => g.label);
 /** The features an admin may toggle (everything that isn't core). */
 export const TOGGLEABLE_FEATURES: string[] = ALL_FEATURES.filter((f) => !CORE_FEATURES.has(f));
 
-// Longest href first, so /sales-orders/new resolves before a shorter prefix.
-const PATH_INDEX: { href: string; feature: string }[] = navGroups
-  .flatMap((g) => g.items.map((i) => ({ href: i.href, feature: g.label })))
-  .filter((e) => e.href !== "/")
-  .sort((a, b) => b.href.length - a.href.length);
-
 /** Which feature a given path belongs to (or null if it maps to none/core). */
-export function featureForPath(pathname: string): string | null {
-  const hit = PATH_INDEX.find((e) => pathname === e.href || pathname.startsWith(e.href + "/"));
-  return hit ? hit.feature : null;
-}
+export const featureForPath = featureForHref;
 
 export interface AccessContext {
   role: SessionUser["role"];

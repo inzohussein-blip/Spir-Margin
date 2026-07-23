@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { getAccessContext, isPathAllowed } from "@/lib/features";
 
 export interface SearchHit {
   entity: string;
@@ -25,11 +27,19 @@ interface Row { entity: string; record_id: string; label: string; sublabel: stri
 export async function globalSearch(query: string): Promise<SearchHit[]> {
   const q = query.trim();
   if (q.length < 2) return [];
+  // Only signed-in users may search, and results are limited to features the
+  // account may actually open (a hidden/denied module leaks nothing here).
+  const user = await getCurrentUser();
+  if (!user) return [];
+  const ctx = await getAccessContext(user);
+
   const supabase = createClient();
   const { data, error } = await supabase.rpc("fn_global_search", { p_q: q });
   if (error) return [];
-  return ((data as unknown as Row[]) ?? []).map((r) => {
-    const meta = ENTITY[r.entity] ?? { label: r.entity, href: () => "/" };
-    return { entity: r.entity, entityLabel: meta.label, label: r.label, sublabel: r.sublabel, href: meta.href(r.record_id) };
-  });
+  return ((data as unknown as Row[]) ?? [])
+    .map((r) => {
+      const meta = ENTITY[r.entity] ?? { label: r.entity, href: () => "/" };
+      return { entity: r.entity, entityLabel: meta.label, label: r.label, sublabel: r.sublabel, href: meta.href(r.record_id) };
+    })
+    .filter((hit) => isPathAllowed(hit.href, ctx));
 }

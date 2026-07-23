@@ -103,3 +103,24 @@ export const navGroups: NavGroup[] = [
 
 /** Flat destination list for the awesomebar. */
 export const allNavItems: NavItem[] = navGroups.flatMap((g) => g.items);
+
+// href -> feature (module group), longest href first so /sales-orders/new wins.
+const FEATURE_BY_HREF = navGroups
+  .flatMap((g) => g.items.map((i) => ({ href: i.href, feature: g.label })))
+  .filter((e) => e.href !== "/")
+  .sort((a, b) => b.href.length - a.href.length);
+
+/**
+ * The feature (module group) a route belongs to, or null for unmapped routes
+ * (account, settings, dashboard…). Pure and client-safe. Also resolves the
+ * workspace landing pages (/w/<slug>) back to their group.
+ */
+export function featureForHref(pathname: string): string | null {
+  if (pathname === "/w" || pathname.startsWith("/w/")) {
+    const slug = pathname.slice(3).split("/")[0].toLowerCase();
+    const g = navGroups.find((grp) => grp.label.toLowerCase() === slug);
+    return g ? g.label : null;
+  }
+  const hit = FEATURE_BY_HREF.find((e) => pathname === e.href || pathname.startsWith(e.href + "/"));
+  return hit ? hit.feature : null;
+}
