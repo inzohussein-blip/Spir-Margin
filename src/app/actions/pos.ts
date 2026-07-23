@@ -3,6 +3,7 @@
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { assertFeature } from "@/lib/features";
 
 export interface PosLine {
   product_id: string;
@@ -24,6 +25,7 @@ export interface PosLine {
  * is always re-read from the product, never trusted from the client.
  */
 export async function createPosSale(labId: string, lines: PosLine[], requestId?: string) {
+  await assertFeature("Selling");
   const clean = lines.filter((l) => l.product_id && Number(l.qty) > 0);
   if (!labId) return { ok: false as const, error: "Select a customer (lab)." };
   if (clean.length === 0) return { ok: false as const, error: "Cart is empty." };

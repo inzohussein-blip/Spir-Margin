@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import { navGroups, featureForHref } from "@/lib/nav";
 import type { SessionUser } from "@/lib/auth/session";
 
@@ -103,6 +104,21 @@ export function blockReason(pathname: string, ctx: AccessContext): "denied" | "d
   if (ctx.denied.has(feature)) return "denied";
   const st = ctx.flags.get(feature);
   return st === "disabled" || st === "hidden" ? "disabled" : null;
+}
+
+/**
+ * Server-action guard: throws unless the signed-in account may use `feature`.
+ * Feature availability is enforced when pages render, in the nav and in search;
+ * this closes the last gap — a crafted direct POST to a mutating server action
+ * for a feature the account was denied. Admins and allowed users pass through.
+ */
+export async function assertFeature(feature: string): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not signed in");
+  const ctx = await getAccessContext(user);
+  if (effectiveState(feature, ctx) !== "enabled") {
+    throw new Error("You don’t have access to this feature");
+  }
 }
 
 /** Nav rendering hints: which feature groups to hide vs. show as "off". */

@@ -1034,6 +1034,8 @@ const ar: Record<string, string> = {
   "No suppliers": "لا موردين",
   "Quote status": "حالة العرض",
   "quote no.": "رقم العرض",
+  "Too many attempts. Try again in": "محاولات كثيرة. حاول مجددًا بعد",
+  "minute(s).": "دقيقة.",
   "Select a lab…": "اختر المختبر…",
   "Select a product…": "اختر المنتج…",
   "Quantity": "الكمية",

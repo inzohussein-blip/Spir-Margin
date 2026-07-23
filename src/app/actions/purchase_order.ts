@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { assertFeature } from "@/lib/features";
 
 export interface PoLineInput {
   product_id: string;
@@ -19,6 +20,7 @@ export interface PurchaseOrderInput {
 
 /** Create a draft purchase order with its line items. */
 export async function savePurchaseOrder(input: PurchaseOrderInput) {
+  await assertFeature("Buying");
   const supabase = createClient();
 
   const lines = input.items.filter((l) => l.product_id && Number(l.qty) > 0);
@@ -56,6 +58,7 @@ export async function savePurchaseOrder(input: PurchaseOrderInput) {
  * the audit trigger (migration 0075) → Monitoring → Change & Deletion Log.
  */
 export async function updatePurchaseOrder(id: string, input: PurchaseOrderInput) {
+  await assertFeature("Buying");
   const supabase = createClient();
   const lines = input.items.filter((l) => l.product_id && Number(l.qty) > 0);
   if (lines.length === 0) return { ok: false as const, error: "Add at least one line" };
@@ -93,6 +96,7 @@ export async function updatePurchaseOrder(id: string, input: PurchaseOrderInput)
 
 /** Delete a draft or cancelled purchase order (items cascade). */
 export async function deletePurchaseOrderForm(fd: FormData) {
+  await assertFeature("Buying");
   const supabase = createClient();
   const id = String(fd.get("id"));
   const { error } = await supabase
@@ -105,6 +109,7 @@ export async function deletePurchaseOrderForm(fd: FormData) {
 }
 
 export async function submitPurchaseOrder(id: string) {
+  await assertFeature("Buying");
   const supabase = createClient();
   const { error } = await supabase.rpc("fn_submit_purchase_order", { p_po_id: id });
   if (error) return { ok: false as const, error: error.message };
@@ -114,6 +119,7 @@ export async function submitPurchaseOrder(id: string) {
 
 /** Convert a PO into a draft purchase invoice. */
 export async function poToPurchaseInvoice(id: string, reference?: string) {
+  await assertFeature("Buying");
   const supabase = createClient();
   const { data, error } = await supabase.rpc("fn_po_to_purchase_invoice", {
     p_po_id: id,
@@ -126,6 +132,7 @@ export async function poToPurchaseInvoice(id: string, reference?: string) {
 }
 
 export async function cancelPurchaseOrder(id: string) {
+  await assertFeature("Buying");
   const supabase = createClient();
   const { error } = await supabase
     .from("purchase_orders")

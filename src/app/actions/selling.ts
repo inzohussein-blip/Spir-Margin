@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { assertFeature } from "@/lib/features";
 
 export interface SOLineInput {
   product_id: string;
@@ -18,6 +19,7 @@ export interface SalesOrderInput {
 }
 
 export async function saveSalesOrder(input: SalesOrderInput) {
+  await assertFeature("Selling");
   const supabase = createClient();
   const lines = input.items.filter((l) => l.product_id && Number(l.qty) > 0);
   if (!input.lab_id) return { ok: false as const, error: "Pick a lab" };
@@ -57,6 +59,7 @@ export async function saveSalesOrder(input: SalesOrderInput) {
  * (migration 0075) and shows in Monitoring → Change & Deletion Log.
  */
 export async function updateSalesOrder(id: string, input: SalesOrderInput) {
+  await assertFeature("Selling");
   const supabase = createClient();
   const lines = input.items.filter((l) => l.product_id && Number(l.qty) > 0);
   if (!input.lab_id) return { ok: false as const, error: "Pick a lab" };
@@ -103,6 +106,7 @@ export async function updateSalesOrder(id: string, input: SalesOrderInput) {
 /** Delete a draft or cancelled sales order (items cascade). Delivered orders
  *  are protected because they have already posted sales. */
 export async function deleteSalesOrderForm(fd: FormData) {
+  await assertFeature("Selling");
   const supabase = createClient();
   const id = String(fd.get("id"));
   const { error } = await supabase
@@ -115,6 +119,7 @@ export async function deleteSalesOrderForm(fd: FormData) {
 }
 
 export async function deliverSalesOrderForm(fd: FormData) {
+  await assertFeature("Selling");
   const supabase = createClient();
   const { error } = await supabase.rpc("fn_deliver_sales_order", {
     p_so_id: String(fd.get("id")),
@@ -125,6 +130,7 @@ export async function deliverSalesOrderForm(fd: FormData) {
 }
 
 export async function cancelSalesOrderForm(fd: FormData) {
+  await assertFeature("Selling");
   const supabase = createClient();
   const { error } = await supabase
     .from("sales_orders")

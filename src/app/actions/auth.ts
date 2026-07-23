@@ -5,6 +5,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { SESSION_COOKIE, SESSION_MAX_AGE, createSessionToken, type SessionUser } from "@/lib/auth/session";
+import { lockoutRemaining, recordFailure, recordSuccess } from "@/lib/auth/rate-limit";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 const cookieOptions = {
   httpOnly: true,
@@ -19,12 +22,24 @@ export async function loginAction(_prev: unknown, formData: FormData) {
   const password = String(formData.get("password") ?? "");
   if (!email || !password) return { error: "Enter your email and password" };
 
+  // Brute-force throttle: block further tries once too many have failed.
+  const locked = lockoutRemaining(email);
+  if (locked > 0) {
+    const locale = getLocale();
+    const mins = Math.ceil(locked / 60);
+    return { error: `${t(locale, "Too many attempts. Try again in")} ${mins} ${t(locale, "minute(s).")}` };
+  }
+
   const supabase = createClient();
   const { data, error } = await supabase.rpc("fn_verify_login", { p_email: email, p_password: password });
   if (error) return { error: "Sign-in is unavailable right now" };
   const row = (data as SessionUser[] | null)?.[0];
-  if (!row) return { error: "Invalid email or password" };
+  if (!row) {
+    recordFailure(email);
+    return { error: "Invalid email or password" };
+  }
 
+  recordSuccess(email);
   const token = await createSessionToken(row);
   cookies().set(SESSION_COOKIE, token, cookieOptions);
   redirect("/");

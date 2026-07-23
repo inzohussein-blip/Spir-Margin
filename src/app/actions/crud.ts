@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { assertFeature } from "@/lib/features";
 
 // -------------------------------------------------------------------------
 // Small helpers for reading typed values out of a <form> FormData payload.
@@ -206,6 +207,7 @@ export async function submitWithdrawal(fd: FormData) {
 }
 
 export async function submitSale(fd: FormData) {
+  await assertFeature("Selling");
   const supabase = createClient();
   // Route the "Record Sale" form through the SAME idempotent, cost-authoritative
   // checkout as the POS terminal, so every sales path books identically: the

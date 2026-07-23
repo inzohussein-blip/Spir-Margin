@@ -21,12 +21,31 @@ export interface SessionUser {
   lab_id: string | null;
 }
 
+let warnedNoSecret = false;
+
 function secretKey(): Uint8Array {
-  const raw =
-    process.env.AUTH_SECRET ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    "spir-margin-dev-insecure-secret-change-me";
-  return new TextEncoder().encode(raw);
+  const configured = process.env.AUTH_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (configured) return new TextEncoder().encode(configured);
+
+  // No secret configured. Signing real sessions with a public, hardcoded key
+  // means anyone can forge a session. On a real hosted deployment that is
+  // unacceptable, so fail fast. The zero-config embedded demo (no hosted DB /
+  // platform) still runs, but with a loud one-time warning.
+  const looksDeployed = !!(
+    process.env.DATABASE_URL || process.env.VERCEL || process.env.RENDER || process.env.FLY_APP_NAME
+  );
+  if (process.env.NODE_ENV === "production" && looksDeployed) {
+    throw new Error(
+      "AUTH_SECRET is not set. Set AUTH_SECRET (or SUPABASE_SERVICE_ROLE_KEY) to a strong random value before deploying.",
+    );
+  }
+  if (process.env.NODE_ENV === "production" && !warnedNoSecret) {
+    warnedNoSecret = true;
+    console.warn(
+      "[auth] AUTH_SECRET is not set — using an INSECURE built-in signing key. Set AUTH_SECRET before exposing this app publicly.",
+    );
+  }
+  return new TextEncoder().encode("spir-margin-dev-insecure-secret-change-me");
 }
 
 export async function createSessionToken(user: SessionUser): Promise<string> {
