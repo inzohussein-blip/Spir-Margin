@@ -16,7 +16,9 @@ export interface SessionUser {
   id: string;
   email: string;
   full_name: string | null;
-  role: "admin" | "manager" | "staff";
+  role: "admin" | "manager" | "staff" | "customer";
+  /** Set only for portal (customer) users — the lab they may see. */
+  lab_id: string | null;
 }
 
 function secretKey(): Uint8Array {
@@ -28,7 +30,7 @@ function secretKey(): Uint8Array {
 }
 
 export async function createSessionToken(user: SessionUser): Promise<string> {
-  return new SignJWT({ email: user.email, full_name: user.full_name, role: user.role })
+  return new SignJWT({ email: user.email, full_name: user.full_name, role: user.role, lab_id: user.lab_id })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(user.id)
     .setIssuedAt()
@@ -45,6 +47,7 @@ export async function verifySessionToken(token: string | undefined): Promise<Ses
       email: String(payload.email),
       full_name: (payload.full_name as string | null) ?? null,
       role: (payload.role as SessionUser["role"]) ?? "staff",
+      lab_id: (payload.lab_id as string | null) ?? null,
     };
   } catch {
     return null;

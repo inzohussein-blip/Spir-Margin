@@ -330,6 +330,19 @@ const ar: Record<string, string> = {
   // maintenance forecast
   // landed costs
   // warranty billing
+  // customer portal
+  "Customer Portal": "بوابة العملاء",
+  "My devices": "أجهزتي",
+  "Support tickets": "تذاكر الدعم",
+  "Welcome": "مرحبًا",
+  "No devices on record.": "لا أجهزة مسجّلة.",
+  "Maintenance history": "تاريخ الصيانة",
+  "No maintenance visits yet.": "لا زيارات صيانة بعد.",
+  "Open a fault ticket": "فتح تذكرة عطل",
+  "e.g. Analyzer error on startup": "مثال: خطأ في المحلّل عند التشغيل",
+  "Submit ticket": "إرسال التذكرة",
+  "My tickets": "تذاكري",
+  "No tickets yet.": "لا تذاكر بعد.",
   "Billed to": "جهة الفوترة",
   "Agent (under warranty)": "الوكيل (ضمن الضمان)",
   "Hospital (billable)": "المستشفى (قابل للفوترة)",
@@ -951,6 +964,7 @@ export function t(locale: Locale, key: string): string {
 // Status-value translations (enum values shown as badges/indicators).
 const statusAr: Record<string, string> = {
   draft: "مسودة", open: "مفتوح", unsigned: "غير موقّع", pending: "معلّق", planned: "مخطّط",
+  partial: "جزئي", full: "مكتمل",
   submitted: "معتمد", confirmed: "مؤكّد", replied: "تم الرد", in_process: "قيد التنفيذ",
   in_progress: "قيد التنفيذ", partly_paid: "مدفوع جزئياً", partly_completed: "مكتمل جزئياً",
   on_hold: "معلّق", active: "نشط", installed: "مُركّب", completed: "مكتمل", received: "مستلَم",

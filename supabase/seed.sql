@@ -171,6 +171,11 @@ begin
     end if;
 end $$;
 
+-- Demo customer-portal login: hospital@spir.local / portal1234 (sees only its
+-- own lab — Al-Kindy). Change the password in production.
+select fn_create_portal_user('hospital@spir.local', 'portal1234', 'Al-Kindy Hospital',
+                             '00000000-0000-0000-0000-0000000000c1');
+
 -- Demo service contract (drives the dashboard 'Expiring contracts' card) -----
 do $$
 declare v_lab uuid; v_dev uuid;

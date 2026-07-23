@@ -1,4 +1,4 @@
--- Spir-Margin — combined schema (all 68 migrations + seed). Run ONCE on an EMPTY DB.
+-- Spir-Margin — combined schema (all 69 migrations + seed). Run ONCE on an EMPTY DB.
 -- Default login: admin@spir.local / admin1234 — change after first sign-in.
 create extension if not exists pgcrypto;
 do $$ begin if not exists (select 1 from pg_roles where rolname='authenticated') then create role authenticated; end if; end $$;
@@ -5523,6 +5523,49 @@ from warranty_claims
 where status <> 'cancelled'
 group by billed_to;
 
+-- ===== migration: 0070_customer_portal.sql =====
+-- =====================================================================
+-- Migration 0070 : Customer portal (ported idea from Odoo)
+--
+-- Hospitals get a heavily-restricted login (role 'customer') bound to their
+-- lab. A portal user can only ever see their OWN lab's devices and maintenance
+-- history and open fault tickets — enforced server-side from the session, never
+-- from client input.
+-- =====================================================================
+
+-- New restricted role. ADD VALUE must be its own statement (a new enum label
+-- cannot be *used* in the same transaction it is created, but the runtime
+-- function bodies below only reference it when they execute, after commit).
+alter type app_user_role add value if not exists 'customer';
+
+-- Bind a user to a lab (only meaningful for the 'customer' role).
+alter table app_users add column if not exists lab_id uuid references labs(id) on delete set null;
+
+-- Login now also returns the bound lab so the session can carry it. The return
+-- shape changes, so the old function must be dropped first.
+drop function if exists fn_verify_login(text, text);
+create or replace function fn_verify_login(p_email text, p_password text)
+returns table(id uuid, email text, full_name text, role app_user_role, lab_id uuid)
+language sql as $$
+    select u.id, u.email, u.full_name, u.role, u.lab_id
+    from app_users u
+    where lower(u.email) = lower(p_email)
+      and u.is_active
+      and u.password_hash = crypt(p_password, u.password_hash);
+$$;
+
+-- Create a portal (customer) user bound to a specific lab.
+create or replace function fn_create_portal_user(p_email text, p_password text, p_full_name text, p_lab_id uuid)
+returns uuid language plpgsql as $$
+declare v_id uuid;
+begin
+    insert into app_users (email, password_hash, full_name, role, lab_id)
+    values (lower(p_email), crypt(p_password, gen_salt('bf')), p_full_name, 'customer', p_lab_id)
+    on conflict (email) do update set lab_id = excluded.lab_id, role = 'customer'
+    returning id into v_id;
+    return v_id;
+end $$;
+
 -- ===== seed data (demo) =====
 -- =====================================================================
 -- Seed data for local development / demo
@@ -5695,6 +5738,8 @@ begin
                 'open', 'High', 'Hardware', 'Device fails self-test intermittently.');
     end if;
 end $$;
+
+-- (portal demo user is seeded separately by seed.sql, after the enum commit)
 
 -- Demo service contract (drives the dashboard 'Expiring contracts' card) -----
 do $$
@@ -5914,7 +5959,8 @@ insert into _spir_migrations(filename) values
   ('0066_reorder_rules.sql'),
   ('0067_maintenance_forecast.sql'),
   ('0068_landed_costs.sql'),
-  ('0069_warranty_billing.sql')
+  ('0069_warranty_billing.sql'),
+  ('0070_customer_portal.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;
