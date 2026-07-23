@@ -989,6 +989,7 @@ const ar: Record<string, string> = {
   "Feature unavailable": "الميزة غير متاحة",
   "This feature has been disabled by an administrator.":
     "تم إيقاف هذه الميزة من قِبَل المسؤول.",
+  "This feature is hidden.": "هذه الميزة مخفية.",
   "You don’t have access to this feature.": "ليس لديك صلاحية الوصول إلى هذه الميزة.",
   "Ask an administrator to enable it or grant you access.":
     "اطلب من المسؤول تفعيلها أو منحك الصلاحية.",

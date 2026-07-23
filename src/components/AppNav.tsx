@@ -3,12 +3,24 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRightIcon } from "lucide-react";
+import { ChevronRightIcon, LockIcon } from "lucide-react";
 import { navGroups } from "@/lib/nav";
 import { t, type Locale } from "@/lib/i18n";
 
-export function AppNav({ locale = "ar" }: { locale?: Locale }) {
+export function AppNav({
+  locale = "ar",
+  hidden = [],
+  off = [],
+}: {
+  locale?: Locale;
+  /** Feature groups removed from the sidebar entirely. */
+  hidden?: string[];
+  /** Feature groups shown greyed-out with a lock (disabled / access-denied). */
+  off?: string[];
+}) {
   const pathname = usePathname();
+  const hiddenSet = new Set(hidden);
+  const offSet = new Set(off);
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
   const activeGroup = navGroups.find((g) => g.items.some((i) => isActive(i.href)))?.label;
   const [open, setOpen] = useState<Record<string, boolean>>({});
@@ -28,6 +40,20 @@ export function AppNav({ locale = "ar" }: { locale?: Locale }) {
   return (
     <nav className="flex flex-col gap-0.5 px-2.5 pb-6">
       {navGroups.map((group) => {
+        if (hiddenSet.has(group.label)) return null;
+        // Disabled / access-denied feature: greyed, locked, non-navigable.
+        if (offSet.has(group.label)) {
+          return (
+            <div
+              key={group.label}
+              className="mt-2 flex cursor-not-allowed items-center gap-2 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-ink-gray-3"
+              title={t(locale, "This feature has been disabled by an administrator.")}
+            >
+              <span className="flex-1">{t(locale, group.label)}</span>
+              <LockIcon size={12} className="text-ink-gray-3" />
+            </div>
+          );
+        }
         const isSingle = group.items.length === 1;
         const expanded = open[group.label] ?? (group.label === activeGroup || group.label === "Home");
         if (isSingle) {

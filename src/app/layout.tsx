@@ -9,8 +9,10 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NotificationBell } from "@/components/desk/NotificationBell";
 import { LocaleProvider } from "@/components/LocaleProvider";
 import { NavProgress } from "@/components/NavProgress";
+import { FeatureUnavailable } from "@/components/settings/FeatureUnavailable";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getNotifications } from "@/lib/notifications";
+import { getAccessContext, blockReason, navFeatureState } from "@/lib/features";
 import { getLocale } from "@/lib/i18n-server";
 import "./globals.css";
 
@@ -38,6 +40,12 @@ export default async function RootLayout({
   const user = isBare ? null : await getCurrentUser();
   const notifications = user && !isFocused ? await getNotifications(locale) : [];
 
+  // Feature availability (admins bypass; core features are always on).
+  const showShell = !isBare && !!user && !isFocused;
+  const access = showShell ? await getAccessContext(user!) : null;
+  const nav = access ? navFeatureState(access) : { hidden: [], off: [] };
+  const blocked = access ? blockReason(pathname, access) : null;
+
   return (
     <html lang={locale} dir={dir}>
       <body className="min-h-screen bg-surface-gray-1 text-ink-gray-8 antialiased">
@@ -52,7 +60,7 @@ export default async function RootLayout({
                 <span className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm">S</span>
                 Spir-Margin
               </div>
-              <AppNav locale={locale} />
+              <AppNav locale={locale} hidden={nav.hidden} off={nav.off} />
             </aside>
             <div className="flex min-w-0 flex-1 flex-col">
               <header className="no-print sticky top-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-outline-gray-2 bg-surface-white/85 px-6 shadow-sm backdrop-blur-xl">
@@ -66,7 +74,9 @@ export default async function RootLayout({
                   <UserMenu user={user} locale={locale} />
                 </div>
               </header>
-              <main className="flex-1 p-6">{children}</main>
+              <main className="flex-1 p-6">
+                {blocked ? <FeatureUnavailable reason={blocked} /> : children}
+              </main>
             </div>
           </div>
         )}

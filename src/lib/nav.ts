@@ -6,7 +6,7 @@ import {
   ClipboardCheckIcon, MapPinIcon, HammerIcon, ReceiptIcon, ScrollTextIcon,
   PackagePlusIcon, PlugIcon, CalendarClockIcon, LifeBuoyIcon, FileSignatureIcon,
   CalendarDaysIcon, UsersIcon, CreditCardIcon, PercentIcon, ListChecksIcon,
-  BarChart3Icon, TrendingUpIcon, CalculatorIcon, RepeatIcon,
+  BarChart3Icon, TrendingUpIcon, CalculatorIcon, RepeatIcon, SettingsIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -96,6 +96,7 @@ export const navGroups: NavGroup[] = [
   { label: "Setup", items: [
     { href: "/masters", label: "Masters", icon: ListChecksIcon },
     { href: "/users", label: "Users", icon: UsersIcon },
+    { href: "/settings", label: "Settings", icon: SettingsIcon },
     { href: "/audit-log", label: "Audit Log", icon: ScrollTextIcon },
   ]},
 ];
