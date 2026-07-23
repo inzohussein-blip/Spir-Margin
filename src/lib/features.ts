@@ -23,6 +23,17 @@ export type FeatureState = "enabled" | "disabled" | "hidden";
 /** Features that must always stay on and reachable (the escape hatch). */
 export const CORE_FEATURES = new Set<string>(["Home", "Setup"]);
 
+/**
+ * Features only an admin or manager ("authorised") may see at all — regardless
+ * of the feature flags. Used for the Monitoring group (error / change / sync
+ * oversight), which ordinary staff and customers never get.
+ */
+export const ELEVATED_FEATURES = new Set<string>(["Monitoring"]);
+
+function isElevatedRole(role: SessionUser["role"]): boolean {
+  return role === "admin" || role === "manager";
+}
+
 /** Every feature key, in sidebar order. */
 export const ALL_FEATURES: string[] = navGroups.map((g) => g.label);
 
@@ -64,7 +75,10 @@ export async function getAccessContext(user: SessionUser): Promise<AccessContext
 
 /** Effective state of a feature for this account (admins always "enabled"). */
 export function effectiveState(feature: string, ctx: AccessContext): FeatureState {
-  if (ctx.role === "admin" || CORE_FEATURES.has(feature)) return "enabled";
+  if (CORE_FEATURES.has(feature)) return "enabled";
+  // Elevated features are invisible to anyone below manager, flags aside.
+  if (ELEVATED_FEATURES.has(feature) && !isElevatedRole(ctx.role)) return "hidden";
+  if (ctx.role === "admin") return "enabled";
   if (ctx.denied.has(feature)) return "disabled";
   return ctx.flags.get(feature) ?? "enabled";
 }
@@ -82,9 +96,10 @@ export function isPathAllowed(pathname: string, ctx: AccessContext): boolean {
  * "disabled" → the feature is globally disabled or hidden.
  */
 export function blockReason(pathname: string, ctx: AccessContext): "denied" | "disabled" | null {
-  if (ctx.role === "admin") return null;
   const feature = featureForPath(pathname);
   if (!feature || CORE_FEATURES.has(feature)) return null;
+  if (ELEVATED_FEATURES.has(feature) && !isElevatedRole(ctx.role)) return "denied";
+  if (ctx.role === "admin") return null;
   if (ctx.denied.has(feature)) return "denied";
   const st = ctx.flags.get(feature);
   return st === "disabled" || st === "hidden" ? "disabled" : null;

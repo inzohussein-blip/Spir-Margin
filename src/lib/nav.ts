@@ -7,6 +7,7 @@ import {
   PackagePlusIcon, PlugIcon, CalendarClockIcon, LifeBuoyIcon, FileSignatureIcon,
   CalendarDaysIcon, UsersIcon, CreditCardIcon, PercentIcon, ListChecksIcon,
   BarChart3Icon, TrendingUpIcon, CalculatorIcon, RepeatIcon, SettingsIcon,
+  AlertTriangleIcon, HistoryIcon, RefreshCwIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -92,6 +93,11 @@ export const navGroups: NavGroup[] = [
     { href: "/tools/calculator", label: "Calculator", icon: CalculatorIcon },
     { href: "/tools/profit", label: "Profit Calculator", icon: TrendingUpIcon },
     { href: "/tools/converter", label: "Currency Converter", icon: ArrowLeftRightIcon },
+  ]},
+  { label: "Monitoring", items: [
+    { href: "/monitoring/errors", label: "Error Monitor", icon: AlertTriangleIcon },
+    { href: "/monitoring/changes", label: "Change & Deletion Log", icon: HistoryIcon },
+    { href: "/monitoring/sync", label: "Sync Health", icon: RefreshCwIcon },
   ]},
   { label: "Setup", items: [
     { href: "/masters", label: "Masters", icon: ListChecksIcon },

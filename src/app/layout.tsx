@@ -11,6 +11,7 @@ import { LocaleProvider } from "@/components/LocaleProvider";
 import { NavProgress } from "@/components/NavProgress";
 import { OfflineProvider } from "@/components/offline/OfflineProvider";
 import { SyncStatus } from "@/components/offline/SyncStatus";
+import { ErrorReporter } from "@/components/monitoring/ErrorReporter";
 import { FeatureUnavailable } from "@/components/settings/FeatureUnavailable";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getNotifications } from "@/lib/notifications";
@@ -54,6 +55,7 @@ export default async function RootLayout({
       <body className="min-h-screen bg-surface-gray-1 text-ink-gray-8 antialiased">
         <LocaleProvider locale={locale}>
         <OfflineProvider>
+        <ErrorReporter />
         <NavProgress />
         {isBare || !user || isFocused ? (
           children

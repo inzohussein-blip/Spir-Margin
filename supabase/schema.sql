@@ -5670,6 +5670,55 @@ begin
     return query select v_count, v_total;
 end; $$;
 
+-- ===== migration: 0074_monitoring.sql =====
+-- =====================================================================
+-- Migration 0074 : Monitoring (errors, connectivity & sync health)
+-- =====================================================================
+
+create table if not exists app_errors (
+    id          bigint generated always as identity primary key,
+    occurred_at timestamptz not null default now(),
+    severity    text not null default 'error' check (severity in ('error','warning')),
+    source      text not null default 'client' check (source in ('client','server')),
+    message     text not null,
+    detail      text,
+    path        text,
+    user_email  text,
+    resolved    boolean not null default false
+);
+create index if not exists idx_app_errors_time on app_errors(occurred_at desc);
+create index if not exists idx_app_errors_open on app_errors(resolved, occurred_at desc);
+
+create table if not exists connectivity_events (
+    id               bigint generated always as identity primary key,
+    user_email       text,
+    went_offline_at  timestamptz not null,
+    came_online_at   timestamptz not null,
+    duration_seconds numeric not null,
+    created_at       timestamptz not null default now()
+);
+create index if not exists idx_connectivity_time on connectivity_events(came_online_at desc);
+
+create table if not exists sync_events (
+    id         bigint generated always as identity primary key,
+    synced_at  timestamptz not null default now(),
+    user_email text,
+    item_count int not null default 0,
+    ok         boolean not null default true,
+    detail     text
+);
+create index if not exists idx_sync_time on sync_events(synced_at desc);
+
+alter table app_errors enable row level security;
+alter table connectivity_events enable row level security;
+alter table sync_events enable row level security;
+drop policy if exists "authenticated_all" on app_errors;
+drop policy if exists "authenticated_all" on connectivity_events;
+drop policy if exists "authenticated_all" on sync_events;
+create policy "authenticated_all" on app_errors for all to authenticated using (true) with check (true);
+create policy "authenticated_all" on connectivity_events for all to authenticated using (true) with check (true);
+create policy "authenticated_all" on sync_events for all to authenticated using (true) with check (true);
+
 -- ===== seed data (demo) =====
 -- =====================================================================
 -- Seed data for local development / demo
@@ -6067,7 +6116,8 @@ insert into _spir_migrations(filename) values
   ('0070_customer_portal.sql'),
   ('0071_sales_order_serial.sql'),
   ('0072_feature_settings.sql'),
-  ('0073_pos_idempotency.sql')
+  ('0073_pos_idempotency.sql'),
+  ('0074_monitoring.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;

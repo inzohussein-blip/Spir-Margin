@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { createPosSale } from "@/app/actions/pos";
+import { logConnectivityEvent, logSyncEvent } from "@/app/actions/monitoring";
 import {
   enqueue, getOutbox, setOutbox, subscribeOutbox,
   type OutboxItem, type PosSalePayload,
@@ -37,6 +38,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   const [pending, setPending] = useState<OutboxItem[]>([]);
   const [syncing, setSyncing] = useState(false);
   const flushing = useRef(false);
+  const offlineSince = useRef<number | null>(null);
 
   const refresh = useCallback(() => setPending(getOutbox()), []);
 
@@ -76,6 +78,12 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
       setPending(keep);
       setSyncing(false);
       flushing.current = false;
+      // Record the sync result so it's verifiable in Monitoring → Sync Health.
+      void logSyncEvent({
+        itemCount: synced,
+        ok: keep.length === 0 && !networkDown,
+        detail: `synced ${synced}/${items.length}${networkDown ? " (network dropped)" : ""}`,
+      });
       if (synced > 0) router.refresh(); // pull the freshly-synced data into the UI
     }
   }, [router]);
@@ -105,8 +113,25 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setOnline(navigator.onLine);
     refresh();
-    const goOnline = () => { setOnline(true); void flush(); };
-    const goOffline = () => setOnline(false);
+    if (!navigator.onLine) offlineSince.current = Date.now();
+    const goOnline = () => {
+      setOnline(true);
+      // Record how long we were actually offline, for Sync Health.
+      if (offlineSince.current != null) {
+        const start = offlineSince.current;
+        offlineSince.current = null;
+        void logConnectivityEvent({
+          wentOfflineAt: new Date(start).toISOString(),
+          cameOnlineAt: new Date().toISOString(),
+          durationSeconds: (Date.now() - start) / 1000,
+        });
+      }
+      void flush();
+    };
+    const goOffline = () => {
+      setOnline(false);
+      if (offlineSince.current == null) offlineSince.current = Date.now();
+    };
     window.addEventListener("online", goOnline);
     window.addEventListener("offline", goOffline);
     const unsub = subscribeOutbox(refresh);
