@@ -5326,6 +5326,16 @@ insert into devices (asset_code, product_id, serial_no, status, lab_id, purchase
 on conflict do nothing;
 
 -- Kit batches ---------------------------------------------------------
+-- Serial-tracked spare with a demo life cycle (feeds the serial timeline) --
+insert into serial_numbers (id, serial_no, product_id, status, warehouse_id, purchase_rate, warranty_period_days, warranty_expiry_date)
+values ('00000000-0000-0000-0000-0000000000e5', 'SN-PUMP-0001', '00000000-0000-0000-0000-0000000000d5', 'active',
+        '00000000-0000-0000-0000-0000000000b1', 200, 365, current_date + 300)
+on conflict do nothing;
+update serial_numbers set warehouse_id = '00000000-0000-0000-0000-0000000000b2'
+ where id = '00000000-0000-0000-0000-0000000000e5';
+update serial_numbers set warehouse_id = null, lab_id = '00000000-0000-0000-0000-0000000000c1', status = 'delivered'
+ where id = '00000000-0000-0000-0000-0000000000e5';
+
 insert into kit_batches (batch_no, product_id, warehouse_id, supplier_id, manufacturing_date, expiry_date, qty_received, qty_available, buy_price, sell_price) values
     ('B-GLU-2401', '00000000-0000-0000-0000-0000000000d3', '00000000-0000-0000-0000-0000000000b2', '00000000-0000-0000-0000-0000000000a1', '2025-06-01', current_date + 20,  100, 60, 80, 130),
     ('B-GLU-2402', '00000000-0000-0000-0000-0000000000d3', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000a1', '2025-08-01', current_date + 120, 100, 95, 80, 130),

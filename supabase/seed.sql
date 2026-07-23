@@ -39,6 +39,17 @@ insert into devices (asset_code, product_id, serial_no, status, lab_id, purchase
     ('ACC-ASS-0004', '00000000-0000-0000-0000-0000000000d2', 'XN-550-4472', 'out_of_order',   '00000000-0000-0000-0000-0000000000c3', '2022-09-15', 30000, false, null)
 on conflict do nothing;
 
+-- Serial-tracked spare with a demo life cycle (feeds the serial timeline) --
+insert into serial_numbers (id, serial_no, product_id, status, warehouse_id, purchase_rate, warranty_period_days, warranty_expiry_date)
+values ('00000000-0000-0000-0000-0000000000e5', 'SN-PUMP-0001', '00000000-0000-0000-0000-0000000000d5', 'active',
+        '00000000-0000-0000-0000-0000000000b1', 200, 365, current_date + 300)
+on conflict do nothing;
+-- ...then moved between stores and delivered to a lab (audited transitions)
+update serial_numbers set warehouse_id = '00000000-0000-0000-0000-0000000000b2'
+ where id = '00000000-0000-0000-0000-0000000000e5';
+update serial_numbers set warehouse_id = null, lab_id = '00000000-0000-0000-0000-0000000000c1', status = 'delivered'
+ where id = '00000000-0000-0000-0000-0000000000e5';
+
 -- Kit batches ---------------------------------------------------------
 insert into kit_batches (batch_no, product_id, warehouse_id, supplier_id, manufacturing_date, expiry_date, qty_received, qty_available, buy_price, sell_price) values
     ('B-GLU-2401', '00000000-0000-0000-0000-0000000000d3', '00000000-0000-0000-0000-0000000000b2', '00000000-0000-0000-0000-0000000000a1', '2025-06-01', current_date + 20,  100, 60, 80, 130),

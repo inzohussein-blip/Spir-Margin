@@ -324,6 +324,21 @@ const ar: Record<string, string> = {
   // detail-view field labels
   // point of sale
   // audit log
+  // serial life cycle
+  "Received into stock": "استُلم في المخزون",
+  "Serial removed": "حُذف الرقم التسلسلي",
+  "Moved to warehouse": "نُقل إلى مستودع",
+  "Delivered to lab": "سُلّم إلى مختبر",
+  "Returned from lab": "أُعيد من المختبر",
+  "Installed into a device": "رُكّب في جهاز",
+  "Removed from a device": "فُكّ من جهاز",
+  "Status changed to": "تغيّرت الحالة إلى",
+  "Maintenance/warranty status": "حالة الصيانة/الضمان",
+  "Updated": "تحديث",
+  "Life cycle": "دورة الحياة",
+  "No movement history yet.": "لا يوجد سجل حركة بعد.",
+  "Current warehouse": "المستودع الحالي",
+  "Current lab": "المختبر الحالي",
   "Audit Log": "سجل التدقيق",
   "You need an administrator account to view the audit log.": "تحتاج حساب مدير لعرض سجل التدقيق.",
   "Filter by table / actor…": "تصفية حسب الجدول / المستخدم…",
