@@ -3,26 +3,27 @@
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
+import {
+  PlusIcon, Trash2Icon, Loader2Icon, MinusIcon, FlaskConicalIcon,
+  CalendarDaysIcon, ScanBarcodeIcon, PackageIcon, StickyNoteIcon, ShoppingCartIcon,
+} from "lucide-react";
 import { saveSalesOrder, type SalesOrderInput } from "@/app/actions/selling";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
 
 interface Opt { id: string; label: string; }
 interface ProductOpt extends Opt { sell: number; }
 
-const cls =
-  "mt-1 w-full rounded-md border border-outline-gray-2 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
+/** Soft, animated input — rounded, subtle shadow, brand focus glow. */
+const field =
+  "w-full rounded-xl border border-outline-gray-2 bg-surface-white px-3 py-2.5 text-sm text-ink-gray-8 " +
+  "shadow-sm transition-all duration-200 placeholder:text-ink-gray-4 " +
+  "focus:border-brand focus:shadow-md focus:ring-4 focus:ring-brand/15 focus:outline-none " +
+  "hover:border-outline-gray-3";
 
-export function SalesOrderForm({
-  labs,
-  products,
-}: {
-  labs: Opt[];
-  products: ProductOpt[];
-}) {
+const money = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+export function SalesOrderForm({ labs, products }: { labs: Opt[]; products: ProductOpt[] }) {
   const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -33,13 +34,23 @@ export function SalesOrderForm({
       transaction_date: new Date().toISOString().slice(0, 10),
       delivery_date: "",
       notes: "",
-      items: [{ product_id: "", qty: 1, rate: 0 }],
+      items: [{ product_id: "", qty: 1, rate: 0, serial_no: "" }],
     },
   });
   const { fields, append, remove } = useFieldArray({ control, name: "items" });
   const items = useWatch({ control, name: "items" });
   const total = (items ?? []).reduce((s, l) => s + (Number(l?.qty) || 0) * (Number(l?.rate) || 0), 0);
+  const lineTotal = (i: number) => (Number(items?.[i]?.qty) || 0) * (Number(items?.[i]?.rate) || 0);
 
+  function onProduct(index: number, productId: string) {
+    setValue(`items.${index}.product_id`, productId);
+    const p = products.find((x) => x.id === productId);
+    if (p) setValue(`items.${index}.rate`, p.sell);
+  }
+  function bump(index: number, delta: number) {
+    const cur = Number(items?.[index]?.qty) || 0;
+    setValue(`items.${index}.qty`, Math.max(1, cur + delta));
+  }
   function onSubmit(values: SalesOrderInput) {
     start(async () => {
       const res = await saveSalesOrder(values);
@@ -47,79 +58,153 @@ export function SalesOrderForm({
     });
   }
 
-  function onProduct(index: number, productId: string) {
-    setValue(`items.${index}.product_id`, productId);
-    const p = products.find((x) => x.id === productId);
-    if (p) setValue(`items.${index}.rate`, p.sell);
-  }
+  const gridCols = "md:grid md:grid-cols-[minmax(0,2.2fr)_140px_120px_minmax(0,1.5fr)_110px_44px] md:items-center md:gap-3";
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <Card>
-        <CardHeader><CardTitle>{t(locale, "Order")}</CardTitle></CardHeader>
-        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
-          <label className="block">
-            <span className="font-medium text-ink-gray-8">{t(locale, "Lab *")}</span>
-            <select {...register("lab_id", { required: true })} className={cls}>
+    <form onSubmit={handleSubmit(onSubmit)} className="mx-auto max-w-5xl space-y-5">
+      {/* ---- Order header ---- */}
+      <section className="overflow-hidden rounded-2xl border border-outline-gray-2 bg-surface-white shadow-sm">
+        <header className="flex items-center gap-2 border-b border-outline-gray-1 bg-gradient-to-l from-brand-light to-transparent px-5 py-3.5">
+          <span className="grid size-8 place-items-center rounded-lg bg-brand/10 text-brand"><ShoppingCartIcon size={17} /></span>
+          <h2 className="text-sm font-bold text-ink-gray-8">{t(locale, "Order")}</h2>
+        </header>
+        <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
+          <label className="block sm:col-span-2">
+            <span className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-ink-gray-7">
+              <FlaskConicalIcon size={14} className="text-brand" /> {t(locale, "Lab *")}
+            </span>
+            <select {...register("lab_id", { required: true })} className={`${field} font-medium`}>
               <option value="">{t(locale, "Select…")}</option>
               {labs.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
             </select>
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">{t(locale, "Order date")}</span>
-            <input type="date" {...register("transaction_date")} className={cls} />
+            <span className="mb-1 flex items-center gap-1.5 text-sm font-medium text-ink-gray-7">
+              <CalendarDaysIcon size={14} className="text-ink-gray-4" /> {t(locale, "Order date")}
+            </span>
+            <input type="date" {...register("transaction_date")} className={field} />
           </label>
           <label className="block">
-            <span className="font-medium text-ink-gray-8">{t(locale, "Delivery date")}</span>
-            <input type="date" {...register("delivery_date")} className={cls} />
+            <span className="mb-1 flex items-center gap-1.5 text-sm font-medium text-ink-gray-7">
+              <CalendarDaysIcon size={14} className="text-ink-gray-4" /> {t(locale, "Delivery date")}
+            </span>
+            <input type="date" {...register("delivery_date")} className={field} />
           </label>
-          <label className="block">
-            <span className="font-medium text-ink-gray-8">{t(locale, "Notes")}</span>
-            <input {...register("notes")} className={cls} />
+          <label className="block sm:col-span-2">
+            <span className="mb-1 flex items-center gap-1.5 text-sm font-medium text-ink-gray-7">
+              <StickyNoteIcon size={14} className="text-ink-gray-4" /> {t(locale, "Notes")}
+            </span>
+            <input {...register("notes")} className={field} />
           </label>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
-      <Card>
-        <CardHeader><CardTitle>{t(locale, "Items")}</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          {fields.map((f, i) => (
-            <div key={f.id} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
-              <label className="col-span-2 block text-xs sm:col-span-3">
-                <span className="text-ink-gray-5">{t(locale, "Product")}</span>
-                <select value={items?.[i]?.product_id ?? ""} onChange={(e) => onProduct(i, e.target.value)} className={cls}>
-                  <option value="">{t(locale, "Select…")}</option>
-                  {products.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
-                </select>
-              </label>
-              <label className="block text-xs">
-                <span className="text-ink-gray-5">{t(locale, "Qty")}</span>
-                <input type="number" step="0.01" {...register(`items.${i}.qty`)} className={cls} />
-              </label>
-              <label className="block text-xs">
-                <span className="text-ink-gray-5">{t(locale, "Rate")}</span>
-                <input type="number" step="0.01" {...register(`items.${i}.rate`)} className={cls} />
-              </label>
-              <div className="flex items-end justify-end">
-                <Button type="button" variant="subtle" size="sm" onClick={() => remove(i)} disabled={fields.length === 1}>
-                  <Trash2Icon size={14} />
-                </Button>
-              </div>
-            </div>
-          ))}
-          <div className="flex items-center justify-between">
-            <Button type="button" variant="subtle" size="sm" onClick={() => append({ product_id: "", qty: 1, rate: 0 })}>
-              <PlusIcon size={14} className="mr-1" /> {t(locale, "Add item")}
-            </Button>
-            <div className="text-sm font-semibold">{t(locale, "Total:")} {total.toLocaleString()}</div>
+      {/* ---- Line items: table on desktop, cards on mobile ---- */}
+      <section className="overflow-hidden rounded-2xl border border-outline-gray-2 bg-surface-white shadow-sm">
+        <header className="flex items-center gap-2 border-b border-outline-gray-1 bg-gradient-to-l from-brand-light to-transparent px-5 py-3.5">
+          <span className="grid size-8 place-items-center rounded-lg bg-brand/10 text-brand"><PackageIcon size={17} /></span>
+          <h2 className="text-sm font-bold text-ink-gray-8">{t(locale, "Items")}</h2>
+          <span className="ms-auto rounded-full bg-surface-gray-2 px-2 py-0.5 text-xs font-medium text-ink-gray-6">{fields.length}</span>
+        </header>
+
+        <div className="p-3 sm:p-4">
+          {/* desktop column header */}
+          <div className={`hidden px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-ink-gray-4 ${gridCols}`}>
+            <span>{t(locale, "Product")}</span>
+            <span className="text-center">{t(locale, "Qty")}</span>
+            <span>{t(locale, "Rate")}</span>
+            <span>{t(locale, "Serial no")}</span>
+            <span className="text-end">{t(locale, "Total")}</span>
+            <span />
           </div>
-        </CardContent>
-      </Card>
 
-      <Button type="submit" variant="solid" size="md" disabled={pending}>
-        {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}
+          <div className="space-y-3 md:space-y-1.5">
+            {fields.map((f, i) => (
+              <div
+                key={f.id}
+                className={`rounded-xl border border-outline-gray-2 bg-surface-white p-3 shadow-sm transition-all duration-200 hover:border-outline-gray-3 hover:shadow-md
+                  md:rounded-lg md:border-transparent md:bg-transparent md:p-2 md:shadow-none md:hover:bg-surface-gray-1/60 md:hover:shadow-none
+                  animate-in fade-in slide-in-from-top-1 ${gridCols}`}
+              >
+                {/* product */}
+                <label className="block">
+                  <span className="mb-1 block text-xs font-medium text-ink-gray-5 md:hidden">{t(locale, "Product")}</span>
+                  <select value={items?.[i]?.product_id ?? ""} onChange={(e) => onProduct(i, e.target.value)} className={field}>
+                    <option value="">{t(locale, "Select…")}</option>
+                    {products.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+                  </select>
+                </label>
+
+                {/* qty stepper */}
+                <label className="mt-3 block md:mt-0">
+                  <span className="mb-1 block text-xs font-medium text-ink-gray-5 md:hidden">{t(locale, "Qty")}</span>
+                  <div className="flex items-center rounded-xl border border-outline-gray-2 bg-surface-white shadow-sm transition-all focus-within:border-brand focus-within:ring-4 focus-within:ring-brand/15">
+                    <button type="button" onClick={() => bump(i, -1)} className="grid size-9 place-items-center rounded-s-xl text-ink-gray-5 transition-colors hover:bg-surface-gray-2 active:scale-90"><MinusIcon size={15} /></button>
+                    <input type="number" step="1" {...register(`items.${i}.qty`)} className="w-full min-w-0 border-x border-outline-gray-2 py-2 text-center text-sm font-semibold tabular-nums focus:outline-none" />
+                    <button type="button" onClick={() => bump(i, 1)} className="grid size-9 place-items-center rounded-e-xl text-ink-gray-5 transition-colors hover:bg-surface-gray-2 active:scale-90"><PlusIcon size={15} /></button>
+                  </div>
+                </label>
+
+                {/* rate */}
+                <label className="mt-3 block md:mt-0">
+                  <span className="mb-1 block text-xs font-medium text-ink-gray-5 md:hidden">{t(locale, "Rate")}</span>
+                  <input type="number" step="0.01" {...register(`items.${i}.rate`)} className={`${field} tabular-nums`} />
+                </label>
+
+                {/* serial no with leading icon */}
+                <label className="mt-3 block md:mt-0">
+                  <span className="mb-1 block text-xs font-medium text-ink-gray-5 md:hidden">{t(locale, "Serial no")}</span>
+                  <div className="relative">
+                    <ScanBarcodeIcon size={15} className="pointer-events-none absolute top-1/2 -translate-y-1/2 text-ink-gray-4 start-3" />
+                    <input {...register(`items.${i}.serial_no`)} placeholder={t(locale, "optional")} className={`${field} ps-9 tabular-nums`} />
+                  </div>
+                </label>
+
+                {/* line total */}
+                <div className="mt-3 flex items-center justify-between md:mt-0 md:block md:text-end">
+                  <span className="text-xs font-medium text-ink-gray-5 md:hidden">{t(locale, "Total")}</span>
+                  <span className="text-sm font-bold tabular-nums text-ink-gray-8">{money(lineTotal(i))}</span>
+                </div>
+
+                {/* remove */}
+                <div className="mt-3 flex justify-end md:mt-0 md:justify-center">
+                  <button
+                    type="button"
+                    onClick={() => remove(i)}
+                    disabled={fields.length === 1}
+                    className="grid size-9 place-items-center rounded-lg text-ink-gray-4 transition-all hover:bg-red-50 hover:text-red-600 active:scale-90 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-ink-gray-4"
+                  >
+                    <Trash2Icon size={16} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => append({ product_id: "", qty: 1, rate: 0, serial_no: "" })}
+            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-dashed border-outline-gray-3 px-3.5 py-2 text-sm font-medium text-ink-gray-6 transition-all hover:border-brand hover:bg-brand-light hover:text-brand active:scale-95"
+          >
+            <PlusIcon size={15} /> {t(locale, "Add item")}
+          </button>
+        </div>
+
+        {/* total bar */}
+        <div className="flex items-center justify-between border-t border-outline-gray-1 bg-surface-gray-1/50 px-5 py-3.5">
+          <span className="text-sm font-medium text-ink-gray-6">{t(locale, "Total:")}</span>
+          <span className="text-xl font-bold tabular-nums text-brand">{money(total)}</span>
+        </div>
+      </section>
+
+      <button
+        type="submit"
+        disabled={pending}
+        className="inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-px hover:bg-brand-dark hover:shadow-lg active:translate-y-0 disabled:opacity-60"
+      >
+        {pending ? <Loader2Icon size={15} className="animate-spin" /> : <ShoppingCartIcon size={15} />}
         {t(locale, "Create order (draft)")}
-      </Button>
+      </button>
     </form>
   );
 }

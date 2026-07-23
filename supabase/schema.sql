@@ -1,4 +1,4 @@
--- Spir-Margin — combined schema (all 69 migrations + seed). Run ONCE on an EMPTY DB.
+-- Spir-Margin — combined schema (all 70 migrations + seed). Run ONCE on an EMPTY DB.
 -- Default login: admin@spir.local / admin1234 — change after first sign-in.
 create extension if not exists pgcrypto;
 do $$ begin if not exists (select 1 from pg_roles where rolname='authenticated') then create role authenticated; end if; end $$;
@@ -5566,6 +5566,16 @@ begin
     return v_id;
 end $$;
 
+-- ===== migration: 0071_sales_order_serial.sql =====
+-- =====================================================================
+-- Migration 0071 : Serial number on sales-order lines
+--
+-- Medical-device orders often commit a specific unit, so allow an optional
+-- serial number per sales-order line.
+-- =====================================================================
+
+alter table sales_order_items add column if not exists serial_no text;
+
 -- ===== seed data (demo) =====
 -- =====================================================================
 -- Seed data for local development / demo
@@ -5960,7 +5970,8 @@ insert into _spir_migrations(filename) values
   ('0067_maintenance_forecast.sql'),
   ('0068_landed_costs.sql'),
   ('0069_warranty_billing.sql'),
-  ('0070_customer_portal.sql')
+  ('0070_customer_portal.sql'),
+  ('0071_sales_order_serial.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;

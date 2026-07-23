@@ -7,6 +7,7 @@ export interface SOLineInput {
   product_id: string;
   qty: number;
   rate: number;
+  serial_no?: string | null;
 }
 export interface SalesOrderInput {
   lab_id: string;
@@ -40,6 +41,7 @@ export async function saveSalesOrder(input: SalesOrderInput) {
       product_id: l.product_id,
       qty: Number(l.qty),
       rate: Number(l.rate) || 0,
+      serial_no: l.serial_no?.trim() || null,
     }))
   );
   if (iErr) return { ok: false as const, error: iErr.message };
