@@ -64,6 +64,7 @@ export const navGroups: NavGroup[] = [
     { href: "/asset-repairs", label: "Repairs", icon: HammerIcon },
   ]},
   { label: "Maintenance", items: [
+    { href: "/maintenance-board", label: "Field Service Board", icon: ClipboardCheckIcon },
     { href: "/maintenance-visits", label: "Visits", icon: StethoscopeIcon },
     { href: "/maintenance-schedules", label: "PM Schedules", icon: CalendarClockIcon },
     { href: "/maintenance-teams", label: "Teams", icon: UsersIcon },

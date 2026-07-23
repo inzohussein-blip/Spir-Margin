@@ -150,6 +150,14 @@ begin
     end if;
 end $$;
 
+-- Demo maintenance visits (feed the field-service board) -------------------
+insert into maintenance_visits (visit_no, lab_id, visit_date, maintenance_type, completion_status, status, service_person, notes) values
+  ('MV-2601', '00000000-0000-0000-0000-0000000000c1', current_date,     'scheduled',   'pending', 'submitted', 'Eng. Ali',  'Preventive maintenance due'),
+  ('MV-2602', '00000000-0000-0000-0000-0000000000c2', current_date - 1, 'breakdown',   'partial', 'submitted', 'Eng. Sara', 'Analyzer error E-14'),
+  ('MV-2603', '00000000-0000-0000-0000-0000000000c1', current_date - 3, 'scheduled',   'full',    'submitted', 'Eng. Ali',  'PM completed'),
+  ('MV-2604', '00000000-0000-0000-0000-0000000000c2', current_date,     'unscheduled', 'pending', 'submitted', 'Eng. Omar', 'Customer call-out')
+on conflict do nothing;
+
 -- Demo support issue -------------------------------------------------------
 do $$
 declare v_lab uuid; v_dev uuid;

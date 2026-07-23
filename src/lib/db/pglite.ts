@@ -39,9 +39,19 @@ const SEED_FILE = path.join(process.cwd(), "supabase", "seed.sql");
 const DATE_OIDS = [1082, 1083, 1114, 1184, 1266];
 const asText = (v: string) => v;
 
-let fkMeta: FkMeta | null = null;
-let dbRef: Db | null = null;
-let bootPromise: Promise<{ db: Db; meta: FkMeta }> | null = null;
+// The connection singleton lives on globalThis, not in module scope: Next.js
+// can load this module more than once (separate server-action and RSC bundles,
+// plus dev HMR), and a per-module `let` would then open a SECOND PGlite
+// instance against the same data dir — so a write on one instance would be
+// invisible to a read on the other. A global handle guarantees every code path
+// shares exactly one database connection.
+interface DbSingleton {
+  fkMeta: FkMeta | null;
+  dbRef: Db | null;
+  bootPromise: Promise<{ db: Db; meta: FkMeta }> | null;
+}
+const g = globalThis as unknown as { __spirDb?: DbSingleton };
+const singleton: DbSingleton = (g.__spirDb ??= { fkMeta: null, dbRef: null, bootPromise: null });
 
 async function introspect(db: Db): Promise<FkMeta> {
   const cols = await db.query<{ table_name: string; column_name: string }>(
@@ -248,10 +258,10 @@ async function bootstrap(): Promise<{ db: Db; meta: FkMeta }> {
 }
 
 export async function getDb(): Promise<{ db: Db; meta: FkMeta }> {
-  if (dbRef && fkMeta) return { db: dbRef, meta: fkMeta };
-  bootPromise ??= bootstrap();
-  const res = await bootPromise;
-  dbRef = res.db;
-  fkMeta = res.meta;
+  if (singleton.dbRef && singleton.fkMeta) return { db: singleton.dbRef, meta: singleton.fkMeta };
+  singleton.bootPromise ??= bootstrap();
+  const res = await singleton.bootPromise;
+  singleton.dbRef = res.db;
+  singleton.fkMeta = res.meta;
   return res;
 }

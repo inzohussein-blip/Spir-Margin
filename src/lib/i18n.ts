@@ -326,6 +326,17 @@ const ar: Record<string, string> = {
   // audit log
   // serial life cycle
   // reorder rules
+  // field service board
+  "Drag": "سحب",
+  "Move back": "إرجاع",
+  "Move forward": "تقديم",
+  "Field Service Board": "لوحة الخدمة الميدانية",
+  "Drag a visit to update its progress.": "اسحب زيارة لتحديث تقدّمها.",
+  "In progress": "قيد التنفيذ",
+  "Drop cards here": "أفلت البطاقات هنا",
+  "scheduled": "مجدولة",
+  "unscheduled": "غير مجدولة",
+  "breakdown": "عطل",
   "Reorder": "إعادة الطلب",
   "Filter by product / supplier…": "تصفية حسب المنتج / المورّد…",
   "Draft purchase orders created": "أوامر الشراء المسودّة المُنشأة",

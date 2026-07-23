@@ -70,6 +70,19 @@ export async function submitMaintenanceVisit(id: string) {
   return { ok: true as const, serviced: data as number };
 }
 
+/** Move a visit across the field-service board (pending → partial → full). */
+export async function setVisitCompletion(id: string, completion: "pending" | "partial" | "full") {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("maintenance_visits")
+    .update({ completion_status: completion, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) return { ok: false as const, error: error.message };
+  revalidatePath("/maintenance-board");
+  revalidatePath("/maintenance-visits");
+  return { ok: true as const };
+}
+
 export async function cancelMaintenanceVisit(id: string) {
   const supabase = createClient();
   const { error } = await supabase
