@@ -26,6 +26,9 @@ export async function createWarrantyClaim(fd: FormData) {
     complaint_raised_by: str(fd, "complaint_raised_by"),
     contact_mobile: str(fd, "contact_mobile"),
     contact_email: str(fd, "contact_email"),
+    billed_to: str(fd, "billed_to") ?? "agent",
+    charge_amount: Number(str(fd, "charge_amount") ?? "0") || 0,
+    insurer_name: str(fd, "insurer_name"),
   });
   if (error) throw new Error(error.message);
   revalidatePath("/warranty");

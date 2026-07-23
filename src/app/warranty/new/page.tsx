@@ -67,6 +67,19 @@ export default async function NewWarrantyClaimPage() {
           <Field label={t(locale, "Contact email")}>
             <TextInput name="contact_email" type="email" />
           </Field>
+          <Field label={t(locale, "Billed to")}>
+            <Select name="billed_to" defaultValue="agent">
+              <option value="agent">{t(locale, "Agent (under warranty)")}</option>
+              <option value="hospital">{t(locale, "Hospital (billable)")}</option>
+              <option value="insurance">{t(locale, "Insurance")}</option>
+            </Select>
+          </Field>
+          <Field label={t(locale, "Charge amount")}>
+            <TextInput name="charge_amount" type="number" step="0.01" defaultValue="0" />
+          </Field>
+          <Field label={t(locale, "Insurer name")}>
+            <TextInput name="insurer_name" placeholder={t(locale, "if insurance")} />
+          </Field>
           <div className="sm:col-span-2">
             <Field label={t(locale, "Complaint")}>
               <TextArea name="complaint" />

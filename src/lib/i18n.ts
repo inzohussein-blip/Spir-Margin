@@ -329,6 +329,17 @@ const ar: Record<string, string> = {
   // field service board
   // maintenance forecast
   // landed costs
+  // warranty billing
+  "Billed to": "جهة الفوترة",
+  "Agent (under warranty)": "الوكيل (ضمن الضمان)",
+  "Hospital (billable)": "المستشفى (قابل للفوترة)",
+  "Insurance": "التأمين",
+  "Charge amount": "مبلغ التكلفة",
+  "Insurer name": "اسم شركة التأمين",
+  "if insurance": "إن كان تأمينًا",
+  "Agent cost (warranty)": "تكلفة الوكيل (ضمان)",
+  "Hospital receivable": "مستحقّات المستشفى",
+  "Insurance receivable": "مستحقّات التأمين",
   "Landed Costs": "التكاليف الإجمالية للاستيراد",
   "New landed cost": "تكلفة استيراد جديدة",
   "Import costs": "تكاليف الاستيراد",

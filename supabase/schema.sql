@@ -1,4 +1,4 @@
--- Spir-Margin — combined schema (all 67 migrations + seed). Run ONCE on an EMPTY DB.
+-- Spir-Margin — combined schema (all 68 migrations + seed). Run ONCE on an EMPTY DB.
 -- Default login: admin@spir.local / admin1234 — change after first sign-in.
 create extension if not exists pgcrypto;
 do $$ begin if not exists (select 1 from pg_roles where rolname='authenticated') then create role authenticated; end if; end $$;
@@ -5493,6 +5493,36 @@ alter table landed_cost_vouchers enable row level security;
 drop policy if exists "authenticated_all" on landed_cost_vouchers;
 create policy "authenticated_all" on landed_cost_vouchers for all to authenticated using (true) with check (true);
 
+-- ===== migration: 0069_warranty_billing.sql =====
+-- =====================================================================
+-- Migration 0069 : Warranty billing party (ported idea from Tryton)
+--
+-- A warranty/AMC repair is paid by someone: the agent (us — covered under
+-- warranty, a cost to the business), the hospital (out-of-warranty, billable),
+-- or an insurer (billable to a third party). Recording who bears each claim's
+-- charge lets the business see its warranty cost vs. its receivables.
+-- =====================================================================
+
+do $$ begin
+    create type warranty_bill_party as enum ('agent','hospital','insurance');
+exception when duplicate_object then null; end $$;
+
+alter table warranty_claims
+    add column if not exists billed_to     warranty_bill_party not null default 'agent',
+    add column if not exists charge_amount numeric(14,2) not null default 0,
+    add column if not exists insurer_name  text;
+
+-- Totals by who pays: agent charges are cost to us, hospital/insurance are
+-- receivables. Only claims that are not cancelled count.
+create or replace view v_warranty_billing as
+select
+    billed_to,
+    count(*)                as claims,
+    coalesce(sum(charge_amount), 0) as total_charge
+from warranty_claims
+where status <> 'cancelled'
+group by billed_to;
+
 -- ===== seed data (demo) =====
 -- =====================================================================
 -- Seed data for local development / demo
@@ -5883,7 +5913,8 @@ insert into _spir_migrations(filename) values
   ('0065_audit_trail.sql'),
   ('0066_reorder_rules.sql'),
   ('0067_maintenance_forecast.sql'),
-  ('0068_landed_costs.sql')
+  ('0068_landed_costs.sql'),
+  ('0069_warranty_billing.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;

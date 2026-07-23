@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { StatCard } from "@/components/dashboard/StatCard";
 import { resolveWarrantyClaimForm } from "@/app/actions/support";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
+
+const money = (n: number) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n || 0);
 
 export const dynamic = "force-dynamic";
 
@@ -27,11 +31,16 @@ const statusBadge: Record<string, string> = {
 export default async function WarrantyPage() {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
-    .from("warranty_claims")
-    .select("id, complaint_date, status, complaint, warranty_amc_status, products(name), labs(name)")
-    .order("complaint_date", { ascending: false });
+  const [{ data }, { data: billing }] = await Promise.all([
+    supabase
+      .from("warranty_claims")
+      .select("id, complaint_date, status, complaint, warranty_amc_status, products(name), labs(name)")
+      .order("complaint_date", { ascending: false }),
+    supabase.from("v_warranty_billing").select("*"),
+  ]);
   const rows = (data as unknown as Row[]) ?? [];
+  const bill = (billing as unknown as { billed_to: string; total_charge: number }[]) ?? [];
+  const byParty = (p: string) => Number(bill.find((b) => b.billed_to === p)?.total_charge ?? 0);
 
   return (
     <div className="space-y-6">
@@ -40,6 +49,11 @@ export default async function WarrantyPage() {
         <Link href="/warranty/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">
           + New claim
         </Link>
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard label={t(locale, "Agent cost (warranty)")} value={money(byParty("agent"))} accent="amber" />
+        <StatCard label={t(locale, "Hospital receivable")} value={money(byParty("hospital"))} accent="brand" />
+        <StatCard label={t(locale, "Insurance receivable")} value={money(byParty("insurance"))} accent="green" />
       </div>
       <Panel title={`${t(locale, "All Claims")} (${rows.length})`}>
         {rows.length === 0 ? (
