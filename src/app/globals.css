@@ -1287,9 +1287,32 @@ tr, .card, [data-desk-shell] table tbody tr {
     0 1px 3px rgba(16, 24, 40, 0.06) !important;
 }
 
-/* Gentle entrance for page content. */
-main > * { animation: spir-fade-in 0.28s cubic-bezier(0.4, 0, 0.2, 1); }
+/* Gentle, quick entrance for page content — snappy so navigation feels light. */
+main > * { animation: spir-fade-in 0.16s cubic-bezier(0.4, 0, 0.2, 1); }
 @keyframes spir-fade-in {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(3px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Top navigation progress bar (shown while a route transition is in flight). */
+#nav-progress {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: 60;
+  height: 2.5px;
+  width: 0;
+  background: linear-gradient(90deg, var(--color-brand), var(--color-brand-dark));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--color-brand) 60%, transparent);
+  opacity: 0;
+  transition: width 0.2s ease, opacity 0.25s ease;
+  pointer-events: none;
+}
+#nav-progress.active { opacity: 1; }
+#nav-progress.done { opacity: 0; }
+
+/* Users who prefer reduced motion get no entrance animation or bar transitions. */
+@media (prefers-reduced-motion: reduce) {
+  main > * { animation: none; }
+  #nav-progress { transition: opacity 0.15s ease; }
 }
