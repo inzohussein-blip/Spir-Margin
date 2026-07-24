@@ -90,6 +90,24 @@ test("the profit summary is reported net of submitted returns", async () => {
   await db.close();
 });
 
+test("a return can repeat the same kit product across lines (0081)", async () => {
+  const db = await bootWithMigrations();
+  const { labId } = await ensureLabAndProduct(db);
+  const k = await kit(db);
+  const two = JSON.stringify([
+    { product_id: k, qty: 1, sell_price: 50 },
+    { product_id: k, qty: 2, sell_price: 50 },
+  ]);
+  // Before 0081 this hit the unique(batch_no, product_id) constraint and failed.
+  const id = (await db.query(`select fn_book_sales_return($1,$2,$3,$4,$5,$6) as id`,
+    [randomUUID(), labId, "", "", "", two])).rows[0].id;
+  assert.ok(id);
+  const batches = await db.query(`select count(*)::int n, coalesce(sum(qty_available),0)::numeric q from kit_batches where product_id=$1`, [k]);
+  assert.equal(batches.rows[0].n, 2, "one restock batch per line");
+  assert.equal(Number(batches.rows[0].q), 3, "restocked 1 + 2");
+  await db.close();
+});
+
 test("a return with no valid lines is rejected", async () => {
   const db = await bootWithMigrations();
   const { labId } = await ensureLabAndProduct(db);

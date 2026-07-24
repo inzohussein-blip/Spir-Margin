@@ -6197,7 +6197,7 @@ begin
         -- Put kit stock back as a dedicated returned-goods batch.
         if v_type = 'kit' then
             insert into kit_batches (batch_no, product_id, qty_received, qty_available, buy_price, sell_price)
-            values (v_no || '-' || substr(v_pid::text, 1, 4), v_pid, v_qty, v_qty, coalesce(v_buy, 0), v_sell);
+            values (v_no || '-L' || (n + 1), v_pid, v_qty, v_qty, coalesce(v_buy, 0), v_sell);
         end if;
         n := n + 1;
     end loop;
@@ -6661,7 +6661,8 @@ insert into _spir_migrations(filename) values
   ('0077_auto_gl_posting.sql'),
   ('0078_sales_order_idempotent.sql'),
   ('0079_audit_financial_docs.sql'),
-  ('0080_sales_returns.sql')
+  ('0080_sales_returns.sql'),
+  ('0081_return_batch_no_fix.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;
