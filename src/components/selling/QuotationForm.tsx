@@ -4,7 +4,7 @@ import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
-import { saveQuotation, type QuotationInput } from "@/app/actions/quotation";
+import { saveQuotation, updateQuotation, type QuotationInput } from "@/app/actions/quotation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleProvider";
@@ -16,13 +16,24 @@ interface ProductOpt extends Opt { sell: number; }
 const cls =
   "mt-1 w-full rounded-md border border-outline-gray-2 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
 
-export function QuotationForm({ labs, products }: { labs: Opt[]; products: ProductOpt[] }) {
+export function QuotationForm({
+  labs,
+  products,
+  quotationId,
+  defaults,
+}: {
+  labs: Opt[];
+  products: ProductOpt[];
+  quotationId?: string;
+  defaults?: QuotationInput;
+}) {
   const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
+  const editing = Boolean(quotationId);
 
   const { register, control, handleSubmit, setValue } = useForm<QuotationInput>({
-    defaultValues: {
+    defaultValues: defaults ?? {
       lab_id: "",
       transaction_date: new Date().toISOString().slice(0, 10),
       valid_till: "",
@@ -36,7 +47,7 @@ export function QuotationForm({ labs, products }: { labs: Opt[]; products: Produ
 
   function onSubmit(values: QuotationInput) {
     start(async () => {
-      const res = await saveQuotation(values);
+      const res = editing ? await updateQuotation(quotationId!, values) : await saveQuotation(values);
       if (res.ok) router.push("/quotations");
     });
   }
@@ -111,7 +122,7 @@ export function QuotationForm({ labs, products }: { labs: Opt[]; products: Produ
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}
-        {t(locale, "Create quotation (draft)")}
+        {editing ? t(locale, "Save changes") : t(locale, "Create quotation (draft)")}
       </Button>
     </form>
   );

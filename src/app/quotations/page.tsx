@@ -1,11 +1,13 @@
 import Link from "next/link";
+import { PencilIcon, Trash2Icon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { ListShell } from "@/components/desk/ListShell";
 import { Pager, PAGE_SIZE, parsePage, pageRange } from "@/components/desk/Pager";
+import { ConfirmSubmit } from "@/components/settings/ConfirmSubmit";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
-import { convertQuotationForm } from "@/app/actions/quotation";
+import { convertQuotationForm, deleteQuotationForm } from "@/app/actions/quotation";
 
 export const dynamic = "force-dynamic";
 
@@ -67,13 +69,29 @@ export default async function QuotationsPage({
                     <td className="px-4 py-2">{Number(q.total_amount).toLocaleString()}</td>
                     <td className="px-4 py-2"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[q.status] ?? "bg-surface-gray-2"}`}>{q.status}</span></td>
                     <td className="px-4 py-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Link href={`/quotations/${q.id}/print`} className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Print")}</Link>
                         {q.status !== "ordered" && (q.labs) ? (
                           <form action={convertQuotationForm}>
                             <input type="hidden" name="id" value={q.id} />
                             <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "→ Sales order")}</button>
                           </form>
+                        ) : null}
+                        {q.status !== "ordered" ? (
+                          <>
+                            <Link href={`/quotations/${q.id}/edit`} className="inline-flex items-center gap-1 rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:border-brand hover:text-brand">
+                              <PencilIcon size={12} /> {t(locale, "Edit")}
+                            </Link>
+                            <form action={deleteQuotationForm}>
+                              <input type="hidden" name="id" value={q.id} />
+                              <ConfirmSubmit
+                                confirmText={t(locale, "Delete this quotation? This cannot be undone.")}
+                                className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                              >
+                                <Trash2Icon size={12} /> {t(locale, "Delete")}
+                              </ConfirmSubmit>
+                            </form>
+                          </>
                         ) : null}
                       </div>
                     </td>

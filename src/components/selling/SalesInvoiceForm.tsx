@@ -4,7 +4,7 @@ import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
-import { saveSalesInvoice, type SalesInvoiceInput } from "@/app/actions/sales_invoice";
+import { saveSalesInvoice, updateSalesInvoice, type SalesInvoiceInput } from "@/app/actions/sales_invoice";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleProvider";
@@ -19,16 +19,21 @@ const cls =
 export function SalesInvoiceForm({
   labs,
   products,
+  invoiceId,
+  defaults,
 }: {
   labs: Opt[];
   products: ProductOpt[];
+  invoiceId?: string;
+  defaults?: SalesInvoiceInput;
 }) {
   const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
+  const editing = Boolean(invoiceId);
 
   const { register, control, handleSubmit, setValue } = useForm<SalesInvoiceInput>({
-    defaultValues: {
+    defaultValues: defaults ?? {
       invoice_no: "",
       lab_id: "",
       posting_date: new Date().toISOString().slice(0, 10),
@@ -49,7 +54,7 @@ export function SalesInvoiceForm({
 
   function onSubmit(values: SalesInvoiceInput) {
     start(async () => {
-      const res = await saveSalesInvoice(values);
+      const res = editing ? await updateSalesInvoice(invoiceId!, values) : await saveSalesInvoice(values);
       if (res.ok) router.push("/sales-invoices");
     });
   }
@@ -125,7 +130,7 @@ export function SalesInvoiceForm({
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}
-        {t(locale, "Create invoice (draft)")}
+        {editing ? t(locale, "Save changes") : t(locale, "Create invoice (draft)")}
       </Button>
     </form>
   );
