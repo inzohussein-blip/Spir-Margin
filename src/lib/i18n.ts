@@ -27,6 +27,18 @@ const ar: Record<string, string> = {
   "Delete this draft invoice? This cannot be undone.": "حذف مسودة الفاتورة هذه؟ لا يمكن التراجع.",
   "Edit quotation": "تعديل عرض السعر",
   "Delete this quotation? This cannot be undone.": "حذف عرض السعر هذا؟ لا يمكن التراجع.",
+  // sales returns
+  "Sales Return": "مرتجع بيع",
+  "Sales Returns": "مرتجعات البيع",
+  "Book return": "تسجيل المرتجع",
+  "New return": "مرتجع جديد",
+  "New Sales Return": "مرتجع بيع جديد",
+  "Return no.": "رقم المرتجع",
+  "Reason": "السبب",
+  "e.g. damaged, wrong item": "مثال: تالف، صنف خاطئ",
+  "Credited (returns)": "المُقيَّد دائناً (المرتجعات)",
+  "Returns": "المرتجعات",
+  "No returns yet — a return restocks kits and reverses the revenue": "لا مرتجعات بعد — المرتجع يعيد الكِتات للمخزون ويعكس الإيراد",
   "العربية": "العربية",
   "English": "English",
   // groups

@@ -29,6 +29,7 @@ export const navGroups: NavGroup[] = [
     { href: "/quotations", label: "Quotations", icon: FileTextIcon },
     { href: "/sales-orders", label: "Sales Orders", icon: ClipboardListIcon },
     { href: "/sales-invoices", label: "Sales Invoices", icon: ReceiptIcon },
+    { href: "/sales-returns", label: "Sales Returns", icon: ArrowLeftRightIcon },
     { href: "/blanket-orders", label: "Blanket Orders", icon: FileSignatureIcon },
     { href: "/credit-limits", label: "Credit Limits", icon: CreditCardIcon },
     { href: "/pricing-rules", label: "Pricing Rules", icon: PercentIcon },
