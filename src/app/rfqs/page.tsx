@@ -37,7 +37,7 @@ export default async function RfqsPage() {
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Requests for Quotation")}</h1>
         <div className="flex gap-2">
           <Link href="/supplier-quotations" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Supplier quotes")}</Link>
-          <Link href="/rfqs/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New RFQ</Link>
+          <Link href="/rfqs/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ {t(locale, "New RFQ")}</Link>
         </div>
       </div>
 

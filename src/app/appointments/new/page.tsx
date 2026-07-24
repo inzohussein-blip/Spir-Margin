@@ -25,10 +25,10 @@ export default async function NewAppointmentPage() {
           </Field>
           <Field label={t(locale, "Purpose")}>
             <Select name="purpose" defaultValue="service">
-              <option value="installation">installation</option>
-              <option value="service">service</option>
-              <option value="training">training</option>
-              <option value="other">other</option>
+              <option value="installation">{t(locale, "installation")}</option>
+              <option value="service">{t(locale, "service")}</option>
+              <option value="training">{t(locale, "training")}</option>
+              <option value="other">{t(locale, "other")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "Lab")}>
@@ -48,8 +48,8 @@ export default async function NewAppointmentPage() {
           </Field>
           <Field label={t(locale, "Status")}>
             <Select name="status" defaultValue="open">
-              <option value="open">open</option>
-              <option value="confirmed">confirmed</option>
+              <option value="open">{t(locale, "open")}</option>
+              <option value="confirmed">{t(locale, "confirmed")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "Contact name")}>

@@ -25,7 +25,7 @@ export default async function NewMaintenanceSchedulePage() {
           </Field>
           <Field label={t(locale, "Device")} required>
             <Select name="device_id" defaultValue="" required>
-              <option value="">Select…</option>
+              <option value="">{t(locale, "Select…")}</option>
               {devices.map((d) => {
                 const prod = (d as { products?: { name?: string } | null }).products;
                 return (
@@ -44,11 +44,11 @@ export default async function NewMaintenanceSchedulePage() {
           </Field>
           <Field label={t(locale, "Periodicity")}>
             <Select name="periodicity" defaultValue="quarterly">
-              <option value="weekly">weekly</option>
-              <option value="monthly">monthly</option>
-              <option value="quarterly">quarterly</option>
-              <option value="half_yearly">half yearly</option>
-              <option value="yearly">yearly</option>
+              <option value="weekly">{t(locale, "weekly")}</option>
+              <option value="monthly">{t(locale, "monthly")}</option>
+              <option value="quarterly">{t(locale, "quarterly")}</option>
+              <option value="half_yearly">{t(locale, "half yearly")}</option>
+              <option value="yearly">{t(locale, "yearly")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "Start date")}>
@@ -67,7 +67,7 @@ export default async function NewMaintenanceSchedulePage() {
           </div>
         </form>
       </FormCard>
-      <p className="text-xs text-ink-gray-5">After creating, press <em>Generate</em> to lay out the visit dates and set the device&apos;s next-maintenance date.</p>
+      <p className="text-xs text-ink-gray-5">{t(locale, "After creating, press")} <em>{t(locale, "Generate")}</em> {t(locale, "to lay out the visit dates and set the device's next-maintenance date.")}</p>
     </div>
   );
 }

@@ -51,7 +51,7 @@ export default async function DeliveryNotesPage({
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Delivery Notes")}</h1>
         <div className="flex gap-2">
           <Link href="/kits" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">← {t(locale, "Kits")}</Link>
-          <Link href="/delivery-notes/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New delivery</Link>
+          <Link href="/delivery-notes/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ {t(locale, "New delivery")}</Link>
         </div>
       </div>
       <Panel title={`${t(locale, "Deliveries")} (${total.toLocaleString()})`}>

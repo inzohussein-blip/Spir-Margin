@@ -39,11 +39,11 @@ export default async function NewOpportunityPage() {
           </Field>
           <Field label={t(locale, "Sales stage")}>
             <Select name="sales_stage" defaultValue="Prospecting">
-              <option>Prospecting</option>
-              <option>Qualification</option>
-              <option>Needs Analysis</option>
-              <option>Proposal</option>
-              <option>Negotiation</option>
+              <option>{t(locale, "Prospecting")}</option>
+              <option>{t(locale, "Qualification")}</option>
+              <option>{t(locale, "Needs Analysis")}</option>
+              <option>{t(locale, "Proposal")}</option>
+              <option>{t(locale, "Negotiation")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "Amount")}>

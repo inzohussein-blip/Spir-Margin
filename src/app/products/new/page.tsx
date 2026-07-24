@@ -48,9 +48,9 @@ export default async function NewProductPage() {
               <option value="" disabled>
                 Select type…
               </option>
-              <option value="device">device</option>
-              <option value="kit">kit</option>
-              <option value="spare_part">spare part</option>
+              <option value="device">{t(locale, "device")}</option>
+              <option value="kit">{t(locale, "kit")}</option>
+              <option value="spare_part">{t(locale, "spare part")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "Item group")}>

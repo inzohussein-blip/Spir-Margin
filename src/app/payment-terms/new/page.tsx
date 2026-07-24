@@ -33,9 +33,9 @@ export default async function NewPaymentTermPage() {
           </Field>
           <Field label={t(locale, "Due date based on")}>
             <Select name="due_date_based_on" defaultValue="day_after_invoice">
-              <option value="day_after_invoice">Day(s) after invoice date</option>
-              <option value="day_after_month_end">Day(s) after end of invoice month</option>
-              <option value="month_after_month_end">Month(s) after end of invoice month</option>
+              <option value="day_after_invoice">{t(locale, "Day(s) after invoice date")}</option>
+              <option value="day_after_month_end">{t(locale, "Day(s) after end of invoice month")}</option>
+              <option value="month_after_month_end">{t(locale, "Month(s) after end of invoice month")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "Mode of payment")}>

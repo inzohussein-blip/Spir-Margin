@@ -35,16 +35,16 @@ export default async function NewCompanyPage() {
           </Field>
           <Field label={t(locale, "Role")}>
             <Select name="role" defaultValue="supplier">
-              <option value="parent">parent (manufacturer)</option>
-              <option value="supplier">supplier</option>
-              <option value="customer">customer</option>
+              <option value="parent">{t(locale, "parent (manufacturer)")}</option>
+              <option value="supplier">{t(locale, "supplier")}</option>
+              <option value="customer">{t(locale, "customer")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "Supplier type")}>
             <Select name="supplier_type" defaultValue="company">
-              <option value="company">company</option>
-              <option value="individual">individual</option>
-              <option value="partnership">partnership</option>
+              <option value="company">{t(locale, "company")}</option>
+              <option value="individual">{t(locale, "individual")}</option>
+              <option value="partnership">{t(locale, "partnership")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "Supplier group")}>

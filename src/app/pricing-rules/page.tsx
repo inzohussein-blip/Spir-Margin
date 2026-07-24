@@ -33,7 +33,7 @@ export default async function PricingRulesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Pricing Rules")}</h1>
-        <Link href="/pricing-rules/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New rule</Link>
+        <Link href="/pricing-rules/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ {t(locale, "New rule")}</Link>
       </div>
 
       <Panel title={`${t(locale, "Rules")} (${rows.length})`}>

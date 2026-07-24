@@ -25,7 +25,7 @@ export default async function NewAssetRepairPage() {
           </Field>
           <Field label={t(locale, "Device")} required>
             <Select name="device_id" defaultValue="" required>
-              <option value="">Select…</option>
+              <option value="">{t(locale, "Select…")}</option>
               {devices.map((d) => {
                 const prod = (d as { products?: { name?: string } | null }).products;
                 return (
@@ -60,7 +60,7 @@ export default async function NewAssetRepairPage() {
           </div>
         </form>
       </FormCard>
-      <p className="text-xs text-ink-gray-5">Raising a repair marks the device as <em>in maintenance</em> until completed.</p>
+      <p className="text-xs text-ink-gray-5">{t(locale, "Raising a repair marks the device as")} <em>{t(locale, "in maintenance")}</em> {t(locale, "until completed.")}</p>
     </div>
   );
 }

@@ -36,7 +36,7 @@ export default async function AccountsPage() {
           <Link href="/journal-entries" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Journal entries")}</Link>
           <Link href="/cost-centers" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Cost centers")}</Link>
           <Link href="/taxes" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Taxes")}</Link>
-          <Link href="/accounts/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New account</Link>
+          <Link href="/accounts/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ {t(locale, "New account")}</Link>
         </div>
       </div>
       <Panel title={`${t(locale, "Accounts")} (${rows.length})`}>

@@ -56,11 +56,11 @@ export default async function NewDevicePage() {
           </Field>
           <Field label={t(locale, "Status")}>
             <Select name="status" defaultValue="in_stock">
-              <option value="in_stock">in stock</option>
-              <option value="installed">installed</option>
-              <option value="in_maintenance">in maintenance</option>
-              <option value="out_of_order">out of order</option>
-              <option value="retired">retired</option>
+              <option value="in_stock">{t(locale, "in stock")}</option>
+              <option value="installed">{t(locale, "installed")}</option>
+              <option value="in_maintenance">{t(locale, "in maintenance")}</option>
+              <option value="out_of_order">{t(locale, "out of order")}</option>
+              <option value="retired">{t(locale, "retired")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "Lab (location)")}>

@@ -34,7 +34,7 @@ export default async function NewItemPricePage() {
         <form action={createItemPrice} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Product")} required>
             <Select name="product_id" required defaultValue="">
-              <option value="" disabled>Select a product…</option>
+              <option value="" disabled>{t(locale, "Select a product…")}</option>
               {products.map((p) => (
                 <option key={p.id} value={p.id}>{p.name} ({p.item_code})</option>
               ))}

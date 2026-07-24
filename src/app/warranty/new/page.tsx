@@ -31,10 +31,10 @@ export default async function NewWarrantyClaimPage() {
           </Field>
           <Field label={t(locale, "Status")}>
             <Select name="status" defaultValue="open">
-              <option value="open">open</option>
-              <option value="work_in_progress">work in progress</option>
-              <option value="closed">closed</option>
-              <option value="cancelled">cancelled</option>
+              <option value="open">{t(locale, "open")}</option>
+              <option value="work_in_progress">{t(locale, "work in progress")}</option>
+              <option value="closed">{t(locale, "closed")}</option>
+              <option value="cancelled">{t(locale, "cancelled")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "Product")}>
@@ -52,10 +52,10 @@ export default async function NewWarrantyClaimPage() {
           <Field label={t(locale, "Warranty / AMC status")}>
             <Select name="warranty_amc_status" defaultValue="">
               <option value="">— none —</option>
-              <option value="under_warranty">under warranty</option>
-              <option value="out_of_warranty">out of warranty</option>
-              <option value="under_amc">under AMC</option>
-              <option value="out_of_amc">out of AMC</option>
+              <option value="under_warranty">{t(locale, "under warranty")}</option>
+              <option value="out_of_warranty">{t(locale, "out of warranty")}</option>
+              <option value="under_amc">{t(locale, "under AMC")}</option>
+              <option value="out_of_amc">{t(locale, "out of AMC")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "Raised by")}>

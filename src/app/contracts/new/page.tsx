@@ -33,9 +33,9 @@ export default async function NewContractPage() {
           </Field>
           <Field label={t(locale, "Status")}>
             <Select name="status" defaultValue="unsigned">
-              <option value="unsigned">unsigned</option>
-              <option value="active">active</option>
-              <option value="inactive">inactive</option>
+              <option value="unsigned">{t(locale, "unsigned")}</option>
+              <option value="active">{t(locale, "active")}</option>
+              <option value="inactive">{t(locale, "inactive")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "Lab")}>
@@ -63,17 +63,17 @@ export default async function NewContractPage() {
             <TextInput name="signee" />
           </Field>
           <div className="sm:col-span-2 mt-2 border-t border-outline-gray-1 pt-3">
-            <p className="mb-1 text-xs font-semibold uppercase text-ink-gray-4">Recurring billing (AMC)</p>
+            <p className="mb-1 text-xs font-semibold uppercase text-ink-gray-4">{t(locale, "Recurring billing (AMC)")}</p>
             <p className="text-xs text-ink-gray-5">
               Set an interval, the service item to charge, and the first billing date to auto-generate invoices from the AMC Billing page.
             </p>
           </div>
           <Field label={t(locale, "Billing interval")}>
             <Select name="billing_interval" defaultValue="none">
-              <option value="none">none (no recurring billing)</option>
-              <option value="monthly">monthly</option>
-              <option value="quarterly">quarterly</option>
-              <option value="annually">annually</option>
+              <option value="none">{t(locale, "none (no recurring billing)")}</option>
+              <option value="monthly">{t(locale, "monthly")}</option>
+              <option value="quarterly">{t(locale, "quarterly")}</option>
+              <option value="annually">{t(locale, "annually")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "Service item")}>

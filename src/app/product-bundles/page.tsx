@@ -29,7 +29,7 @@ export default async function ProductBundlesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Product Bundles")}</h1>
-        <Link href="/product-bundles/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New bundle</Link>
+        <Link href="/product-bundles/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ {t(locale, "New bundle")}</Link>
       </div>
 
       <Panel title={`${t(locale, "Bundles")} (${rows.length})`}>

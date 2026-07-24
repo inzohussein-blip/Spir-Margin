@@ -29,7 +29,7 @@ export default async function CurrencyPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Currency Exchange")}</h1>
-        <Link href="/currency/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New rate</Link>
+        <Link href="/currency/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ {t(locale, "New rate")}</Link>
       </div>
 
       {canSetRate ? <DailyRateCard currentRate={usdIqd} /> : null}

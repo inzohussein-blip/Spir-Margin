@@ -28,7 +28,7 @@ export default async function NewPricingRulePage() {
           </Field>
           <Field label={t(locale, "Product (blank = any)")}>
             <Select name="product_id" defaultValue="">
-              <option value="">any product</option>
+              <option value="">{t(locale, "any product")}</option>
               {products.map((p) => (
                 <option key={p.id as string} value={p.id as string}>{p.name as string}</option>
               ))}
@@ -36,7 +36,7 @@ export default async function NewPricingRulePage() {
           </Field>
           <Field label={t(locale, "Lab (blank = any)")}>
             <Select name="lab_id" defaultValue="">
-              <option value="">any lab</option>
+              <option value="">{t(locale, "any lab")}</option>
               {labs.map((l) => <option key={l.id as string} value={l.id as string}>{l.name as string}</option>)}
             </Select>
           </Field>

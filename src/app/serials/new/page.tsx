@@ -43,20 +43,20 @@ export default async function NewSerialPage() {
           </Field>
           <Field label={t(locale, "Status")}>
             <Select name="status" defaultValue="active">
-              <option value="active">active</option>
-              <option value="inactive">inactive</option>
-              <option value="consumed">consumed</option>
-              <option value="delivered">delivered</option>
-              <option value="expired">expired</option>
+              <option value="active">{t(locale, "active")}</option>
+              <option value="inactive">{t(locale, "inactive")}</option>
+              <option value="consumed">{t(locale, "consumed")}</option>
+              <option value="delivered">{t(locale, "delivered")}</option>
+              <option value="expired">{t(locale, "expired")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "Warranty status")}>
             <Select name="maintenance_status" defaultValue="">
               <option value="">— none —</option>
-              <option value="under_warranty">under warranty</option>
-              <option value="out_of_warranty">out of warranty</option>
-              <option value="under_amc">under AMC</option>
-              <option value="out_of_amc">out of AMC</option>
+              <option value="under_warranty">{t(locale, "under warranty")}</option>
+              <option value="out_of_warranty">{t(locale, "out of warranty")}</option>
+              <option value="under_amc">{t(locale, "under AMC")}</option>
+              <option value="out_of_amc">{t(locale, "out of AMC")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "Warehouse")}>

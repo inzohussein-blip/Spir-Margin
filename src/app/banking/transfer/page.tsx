@@ -33,7 +33,7 @@ export default async function TransferPage() {
           <form action={createInternalTransfer} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label={t(locale, "From account")} required>
               <Select name="from_account_id" required defaultValue="">
-                <option value="" disabled>Select…</option>
+                <option value="" disabled>{t(locale, "Select…")}</option>
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>{a.account_name} ({a.currency})</option>
                 ))}

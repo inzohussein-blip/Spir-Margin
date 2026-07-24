@@ -30,7 +30,7 @@ export default async function MaintenanceTeamsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Maintenance Teams")}</h1>
-        <Link href="/maintenance-teams/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New team</Link>
+        <Link href="/maintenance-teams/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ {t(locale, "New team")}</Link>
       </div>
 
       {rows.length === 0 ? (

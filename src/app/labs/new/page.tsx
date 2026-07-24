@@ -39,8 +39,8 @@ export default async function NewLabPage() {
           </Field>
           <Field label={t(locale, "Status")}>
             <Select name="status" defaultValue="active">
-              <option value="active">active</option>
-              <option value="inactive">inactive</option>
+              <option value="active">{t(locale, "active")}</option>
+              <option value="inactive">{t(locale, "inactive")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "City")}>

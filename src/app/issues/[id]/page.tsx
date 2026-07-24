@@ -45,7 +45,7 @@ export default async function IssueDetailPage({ params }: { params: { id: string
       status={it.status}
       sidebar={
         <dl className="space-y-0.5">
-          <div className="mb-2 text-xs font-semibold uppercase text-ink-gray-4">Details</div>
+          <div className="mb-2 text-xs font-semibold uppercase text-ink-gray-4">{t(locale, "Details")}</div>
           <MetaRow label={t(locale, "Lab")} value={it.labs?.name ?? "—"} />
           <MetaRow label={t(locale, "Device")} value={it.devices?.asset_code ?? "—"} />
           <MetaRow label={t(locale, "Priority")} value={it.priority ?? "—"} />

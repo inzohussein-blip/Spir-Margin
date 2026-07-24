@@ -33,11 +33,11 @@ export default async function NewLeadPage() {
           </Field>
           <Field label={t(locale, "Status")}>
             <Select name="status" defaultValue="lead">
-              <option value="lead">lead</option>
-              <option value="open">open</option>
-              <option value="interested">interested</option>
-              <option value="opportunity">opportunity</option>
-              <option value="do_not_contact">do not contact</option>
+              <option value="lead">{t(locale, "lead")}</option>
+              <option value="open">{t(locale, "open")}</option>
+              <option value="interested">{t(locale, "interested")}</option>
+              <option value="opportunity">{t(locale, "opportunity")}</option>
+              <option value="do_not_contact">{t(locale, "do not contact")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "Source")}>

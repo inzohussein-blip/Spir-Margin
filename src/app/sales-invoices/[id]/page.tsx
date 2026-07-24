@@ -109,7 +109,7 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
               </tbody>
               <tfoot>
                 <tr className="border-t border-outline-gray-2">
-                  <td className="px-4 py-2 font-semibold" colSpan={3}>Total</td>
+                  <td className="px-4 py-2 font-semibold" colSpan={3}>{t(locale, "Total")}</td>
                   <td className="px-4 py-2 font-semibold">{money(Number(inv.total_amount))}</td>
                 </tr>
               </tfoot>

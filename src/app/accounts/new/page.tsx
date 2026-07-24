@@ -24,11 +24,11 @@ export default async function NewAccountPage() {
           <Field label={t(locale, "Account number")}><TextInput name="account_number" /></Field>
           <Field label={t(locale, "Root type")} required>
             <Select name="root_type" defaultValue="asset">
-              <option value="asset">asset</option>
-              <option value="liability">liability</option>
-              <option value="income">income</option>
-              <option value="expense">expense</option>
-              <option value="equity">equity</option>
+              <option value="asset">{t(locale, "asset")}</option>
+              <option value="liability">{t(locale, "liability")}</option>
+              <option value="income">{t(locale, "income")}</option>
+              <option value="expense">{t(locale, "expense")}</option>
+              <option value="equity">{t(locale, "equity")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "Account type")}><TextInput name="account_type" placeholder="Bank / Receivable / …" /></Field>

@@ -32,7 +32,7 @@ export default async function NewWorkOrderPage() {
           </Field>
           <Field label={t(locale, "Finished product (kit)")} required>
             <Select name="product_id" defaultValue="" required>
-              <option value="">Select…</option>
+              <option value="">{t(locale, "Select…")}</option>
               {products.map((p) => (
                 <option key={p.id as string} value={p.id as string}>
                   {p.name as string}{p.item_code ? ` (${p.item_code})` : ""}
