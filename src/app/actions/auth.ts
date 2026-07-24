@@ -23,7 +23,7 @@ export async function loginAction(_prev: unknown, formData: FormData) {
   if (!email || !password) return { error: "Enter your email and password" };
 
   // Brute-force throttle: block further tries once too many have failed.
-  const locked = lockoutRemaining(email);
+  const locked = await lockoutRemaining(email);
   if (locked > 0) {
     const locale = getLocale();
     const mins = Math.ceil(locked / 60);
@@ -35,11 +35,11 @@ export async function loginAction(_prev: unknown, formData: FormData) {
   if (error) return { error: "Sign-in is unavailable right now" };
   const row = (data as SessionUser[] | null)?.[0];
   if (!row) {
-    recordFailure(email);
+    await recordFailure(email);
     return { error: "Invalid email or password" };
   }
 
-  recordSuccess(email);
+  await recordSuccess(email);
   const token = await createSessionToken(row);
   cookies().set(SESSION_COOKIE, token, cookieOptions);
   redirect("/");
