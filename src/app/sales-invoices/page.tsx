@@ -9,12 +9,17 @@ import { ListSearch } from "@/components/desk/ListSearch";
 import { ConfirmSubmit } from "@/components/settings/ConfirmSubmit";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
+import { getUsdIqdRate } from "@/app/actions/currency";
 import {
   submitSalesInvoiceForm,
   cancelSalesInvoiceForm,
   recordInvoicePaymentForm,
   deleteSalesInvoiceForm,
 } from "@/app/actions/sales_invoice";
+
+/** IQD equivalent for a USD amount, using the live daily rate (blank if unset). */
+const iqd = (n: number, rate: number) =>
+  rate > 0 ? `${new Intl.NumberFormat("en-US").format(Math.round(n * rate))} د.ع` : undefined;
 
 export const dynamic = "force-dynamic";
 
@@ -69,12 +74,13 @@ export default async function SalesInvoicesPage({
   const agg = (aggData as unknown as { status: string; total_amount: number; outstanding: number }[]) ?? [];
   const billed = agg.filter((r) => r.status !== "cancelled").reduce((s, r) => s + Number(r.total_amount), 0);
   const outstanding = agg.filter((r) => r.status !== "cancelled").reduce((s, r) => s + Number(r.outstanding), 0);
+  const rate = await getUsdIqdRate();
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label={t(locale, "Billed")} value={billed.toLocaleString()} accent="brand" />
-        <StatCard label={t(locale, "Outstanding")} value={outstanding.toLocaleString()} accent="amber" />
+        <StatCard label={t(locale, "Billed")} value={billed.toLocaleString()} hint={iqd(billed, rate)} accent="brand" />
+        <StatCard label={t(locale, "Outstanding")} value={outstanding.toLocaleString()} hint={iqd(outstanding, rate)} accent="amber" />
         <StatCard label={t(locale, "Invoices")} value={agg.length.toLocaleString()} accent="green" />
       </div>
 
