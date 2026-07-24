@@ -5,6 +5,7 @@ import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { ListShell } from "@/components/desk/ListShell";
+import { Pager, PAGE_SIZE, parsePage, pageRange } from "@/components/desk/Pager";
 import { ConfirmSubmit } from "@/components/settings/ConfirmSubmit";
 import { deliverSalesOrderForm, cancelSalesOrderForm, deleteSalesOrderForm } from "@/app/actions/selling";
 
@@ -27,20 +28,28 @@ const statusBadge: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
-export default async function SalesOrdersPage() {
+export default async function SalesOrdersPage({
+  searchParams,
+}: {
+  searchParams: { page?: string };
+}) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const page = parsePage(searchParams?.page);
+  const [from, to] = pageRange(page);
+  const { data, count } = await supabase
     .from("sales_orders")
-    .select("id, transaction_date, delivery_date, status, total_amount, labs(name), sales_order_items(id)")
-    .order("transaction_date", { ascending: false });
+    .select("id, transaction_date, delivery_date, status, total_amount, labs(name), sales_order_items(id)", { count: "exact" })
+    .order("transaction_date", { ascending: false })
+    .range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
 
   return (
     <ListShell
       title={t(locale, "Sales Orders")}
       breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Selling") }]}
-      count={rows.length}
+      count={total}
       newHref="/sales-orders/new"
       newLabel={t(locale, "New order")}
     >
@@ -112,6 +121,7 @@ export default async function SalesOrdersPage() {
                 ))}
               </tbody>
             </table>
+            <Pager page={page} pageSize={PAGE_SIZE} total={total} hrefFor={(p) => `/sales-orders?page=${p}`} />
           </div>
         )}
     </ListShell>

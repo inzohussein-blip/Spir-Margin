@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { ListShell } from "@/components/desk/ListShell";
+import { Pager, PAGE_SIZE, parsePage, pageRange } from "@/components/desk/Pager";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { MonitoringUnauthorized } from "@/components/monitoring/Unauthorized";
@@ -22,34 +23,46 @@ const ACTION_STYLE: Record<string, string> = {
 };
 const ACTION_KEY: Record<string, string> = { INSERT: "Created", UPDATE: "Changed", DELETE: "Deleted" };
 
-export default async function ChangeLogPage() {
+export default async function ChangeLogPage({
+  searchParams,
+}: {
+  searchParams: { page?: string };
+}) {
   const locale = getLocale();
   const me = await getCurrentUser();
   if (!me || (me.role !== "admin" && me.role !== "manager")) return <MonitoringUnauthorized />;
 
   const supabase = createClient();
+  const page = parsePage(searchParams?.page);
+  const [from, to] = pageRange(page);
   // Focus on what was changed or deleted (the audit trail also records inserts).
-  const { data } = await supabase
-    .from("audit_log")
-    .select("id, table_name, record_id, action, actor, changed_at, changed_fields")
-    .in("action", ["UPDATE", "DELETE"])
-    .order("changed_at", { ascending: false })
-    .limit(300);
+  // One page of entries for the table, plus whole-log counts for the cards.
+  const [{ data, count }, delCount, updCount] = await Promise.all([
+    supabase
+      .from("audit_log")
+      .select("id, table_name, record_id, action, actor, changed_at, changed_fields", { count: "exact" })
+      .in("action", ["UPDATE", "DELETE"])
+      .order("changed_at", { ascending: false })
+      .range(from, to),
+    supabase.from("audit_log").select("id", { count: "exact" }).eq("action", "DELETE").limit(1),
+    supabase.from("audit_log").select("id", { count: "exact" }).eq("action", "UPDATE").limit(1),
+  ]);
   const rows = (data as unknown as Row[]) ?? [];
-  const deletes = rows.filter((r) => r.action === "DELETE").length;
-  const updates = rows.filter((r) => r.action === "UPDATE").length;
+  const total = count ?? rows.length;
+  const deletes = delCount.count ?? 0;
+  const updates = updCount.count ?? 0;
 
   return (
     <ListShell
       title={t(locale, "Change & Deletion Log")}
       breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Monitoring") }]}
-      count={rows.length}
+      count={total}
       filterPlaceholder={t(locale, "Filter by table / user…")}
     >
       <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-3">
-        <StatCard label={t(locale, "Deletions")} value={String(deletes)} accent={deletes ? "red" : "green"} />
-        <StatCard label={t(locale, "Changes")} value={String(updates)} accent="amber" />
-        <StatCard label={t(locale, "Total tracked")} value={String(rows.length)} accent="brand" />
+        <StatCard label={t(locale, "Deletions")} value={deletes.toLocaleString()} accent={deletes ? "red" : "green"} />
+        <StatCard label={t(locale, "Changes")} value={updates.toLocaleString()} accent="amber" />
+        <StatCard label={t(locale, "Total tracked")} value={total.toLocaleString()} accent="brand" />
       </div>
 
       <div className="border-b border-outline-gray-1 bg-surface-gray-1/60 px-4 py-2 text-xs text-ink-gray-5">
@@ -92,6 +105,7 @@ export default async function ChangeLogPage() {
               ))}
             </tbody>
           </table>
+          <Pager page={page} pageSize={PAGE_SIZE} total={total} hrefFor={(p) => `/monitoring/changes?page=${p}`} />
         </div>
       )}
     </ListShell>

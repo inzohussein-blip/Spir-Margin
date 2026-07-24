@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { Pager, PAGE_SIZE, parsePage, pageRange } from "@/components/desk/Pager";
 import { submitDeliveryNoteForm } from "@/app/actions/delivery";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -17,14 +18,22 @@ const statusBadge: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
-export default async function DeliveryNotesPage() {
+export default async function DeliveryNotesPage({
+  searchParams,
+}: {
+  searchParams: { page?: string };
+}) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const page = parsePage(searchParams?.page);
+  const [from, to] = pageRange(page);
+  const { data, count } = await supabase
     .from("delivery_notes")
-    .select("id, posting_date, status, notes, labs(name), delivery_note_items(id)")
-    .order("posting_date", { ascending: false });
+    .select("id, posting_date, status, notes, labs(name), delivery_note_items(id)", { count: "exact" })
+    .order("posting_date", { ascending: false })
+    .range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -34,7 +43,7 @@ export default async function DeliveryNotesPage() {
           <Link href="/delivery-notes/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New delivery</Link>
         </div>
       </div>
-      <Panel title={`${t(locale, "Deliveries")} (${rows.length})`}>
+      <Panel title={`${t(locale, "Deliveries")} (${total.toLocaleString()})`}>
         {rows.length === 0 ? (
           <EmptyRow text={t(locale, "No delivery notes — submitting one withdraws kit stock to the lab")} />
         ) : (
@@ -65,6 +74,7 @@ export default async function DeliveryNotesPage() {
                 ))}
               </tbody>
             </table>
+            <Pager page={page} pageSize={PAGE_SIZE} total={total} hrefFor={(p) => `/delivery-notes?page=${p}`} />
           </div>
         )}
       </Panel>

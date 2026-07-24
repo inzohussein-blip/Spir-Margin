@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { ListShell } from "@/components/desk/ListShell";
+import { Pager, PAGE_SIZE, parsePage, pageRange } from "@/components/desk/Pager";
 import { ConfirmSubmit } from "@/components/settings/ConfirmSubmit";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -34,15 +35,27 @@ const statusBadge: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
-export default async function PurchaseOrdersPage() {
+export default async function PurchaseOrdersPage({
+  searchParams,
+}: {
+  searchParams: { page?: string };
+}) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const page = parsePage(searchParams?.page);
+  const [from, to] = pageRange(page);
+  const { data, count } = await supabase
     .from("purchase_orders")
-    .select("id, po_no, transaction_date, required_by, status, total_amount, companies:supplier_id(name), purchase_order_items(id)")
-    .order("transaction_date", { ascending: false });
+    .select("id, po_no, transaction_date, required_by, status, total_amount, companies:supplier_id(name), purchase_order_items(id)", { count: "exact" })
+    .order("transaction_date", { ascending: false })
+    .range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
-  const open = rows.filter((r) => r.status === "draft" || r.status === "submitted");
+  const total = count ?? rows.length;
+
+  // Stat cards span the whole table, not just this page.
+  const { data: aggData } = await supabase.from("purchase_orders").select("status, total_amount");
+  const agg = (aggData as unknown as { status: string; total_amount: number }[]) ?? [];
+  const open = agg.filter((r) => r.status === "draft" || r.status === "submitted");
   const openValue = open.reduce((s, r) => s + Number(r.total_amount), 0);
 
   return (
@@ -50,13 +63,13 @@ export default async function PurchaseOrdersPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label={t(locale, "Open orders")} value={String(open.length)} accent="amber" />
         <StatCard label={t(locale, "Open value")} value={openValue.toLocaleString()} accent="brand" />
-        <StatCard label={t(locale, "Total")} value={String(rows.length)} accent="green" />
+        <StatCard label={t(locale, "Total")} value={total.toLocaleString()} accent="green" />
       </div>
 
       <ListShell
         title={t(locale, "Purchase Orders")}
         breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Buying") }]}
-        count={rows.length}
+        count={total}
         newHref="/purchase-orders/new"
         newLabel={t(locale, "New order")}
         actions={<Link href="/purchases" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Purchases")}</Link>}
@@ -136,6 +149,7 @@ export default async function PurchaseOrdersPage() {
                 ))}
               </tbody>
             </table>
+            <Pager page={page} pageSize={PAGE_SIZE} total={total} hrefFor={(p) => `/purchase-orders?page=${p}`} />
           </div>
         )}
       </ListShell>

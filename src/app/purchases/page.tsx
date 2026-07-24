@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { Pager, PAGE_SIZE, parsePage, pageRange } from "@/components/desk/Pager";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { receivePurchaseForm, cancelPurchaseForm } from "@/app/actions/purchasing";
 import { getLocale } from "@/lib/i18n-server";
@@ -25,17 +26,25 @@ const statusBadge: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
-export default async function PurchasesPage() {
+export default async function PurchasesPage({
+  searchParams,
+}: {
+  searchParams: { page?: string };
+}) {
   const locale = getLocale();
   const supabase = createClient();
-  const [{ data }, { data: summary }] = await Promise.all([
+  const page = parsePage(searchParams?.page);
+  const [from, to] = pageRange(page);
+  const [{ data, count }, { data: summary }] = await Promise.all([
     supabase
       .from("purchase_invoices")
-      .select("id, reference_no, posting_date, due_date, status, total_amount, companies(name), purchase_items(id)")
-      .order("posting_date", { ascending: false }),
+      .select("id, reference_no, posting_date, due_date, status, total_amount, companies(name), purchase_items(id)", { count: "exact" })
+      .order("posting_date", { ascending: false })
+      .range(from, to),
     supabase.from("v_purchase_summary").select("*").single(),
   ]);
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
   const s = (summary as { total_received_cost: number; total_draft_cost: number; received_count: number; draft_count: number }) ?? null;
 
   return (
@@ -56,11 +65,11 @@ export default async function PurchasesPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatCard label={t(locale, "Received cost")} value={Number(s.total_received_cost).toLocaleString()} hint={`${s.received_count} received`} accent="green" />
           <StatCard label={t(locale, "Draft cost")} value={Number(s.total_draft_cost).toLocaleString()} hint={`${s.draft_count} draft`} accent="amber" />
-          <StatCard label={t(locale, "Purchases")} value={String(rows.length)} accent="brand" />
+          <StatCard label={t(locale, "Purchases")} value={total.toLocaleString()} accent="brand" />
         </div>
       )}
 
-      <Panel title={`${t(locale, "All Purchases")} (${rows.length})`}>
+      <Panel title={`${t(locale, "All Purchases")} (${total.toLocaleString()})`}>
         {rows.length === 0 ? (
           <EmptyRow text={t(locale, "No purchases yet — record buying kits/devices from a supplier")} />
         ) : (
@@ -112,6 +121,7 @@ export default async function PurchasesPage() {
                 ))}
               </tbody>
             </table>
+            <Pager page={page} pageSize={PAGE_SIZE} total={total} hrefFor={(p) => `/purchases?page=${p}`} />
           </div>
         )}
       </Panel>

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { ListShell } from "@/components/desk/ListShell";
+import { Pager, PAGE_SIZE, parsePage, pageRange } from "@/components/desk/Pager";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
 import {
@@ -33,29 +34,46 @@ const statusBadge: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
-export default async function SalesInvoicesPage() {
+export default async function SalesInvoicesPage({
+  searchParams,
+}: {
+  searchParams: { page?: string };
+}) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const page = parsePage(searchParams?.page);
+  const [from, to] = pageRange(page);
+
+  // One page of rows for the table (bounded), plus the true total for the pager.
+  const { data, count } = await supabase
     .from("sales_invoices")
-    .select("id, invoice_no, posting_date, due_date, status, total_amount, paid_amount, outstanding, labs(name)")
-    .order("posting_date", { ascending: false });
+    .select("id, invoice_no, posting_date, due_date, status, total_amount, paid_amount, outstanding, labs(name)", { count: "exact" })
+    .order("posting_date", { ascending: false })
+    .range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
-  const billed = rows.filter((r) => r.status !== "cancelled").reduce((s, r) => s + Number(r.total_amount), 0);
-  const outstanding = rows.filter((r) => r.status !== "cancelled").reduce((s, r) => s + Number(r.outstanding), 0);
+  const total = count ?? rows.length;
+
+  // Totals must reflect the whole ledger, not just this page — fetch a light
+  // aggregate (numeric columns only, no embed).
+  const { data: aggData } = await supabase
+    .from("sales_invoices")
+    .select("status, total_amount, outstanding");
+  const agg = (aggData as unknown as { status: string; total_amount: number; outstanding: number }[]) ?? [];
+  const billed = agg.filter((r) => r.status !== "cancelled").reduce((s, r) => s + Number(r.total_amount), 0);
+  const outstanding = agg.filter((r) => r.status !== "cancelled").reduce((s, r) => s + Number(r.outstanding), 0);
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label={t(locale, "Billed")} value={billed.toLocaleString()} accent="brand" />
         <StatCard label={t(locale, "Outstanding")} value={outstanding.toLocaleString()} accent="amber" />
-        <StatCard label={t(locale, "Invoices")} value={String(rows.length)} accent="green" />
+        <StatCard label={t(locale, "Invoices")} value={total.toLocaleString()} accent="green" />
       </div>
 
       <ListShell
         title={t(locale, "Sales Invoices")}
         breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Accounting") }]}
-        count={rows.length}
+        count={total}
         newHref="/sales-invoices/new"
         newLabel={t(locale, "New invoice")}
         actions={<Link href="/sales-orders" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Sales orders")}</Link>}
@@ -117,6 +135,12 @@ export default async function SalesInvoicesPage() {
                 ))}
               </tbody>
             </table>
+            <Pager
+              page={page}
+              pageSize={PAGE_SIZE}
+              total={total}
+              hrefFor={(p) => `/sales-invoices?page=${p}`}
+            />
           </div>
         )}
       </ListShell>

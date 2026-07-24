@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { ListShell } from "@/components/desk/ListShell";
+import { Pager, PAGE_SIZE, parsePage, pageRange } from "@/components/desk/Pager";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
 import { convertQuotationForm } from "@/app/actions/quotation";
@@ -20,19 +21,27 @@ const statusBadge: Record<string, string> = {
   expired: "bg-amber-100 text-amber-700",
 };
 
-export default async function QuotationsPage() {
+export default async function QuotationsPage({
+  searchParams,
+}: {
+  searchParams: { page?: string };
+}) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const page = parsePage(searchParams?.page);
+  const [from, to] = pageRange(page);
+  const { data, count } = await supabase
     .from("quotations")
-    .select("id, transaction_date, valid_till, status, total_amount, labs(name), quotation_items(id)")
-    .order("transaction_date", { ascending: false });
+    .select("id, transaction_date, valid_till, status, total_amount, labs(name), quotation_items(id)", { count: "exact" })
+    .order("transaction_date", { ascending: false })
+    .range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
   return (
     <ListShell
       title={t(locale, "Quotations")}
       breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Selling") }]}
-      count={rows.length}
+      count={total}
       newHref="/quotations/new"
       newLabel={t(locale, "New quotation")}
       actions={<Link href="/sales-orders" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Sales orders")}</Link>}
@@ -72,6 +81,7 @@ export default async function QuotationsPage() {
                 ))}
               </tbody>
             </table>
+            <Pager page={page} pageSize={PAGE_SIZE} total={total} hrefFor={(p) => `/quotations?page=${p}`} />
           </div>
         )}
     </ListShell>

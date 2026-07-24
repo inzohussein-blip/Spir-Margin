@@ -15,6 +15,12 @@ const ar: Record<string, string> = {
   "Records": "السجلات",
   "Sign out": "تسجيل الخروج",
   "Account": "الحساب",
+  // pagination
+  "Showing": "عرض",
+  "to": "إلى",
+  "of": "من",
+  "Previous": "السابق",
+  "Next": "التالي",
   "العربية": "العربية",
   "English": "English",
   // groups

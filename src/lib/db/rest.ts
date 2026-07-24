@@ -168,6 +168,7 @@ class Query implements PromiseLike<Result> {
   private filters: Filter[] = [];
   private orders: Order[] = [];
   private limitN?: number;
+  private offsetN?: number;
   private singleRow = false;
   private payload: Record<string, unknown> | Record<string, unknown>[] | null = null;
   private updateVals: Record<string, unknown> | null = null;
@@ -184,7 +185,7 @@ class Query implements PromiseLike<Result> {
     return this;
   }
 
-  select(cols = "*") {
+  select(cols = "*", opts?: { count?: "exact" | "planned" | "estimated"; head?: boolean }) {
     if (this.op === "insert" || this.op === "update" || this.op === "delete") {
       this.returning = true;
       if (cols !== "*") this.selectStr = cols;
@@ -192,6 +193,7 @@ class Query implements PromiseLike<Result> {
     }
     this.op = "select";
     this.selectStr = cols;
+    if (opts?.count) this.wantCount = true;
     return this;
   }
   insert(payload: Record<string, unknown> | Record<string, unknown>[]) {
@@ -232,6 +234,12 @@ class Query implements PromiseLike<Result> {
     return this;
   }
   limit(n: number) { this.limitN = n; return this; }
+  /** Inclusive row window like supabase-js: range(0, 9) returns the first 10 rows. */
+  range(from: number, to: number) {
+    this.offsetN = Math.max(0, from);
+    this.limitN = Math.max(0, to - from + 1);
+    return this;
+  }
   single() { this.singleRow = true; return this; }
   maybeSingle() { this.singleRow = true; return this; }
 
@@ -331,6 +339,7 @@ class Query implements PromiseLike<Result> {
       }
       if (this.limitN != null) sql += ` limit ${this.limitN}`;
       if (this.singleRow) sql += " limit 1";
+      if (this.offsetN != null && this.offsetN > 0) sql += ` offset ${this.offsetN}`;
     } else if (this.op === "insert") {
       const rows = Array.isArray(this.payload) ? this.payload : [this.payload!];
       if (rows.length === 0) return { data: this.singleRow ? null : [], error: null };
@@ -381,7 +390,19 @@ class Query implements PromiseLike<Result> {
           ? await db.query<Record<string, unknown>>(sql, params)
           : await withAuditActor(db, () => db.query<Record<string, unknown>>(sql, params));
       const rows = res.rows ?? [];
-      const count = this.wantCount ? res.affectedRows ?? rows.length : undefined;
+      let count: number | undefined;
+      if (this.wantCount) {
+        if (this.op === "select") {
+          // The total matching rows, independent of limit/offset — needed so
+          // callers can paginate. Re-uses the same filters with fresh params.
+          const cparams: unknown[] = [];
+          const csql = `select count(*)::int as n from ${q(this.table)}` + this.whereSql(cparams);
+          const cres = await db.query<{ n: number }>(csql, cparams);
+          count = cres.rows?.[0]?.n ?? rows.length;
+        } else {
+          count = res.affectedRows ?? rows.length;
+        }
+      }
       if (this.singleRow) {
         return { data: rows[0] ?? null, error: null, count };
       }
