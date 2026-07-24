@@ -66,11 +66,11 @@ export default async function CreditLimitsPage() {
                     <td className="px-4 py-2 text-ink-gray-5">{Number(r.credit_limit) > 0 ? money(Number(r.credit_limit)) : "—"}</td>
                     <td className="px-4 py-2">
                       {Number(r.credit_limit) === 0 ? (
-                        <span className="text-xs text-ink-gray-4">no limit</span>
+                        <span className="text-xs text-ink-gray-4">{t(locale, "no limit")}</span>
                       ) : r.over_limit ? (
-                        <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">over limit</span>
+                        <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">{t(locale, "over limit")}</span>
                       ) : (
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">within limit</span>
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">{t(locale, "within limit")}</span>
                       )}
                     </td>
                     <td className="px-4 py-2">

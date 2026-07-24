@@ -62,7 +62,7 @@ export default async function IssueDetailPage({ params }: { params: { id: string
             {it.description ? (
               <p className="whitespace-pre-wrap text-ink-gray-7">{it.description}</p>
             ) : (
-              <p className="text-ink-gray-4">No description.</p>
+              <p className="text-ink-gray-4">{t(locale, "No description.")}</p>
             )}
           </div>
         </Panel>

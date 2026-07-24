@@ -31,7 +31,7 @@ export default function NewBankAccountPage() {
             <Select name="account_type" defaultValue="">
               <option value="">— none —</option>
               <option value="Current">Current</option>
-              <option value="Savings">Savings</option>
+              <option value="Savings">{t(locale, "Savings")}</option>
               <option value="Credit Card">Credit Card</option>
             </Select>
           </Field>

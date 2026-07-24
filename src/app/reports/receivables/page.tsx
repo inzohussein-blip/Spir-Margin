@@ -68,7 +68,7 @@ export default async function ReceivablesReport() {
             </tbody>
             <tfoot>
               <tr className="border-t border-outline-gray-2 font-semibold">
-                <td className="px-4 py-2" colSpan={6}>Total outstanding</td>
+                <td className="px-4 py-2" colSpan={6}>{t(locale, "Total outstanding")}</td>
                 <td className="px-4 py-2 text-right">{money(total)}</td>
               </tr>
             </tfoot>

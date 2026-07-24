@@ -22,7 +22,7 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Reports")}</h1>
-        <p className="text-sm text-ink-gray-5">Financial, sales and stock analytics.</p>
+        <p className="text-sm text-ink-gray-5">{t(locale, "Financial, sales and stock analytics.")}</p>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {REPORTS.map((r) => (

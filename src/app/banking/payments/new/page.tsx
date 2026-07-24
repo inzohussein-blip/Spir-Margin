@@ -32,9 +32,9 @@ export default async function NewPaymentPage() {
         <form action={createPaymentEntry} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Payment type")} required>
             <Select name="payment_type" required defaultValue="receive">
-              <option value="receive">Receive (from lab)</option>
-              <option value="pay">Pay (to supplier)</option>
-              <option value="internal_transfer">Internal transfer</option>
+              <option value="receive">{t(locale, "Receive (from lab)")}</option>
+              <option value="pay">{t(locale, "Pay (to supplier)")}</option>
+              <option value="internal_transfer">{t(locale, "Internal transfer")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "Posting date")}>

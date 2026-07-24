@@ -18,7 +18,7 @@ export default async function UsersPage() {
     return (
       <div className="rounded-lg border border-outline-gray-2 bg-surface-white p-8 text-center">
         <h1 className="text-lg font-semibold text-ink-gray-8">{t(locale, "Admins only")}</h1>
-        <p className="mt-1 text-sm text-ink-gray-5">You need an administrator account to manage users.</p>
+        <p className="mt-1 text-sm text-ink-gray-5">{t(locale, "You need an administrator account to manage users.")}</p>
       </div>
     );
   }
@@ -31,7 +31,7 @@ export default async function UsersPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Users")}</h1>
-        <p className="text-sm text-ink-gray-5">Manage who can sign in and their role.</p>
+        <p className="text-sm text-ink-gray-5">{t(locale, "Manage who can sign in and their role.")}</p>
       </div>
 
       <Panel title={t(locale, "Add a user")}>

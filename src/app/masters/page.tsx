@@ -53,7 +53,7 @@ export default async function MastersPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Lookup Masters")}</h1>
-      <p className="text-sm text-ink-gray-5">Reference lists used across CRM &amp; selling forms.</p>
+      <p className="text-sm text-ink-gray-5">{t(locale, "Reference lists used across CRM & selling forms.")}</p>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <NameMaster title={t(locale, "Sales Stages")} table="sales_stages" rows={(stages as Named[]) ?? []} />

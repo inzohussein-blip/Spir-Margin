@@ -17,7 +17,7 @@ export default function ToolsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Tools")}</h1>
-        <p className="text-sm text-ink-gray-5">Handy calculators and converters.</p>
+        <p className="text-sm text-ink-gray-5">{t(locale, "Handy calculators and converters.")}</p>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {TOOLS.map((t) => (

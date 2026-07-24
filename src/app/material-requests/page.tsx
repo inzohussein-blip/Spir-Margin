@@ -57,7 +57,7 @@ export default async function MaterialRequestsPage() {
                       {m.status === "draft" ? (
                         <form action={convertMaterialRequestForm}>
                           <input type="hidden" name="id" value={m.id} />
-                          <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">→ Purchase</button>
+                          <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "→ Purchase")}</button>
                         </form>
                       ) : <span className="text-xs text-ink-gray-4">—</span>}
                     </td>

@@ -26,7 +26,7 @@ export default async function SettingsPage() {
     return (
       <div className="rounded-2xl border border-outline-gray-2 bg-surface-white p-8 text-center">
         <h1 className="text-lg font-semibold text-ink-gray-8">{t(locale, "Admins only")}</h1>
-        <p className="mt-1 text-sm text-ink-gray-5">You need an administrator account to manage settings.</p>
+        <p className="mt-1 text-sm text-ink-gray-5">{t(locale, "You need an administrator account to manage settings.")}</p>
       </div>
     );
   }

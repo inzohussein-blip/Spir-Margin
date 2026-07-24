@@ -39,7 +39,7 @@ export default async function PurchaseSpendReport() {
               </tr>
             ))}
           </tbody>
-          <tfoot><tr className="border-t border-outline-gray-2 font-semibold"><td className="px-4 py-2" colSpan={2}>Total spend</td><td className="px-4 py-2 text-right">{money(total)}</td></tr></tfoot>
+          <tfoot><tr className="border-t border-outline-gray-2 font-semibold"><td className="px-4 py-2" colSpan={2}>{t(locale, "Total spend")}</td><td className="px-4 py-2 text-right">{money(total)}</td></tr></tfoot>
         </table>
       )}
     </ListShell>

@@ -83,7 +83,7 @@ export default async function RfqDetailPage({ params }: { params: { id: string }
                     </td>
                     <td className="px-4 py-2">
                       {s.supplier_quotation_id ? (
-                        <Link href="/supplier-quotations" className="text-xs text-brand hover:underline">view quotation</Link>
+                        <Link href="/supplier-quotations" className="text-xs text-brand hover:underline">{t(locale, "view quotation")}</Link>
                       ) : (
                         <form action={rfqToQuotationForm} className="flex items-center gap-1">
                           <input type="hidden" name="rfq_supplier_id" value={s.id} />
