@@ -1,14 +1,16 @@
 "use client";
 
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   PlusIcon, Trash2Icon, Loader2Icon, MinusIcon, FlaskConicalIcon,
   CalendarDaysIcon, ScanBarcodeIcon, PackageIcon, StickyNoteIcon, ShoppingCartIcon,
 } from "lucide-react";
-import { saveSalesOrder, updateSalesOrder, type SalesOrderInput } from "@/app/actions/selling";
+import { updateSalesOrder, type SalesOrderInput } from "@/app/actions/selling";
 import { useLocale } from "@/components/LocaleProvider";
+import { useOffline } from "@/components/offline/OfflineProvider";
+import { CloudOffIcon } from "lucide-react";
 import { t } from "@/lib/i18n";
 
 interface Opt { id: string; label: string; }
@@ -34,9 +36,12 @@ export function SalesOrderForm({
 }) {
   const locale = useLocale();
   const router = useRouter();
+  const { online, submitSalesOrder } = useOffline();
   const [pending, start] = useTransition();
+  const [queued, setQueued] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const { register, control, handleSubmit, setValue } = useForm<SalesOrderInput>({
+  const { register, control, handleSubmit, setValue, reset } = useForm<SalesOrderInput>({
     defaultValues: defaults ?? {
       lab_id: "",
       transaction_date: new Date().toISOString().slice(0, 10),
@@ -60,9 +65,33 @@ export function SalesOrderForm({
     setValue(`items.${index}.qty`, Math.max(1, cur + delta));
   }
   function onSubmit(values: SalesOrderInput) {
+    setError(null);
+    setQueued(false);
     start(async () => {
-      const res = orderId ? await updateSalesOrder(orderId, values) : await saveSalesOrder(values);
-      if (res.ok) router.push(orderId ? `/sales-orders/${orderId}` : "/sales-orders");
+      // Editing is online-only; creating goes through the offline outbox so a
+      // new order can be captured with no connection and synced on reconnect.
+      if (orderId) {
+        const res = await updateSalesOrder(orderId, values);
+        if (res.ok) router.push(`/sales-orders/${orderId}`);
+        else setError(res.error);
+        return;
+      }
+      const labName = labs.find((l) => l.id === values.lab_id)?.label;
+      const res = await submitSalesOrder({
+        labId: values.lab_id,
+        labName,
+        transaction_date: values.transaction_date,
+        delivery_date: values.delivery_date ?? null,
+        notes: values.notes,
+        lines: values.items,
+      });
+      if (res.status === "synced") router.push("/sales-orders");
+      else if (res.status === "queued") {
+        // Offline: keep working — confirm, reset for the next order (don't
+        // navigate, the list needs the server).
+        setQueued(true);
+        reset();
+      } else setError(res.error);
     });
   }
 
@@ -205,13 +234,29 @@ export function SalesOrderForm({
         </div>
       </section>
 
+      {error && (
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+      )}
+      {queued && (
+        <p className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700">
+          <CloudOffIcon size={16} /> {t(locale, "Saved offline — it will sync automatically when you’re back online.")}
+        </p>
+      )}
+      {!online && !orderId && (
+        <p className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          <CloudOffIcon size={14} /> {t(locale, "Offline — the order is saved on this device and uploads automatically when the connection returns.")}
+        </p>
+      )}
+
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-px hover:bg-brand-dark hover:shadow-lg active:translate-y-0 disabled:opacity-60"
+        className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-px hover:shadow-lg active:translate-y-0 disabled:opacity-60 ${
+          !online && !orderId ? "bg-amber-600 hover:bg-amber-700" : "bg-brand hover:bg-brand-dark"
+        }`}
       >
-        {pending ? <Loader2Icon size={15} className="animate-spin" /> : <ShoppingCartIcon size={15} />}
-        {t(locale, orderId ? "Save changes" : "Create order (draft)")}
+        {pending ? <Loader2Icon size={15} className="animate-spin" /> : !online && !orderId ? <CloudOffIcon size={15} /> : <ShoppingCartIcon size={15} />}
+        {t(locale, orderId ? "Save changes" : !online ? "Save order offline" : "Create order (draft)")}
       </button>
     </form>
   );

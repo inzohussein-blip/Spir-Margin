@@ -1010,6 +1010,9 @@ const ar: Record<string, string> = {
     "غير متصل — تُحفَظ المبيعات على هذا الجهاز وتُرفَع تلقائياً عند عودة الاتصال.",
   "waiting to sync": "بانتظار المزامنة",
   "Save sale offline": "حفظ البيع دون اتصال",
+  "Save order offline": "حفظ الأمر دون اتصال",
+  "Offline — the order is saved on this device and uploads automatically when the connection returns.":
+    "غير متصل — يُحفَظ الأمر على هذا الجهاز ويُرفَع تلقائيًا عند عودة الاتصال.",
   // orders: edit/delete + remaining translations
   "Edit": "تعديل",
   "Save changes": "حفظ التغييرات",

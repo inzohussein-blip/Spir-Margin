@@ -22,13 +22,25 @@ export interface PosSalePayload {
   lines: PosSaleLine[];
 }
 
-export interface OutboxItem {
-  id: string; // UUID — also the server idempotency key
-  type: "pos_sale";
-  payload: PosSalePayload;
-  createdAt: number;
-  lastError?: string;
+export interface SalesOrderLine {
+  product_id: string;
+  qty: number;
+  rate: number;
+  serial_no?: string | null;
 }
+
+export interface SalesOrderPayload {
+  labId: string;
+  labName?: string;
+  transaction_date: string;
+  delivery_date?: string | null;
+  notes?: string;
+  lines: SalesOrderLine[];
+}
+
+export type OutboxItem =
+  | { id: string; type: "pos_sale"; payload: PosSalePayload; createdAt: number; lastError?: string }
+  | { id: string; type: "sales_order"; payload: SalesOrderPayload; createdAt: number; lastError?: string };
 
 const KEY = "spir_outbox_v1";
 const EVENT = "spir-outbox-change";

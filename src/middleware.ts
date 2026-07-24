@@ -1,8 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/session";
 
-// Paths reachable without a session.
-const PUBLIC_PATHS = ["/login"];
+// Paths reachable without a session. The PWA manifest must be fetchable by the
+// browser before login so the app is installable (add to home screen).
+const PUBLIC_PATHS = ["/login", "/manifest.webmanifest"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { assertFeature } from "@/lib/features";
@@ -18,38 +19,34 @@ export interface SalesOrderInput {
   items: SOLineInput[];
 }
 
-export async function saveSalesOrder(input: SalesOrderInput) {
+export async function saveSalesOrder(input: SalesOrderInput, requestId?: string) {
   await assertFeature("Selling");
-  const supabase = createClient();
   const lines = input.items.filter((l) => l.product_id && Number(l.qty) > 0);
   if (!input.lab_id) return { ok: false as const, error: "Pick a lab" };
   if (lines.length === 0) return { ok: false as const, error: "Add at least one line" };
 
-  const { data: header, error: hErr } = await supabase
-    .from("sales_orders")
-    .insert({
-      lab_id: input.lab_id,
-      transaction_date: input.transaction_date || new Date().toISOString().slice(0, 10),
-      delivery_date: input.delivery_date || null,
-      notes: input.notes || null,
-    })
-    .select("id")
-    .single();
-  if (hErr) return { ok: false as const, error: hErr.message };
-
-  const { error: iErr } = await supabase.from("sales_order_items").insert(
-    lines.map((l) => ({
-      sales_order_id: header.id,
-      product_id: l.product_id,
-      qty: Number(l.qty),
-      rate: Number(l.rate) || 0,
-      serial_no: l.serial_no?.trim() || null,
-    }))
-  );
-  if (iErr) return { ok: false as const, error: iErr.message };
+  // Booked through an idempotent function so an offline order replayed with the
+  // same request id can never create a duplicate.
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("fn_save_sales_order", {
+    p_request_id: requestId || randomUUID(),
+    p_lab_id: input.lab_id,
+    p_transaction_date: input.transaction_date || new Date().toISOString().slice(0, 10),
+    p_delivery_date: input.delivery_date || "",
+    p_notes: input.notes || "",
+    p_lines: JSON.stringify(
+      lines.map((l) => ({
+        product_id: l.product_id,
+        qty: Number(l.qty),
+        rate: Number(l.rate) || 0,
+        serial_no: l.serial_no?.trim() || null,
+      })),
+    ),
+  });
+  if (error) return { ok: false as const, error: error.message };
 
   revalidatePath("/sales-orders");
-  return { ok: true as const, salesOrderId: header.id };
+  return { ok: true as const, salesOrderId: data as string };
 }
 
 /**

@@ -4,10 +4,11 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { createPosSale } from "@/app/actions/pos";
+import { saveSalesOrder } from "@/app/actions/selling";
 import { logConnectivityEvent, logSyncEvent } from "@/app/actions/monitoring";
 import {
   enqueue, getOutbox, setOutbox, subscribeOutbox,
-  type OutboxItem, type PosSalePayload,
+  type OutboxItem, type PosSalePayload, type SalesOrderPayload,
 } from "@/lib/offline/outbox";
 
 export type SubmitResult =
@@ -15,12 +16,30 @@ export type SubmitResult =
   | { status: "queued" }
   | { status: "error"; error: string };
 
+export type SoSubmitResult =
+  | { status: "synced"; id: string }
+  | { status: "queued" }
+  | { status: "error"; error: string };
+
+/** Map a queued sales-order payload back to the action's input shape. */
+function soInput(p: SalesOrderPayload) {
+  return {
+    lab_id: p.labId,
+    transaction_date: p.transaction_date,
+    delivery_date: p.delivery_date ?? null,
+    notes: p.notes ?? "",
+    items: p.lines,
+  };
+}
+
 interface OfflineContextValue {
   online: boolean;
   pending: OutboxItem[];
   syncing: boolean;
   /** Submit a POS sale — sent now when online, queued (and auto-synced) when not. */
   submitSale: (payload: PosSalePayload) => Promise<SubmitResult>;
+  /** Submit a sales order — sent now when online, queued (and auto-synced) when not. */
+  submitSalesOrder: (payload: SalesOrderPayload) => Promise<SoSubmitResult>;
   /** Manually flush the outbox now (the "Sync" button). */
   flush: () => Promise<void>;
 }
@@ -56,14 +75,16 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
     try {
       for (const item of items) {
         if (networkDown) { keep.push(item); continue; }
-        if (item.type !== "pos_sale") { keep.push(item); continue; }
         try {
-          const res = await createPosSale(item.payload.labId, item.payload.lines, item.id);
+          const res =
+            item.type === "pos_sale"
+              ? await createPosSale(item.payload.labId, item.payload.lines, item.id)
+              : await saveSalesOrder(soInput(item.payload), item.id);
           if (res.ok) {
             synced += 1; // booked (idempotent, so a lost-response retry is safe)
           } else {
             // Server was reached but rejected it (e.g. a product was disabled
-            // meanwhile). Keep it so the sale is never silently lost, but record
+            // meanwhile). Keep it so the record is never silently lost, but note
             // why so the operator can see it.
             keep.push({ ...item, lastError: res.error });
           }
@@ -110,6 +131,25 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
     }
   }, [refresh]);
 
+  const submitSalesOrder = useCallback(async (payload: SalesOrderPayload): Promise<SoSubmitResult> => {
+    const id = newId();
+    const item: OutboxItem = { id, type: "sales_order", payload, createdAt: Date.now() };
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      enqueue(item);
+      refresh();
+      return { status: "queued" };
+    }
+    try {
+      const res = await saveSalesOrder(soInput(payload), id);
+      if (res.ok) return { status: "synced", id: res.salesOrderId };
+      return { status: "error", error: res.error };
+    } catch {
+      enqueue(item);
+      refresh();
+      return { status: "queued" };
+    }
+  }, [refresh]);
+
   useEffect(() => {
     setOnline(navigator.onLine);
     refresh();
@@ -145,7 +185,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   }, [refresh, flush]);
 
   return (
-    <OfflineContext.Provider value={{ online, pending, syncing, submitSale, flush }}>
+    <OfflineContext.Provider value={{ online, pending, syncing, submitSale, submitSalesOrder, flush }}>
       {children}
     </OfflineContext.Provider>
   );
