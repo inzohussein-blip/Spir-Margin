@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { Pager, PAGE_SIZE, parsePage, pageRange } from "@/components/desk/Pager";
+import { ListSearch } from "@/components/desk/ListSearch";
 import { postJournalEntryForm } from "@/app/actions/journal";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -18,14 +20,25 @@ const statusBadge: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
-export default async function JournalEntriesPage() {
+export default async function JournalEntriesPage({
+  searchParams,
+}: {
+  searchParams: { page?: string; q?: string };
+}) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const page = parsePage(searchParams?.page);
+  const [from, to] = pageRange(page);
+  const q = (searchParams?.q ?? "").trim();
+  let query = supabase
     .from("journal_entries")
-    .select("id, posting_date, voucher_type, status, user_remark, total_debit, total_credit")
-    .order("posting_date", { ascending: false });
+    .select("id, posting_date, voucher_type, status, user_remark, total_debit, total_credit", { count: "exact" })
+    .order("posting_date", { ascending: false })
+    .range(from, to);
+  if (q) query = query.ilike("voucher_type", `%${q}%`);
+  const { data, count } = await query;
   const rows = (data as Row[]) ?? [];
+  const total = count ?? rows.length;
 
   return (
     <div className="space-y-6">
@@ -36,9 +49,10 @@ export default async function JournalEntriesPage() {
           <Link href="/journal-entries/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ New journal</Link>
         </div>
       </div>
-      <Panel title={`${t(locale, "Entries")} (${rows.length})`}>
+      <Panel title={`${t(locale, "Entries")} (${total.toLocaleString()})`}>
+        <ListSearch basePath="/journal-entries" q={q} placeholder={t(locale, "Type")} />
         {rows.length === 0 ? (
-          <EmptyRow text={t(locale, "No journal entries — post balanced debits and credits")} />
+          <EmptyRow text={q ? `${t(locale, "No matches for")} “${q}”` : t(locale, "No journal entries — post balanced debits and credits")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -78,6 +92,7 @@ export default async function JournalEntriesPage() {
                 ))}
               </tbody>
             </table>
+            <Pager page={page} pageSize={PAGE_SIZE} total={total} hrefFor={(p) => `/journal-entries?page=${p}${q ? `&q=${encodeURIComponent(q)}` : ""}`} />
           </div>
         )}
       </Panel>

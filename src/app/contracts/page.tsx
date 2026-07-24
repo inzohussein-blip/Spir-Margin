@@ -3,6 +3,8 @@ import Link from "next/link";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { ListShell } from "@/components/desk/ListShell";
+import { Pager, PAGE_SIZE, parsePage, pageRange } from "@/components/desk/Pager";
+import { ListSearch } from "@/components/desk/ListSearch";
 import { setContractStatusForm } from "@/app/actions/contract";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -35,15 +37,30 @@ function daysLeft(end: string | null) {
   return Math.round((new Date(end).getTime() - Date.now()) / 86400_000);
 }
 
-export default async function ContractsPage() {
+export default async function ContractsPage({
+  searchParams,
+}: {
+  searchParams: { page?: string; q?: string };
+}) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const page = parsePage(searchParams?.page);
+  const [from, to] = pageRange(page);
+  const q = (searchParams?.q ?? "").trim();
+  let query = supabase
     .from("contracts")
-    .select("id, contract_no, status, start_date, end_date, contract_value, labs(name), devices(asset_code)")
-    .order("end_date", { ascending: true });
+    .select("id, contract_no, status, start_date, end_date, contract_value, labs(name), devices(asset_code)", { count: "exact" })
+    .order("end_date", { ascending: true })
+    .range(from, to);
+  if (q) query = query.ilike("contract_no", `%${q}%`);
+  const { data, count } = await query;
   const rows = (data as unknown as Row[]) ?? [];
-  const active = rows.filter((r) => r.status === "active");
+  const total = count ?? rows.length;
+
+  // Cards span the whole table, not just this page.
+  const { data: aggData } = await supabase.from("contracts").select("status, end_date, contract_value");
+  const agg = (aggData as unknown as { status: string; end_date: string | null; contract_value: number }[]) ?? [];
+  const active = agg.filter((r) => r.status === "active");
   const expiring = active.filter((r) => {
     const d = daysLeft(r.end_date);
     return d != null && d >= 0 && d <= 60;
@@ -61,12 +78,14 @@ export default async function ContractsPage() {
       <ListShell
         title={t(locale, "Service Contracts (AMC)")}
         breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "CRM") }]}
-        count={rows.length}
+        count={total}
+        filterable={false}
         newHref="/contracts/new"
         newLabel={t(locale, "New contract")}
       >
+        <ListSearch basePath="/contracts" q={q} placeholder={t(locale, "No.")} />
         {rows.length === 0 ? (
-          <EmptyRow text={t(locale, "No contracts yet — add an annual maintenance contract")} />
+          <EmptyRow text={q ? `${t(locale, "No matches for")} “${q}”` : t(locale, "No contracts yet — add an annual maintenance contract")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -112,6 +131,7 @@ export default async function ContractsPage() {
                 })}
               </tbody>
             </table>
+            <Pager page={page} pageSize={PAGE_SIZE} total={total} hrefFor={(p) => `/contracts?page=${p}${q ? `&q=${encodeURIComponent(q)}` : ""}`} />
           </div>
         )}
       </ListShell>

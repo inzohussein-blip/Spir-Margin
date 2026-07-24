@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
+import { Pager, PAGE_SIZE, parsePage, pageRange } from "@/components/desk/Pager";
+import { ListSearch } from "@/components/desk/ListSearch";
 
 export const dynamic = "force-dynamic";
 
@@ -24,14 +26,25 @@ const statusBadge: Record<string, string> = {
   expired: "bg-red-100 text-red-700",
 };
 
-export default async function SerialsPage() {
+export default async function SerialsPage({
+  searchParams,
+}: {
+  searchParams: { page?: string; q?: string };
+}) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const page = parsePage(searchParams?.page);
+  const [from, to] = pageRange(page);
+  const q = (searchParams?.q ?? "").trim();
+  let query = supabase
     .from("serial_numbers")
-    .select("id, serial_no, status, maintenance_status, warranty_expiry_date, products(name), labs(name)")
-    .order("serial_no");
+    .select("id, serial_no, status, maintenance_status, warranty_expiry_date, products(name), labs(name)", { count: "exact" })
+    .order("serial_no")
+    .range(from, to);
+  if (q) query = query.ilike("serial_no", `%${q}%`);
+  const { data, count } = await query;
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
 
   return (
     <div className="space-y-6">
@@ -41,9 +54,10 @@ export default async function SerialsPage() {
           + New serial
         </Link>
       </div>
-      <Panel title={`${t(locale, "All Serials")} (${rows.length})`}>
+      <Panel title={`${t(locale, "All Serials")} (${total.toLocaleString()})`}>
+        <ListSearch basePath="/serials" q={q} placeholder={t(locale, "Serial")} />
         {rows.length === 0 ? (
-          <EmptyRow text={t(locale, "No serial numbers — track individual serialized units here")} />
+          <EmptyRow text={q ? `${t(locale, "No matches for")} “${q}”` : t(locale, "No serial numbers — track individual serialized units here")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -74,6 +88,7 @@ export default async function SerialsPage() {
                 ))}
               </tbody>
             </table>
+            <Pager page={page} pageSize={PAGE_SIZE} total={total} hrefFor={(p) => `/serials?page=${p}${q ? `&q=${encodeURIComponent(q)}` : ""}`} />
           </div>
         )}
       </Panel>
