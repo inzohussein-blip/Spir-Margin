@@ -6,6 +6,7 @@ import { t } from "@/lib/i18n";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { ListShell } from "@/components/desk/ListShell";
 import { Pager, PAGE_SIZE, parsePage, pageRange } from "@/components/desk/Pager";
+import { ListSearch } from "@/components/desk/ListSearch";
 import { ConfirmSubmit } from "@/components/settings/ConfirmSubmit";
 import { deliverSalesOrderForm, cancelSalesOrderForm, deleteSalesOrderForm } from "@/app/actions/selling";
 
@@ -31,17 +32,28 @@ const statusBadge: Record<string, string> = {
 export default async function SalesOrdersPage({
   searchParams,
 }: {
-  searchParams: { page?: string };
+  searchParams: { page?: string; q?: string };
 }) {
   const locale = getLocale();
   const supabase = createClient();
   const page = parsePage(searchParams?.page);
   const [from, to] = pageRange(page);
-  const { data, count } = await supabase
+  const q = (searchParams?.q ?? "").trim();
+
+  // Search by lab name: resolve matching lab ids, then filter the orders by them.
+  let labIds: string[] | null = null;
+  if (q) {
+    const { data: labs } = await supabase.from("labs").select("id").ilike("name", `%${q}%`);
+    labIds = ((labs as { id: string }[]) ?? []).map((l) => l.id);
+  }
+
+  let query = supabase
     .from("sales_orders")
     .select("id, transaction_date, delivery_date, status, total_amount, labs(name), sales_order_items(id)", { count: "exact" })
     .order("transaction_date", { ascending: false })
     .range(from, to);
+  if (labIds) query = query.in("lab_id", labIds);
+  const { data, count } = await query;
   const rows = (data as unknown as Row[]) ?? [];
   const total = count ?? rows.length;
 
@@ -50,11 +62,13 @@ export default async function SalesOrdersPage({
       title={t(locale, "Sales Orders")}
       breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Selling") }]}
       count={total}
+      filterable={false}
       newHref="/sales-orders/new"
       newLabel={t(locale, "New order")}
     >
+        <ListSearch basePath="/sales-orders" q={q} placeholder={t(locale, "Lab")} />
         {rows.length === 0 ? (
-          <EmptyRow text={t(locale, "No sales orders — orders become sales when delivered")} />
+          <EmptyRow text={q ? `${t(locale, "No matches for")} “${q}”` : t(locale, "No sales orders — orders become sales when delivered")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -121,7 +135,7 @@ export default async function SalesOrdersPage({
                 ))}
               </tbody>
             </table>
-            <Pager page={page} pageSize={PAGE_SIZE} total={total} hrefFor={(p) => `/sales-orders?page=${p}`} />
+            <Pager page={page} pageSize={PAGE_SIZE} total={total} hrefFor={(p) => `/sales-orders?page=${p}${q ? `&q=${encodeURIComponent(q)}` : ""}`} />
           </div>
         )}
     </ListShell>

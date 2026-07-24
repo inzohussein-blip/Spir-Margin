@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { Pager, PAGE_SIZE, parsePage, pageRange } from "@/components/desk/Pager";
+import { ListSearch } from "@/components/desk/ListSearch";
 import { submitDeliveryNoteForm } from "@/app/actions/delivery";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -21,17 +22,27 @@ const statusBadge: Record<string, string> = {
 export default async function DeliveryNotesPage({
   searchParams,
 }: {
-  searchParams: { page?: string };
+  searchParams: { page?: string; q?: string };
 }) {
   const locale = getLocale();
   const supabase = createClient();
   const page = parsePage(searchParams?.page);
   const [from, to] = pageRange(page);
-  const { data, count } = await supabase
+  const q = (searchParams?.q ?? "").trim();
+
+  let labIds: string[] | null = null;
+  if (q) {
+    const { data: labs } = await supabase.from("labs").select("id").ilike("name", `%${q}%`);
+    labIds = ((labs as { id: string }[]) ?? []).map((l) => l.id);
+  }
+
+  let query = supabase
     .from("delivery_notes")
     .select("id, posting_date, status, notes, labs(name), delivery_note_items(id)", { count: "exact" })
     .order("posting_date", { ascending: false })
     .range(from, to);
+  if (labIds) query = query.in("lab_id", labIds);
+  const { data, count } = await query;
   const rows = (data as unknown as Row[]) ?? [];
   const total = count ?? rows.length;
   return (
@@ -44,8 +55,9 @@ export default async function DeliveryNotesPage({
         </div>
       </div>
       <Panel title={`${t(locale, "Deliveries")} (${total.toLocaleString()})`}>
+        <ListSearch basePath="/delivery-notes" q={q} placeholder={t(locale, "Lab")} />
         {rows.length === 0 ? (
-          <EmptyRow text={t(locale, "No delivery notes — submitting one withdraws kit stock to the lab")} />
+          <EmptyRow text={q ? `${t(locale, "No matches for")} “${q}”` : t(locale, "No delivery notes — submitting one withdraws kit stock to the lab")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
