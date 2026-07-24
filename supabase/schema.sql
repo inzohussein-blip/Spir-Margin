@@ -6168,7 +6168,10 @@ create or replace function fn_book_sales_return(
     p_notes text,
     p_lines text
 ) returns uuid language plpgsql as $$
-declare v_id uuid; it jsonb; n int := 0; v_pid uuid; v_qty numeric; v_sell numeric; v_buy numeric; v_type text; v_no text;
+declare
+    v_id uuid; it jsonb; n int := 0;
+    v_pid uuid; v_qty numeric; v_sell numeric; v_buy numeric; v_type text; v_no text;
+    v_sold numeric; v_returned numeric; v_name text;
 begin
     if p_request_id is not null then
         select id into v_id from sales_returns where client_request_id = p_request_id;
@@ -6191,10 +6194,25 @@ begin
         v_sell := coalesce((it->>'sell_price')::numeric, 0);
         select product_type, coalesce(default_buy_price, 0) into v_type, v_buy from products where id = v_pid;
 
+        -- Guard: never credit/restock more than the lab actually bought and
+        -- still holds un-returned.
+        select coalesce(sum(qty), 0) into v_sold
+          from sales where lab_id = p_lab_id and product_id = v_pid;
+        select coalesce(sum(ri.qty), 0) into v_returned
+          from sales_return_items ri
+          join sales_returns sr on sr.id = ri.return_id
+          where sr.lab_id = p_lab_id and ri.product_id = v_pid and sr.status = 'submitted';
+        if v_qty > v_sold - v_returned then
+            select name into v_name from products where id = v_pid;
+            raise exception 'Cannot return more than sold for %: sold %, already returned %, tried to return %',
+                coalesce(v_name, v_pid::text), v_sold, v_returned, v_qty
+                using errcode = 'check_violation';
+        end if;
+
         insert into sales_return_items (return_id, product_id, qty, buy_price, sell_price)
         values (v_id, v_pid, v_qty, coalesce(v_buy, 0), v_sell);
 
-        -- Put kit stock back as a dedicated returned-goods batch.
+        -- Put kit stock back as a dedicated returned-goods batch — one per line.
         if v_type = 'kit' then
             insert into kit_batches (batch_no, product_id, qty_received, qty_available, buy_price, sell_price)
             values (v_no || '-L' || (n + 1), v_pid, v_qty, v_qty, coalesce(v_buy, 0), v_sell);
@@ -6662,7 +6680,8 @@ insert into _spir_migrations(filename) values
   ('0078_sales_order_idempotent.sql'),
   ('0079_audit_financial_docs.sql'),
   ('0080_sales_returns.sql'),
-  ('0081_return_batch_no_fix.sql')
+  ('0081_return_batch_no_fix.sql'),
+  ('0082_return_not_more_than_sold.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;
