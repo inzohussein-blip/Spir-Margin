@@ -23,6 +23,7 @@ const ar: Record<string, string> = {
   "Next": "التالي",
   "Search": "بحث",
   "No matches for": "لا نتائج مطابقة لـ",
+  "Export CSV": "تصدير CSV",
   "Edit invoice": "تعديل الفاتورة",
   "Delete this draft invoice? This cannot be undone.": "حذف مسودة الفاتورة هذه؟ لا يمكن التراجع.",
   "Edit quotation": "تعديل عرض السعر",

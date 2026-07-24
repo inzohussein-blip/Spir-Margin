@@ -65,6 +65,7 @@ export default async function SalesOrdersPage({
       filterable={false}
       newHref="/sales-orders/new"
       newLabel={t(locale, "New order")}
+      actions={<a href="/sales-orders/export" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Export CSV")}</a>}
     >
         <ListSearch basePath="/sales-orders" q={q} placeholder={t(locale, "Lab")} />
         {rows.length === 0 ? (

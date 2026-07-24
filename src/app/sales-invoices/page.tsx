@@ -85,7 +85,10 @@ export default async function SalesInvoicesPage({
         filterable={false}
         newHref="/sales-invoices/new"
         newLabel={t(locale, "New invoice")}
-        actions={<Link href="/sales-orders" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Sales orders")}</Link>}
+        actions={<>
+          <a href="/sales-invoices/export" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Export CSV")}</a>
+          <Link href="/sales-orders" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Sales orders")}</Link>
+        </>}
       >
         <ListSearch basePath="/sales-invoices" q={q} placeholder={t(locale, "Invoice no.")} />
         {rows.length === 0 ? (
