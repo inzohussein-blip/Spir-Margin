@@ -61,6 +61,7 @@ const ar: Record<string, string> = {
   "New payment": "دفعة جديدة",
   "New count": "جرد جديد",
   "New RFQ": "طلب عرض سعر جديد",
+  "New serial": "رقم تسلسلي جديد",
   // form helper sentences
   "Raising a repair marks the device as": "فتح إصلاح يعلّم الجهاز كـ",
   "until completed.": "حتى الاكتمال.",

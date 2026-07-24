@@ -50,9 +50,12 @@ export default async function SerialsPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Serial Numbers")}</h1>
-        <Link href="/serials/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">
-          + New serial
-        </Link>
+        <div className="flex gap-2">
+          <a href="/serials/export" className="rounded-md border border-outline-gray-2 px-4 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Export CSV")}</a>
+          <Link href="/serials/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">
+            + {t(locale, "New serial")}
+          </Link>
+        </div>
       </div>
       <Panel title={`${t(locale, "All Serials")} (${total.toLocaleString()})`}>
         <ListSearch basePath="/serials" q={q} placeholder={t(locale, "Serial")} />

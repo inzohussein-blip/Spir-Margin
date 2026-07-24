@@ -46,6 +46,7 @@ export default async function JournalEntriesPage({
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Journal Entries")}</h1>
         <div className="flex gap-2">
           <Link href="/accounts" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Chart of Accounts")}</Link>
+          <a href="/journal-entries/export" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Export CSV")}</a>
           <Link href="/journal-entries/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ {t(locale, "New journal")}</Link>
         </div>
       </div>

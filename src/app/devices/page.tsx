@@ -50,6 +50,7 @@ export default async function DevicesPage({
       filterable={false}
       newHref="/devices/new"
       newLabel={t(locale, "New device")}
+      actions={<a href="/devices/export" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Export CSV")}</a>}
     >
       <ListSearch basePath="/devices" q={q} placeholder={t(locale, "Asset code")} />
       {devices.length === 0 ? (

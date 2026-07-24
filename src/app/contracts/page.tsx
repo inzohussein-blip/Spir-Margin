@@ -82,6 +82,7 @@ export default async function ContractsPage({
         filterable={false}
         newHref="/contracts/new"
         newLabel={t(locale, "New contract")}
+        actions={<a href="/contracts/export" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Export CSV")}</a>}
       >
         <ListSearch basePath="/contracts" q={q} placeholder={t(locale, "No.")} />
         {rows.length === 0 ? (
