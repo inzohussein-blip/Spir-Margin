@@ -5,6 +5,7 @@ import { EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { ListShell } from "@/components/desk/ListShell";
 import { Pager, PAGE_SIZE, parsePage, pageRange } from "@/components/desk/Pager";
+import { ListSearch } from "@/components/desk/ListSearch";
 import { ConfirmSubmit } from "@/components/settings/ConfirmSubmit";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -38,17 +39,20 @@ const statusBadge: Record<string, string> = {
 export default async function PurchaseOrdersPage({
   searchParams,
 }: {
-  searchParams: { page?: string };
+  searchParams: { page?: string; q?: string };
 }) {
   const locale = getLocale();
   const supabase = createClient();
   const page = parsePage(searchParams?.page);
   const [from, to] = pageRange(page);
-  const { data, count } = await supabase
+  const q = (searchParams?.q ?? "").trim();
+  let query = supabase
     .from("purchase_orders")
     .select("id, po_no, transaction_date, required_by, status, total_amount, companies:supplier_id(name), purchase_order_items(id)", { count: "exact" })
     .order("transaction_date", { ascending: false })
     .range(from, to);
+  if (q) query = query.ilike("po_no", `%${q}%`);
+  const { data, count } = await query;
   const rows = (data as unknown as Row[]) ?? [];
   const total = count ?? rows.length;
 
@@ -63,19 +67,21 @@ export default async function PurchaseOrdersPage({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label={t(locale, "Open orders")} value={String(open.length)} accent="amber" />
         <StatCard label={t(locale, "Open value")} value={openValue.toLocaleString()} accent="brand" />
-        <StatCard label={t(locale, "Total")} value={total.toLocaleString()} accent="green" />
+        <StatCard label={t(locale, "Total")} value={agg.length.toLocaleString()} accent="green" />
       </div>
 
       <ListShell
         title={t(locale, "Purchase Orders")}
         breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Buying") }]}
         count={total}
+        filterable={false}
         newHref="/purchase-orders/new"
         newLabel={t(locale, "New order")}
         actions={<Link href="/purchases" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Purchases")}</Link>}
       >
+        <ListSearch basePath="/purchase-orders" q={q} placeholder={t(locale, "PO no.")} />
         {rows.length === 0 ? (
-          <EmptyRow text={t(locale, "No purchase orders yet — order kits/devices from a supplier")} />
+          <EmptyRow text={q ? `${t(locale, "No matches for")} “${q}”` : t(locale, "No purchase orders yet — order kits/devices from a supplier")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -149,7 +155,7 @@ export default async function PurchaseOrdersPage({
                 ))}
               </tbody>
             </table>
-            <Pager page={page} pageSize={PAGE_SIZE} total={total} hrefFor={(p) => `/purchase-orders?page=${p}`} />
+            <Pager page={page} pageSize={PAGE_SIZE} total={total} hrefFor={(p) => `/purchase-orders?page=${p}${q ? `&q=${encodeURIComponent(q)}` : ""}`} />
           </div>
         )}
       </ListShell>

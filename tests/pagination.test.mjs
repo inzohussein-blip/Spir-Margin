@@ -45,3 +45,24 @@ test("range window + exact count paginate a large invoice list correctly", async
   assert.equal(Math.ceil(total / PAGE), 3);
   await db.close();
 });
+
+test("server-side ilike search filters rows and the count together", async () => {
+  const db = await bootWithMigrations();
+  const { labId } = await ensureLabAndProduct(db);
+  for (const no of ["SI-2601", "SI-2602", "PI-9001", "SI-2699"]) {
+    await db.query(`insert into sales_invoices (invoice_no, lab_id) values ($1,$2)`, [no, labId]);
+  }
+  // The list applies the same ilike filter to the row window and the count.
+  const filtered = await db.query(
+    `select id from sales_invoices where invoice_no ilike $1 order by invoice_no asc limit 50 offset 0`,
+    ["%SI-26%"],
+  );
+  const cnt = await db.query(`select count(*)::int n from sales_invoices where invoice_no ilike $1`, ["%SI-26%"]);
+  assert.equal(filtered.rows.length, 3, "three SI-26xx invoices match");
+  assert.equal(cnt.rows[0].n, 3, "count reflects the same filter, not the whole table");
+
+  // ilike is case-insensitive.
+  const ci = await db.query(`select count(*)::int n from sales_invoices where invoice_no ilike $1`, ["%si-2601%"]);
+  assert.equal(ci.rows[0].n, 1, "lowercase needle still matches");
+  await db.close();
+});

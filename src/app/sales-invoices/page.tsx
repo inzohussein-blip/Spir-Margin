@@ -4,6 +4,7 @@ import { EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { ListShell } from "@/components/desk/ListShell";
 import { Pager, PAGE_SIZE, parsePage, pageRange } from "@/components/desk/Pager";
+import { ListSearch } from "@/components/desk/ListSearch";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
 import {
@@ -37,19 +38,23 @@ const statusBadge: Record<string, string> = {
 export default async function SalesInvoicesPage({
   searchParams,
 }: {
-  searchParams: { page?: string };
+  searchParams: { page?: string; q?: string };
 }) {
   const locale = getLocale();
   const supabase = createClient();
   const page = parsePage(searchParams?.page);
   const [from, to] = pageRange(page);
+  const q = (searchParams?.q ?? "").trim();
 
   // One page of rows for the table (bounded), plus the true total for the pager.
-  const { data, count } = await supabase
+  // A search filters by invoice number across the whole table, server-side.
+  let query = supabase
     .from("sales_invoices")
     .select("id, invoice_no, posting_date, due_date, status, total_amount, paid_amount, outstanding, labs(name)", { count: "exact" })
     .order("posting_date", { ascending: false })
     .range(from, to);
+  if (q) query = query.ilike("invoice_no", `%${q}%`);
+  const { data, count } = await query;
   const rows = (data as unknown as Row[]) ?? [];
   const total = count ?? rows.length;
 
@@ -67,19 +72,21 @@ export default async function SalesInvoicesPage({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label={t(locale, "Billed")} value={billed.toLocaleString()} accent="brand" />
         <StatCard label={t(locale, "Outstanding")} value={outstanding.toLocaleString()} accent="amber" />
-        <StatCard label={t(locale, "Invoices")} value={total.toLocaleString()} accent="green" />
+        <StatCard label={t(locale, "Invoices")} value={agg.length.toLocaleString()} accent="green" />
       </div>
 
       <ListShell
         title={t(locale, "Sales Invoices")}
         breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Accounting") }]}
         count={total}
+        filterable={false}
         newHref="/sales-invoices/new"
         newLabel={t(locale, "New invoice")}
         actions={<Link href="/sales-orders" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Sales orders")}</Link>}
       >
+        <ListSearch basePath="/sales-invoices" q={q} placeholder={t(locale, "Invoice no.")} />
         {rows.length === 0 ? (
-          <EmptyRow text={t(locale, "No invoices yet — bill a lab for kits or devices")} />
+          <EmptyRow text={q ? `${t(locale, "No matches for")} “${q}”` : t(locale, "No invoices yet — bill a lab for kits or devices")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -139,7 +146,7 @@ export default async function SalesInvoicesPage({
               page={page}
               pageSize={PAGE_SIZE}
               total={total}
-              hrefFor={(p) => `/sales-invoices?page=${p}`}
+              hrefFor={(p) => `/sales-invoices?page=${p}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
             />
           </div>
         )}

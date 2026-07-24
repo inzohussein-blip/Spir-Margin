@@ -21,6 +21,8 @@ const ar: Record<string, string> = {
   "of": "من",
   "Previous": "السابق",
   "Next": "التالي",
+  "Search": "بحث",
+  "No matches for": "لا نتائج مطابقة لـ",
   "العربية": "العربية",
   "English": "English",
   // groups

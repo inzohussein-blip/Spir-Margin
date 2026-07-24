@@ -153,7 +153,7 @@ function buildFields(meta: FkMeta, table: string, fields: Field[]): string {
 
 interface Filter {
   col: string;
-  op: "eq" | "neq" | "in" | "gt" | "lt" | "gte" | "lte" | "is";
+  op: "eq" | "neq" | "in" | "gt" | "lt" | "gte" | "lte" | "is" | "ilike";
   val: unknown;
 }
 interface Order {
@@ -229,6 +229,7 @@ class Query implements PromiseLike<Result> {
   gte(col: string, val: unknown) { this.filters.push({ col, op: "gte", val }); return this; }
   lte(col: string, val: unknown) { this.filters.push({ col, op: "lte", val }); return this; }
   is(col: string, val: unknown) { this.filters.push({ col, op: "is", val }); return this; }
+  ilike(col: string, val: string) { this.filters.push({ col, op: "ilike", val }); return this; }
   order(col: string, opts?: { ascending?: boolean; nullsFirst?: boolean }) {
     this.orders.push({ col, asc: opts?.ascending ?? true, nullsFirst: opts?.nullsFirst });
     return this;
@@ -259,6 +260,10 @@ class Query implements PromiseLike<Result> {
       }
       if (f.op === "is") {
         return `${q(f.col)} is ${f.val === null ? "null" : f.val ? "true" : "false"}`;
+      }
+      if (f.op === "ilike") {
+        params.push(f.val);
+        return `${q(f.col)} ilike $${params.length}`;
       }
       const opSql = { eq: "=", neq: "<>", gt: ">", lt: "<", gte: ">=", lte: "<=" }[f.op];
       params.push(f.val);

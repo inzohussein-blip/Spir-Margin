@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { ListShell } from "@/components/desk/ListShell";
 import { Pager, PAGE_SIZE, parsePage, pageRange } from "@/components/desk/Pager";
+import { ListSearch } from "@/components/desk/ListSearch";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { MonitoringUnauthorized } from "@/components/monitoring/Unauthorized";
@@ -26,7 +27,7 @@ const ACTION_KEY: Record<string, string> = { INSERT: "Created", UPDATE: "Changed
 export default async function ChangeLogPage({
   searchParams,
 }: {
-  searchParams: { page?: string };
+  searchParams: { page?: string; q?: string };
 }) {
   const locale = getLocale();
   const me = await getCurrentUser();
@@ -35,15 +36,18 @@ export default async function ChangeLogPage({
   const supabase = createClient();
   const page = parsePage(searchParams?.page);
   const [from, to] = pageRange(page);
+  const q = (searchParams?.q ?? "").trim();
   // Focus on what was changed or deleted (the audit trail also records inserts).
   // One page of entries for the table, plus whole-log counts for the cards.
+  let logQuery = supabase
+    .from("audit_log")
+    .select("id, table_name, record_id, action, actor, changed_at, changed_fields", { count: "exact" })
+    .in("action", ["UPDATE", "DELETE"])
+    .order("changed_at", { ascending: false })
+    .range(from, to);
+  if (q) logQuery = logQuery.ilike("table_name", `%${q}%`);
   const [{ data, count }, delCount, updCount] = await Promise.all([
-    supabase
-      .from("audit_log")
-      .select("id, table_name, record_id, action, actor, changed_at, changed_fields", { count: "exact" })
-      .in("action", ["UPDATE", "DELETE"])
-      .order("changed_at", { ascending: false })
-      .range(from, to),
+    logQuery,
     supabase.from("audit_log").select("id", { count: "exact" }).eq("action", "DELETE").limit(1),
     supabase.from("audit_log").select("id", { count: "exact" }).eq("action", "UPDATE").limit(1),
   ]);
@@ -57,20 +61,21 @@ export default async function ChangeLogPage({
       title={t(locale, "Change & Deletion Log")}
       breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Monitoring") }]}
       count={total}
-      filterPlaceholder={t(locale, "Filter by table / user…")}
+      filterable={false}
     >
       <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-3">
         <StatCard label={t(locale, "Deletions")} value={deletes.toLocaleString()} accent={deletes ? "red" : "green"} />
         <StatCard label={t(locale, "Changes")} value={updates.toLocaleString()} accent="amber" />
-        <StatCard label={t(locale, "Total tracked")} value={total.toLocaleString()} accent="brand" />
+        <StatCard label={t(locale, "Total tracked")} value={(deletes + updates).toLocaleString()} accent="brand" />
       </div>
 
       <div className="border-b border-outline-gray-1 bg-surface-gray-1/60 px-4 py-2 text-xs text-ink-gray-5">
         {t(locale, "Every change and deletion on the money- and compliance-critical tables is recorded here and can never be edited or removed.")}
       </div>
 
+      <ListSearch basePath="/monitoring/changes" q={q} placeholder={t(locale, "Table")} />
       {rows.length === 0 ? (
-        <EmptyRow text={t(locale, "No changes or deletions recorded yet.")} />
+        <EmptyRow text={q ? `${t(locale, "No matches for")} “${q}”` : t(locale, "No changes or deletions recorded yet.")} />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -105,7 +110,7 @@ export default async function ChangeLogPage({
               ))}
             </tbody>
           </table>
-          <Pager page={page} pageSize={PAGE_SIZE} total={total} hrefFor={(p) => `/monitoring/changes?page=${p}`} />
+          <Pager page={page} pageSize={PAGE_SIZE} total={total} hrefFor={(p) => `/monitoring/changes?page=${p}${q ? `&q=${encodeURIComponent(q)}` : ""}`} />
         </div>
       )}
     </ListShell>

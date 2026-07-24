@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { Pager, PAGE_SIZE, parsePage, pageRange } from "@/components/desk/Pager";
+import { ListSearch } from "@/components/desk/ListSearch";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { receivePurchaseForm, cancelPurchaseForm } from "@/app/actions/purchasing";
 import { getLocale } from "@/lib/i18n-server";
@@ -29,18 +30,21 @@ const statusBadge: Record<string, string> = {
 export default async function PurchasesPage({
   searchParams,
 }: {
-  searchParams: { page?: string };
+  searchParams: { page?: string; q?: string };
 }) {
   const locale = getLocale();
   const supabase = createClient();
   const page = parsePage(searchParams?.page);
   const [from, to] = pageRange(page);
+  const q = (searchParams?.q ?? "").trim();
+  let invoiceQuery = supabase
+    .from("purchase_invoices")
+    .select("id, reference_no, posting_date, due_date, status, total_amount, companies(name), purchase_items(id)", { count: "exact" })
+    .order("posting_date", { ascending: false })
+    .range(from, to);
+  if (q) invoiceQuery = invoiceQuery.ilike("reference_no", `%${q}%`);
   const [{ data, count }, { data: summary }] = await Promise.all([
-    supabase
-      .from("purchase_invoices")
-      .select("id, reference_no, posting_date, due_date, status, total_amount, companies(name), purchase_items(id)", { count: "exact" })
-      .order("posting_date", { ascending: false })
-      .range(from, to),
+    invoiceQuery,
     supabase.from("v_purchase_summary").select("*").single(),
   ]);
   const rows = (data as unknown as Row[]) ?? [];
@@ -70,8 +74,9 @@ export default async function PurchasesPage({
       )}
 
       <Panel title={`${t(locale, "All Purchases")} (${total.toLocaleString()})`}>
+        <ListSearch basePath="/purchases" q={q} placeholder={t(locale, "Reference no.")} />
         {rows.length === 0 ? (
-          <EmptyRow text={t(locale, "No purchases yet — record buying kits/devices from a supplier")} />
+          <EmptyRow text={q ? `${t(locale, "No matches for")} “${q}”` : t(locale, "No purchases yet — record buying kits/devices from a supplier")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -121,7 +126,7 @@ export default async function PurchasesPage({
                 ))}
               </tbody>
             </table>
-            <Pager page={page} pageSize={PAGE_SIZE} total={total} hrefFor={(p) => `/purchases?page=${p}`} />
+            <Pager page={page} pageSize={PAGE_SIZE} total={total} hrefFor={(p) => `/purchases?page=${p}${q ? `&q=${encodeURIComponent(q)}` : ""}`} />
           </div>
         )}
       </Panel>
