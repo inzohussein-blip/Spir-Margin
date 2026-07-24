@@ -40,6 +40,8 @@ const ar: Record<string, string> = {
   "Credited (returns)": "المُقيَّد دائناً (المرتجعات)",
   "Returns": "المرتجعات",
   "No returns yet — a return restocks kits and reverses the revenue": "لا مرتجعات بعد — المرتجع يعيد الكِتات للمخزون ويعكس الإيراد",
+  "Cost returned to stock": "التكلفة المُعادة للمخزون",
+  "Booking this return restocked the returned kits and posted a reversing journal entry (revenue and cost reversed).": "تسجيل هذا المرتجع أعاد الكِتات للمخزون ورحّل قيداً معاكساً (عكس الإيراد والتكلفة).",
   "العربية": "العربية",
   "English": "English",
   // groups

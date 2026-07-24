@@ -86,7 +86,7 @@ export default async function SalesReturnsPage({
               <tbody className="divide-y divide-outline-gray-1">
                 {rows.map((r) => (
                   <tr key={r.id}>
-                    <td className="px-4 py-2 font-medium">{r.return_no}</td>
+                    <td className="px-4 py-2 font-medium"><Link href={`/sales-returns/${r.id}`} className="text-brand hover:underline">{r.return_no}</Link></td>
                     <td className="px-4 py-2">{r.labs?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{r.posting_date}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{r.reason ?? "—"}</td>
