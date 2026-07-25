@@ -8,6 +8,8 @@ import { importTransactions, type ImportRow } from "@/app/actions/banking";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useLocale } from "@/components/LocaleProvider";
+import { t } from "@/lib/i18n";
 
 interface Account { id: string; account_name: string; currency: string; }
 
@@ -71,6 +73,7 @@ function detectAndParseDate(cell: string, preferDMY: boolean): string {
 }
 
 export function StatementImport({ accounts }: { accounts: Account[] }) {
+  const locale = useLocale();
   const router = useRouter();
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [fileName, setFileName] = useState("");
@@ -169,7 +172,7 @@ export function StatementImport({ accounts }: { accounts: Account[] }) {
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="block text-sm">
-          <span className="font-medium text-ink-gray-8">Bank account</span>
+          <span className="font-medium text-ink-gray-8">{t(locale, "Bank account")}</span>
           <select value={accountId} onChange={(e) => setAccountId(e.target.value)}
             className="mt-1 w-full rounded-md border border-outline-gray-2 px-3 py-2 text-sm">
             {accounts.map((a) => <option key={a.id} value={a.id}>{a.account_name} ({a.currency})</option>)}
@@ -193,23 +196,23 @@ export function StatementImport({ accounts }: { accounts: Account[] }) {
         <>
           {/* Detection controls */}
           <Card>
-            <CardHeader><CardTitle>Detected format</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t(locale, "Detected format")}</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-3 text-sm">
               <label className="block">
-                <span className="text-ink-gray-5">Amount format</span>
+                <span className="text-ink-gray-5">{t(locale, "Amount format")}</span>
                 <select value={amountMode} onChange={(e) => setAmountMode(e.target.value as AmountMode)}
                   className="mt-1 w-full rounded-md border border-outline-gray-2 px-2 py-1.5">
-                  <option value="separate">Separate deposit / withdrawal columns</option>
-                  <option value="signed">Single signed amount column</option>
-                  <option value="debit_credit">Amount + Debit/Credit flag</option>
+                  <option value="separate">{t(locale, "Separate deposit / withdrawal columns")}</option>
+                  <option value="signed">{t(locale, "Single signed amount column")}</option>
+                  <option value="debit_credit">{t(locale, "Amount + Debit/Credit flag")}</option>
                 </select>
               </label>
               <label className="block">
-                <span className="text-ink-gray-5">Date order</span>
+                <span className="text-ink-gray-5">{t(locale, "Date order")}</span>
                 <select value={preferDMY ? "dmy" : "mdy"} onChange={(e) => setPreferDMY(e.target.value === "dmy")}
                   className="mt-1 w-full rounded-md border border-outline-gray-2 px-2 py-1.5">
-                  <option value="dmy">Day/Month/Year</option>
-                  <option value="mdy">Month/Day/Year</option>
+                  <option value="dmy">{t(locale, "Day/Month/Year")}</option>
+                  <option value="mdy">{t(locale, "Month/Day/Year")}</option>
                 </select>
               </label>
               <div className="flex items-end">
@@ -220,7 +223,7 @@ export function StatementImport({ accounts }: { accounts: Account[] }) {
 
           {/* Column mapping */}
           <Card>
-            <CardHeader><CardTitle>Map columns</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t(locale, "Map columns")}</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {COLS.map((col) => (
                 <label key={col} className="block text-sm">
@@ -237,12 +240,12 @@ export function StatementImport({ accounts }: { accounts: Account[] }) {
 
           {/* Summary + preview */}
           <Card>
-            <CardHeader><CardTitle>Statement summary</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t(locale, "Statement summary")}</CardTitle></CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div><div className="text-xs text-ink-gray-5">Rows</div><div className="font-semibold">{valid.length}</div></div>
-                <div><div className="text-xs text-ink-gray-5">Credits</div><div className="font-semibold text-emerald-600">{totals.credits.toLocaleString()}</div></div>
-                <div><div className="text-xs text-ink-gray-5">Debits</div><div className="font-semibold text-red-600">{totals.debits.toLocaleString()}</div></div>
+                <div><div className="text-xs text-ink-gray-5">{t(locale, "Rows")}</div><div className="font-semibold">{valid.length}</div></div>
+                <div><div className="text-xs text-ink-gray-5">{t(locale, "Credits")}</div><div className="font-semibold text-emerald-600">{totals.credits.toLocaleString()}</div></div>
+                <div><div className="text-xs text-ink-gray-5">{t(locale, "Debits")}</div><div className="font-semibold text-red-600">{totals.debits.toLocaleString()}</div></div>
                 <div><div className="text-xs text-ink-gray-5">Period</div><div className="font-semibold">{totals.from} → {totals.to}</div></div>
               </div>
               <div className="overflow-x-auto rounded-lg border border-outline-gray-2">

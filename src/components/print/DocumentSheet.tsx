@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { PrintButton } from "./PrintButton";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export interface PartyBlock {
   heading: string;
@@ -48,10 +50,11 @@ export function DocumentSheet({
   notes?: string | null;
   footer?: ReactNode;
 }) {
+  const locale = getLocale();
   return (
     <div className="mx-auto max-w-3xl">
       <div className="no-print mb-4 flex items-center justify-between">
-        <Link href={backHref} className="text-sm text-ink-gray-5 hover:text-brand">← Back</Link>
+        <Link href={backHref} className="text-sm text-ink-gray-5 hover:text-brand">← {t(locale, "Back")}</Link>
         <PrintButton />
       </div>
 
@@ -63,7 +66,7 @@ export function DocumentSheet({
               <span className="grid size-8 place-items-center rounded-md bg-brand text-white print:bg-brand">S</span>
               Spir-Margin
             </div>
-            <p className="mt-1 text-xs text-ink-gray-5">Medical devices · lab supplies · reagent kits</p>
+            <p className="mt-1 text-xs text-ink-gray-5">{t(locale, "Medical devices · lab supplies · reagent kits")}</p>
           </div>
           <div className="text-right">
             <h1 className="text-2xl font-bold uppercase tracking-wide text-ink-gray-9">{docType}</h1>
@@ -100,10 +103,10 @@ export function DocumentSheet({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b-2 border-outline-gray-3 text-left text-xs uppercase text-ink-gray-5">
-              <th className="py-2">Item</th>
-              <th className="py-2 text-right">Qty</th>
-              <th className="py-2 text-right">Rate</th>
-              <th className="py-2 text-right">Amount</th>
+              <th className="py-2">{t(locale, "Item")}</th>
+              <th className="py-2 text-right">{t(locale, "Qty")}</th>
+              <th className="py-2 text-right">{t(locale, "Rate")}</th>
+              <th className="py-2 text-right">{t(locale, "Amount")}</th>
             </tr>
           </thead>
           <tbody>
@@ -137,13 +140,13 @@ export function DocumentSheet({
 
         {notes ? (
           <div className="mt-6 border-t border-outline-gray-2 pt-4">
-            <p className="text-xs uppercase tracking-wide text-ink-gray-4">Notes</p>
+            <p className="text-xs uppercase tracking-wide text-ink-gray-4">{t(locale, "Notes")}</p>
             <p className="mt-1 whitespace-pre-line text-sm text-ink-gray-6">{notes}</p>
           </div>
         ) : null}
 
         <div className="mt-8 border-t border-outline-gray-2 pt-4 text-center text-xs text-ink-gray-4">
-          {footer ?? "Thank you for your business — Spir-Margin"}
+          {footer ?? t(locale, "Thank you for your business — Spir-Margin")}
         </div>
       </div>
     </div>

@@ -27,6 +27,8 @@ import {
   CardTitle,
   CardContent,
 } from "@/components/ui/card";
+import { useLocale } from "@/components/LocaleProvider";
+import { t as tr } from "@/lib/i18n";
 
 // --- Faithful port of bankRecAtoms (subset) -------------------------------
 export interface SelectedBank {
@@ -74,6 +76,7 @@ interface Payment {
 const money = (n: number) => Number(n || 0).toLocaleString();
 
 export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
+  const locale = useLocale();
   const router = useRouter();
   const [selectedBank, setSelectedBank] = useAtom(selectedBankAtom);
   const [dateRange, setDateRange] = useAtom(dateRangeAtom);
@@ -165,7 +168,7 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-sm text-ink-gray-5">
           <LandmarkIcon size={16} />
-          <span className="font-medium text-ink-gray-8">Bank Reconciliation</span>
+          <span className="font-medium text-ink-gray-8">{tr(locale, "Bank Reconciliation")}</span>
           <Badge theme="violet" variant="subtle">Beta</Badge>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -197,9 +200,9 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
 
       <Tabs defaultValue="match">
         <TabsList>
-          <TabsTrigger value="match"><ShuffleIcon size={14} className="mr-1" /> Match &amp; Reconcile</TabsTrigger>
-          <TabsTrigger value="statement"><ScrollTextIcon size={14} className="mr-1" /> Statement</TabsTrigger>
-          <TabsTrigger value="log"><ListIcon size={14} className="mr-1" /> Action Log</TabsTrigger>
+          <TabsTrigger value="match"><ShuffleIcon size={14} className="mr-1" /> {tr(locale, "Match & Reconcile")}</TabsTrigger>
+          <TabsTrigger value="statement"><ScrollTextIcon size={14} className="mr-1" /> {tr(locale, "Statement")}</TabsTrigger>
+          <TabsTrigger value="log"><ListIcon size={14} className="mr-1" /> {tr(locale, "Action Log")}</TabsTrigger>
         </TabsList>
 
         {/* Match & Reconcile */}
@@ -211,41 +214,41 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
             </p>
             <Button variant="subtle" size="sm" onClick={autoMatch} disabled={pending}>
               {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}
-              Auto-match by rules
+              {tr(locale, "Auto-match by rules")}
             </Button>
           </div>
 
           {selectedTxn && (
             <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-brand/40 bg-blue-50 px-4 py-3 text-sm">
-              <span className="text-ink-gray-5">Selected line:</span>
+              <span className="text-ink-gray-5">{tr(locale, "Selected line:")}</span>
               <span className="font-medium text-ink-gray-8">
                 {selectedTxn.description ?? selectedTxn.reference_number ?? selectedTxn.date} ·{" "}
                 {money(selectedTxn.deposit || selectedTxn.withdrawal)}
               </span>
-              <span className="text-ink-gray-5">— no matching payment?</span>
+              <span className="text-ink-gray-5">{tr(locale, "— no matching payment?")}</span>
               <input
                 value={voucherParty}
                 onChange={(e) => setVoucherParty(e.target.value)}
-                placeholder="party name (optional)"
+                placeholder={tr(locale, "party name (optional)")}
                 className="rounded-md border border-outline-gray-2 px-2 py-1 text-sm"
               />
               <Button variant="subtle" size="sm" onClick={createVoucher} disabled={pending}>
-                Create payment &amp; reconcile
+                {tr(locale, "Create payment & reconcile")}
               </Button>
               <button onClick={() => setSelectedTxn(null)} className="text-xs text-ink-gray-5 hover:underline">
-                clear
+                {tr(locale, "clear")}
               </button>
             </div>
           )}
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Card>
-              <CardHeader><CardTitle>Unreconciled transactions ({txns.length})</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{tr(locale, "Unreconciled transactions")} ({txns.length})</CardTitle></CardHeader>
               <CardContent className="p-0">
                 <ul className="divide-y divide-outline-gray-1">
                   {txns.length === 0 && (
                     <li className="flex items-center gap-2 px-4 py-6 text-sm text-emerald-600">
-                      <CheckCircleIcon size={16} /> All reconciled
+                      <CheckCircleIcon size={16} /> {tr(locale, "All reconciled")}
                     </li>
                   )}
                   {txns.map((t) => (
@@ -271,11 +274,11 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
             </Card>
 
             <Card>
-              <CardHeader><CardTitle>Open payments ({payments.length})</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{tr(locale, "Open payments")} ({payments.length})</CardTitle></CardHeader>
               <CardContent className="p-0">
                 <ul className="divide-y divide-outline-gray-1">
                   {payments.length === 0 && (
-                    <li className="px-4 py-6 text-center text-sm text-ink-gray-5">No open payments</li>
+                    <li className="px-4 py-6 text-center text-sm text-ink-gray-5">{tr(locale, "No open payments")}</li>
                   )}
                   {payments.map((p) => {
                     const good = selectedTxn && fits(selectedTxn, p);
@@ -287,7 +290,7 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="font-semibold">{money(p.received_amount || p.paid_amount)}</span>
-                          <Button variant="solid" size="sm" disabled={!selectedTxn || pending} onClick={() => doMatch(p)}>Match</Button>
+                          <Button variant="solid" size="sm" disabled={!selectedTxn || pending} onClick={() => doMatch(p)}>{tr(locale, "Match")}</Button>
                         </div>
                       </li>
                     );
@@ -301,19 +304,19 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
         {/* Statement */}
         <TabsContent value="statement" className="pt-4">
           <Card>
-            <CardHeader><CardTitle>Reconciliation statement</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{tr(locale, "Reconciliation statement")}</CardTitle></CardHeader>
             <CardContent className="space-y-3 text-sm">
               <label className="flex items-center gap-3">
-                <span className="w-56 text-ink-gray-5">Closing balance as per bank statement</span>
+                <span className="w-56 text-ink-gray-5">{tr(locale, "Closing balance as per bank statement")}</span>
                 <input type="number" value={closing} onChange={(e) => setClosing(Number(e.target.value))}
                   className="w-40 rounded-md border border-outline-gray-2 px-2 py-1.5 text-sm" />
               </label>
               <div className="flex justify-between border-t border-outline-gray-1 pt-2">
-                <span className="text-ink-gray-5">Unreconciled amount</span>
+                <span className="text-ink-gray-5">{tr(locale, "Unreconciled amount")}</span>
                 <span className="font-semibold text-amber-600">{money(unreconciledAmount)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-ink-gray-5">Difference (closing − unreconciled)</span>
+                <span className="text-ink-gray-5">{tr(locale, "Difference (closing − unreconciled)")}</span>
                 <span className="font-semibold">{money(closing - unreconciledAmount)}</span>
               </div>
             </CardContent>
@@ -323,10 +326,10 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
         {/* Action log */}
         <TabsContent value="log" className="pt-4">
           <Card>
-            <CardHeader><CardTitle>Action log ({log.length})</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{tr(locale, "Action log")} ({log.length})</CardTitle></CardHeader>
             <CardContent className="p-0">
               <ul className="divide-y divide-outline-gray-1">
-                {log.length === 0 && <li className="px-4 py-6 text-center text-sm text-ink-gray-5">No actions yet</li>}
+                {log.length === 0 && <li className="px-4 py-6 text-center text-sm text-ink-gray-5">{tr(locale, "No actions yet")}</li>}
                 {log.map((l, i) => (
                   <li key={i} className="flex items-center justify-between px-4 py-2 text-sm">
                     <span>{l.detail}</span>
