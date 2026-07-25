@@ -64,9 +64,9 @@ export function StockEntryForm({
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Purpose")}</span>
             <select {...register("purpose")} className={cls}>
-              <option value="receipt">receipt (add stock)</option>
-              <option value="issue">issue (remove stock)</option>
-              <option value="transfer">transfer (move location)</option>
+              <option value="receipt">{t(locale, "receipt (add stock)")}</option>
+              <option value="issue">{t(locale, "issue (remove stock)")}</option>
+              <option value="transfer">{t(locale, "transfer (move location)")}</option>
             </select>
           </label>
           <label className="block">

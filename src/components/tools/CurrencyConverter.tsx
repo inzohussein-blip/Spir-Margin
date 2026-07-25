@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { ArrowRightLeftIcon } from "lucide-react";
+import { useLocale } from "@/components/LocaleProvider";
+import { t } from "@/lib/i18n";
 
 const cls = "w-full rounded-md border border-outline-gray-2 px-3 py-2 text-lg font-semibold focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
 
 export function CurrencyConverter({ rate }: { rate: number }) {
+  const locale = useLocale();
   const [usd, setUsd] = useState("1");
   const [dir, setDir] = useState<"usd2iqd" | "iqd2usd">("usd2iqd");
 
@@ -16,9 +19,9 @@ export function CurrencyConverter({ rate }: { rate: number }) {
   return (
     <div className="max-w-md space-y-3 rounded-xl border border-outline-gray-2 bg-surface-white p-5 shadow-sm">
       {rate <= 0 ? (
-        <p className="text-sm text-amber-700">Set today&apos;s USD → IQD rate first (Currency page).</p>
+        <p className="text-sm text-amber-700">{t(locale, "Set today's USD → IQD rate first (Currency page).")}</p>
       ) : (
-        <p className="text-xs text-ink-gray-4">Rate: 1 USD = {fmt(rate, 0)} IQD</p>
+        <p className="text-xs text-ink-gray-4">{t(locale, "Rate:")} 1 USD = {fmt(rate, 0)} IQD</p>
       )}
       <div className="flex items-end gap-2">
         <label className="flex-1 text-sm">
@@ -26,7 +29,7 @@ export function CurrencyConverter({ rate }: { rate: number }) {
           <input type="number" value={usd} onChange={(e) => setUsd(e.target.value)} className={cls} />
         </label>
         <button type="button" onClick={() => setDir((d) => (d === "usd2iqd" ? "iqd2usd" : "usd2iqd"))}
-          className="mb-1 rounded-md border border-outline-gray-2 p-2 text-ink-gray-6 hover:bg-surface-gray-1" title="Swap">
+          className="mb-1 rounded-md border border-outline-gray-2 p-2 text-ink-gray-6 hover:bg-surface-gray-1" title={t(locale, "Swap")}>
           <ArrowRightLeftIcon size={18} />
         </button>
         <div className="flex-1 text-sm">

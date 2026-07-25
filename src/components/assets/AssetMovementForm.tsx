@@ -59,9 +59,9 @@ export function AssetMovementForm({
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Purpose")}</span>
             <select {...register("purpose")} className={cls}>
-              <option value="issue">issue (out to a lab)</option>
-              <option value="receipt">receipt (back to a warehouse)</option>
-              <option value="transfer">transfer</option>
+              <option value="issue">{t(locale, "issue (out to a lab)")}</option>
+              <option value="receipt">{t(locale, "receipt (back to a warehouse)")}</option>
+              <option value="transfer">{t(locale, "transfer")}</option>
             </select>
           </label>
           <label className="block">
@@ -79,7 +79,7 @@ export function AssetMovementForm({
         <CardHeader><CardTitle>{t(locale, "Devices")}</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-ink-gray-5">
-            Set the destination — a device sent to a lab is marked <em>installed</em>; one returned to a warehouse is marked <em>in stock</em>.
+            Set the destination — a device sent to a lab is marked <em>{t(locale, "installed")}</em>; one returned to a warehouse is marked <em>{t(locale, "in stock")}</em>.
           </p>
           {fields.map((f, i) => (
             <div key={f.id} className="rounded-lg border border-outline-gray-1 p-3">

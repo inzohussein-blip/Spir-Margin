@@ -62,7 +62,7 @@ export function RuleForm({
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Rule name *")}</span>
             <input {...register("rule_name", { required: true })} className={inputCls} placeholder="Al-Kindy inflows" />
-            {errors.rule_name && <span className="text-xs text-red-500">Required</span>}
+            {errors.rule_name && <span className="text-xs text-red-500">{t(locale, "Required")}</span>}
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Priority")}</span>
@@ -71,17 +71,17 @@ export function RuleForm({
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Applies to")}</span>
             <select {...register("transaction_type")} className={inputCls}>
-              <option value="any">any</option>
-              <option value="deposit">deposit</option>
-              <option value="withdrawal">withdrawal</option>
+              <option value="any">{t(locale, "any")}</option>
+              <option value="deposit">{t(locale, "deposit")}</option>
+              <option value="withdrawal">{t(locale, "withdrawal")}</option>
             </select>
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Classify as")}</span>
             <select {...register("classify_as")} className={inputCls}>
-              <option value="payment_entry">payment entry</option>
-              <option value="bank_entry">bank entry</option>
-              <option value="transfer">transfer</option>
+              <option value="payment_entry">{t(locale, "payment entry")}</option>
+              <option value="bank_entry">{t(locale, "bank entry")}</option>
+              <option value="transfer">{t(locale, "transfer")}</option>
             </select>
           </label>
           <label className="block">
@@ -110,16 +110,16 @@ export function RuleForm({
               <label className="block text-sm">
                 <span className="text-ink-gray-5">{t(locale, "Field")}</span>
                 <select {...register(`conditions.${i}.field`)} className={inputCls}>
-                  <option value="description">description</option>
-                  <option value="reference_number">reference number</option>
+                  <option value="description">{t(locale, "description")}</option>
+                  <option value="reference_number">{t(locale, "reference number")}</option>
                 </select>
               </label>
               <label className="block text-sm">
                 <span className="text-ink-gray-5">{t(locale, "Operator")}</span>
                 <select {...register(`conditions.${i}.operator`)} className={inputCls}>
-                  <option value="contains">contains</option>
-                  <option value="equals">equals</option>
-                  <option value="starts_with">starts with</option>
+                  <option value="contains">{t(locale, "contains")}</option>
+                  <option value="equals">{t(locale, "equals")}</option>
+                  <option value="starts_with">{t(locale, "starts with")}</option>
                 </select>
               </label>
               <label className="block flex-1 text-sm">

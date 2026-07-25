@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale } from "@/components/LocaleProvider";
+import { t } from "@/lib/i18n";
 
 const cls = "mt-1 w-full rounded-md border border-outline-gray-2 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
 const n = (v: string) => (v === "" ? 0 : Number(v) || 0);
 
 export function ProfitCalculator({ usdToIqd = 0 }: { usdToIqd?: number }) {
+  const locale = useLocale();
   const [cost, setCost] = useState("");
   const [sell, setSell] = useState("");
   const [qty, setQty] = useState("1");
@@ -25,31 +28,31 @@ export function ProfitCalculator({ usdToIqd = 0 }: { usdToIqd?: number }) {
     <div className="max-w-lg space-y-4 rounded-xl border border-outline-gray-2 bg-surface-white p-5 shadow-sm">
       <div className="grid grid-cols-3 gap-3">
         <label className="block text-sm">
-          <span className="font-medium text-ink-gray-8">Cost (USD)</span>
+          <span className="font-medium text-ink-gray-8">{t(locale, "Cost (USD)")}</span>
           <input type="number" step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} className={cls} placeholder="0" />
         </label>
         <label className="block text-sm">
-          <span className="font-medium text-ink-gray-8">Sell (USD)</span>
+          <span className="font-medium text-ink-gray-8">{t(locale, "Sell (USD)")}</span>
           <input type="number" step="0.01" value={sell} onChange={(e) => setSell(e.target.value)} className={cls} placeholder="0" />
         </label>
         <label className="block text-sm">
-          <span className="font-medium text-ink-gray-8">Qty</span>
+          <span className="font-medium text-ink-gray-8">{t(locale, "Qty")}</span>
           <input type="number" step="1" value={qty} onChange={(e) => setQty(e.target.value)} className={cls} placeholder="1" />
         </label>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Stat label="Unit profit" value={usd(unitProfit)} sub={iqd(unitProfit)} good={unitProfit >= 0} />
-        <Stat label="Total profit" value={usd(totalProfit)} sub={iqd(totalProfit)} good={totalProfit >= 0} strong />
-        <Stat label="Margin" value={`${margin.toFixed(1)}%`} />
-        <Stat label="Markup" value={`${markup.toFixed(1)}%`} />
-        <Stat label="Total cost" value={usd(totalCost)} sub={iqd(totalCost)} />
-        <Stat label="Total revenue" value={usd(totalRevenue)} sub={iqd(totalRevenue)} />
+        <Stat label={t(locale, "Unit profit")} value={usd(unitProfit)} sub={iqd(unitProfit)} good={unitProfit >= 0} />
+        <Stat label={t(locale, "Total profit")} value={usd(totalProfit)} sub={iqd(totalProfit)} good={totalProfit >= 0} strong />
+        <Stat label={t(locale, "Margin")} value={`${margin.toFixed(1)}%`} />
+        <Stat label={t(locale, "Markup")} value={`${markup.toFixed(1)}%`} />
+        <Stat label={t(locale, "Total cost")} value={usd(totalCost)} sub={iqd(totalCost)} />
+        <Stat label={t(locale, "Total revenue")} value={usd(totalRevenue)} sub={iqd(totalRevenue)} />
       </div>
       {usdToIqd > 0 ? (
-        <p className="text-xs text-ink-gray-4">IQD values use today&apos;s rate: 1 USD = {new Intl.NumberFormat("en-US").format(usdToIqd)} IQD.</p>
+        <p className="text-xs text-ink-gray-4">{t(locale, "IQD values use today's rate:")} 1 USD = {new Intl.NumberFormat("en-US").format(usdToIqd)} IQD.</p>
       ) : (
-        <p className="text-xs text-ink-gray-4">Set today&apos;s USD → IQD rate in Currency to see dinar values.</p>
+        <p className="text-xs text-ink-gray-4">{t(locale, "Set today's USD → IQD rate in Currency to see dinar values.")}</p>
       )}
     </div>
   );
