@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DocumentSheet, type DocLine } from "@/components/print/DocumentSheet";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
+import { statusLabel } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +25,7 @@ export default async function PurchaseOrderPrintPage({ params }: { params: { id:
   const po = data as unknown as PO | null;
   if (!po) notFound();
 
+  const locale = getLocale();
   const lines: DocLine[] = (po.purchase_order_items ?? []).map((it) => ({
     label: it.products?.name ?? "Item",
     sub: it.products?.item_code ?? null,
@@ -32,23 +36,23 @@ export default async function PurchaseOrderPrintPage({ params }: { params: { id:
 
   return (
     <DocumentSheet
-      docType="Purchase Order"
+      docType={t(locale, "Purchase Order")}
       docNo={po.po_no}
       date={po.transaction_date}
       backHref={`/purchase-orders/${po.id}`}
       parties={[
-        { heading: "Supplier", name: po.companies?.name ?? "—" },
-        { heading: "Ordered by", name: "Spir-Margin", lines: ["Medical devices & lab supplies"] },
+        { heading: t(locale, "Supplier"), name: po.companies?.name ?? "—" },
+        { heading: t(locale, "Ordered by"), name: "Spir-Margin", lines: [t(locale, "Medical devices & lab supplies")] },
       ]}
       meta={[
-        { label: "Order date", value: po.transaction_date },
-        { label: "Required by", value: po.required_by ?? "—" },
-        { label: "Status", value: <span className="capitalize">{po.status.replace(/_/g, " ")}</span> },
+        { label: t(locale, "Order date"), value: po.transaction_date },
+        { label: t(locale, "Required by"), value: po.required_by ?? "—" },
+        { label: t(locale, "Status"), value: <span>{statusLabel(locale, po.status)}</span> },
       ]}
       lines={lines}
-      totals={[{ label: "Total", value: Number(po.total_amount), strong: true }]}
+      totals={[{ label: t(locale, "Total"), value: Number(po.total_amount), strong: true }]}
       notes={po.notes}
-      footer="Please confirm receipt of this purchase order — Spir-Margin"
+      footer={t(locale, "Please confirm receipt of this purchase order — Spir-Margin")}
     />
   );
 }

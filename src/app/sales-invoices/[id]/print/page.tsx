@@ -2,6 +2,9 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DocumentSheet, type DocLine } from "@/components/print/DocumentSheet";
 import { getUsdIqdRate } from "@/app/actions/currency";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
+import { statusLabel } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +27,7 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
   const inv = data as unknown as Invoice | null;
   if (!inv) notFound();
 
+  const locale = getLocale();
   const currency = inv.currency || "USD";
   const rate = await getUsdIqdRate();
   const lines: DocLine[] = (inv.sales_invoice_items ?? []).map((it) => ({
@@ -36,25 +40,25 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
 
   return (
     <DocumentSheet
-      docType="Invoice"
+      docType={t(locale, "Invoice")}
       docNo={inv.invoice_no}
       date={inv.posting_date}
       backHref={`/sales-invoices/${inv.id}`}
       currency={currency}
       parties={[
-        { heading: "Billed to", name: inv.labs?.name ?? "—", lines: [inv.labs?.code ? `Code: ${inv.labs.code}` : null] },
-        { heading: "From", name: "Spir-Margin", lines: ["Medical devices & lab supplies"] },
+        { heading: t(locale, "Billed to"), name: inv.labs?.name ?? "—", lines: [inv.labs?.code ? `${t(locale, "Code:")} ${inv.labs.code}` : null] },
+        { heading: t(locale, "From"), name: "Spir-Margin", lines: [t(locale, "Medical devices & lab supplies")] },
       ]}
       meta={[
-        { label: "Invoice date", value: inv.posting_date },
-        { label: "Due date", value: inv.due_date ?? "—" },
-        { label: "Status", value: <span className="capitalize">{inv.status.replace(/_/g, " ")}</span> },
+        { label: t(locale, "Invoice date"), value: inv.posting_date },
+        { label: t(locale, "Due date"), value: inv.due_date ?? "—" },
+        { label: t(locale, "Status"), value: <span>{statusLabel(locale, inv.status)}</span> },
       ]}
       lines={lines}
       totals={[
-        { label: "Total", value: Number(inv.total_amount) },
-        { label: "Paid", value: Number(inv.paid_amount) },
-        { label: "Balance due", value: Number(inv.outstanding), strong: true },
+        { label: t(locale, "Total"), value: Number(inv.total_amount) },
+        { label: t(locale, "Paid"), value: Number(inv.paid_amount) },
+        { label: t(locale, "Balance due"), value: Number(inv.outstanding), strong: true },
       ]}
       notes={inv.notes}
       footer={rate > 0

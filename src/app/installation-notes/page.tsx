@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
+import { statusLabel } from "@/lib/status";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { submitInstallationNoteForm, cancelInstallationNoteForm } from "@/app/actions/installation";
 
@@ -67,7 +68,7 @@ export default async function InstallationNotesPage() {
                     <td className="px-4 py-2 text-ink-gray-5">{n.installation_note_items?.length ?? 0}</td>
                     <td className="px-4 py-2">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[n.status] ?? "bg-surface-gray-2"}`}>
-                        {n.status}
+                        {statusLabel(locale, n.status)}
                       </span>
                     </td>
                     <td className="px-4 py-2">

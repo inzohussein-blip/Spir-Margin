@@ -6,6 +6,7 @@ import { ListSearch } from "@/components/desk/ListSearch";
 import { submitDeliveryNoteForm } from "@/app/actions/delivery";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
+import { statusLabel } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 
@@ -74,7 +75,7 @@ export default async function DeliveryNotesPage({
                     <td className="px-4 py-2 font-medium">{d.labs?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5"><Link href={`/delivery-notes/${d.id}`} className="text-brand hover:underline">{d.posting_date}</Link></td>
                     <td className="px-4 py-2 text-ink-gray-5">{d.delivery_note_items?.length ?? 0}</td>
-                    <td className="px-4 py-2"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[d.status] ?? "bg-surface-gray-2"}`}>{d.status}</span></td>
+                    <td className="px-4 py-2"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[d.status] ?? "bg-surface-gray-2"}`}>{statusLabel(locale, d.status)}</span></td>
                     <td className="px-4 py-2">
                       {d.status === "draft" ? (
                         <form action={submitDeliveryNoteForm}>

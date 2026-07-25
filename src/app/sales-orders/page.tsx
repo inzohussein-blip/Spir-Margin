@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PencilIcon, Trash2Icon } from "lucide-react";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
+import { statusLabel } from "@/lib/status";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { ListShell } from "@/components/desk/ListShell";
 import { Pager, PAGE_SIZE, parsePage, pageRange } from "@/components/desk/Pager";
@@ -94,7 +95,7 @@ export default async function SalesOrdersPage({
                     <td className="px-4 py-2">{Number(o.total_amount).toLocaleString()}</td>
                     <td className="px-4 py-2">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[o.status] ?? "bg-surface-gray-2"}`}>
-                        {o.status}
+                        {statusLabel(locale, o.status)}
                       </span>
                     </td>
                     <td className="px-4 py-2">

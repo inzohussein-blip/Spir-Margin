@@ -6,6 +6,7 @@ import { ListShell } from "@/components/desk/ListShell";
 import { setAppointmentStatusForm } from "@/app/actions/appointment";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
+import { statusLabel } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 
@@ -87,7 +88,7 @@ export default async function AppointmentsPage() {
                           <option value="cancelled">cancelled</option>
                         </select>
                         <button className="rounded-md bg-brand px-2 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Set")}</button>
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[a.status] ?? "bg-surface-gray-2"}`}>{a.status}</span>
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[a.status] ?? "bg-surface-gray-2"}`}>{statusLabel(locale, a.status)}</span>
                       </form>
                     </td>
                   </tr>

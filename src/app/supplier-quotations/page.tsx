@@ -4,6 +4,7 @@ import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { convertSupplierQuotationForm } from "@/app/actions/supplier_quotation";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
+import { statusLabel } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 
@@ -56,7 +57,7 @@ export default async function SupplierQuotationsPage() {
                     <td className="px-4 py-2 text-ink-gray-5">{q.valid_till ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{q.supplier_quotation_items?.length ?? 0}</td>
                     <td className="px-4 py-2">{Number(q.total_amount).toLocaleString()}</td>
-                    <td className="px-4 py-2"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[q.status] ?? "bg-surface-gray-2"}`}>{q.status}</span></td>
+                    <td className="px-4 py-2"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[q.status] ?? "bg-surface-gray-2"}`}>{statusLabel(locale, q.status)}</span></td>
                     <td className="px-4 py-2">
                       {q.status !== "ordered" ? (
                         <form action={convertSupplierQuotationForm}>

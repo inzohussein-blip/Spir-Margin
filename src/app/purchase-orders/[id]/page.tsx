@@ -6,6 +6,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { Attachments } from "@/components/attachments/Attachments";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
+import { statusLabel } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export default async function PoDetailPage({ params }: { params: { id: string } 
             Print / PDF
           </Link>
           <span className={`rounded-full px-3 py-1 text-sm font-medium ${statusBadge[po.status] ?? "bg-surface-gray-2"}`}>
-            {po.status}
+            {statusLabel(locale, po.status)}
           </span>
         </div>
       </div>

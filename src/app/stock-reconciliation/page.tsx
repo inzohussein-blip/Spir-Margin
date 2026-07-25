@@ -4,6 +4,7 @@ import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { postStockReconciliationForm } from "@/app/actions/stock";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
+import { statusLabel } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export default async function StockReconPage() {
                     <td className="px-4 py-2 text-ink-gray-5">{r.notes ?? "—"}</td>
                     <td className="px-4 py-2">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[r.status] ?? "bg-surface-gray-2"}`}>
-                        {r.status}
+                        {statusLabel(locale, r.status)}
                       </span>
                     </td>
                     <td className="px-4 py-2">

@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DocumentSheet, type DocLine } from "@/components/print/DocumentSheet";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
+import { statusLabel } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +25,7 @@ export default async function QuotationPrintPage({ params }: { params: { id: str
   const q = data as unknown as Quotation | null;
   if (!q) notFound();
 
+  const locale = getLocale();
   const currency = q.currency || "USD";
   const lines: DocLine[] = (q.quotation_items ?? []).map((it) => ({
     label: it.products?.name ?? "Item",
@@ -33,24 +37,24 @@ export default async function QuotationPrintPage({ params }: { params: { id: str
 
   return (
     <DocumentSheet
-      docType="Quotation"
+      docType={t(locale, "Quotation")}
       docNo={q.naming_series || `QTN-${q.id.slice(0, 8)}`}
       date={q.transaction_date}
       backHref="/quotations"
       currency={currency}
       parties={[
-        { heading: "Prepared for", name: q.labs?.name ?? "—", lines: [q.labs?.code ? `Code: ${q.labs.code}` : null] },
-        { heading: "From", name: "Spir-Margin", lines: ["Medical devices & lab supplies"] },
+        { heading: t(locale, "Prepared for"), name: q.labs?.name ?? "—", lines: [q.labs?.code ? `${t(locale, "Code:")} ${q.labs.code}` : null] },
+        { heading: t(locale, "From"), name: "Spir-Margin", lines: [t(locale, "Medical devices & lab supplies")] },
       ]}
       meta={[
-        { label: "Date", value: q.transaction_date },
-        { label: "Valid till", value: q.valid_till ?? "—" },
-        { label: "Status", value: <span className="capitalize">{q.status.replace(/_/g, " ")}</span> },
+        { label: t(locale, "Date"), value: q.transaction_date },
+        { label: t(locale, "Valid till"), value: q.valid_till ?? "—" },
+        { label: t(locale, "Status"), value: <span>{statusLabel(locale, q.status)}</span> },
       ]}
       lines={lines}
-      totals={[{ label: "Total", value: Number(q.total_amount), strong: true }]}
+      totals={[{ label: t(locale, "Total"), value: Number(q.total_amount), strong: true }]}
       notes={q.notes}
-      footer="This quotation is valid until the date shown above — Spir-Margin"
+      footer={t(locale, "This quotation is valid until the date shown above — Spir-Margin")}
     />
   );
 }

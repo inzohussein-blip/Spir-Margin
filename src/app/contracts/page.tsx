@@ -8,6 +8,7 @@ import { ListSearch } from "@/components/desk/ListSearch";
 import { setContractStatusForm } from "@/app/actions/contract";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
+import { statusLabel } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 
@@ -124,7 +125,7 @@ export default async function ContractsPage({
                             <option value="cancelled">cancelled</option>
                           </select>
                           <button className="rounded-md bg-brand px-2 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Set")}</button>
-                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[c.status] ?? "bg-surface-gray-2"}`}>{c.status}</span>
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[c.status] ?? "bg-surface-gray-2"}`}>{statusLabel(locale, c.status)}</span>
                         </form>
                       </td>
                     </tr>

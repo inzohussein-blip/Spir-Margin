@@ -8,6 +8,7 @@ import { ListSearch } from "@/components/desk/ListSearch";
 import { ConfirmSubmit } from "@/components/settings/ConfirmSubmit";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
+import { statusLabel } from "@/lib/status";
 import { convertQuotationForm, deleteQuotationForm } from "@/app/actions/quotation";
 
 export const dynamic = "force-dynamic";
@@ -83,7 +84,7 @@ export default async function QuotationsPage({
                     <td className="px-4 py-2 text-ink-gray-5">{q.valid_till ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{q.quotation_items?.length ?? 0}</td>
                     <td className="px-4 py-2">{Number(q.total_amount).toLocaleString()}</td>
-                    <td className="px-4 py-2"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[q.status] ?? "bg-surface-gray-2"}`}>{q.status}</span></td>
+                    <td className="px-4 py-2"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[q.status] ?? "bg-surface-gray-2"}`}>{statusLabel(locale, q.status)}</span></td>
                     <td className="px-4 py-2">
                       <div className="flex flex-wrap items-center gap-2">
                         <Link href={`/quotations/${q.id}/print`} className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Print")}</Link>

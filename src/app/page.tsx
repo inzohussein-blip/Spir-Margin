@@ -4,6 +4,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
+import { statusLabel } from "@/lib/status";
 import type {
   ProfitSummary,
   ActiveLab,
@@ -139,7 +140,7 @@ export default async function DashboardPage() {
         <StatCard
           label={t(locale, "Total Profit")}
           value={money(profit.total_profit)}
-          hint={`${profit.sales_count} sales · revenue ${money(
+          hint={`${profit.sales_count} ${t(locale, "sales · revenue")} ${money(
             profit.total_revenue
           )}`}
           accent="green"
@@ -147,19 +148,19 @@ export default async function DashboardPage() {
         <StatCard
           label={t(locale, "Active Labs")}
           value={String(labs.length)}
-          hint="labs with a live subscription"
+          hint={t(locale, "labs with a live subscription")}
           accent="brand"
         />
         <StatCard
           label={t(locale, "Maintenance Alerts")}
           value={String(alerts.length)}
-          hint="devices needing attention"
+          hint={t(locale, "devices needing attention")}
           accent="amber"
         />
         <StatCard
           label={t(locale, "Expiring Kits")}
           value={String(kits.length)}
-          hint="batches expiring ≤ 90 days"
+          hint={t(locale, "batches expiring ≤ 90 days")}
           accent="red"
         />
       </div>
@@ -169,31 +170,31 @@ export default async function DashboardPage() {
         <StatCard
           label={t(locale, "Outstanding Receivables")}
           value={money(outstandingTotal)}
-          hint={`${invoices.length} open invoice${invoices.length === 1 ? "" : "s"}`}
+          hint={`${invoices.length} ${t(locale, "open invoices")}`}
           accent="amber"
         />
         <StatCard
           label={t(locale, "Open Purchase Orders")}
           value={String(pos.length)}
-          hint={`value ${money(poTotal)}`}
+          hint={`${t(locale, "value")} ${money(poTotal)}`}
           accent="brand"
         />
         <StatCard
           label={t(locale, "Active Work Orders")}
           value={String(openWorkOrders)}
-          hint="kit assembly in progress"
+          hint={t(locale, "kit assembly in progress")}
           accent="green"
         />
         <StatCard
           label={t(locale, "Pending Repairs")}
           value={String(pendingRepairs)}
-          hint="devices under repair"
+          hint={t(locale, "devices under repair")}
           accent="red"
         />
         <StatCard
           label={t(locale, "Open Issues")}
           value={String(openIssues)}
-          hint="support tickets awaiting action"
+          hint={t(locale, "support tickets awaiting action")}
           accent="amber"
         />
       </div>
@@ -213,7 +214,7 @@ export default async function DashboardPage() {
                   </div>
                   <div className="text-right">
                     <div className="font-medium text-ink-gray-8">{money(Number(inv.outstanding))}</div>
-                    <div className="text-xs text-ink-gray-4">{inv.status.replace("_", " ")}</div>
+                    <div className="text-xs text-ink-gray-4">{statusLabel(locale, inv.status)}</div>
                   </div>
                 </li>
               ))}
@@ -234,7 +235,7 @@ export default async function DashboardPage() {
                   </div>
                   <div className="text-right">
                     <div className="font-medium text-ink-gray-8">{money(Number(p.total_amount))}</div>
-                    <div className="text-xs text-ink-gray-4">{p.status}</div>
+                    <div className="text-xs text-ink-gray-4">{statusLabel(locale, p.status)}</div>
                   </div>
                 </li>
               ))}

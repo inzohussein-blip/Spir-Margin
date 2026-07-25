@@ -2,6 +2,9 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DocumentSheet, type DocLine } from "@/components/print/DocumentSheet";
 import { getUsdIqdRate } from "@/app/actions/currency";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
+import { statusLabel } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +29,7 @@ export default async function SalesOrderPrintPage({ params }: { params: { id: st
   const so = data as unknown as Order | null;
   if (!so) notFound();
 
+  const locale = getLocale();
   const currency = so.currency || "USD";
   const rate = await getUsdIqdRate();
   const docNo = so.naming_series || `SO-${so.id.slice(0, 8).toUpperCase()}`;
@@ -39,22 +43,22 @@ export default async function SalesOrderPrintPage({ params }: { params: { id: st
 
   return (
     <DocumentSheet
-      docType="Sales Order"
+      docType={t(locale, "Sales Order")}
       docNo={docNo}
       date={so.transaction_date}
       backHref={`/sales-orders/${so.id}`}
       currency={currency}
       parties={[
-        { heading: "Ordered by", name: so.labs?.name ?? "—", lines: [so.labs?.code ? `Code: ${so.labs.code}` : null] },
-        { heading: "From", name: "Spir-Margin", lines: ["Medical devices & lab supplies"] },
+        { heading: t(locale, "Ordered by"), name: so.labs?.name ?? "—", lines: [so.labs?.code ? `${t(locale, "Code:")} ${so.labs.code}` : null] },
+        { heading: t(locale, "From"), name: "Spir-Margin", lines: [t(locale, "Medical devices & lab supplies")] },
       ]}
       meta={[
-        { label: "Order date", value: so.transaction_date },
-        { label: "Delivery date", value: so.delivery_date ?? "—" },
-        { label: "Status", value: <span className="capitalize">{so.status.replace(/_/g, " ")}</span> },
+        { label: t(locale, "Order date"), value: so.transaction_date },
+        { label: t(locale, "Delivery date"), value: so.delivery_date ?? "—" },
+        { label: t(locale, "Status"), value: <span>{statusLabel(locale, so.status)}</span> },
       ]}
       lines={lines}
-      totals={[{ label: "Total", value: Number(so.total_amount), strong: true }]}
+      totals={[{ label: t(locale, "Total"), value: Number(so.total_amount), strong: true }]}
       notes={so.notes}
       footer={rate > 0
         ? `Total ≈ ${new Intl.NumberFormat("en-US").format(Math.round(Number(so.total_amount) * rate))} IQD (1 USD = ${new Intl.NumberFormat("en-US").format(rate)} IQD) — Spir-Margin`

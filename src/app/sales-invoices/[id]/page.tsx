@@ -7,6 +7,7 @@ import { Attachments } from "@/components/attachments/Attachments";
 import { getUsdIqdRate } from "@/app/actions/currency";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
+import { statusLabel } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +70,7 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
             Print / PDF
           </Link>
           <span className={`rounded-full px-3 py-1 text-sm font-medium ${statusBadge[inv.status] ?? "bg-surface-gray-2"}`}>
-            {inv.status.replace("_", " ")}
+            {statusLabel(locale, inv.status)}
           </span>
         </div>
       </div>
