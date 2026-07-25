@@ -69,8 +69,8 @@ export default async function PurchasesPage({
 
       {s && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatCard label={t(locale, "Received cost")} value={Number(s.total_received_cost).toLocaleString()} hint={`${s.received_count} received`} accent="green" />
-          <StatCard label={t(locale, "Draft cost")} value={Number(s.total_draft_cost).toLocaleString()} hint={`${s.draft_count} draft`} accent="amber" />
+          <StatCard label={t(locale, "Received cost")} value={Number(s.total_received_cost).toLocaleString()} hint={`${s.received_count} ${t(locale, "received")}`} accent="green" />
+          <StatCard label={t(locale, "Draft cost")} value={Number(s.total_draft_cost).toLocaleString()} hint={`${s.draft_count} ${statusLabel(locale, "draft")}`} accent="amber" />
           <StatCard label={t(locale, "Purchases")} value={total.toLocaleString()} accent="brand" />
         </div>
       )}
