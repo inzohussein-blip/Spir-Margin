@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { headers } from "next/headers";
 import { AppNav } from "@/components/AppNav";
+import { MobileSidebar } from "@/components/MobileSidebar";
 import { Awesomebar } from "@/components/desk/Awesomebar";
 import { NewButton } from "@/components/desk/NewButton";
 import { UserMenu } from "@/components/auth/UserMenu";
@@ -61,7 +62,7 @@ export default async function RootLayout({
           children
         ) : (
           <div className="flex min-h-screen">
-            <aside className="no-print sticky top-0 flex h-screen w-60 shrink-0 flex-col overflow-y-auto border-e border-outline-gray-2 bg-surface-white/80 backdrop-blur-xl">
+            <aside className="no-print sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-e border-outline-gray-2 bg-surface-white/80 backdrop-blur-xl md:flex">
               <div className="flex items-center gap-2.5 px-5 py-4 text-lg font-bold tracking-tight text-ink-gray-8">
                 <span className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm">S</span>
                 Spir-Margin
@@ -69,13 +70,24 @@ export default async function RootLayout({
               <AppNav locale={locale} hidden={nav.hidden} off={nav.off} />
             </aside>
             <div className="flex min-w-0 flex-1 flex-col">
-              <header className="no-print sticky top-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-outline-gray-2 bg-surface-white/85 px-6 shadow-sm backdrop-blur-xl">
+              <header className="no-print sticky top-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-outline-gray-2 bg-surface-white/85 px-4 shadow-sm backdrop-blur-xl md:px-6">
                 <div className="flex items-center gap-3">
+                  <MobileSidebar>
+                    <div className="flex items-center gap-2.5 px-5 py-4 text-lg font-bold tracking-tight text-ink-gray-8">
+                      <span className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm">S</span>
+                      Spir-Margin
+                    </div>
+                    <AppNav locale={locale} hidden={nav.hidden} off={nav.off} />
+                  </MobileSidebar>
                   <NewButton locale={locale} blocked={blockedFeatures} />
-                  <Awesomebar locale={locale} blocked={blockedFeatures} />
+                  <div className="hidden min-w-0 sm:block">
+                    <Awesomebar locale={locale} blocked={blockedFeatures} />
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <SyncStatus />
+                  <div className="hidden sm:block">
+                    <SyncStatus />
+                  </div>
                   <NotificationBell items={notifications} locale={locale} />
                   <LanguageSwitcher locale={locale} />
                   <UserMenu user={user} locale={locale} />
