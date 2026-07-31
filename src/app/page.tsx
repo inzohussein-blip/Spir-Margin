@@ -321,9 +321,9 @@ export default async function DashboardPage() {
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">Due</th>
-                  <th className="px-4 py-2">Device</th>
+                  <th className="px-4 py-2">{t(locale, "Device")}</th>
                   <th className="px-4 py-2">Lab</th>
-                  <th className="px-4 py-2">Schedule</th>
+                  <th className="px-4 py-2">{t(locale, "Schedule")}</th>
                   <th className="px-4 py-2">In</th>
                 </tr>
               </thead>
@@ -371,7 +371,7 @@ export default async function DashboardPage() {
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">Contract</th>
                   <th className="px-4 py-2">Lab</th>
-                  <th className="px-4 py-2">Device</th>
+                  <th className="px-4 py-2">{t(locale, "Device")}</th>
                   <th className="px-4 py-2">Ends</th>
                   <th className="px-4 py-2">In</th>
                 </tr>
@@ -412,8 +412,8 @@ export default async function DashboardPage() {
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">Batch</th>
-                  <th className="px-4 py-2">Product</th>
-                  <th className="px-4 py-2">Warehouse</th>
+                  <th className="px-4 py-2">{t(locale, "Product")}</th>
+                  <th className="px-4 py-2">{t(locale, "Warehouse")}</th>
                   <th className="px-4 py-2">Qty</th>
                   <th className="px-4 py-2">Expiry</th>
                   <th className="px-4 py-2">Days left</th>

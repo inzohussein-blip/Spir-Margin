@@ -35,13 +35,13 @@ export default async function NewIssuePage() {
           </Field>
           <Field label={t(locale, "Lab")}>
             <Select name="lab_id" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {labs.map((l) => <option key={l.id as string} value={l.id as string}>{l.name as string}</option>)}
             </Select>
           </Field>
           <Field label={t(locale, "Device")}>
             <Select name="device_id" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {devices.map((d) => (
                 <option key={d.id as string} value={d.id as string}>{d.asset_code as string}</option>
               ))}

@@ -38,7 +38,7 @@ export default async function NewWarehousePage() {
           </Field>
           <Field label={t(locale, "Type")}>
             <Select name="warehouse_type" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {types.map((t) => <option key={t} value={t}>{t}</option>)}
             </Select>
           </Field>

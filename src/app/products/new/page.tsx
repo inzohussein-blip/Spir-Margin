@@ -73,7 +73,7 @@ export default async function NewProductPage() {
           </Field>
           <Field label={t(locale, "Default supplier")}>
             <Select name="supplier_id" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {suppliers.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}

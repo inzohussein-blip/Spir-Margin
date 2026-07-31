@@ -54,7 +54,7 @@ export default async function NewItemPricePage() {
           </Field>
           <Field label={t(locale, "Lab (optional — leave empty for all labs)")}>
             <Select name="lab_id" defaultValue="">
-              <option value="">— all labs —</option>
+              <option value="">{t(locale, "— all labs —")}</option>
               {labs.map((l) => (
                 <option key={l.id} value={l.id}>{l.name} ({l.code})</option>
               ))}
@@ -62,7 +62,7 @@ export default async function NewItemPricePage() {
           </Field>
           <Field label={t(locale, "Supplier (optional)")}>
             <Select name="supplier_id" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {suppliers.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}

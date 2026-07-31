@@ -65,7 +65,7 @@ export default async function NewDevicePage() {
           </Field>
           <Field label={t(locale, "Lab (location)")}>
             <Select name="lab_id" defaultValue="">
-              <option value="">— unassigned —</option>
+              <option value="">{t(locale, "— unassigned —")}</option>
               {labs.map((l) => (
                 <option key={l.id} value={l.id}>
                   {l.name} ({l.code})

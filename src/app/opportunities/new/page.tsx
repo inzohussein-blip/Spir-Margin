@@ -30,7 +30,7 @@ export default async function NewOpportunityPage() {
           </Field>
           <Field label={t(locale, "Lab")}>
             <Select name="lab_id" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {labs.map((l) => <option key={l.id} value={l.id}>{l.name} ({l.code})</option>)}
             </Select>
           </Field>

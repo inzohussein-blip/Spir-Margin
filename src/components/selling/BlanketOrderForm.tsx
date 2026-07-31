@@ -78,8 +78,8 @@ export function BlanketOrderForm({
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Type")}</span>
             <select {...register("order_type")} className={cls}>
-              <option value="selling">Selling (with a lab)</option>
-              <option value="purchasing">Purchasing (with a supplier)</option>
+              <option value="selling">{t(locale, "Selling (with a lab)")}</option>
+              <option value="purchasing">{t(locale, "Purchasing (with a supplier)")}</option>
             </select>
           </label>
           {orderType === "purchasing" ? (

@@ -42,7 +42,7 @@ export default async function NewPaymentPage() {
           </Field>
           <Field label={t(locale, "Party")}>
             <Select name="party" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {parties.map((p) => (
                 <option key={p.value} value={p.value}>{p.label}</option>
               ))}
@@ -62,7 +62,7 @@ export default async function NewPaymentPage() {
           </Field>
           <Field label={t(locale, "Bank account")}>
             <Select name="bank_account_id" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>{a.account_name}</option>
               ))}

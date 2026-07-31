@@ -52,7 +52,7 @@ export default async function NewKitBatchPage() {
           </Field>
           <Field label={t(locale, "Warehouse")}>
             <Select name="warehouse_id" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {warehouses.map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name}
@@ -62,7 +62,7 @@ export default async function NewKitBatchPage() {
           </Field>
           <Field label={t(locale, "Supplier")}>
             <Select name="supplier_id" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {suppliers.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}

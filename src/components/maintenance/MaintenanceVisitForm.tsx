@@ -78,17 +78,17 @@ export function MaintenanceVisitForm({
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Type")}</span>
             <select {...register("maintenance_type")} className={cls}>
-              <option value="scheduled">scheduled</option>
-              <option value="unscheduled">unscheduled</option>
-              <option value="breakdown">breakdown</option>
+              <option value="scheduled">{t(locale, "scheduled")}</option>
+              <option value="unscheduled">{t(locale, "unscheduled")}</option>
+              <option value="breakdown">{t(locale, "breakdown")}</option>
             </select>
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Completion")}</span>
             <select {...register("completion_status")} className={cls}>
               <option value="pending">pending</option>
-              <option value="partial">partial</option>
-              <option value="full">full</option>
+              <option value="partial">{t(locale, "partial")}</option>
+              <option value="full">{t(locale, "full")}</option>
             </select>
           </label>
           <label className="block">

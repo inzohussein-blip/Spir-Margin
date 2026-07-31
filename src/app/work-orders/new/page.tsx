@@ -42,7 +42,7 @@ export default async function NewWorkOrderPage() {
           </Field>
           <Field label={t(locale, "BOM")}>
             <Select name="bom_id" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {boms.map((b) => <option key={b.id} value={b.id}>{b.bom_no}</option>)}
             </Select>
           </Field>
@@ -51,7 +51,7 @@ export default async function NewWorkOrderPage() {
           </Field>
           <Field label={t(locale, "Finished-goods warehouse")}>
             <Select name="fg_warehouse" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {warehouses.map((w) => <option key={w.id as string} value={w.id as string}>{w.name as string}</option>)}
             </Select>
           </Field>

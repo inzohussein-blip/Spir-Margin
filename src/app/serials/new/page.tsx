@@ -52,7 +52,7 @@ export default async function NewSerialPage() {
           </Field>
           <Field label={t(locale, "Warranty status")}>
             <Select name="maintenance_status" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               <option value="under_warranty">{t(locale, "under warranty")}</option>
               <option value="out_of_warranty">{t(locale, "out of warranty")}</option>
               <option value="under_amc">{t(locale, "under AMC")}</option>
@@ -61,13 +61,13 @@ export default async function NewSerialPage() {
           </Field>
           <Field label={t(locale, "Warehouse")}>
             <Select name="warehouse_id" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
             </Select>
           </Field>
           <Field label={t(locale, "Lab")}>
             <Select name="lab_id" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {labs.map((l) => <option key={l.id} value={l.id}>{l.name} ({l.code})</option>)}
             </Select>
           </Field>

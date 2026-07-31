@@ -39,19 +39,19 @@ export default async function NewWarrantyClaimPage() {
           </Field>
           <Field label={t(locale, "Product")}>
             <Select name="product_id" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {products.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.item_code})</option>)}
             </Select>
           </Field>
           <Field label={t(locale, "Lab")}>
             <Select name="lab_id" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {labs.map((l) => <option key={l.id} value={l.id}>{l.name} ({l.code})</option>)}
             </Select>
           </Field>
           <Field label={t(locale, "Warranty / AMC status")}>
             <Select name="warranty_amc_status" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               <option value="under_warranty">{t(locale, "under warranty")}</option>
               <option value="out_of_warranty">{t(locale, "out of warranty")}</option>
               <option value="under_amc">{t(locale, "under AMC")}</option>

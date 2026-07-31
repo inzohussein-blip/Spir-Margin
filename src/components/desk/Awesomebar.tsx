@@ -79,7 +79,7 @@ export function Awesomebar({ locale = "ar", blocked = [] }: { locale?: Locale; b
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput value={query} onValueChange={setQuery} placeholder={t(locale, "Search records, lists, or type 'new'…")} />
         <CommandList>
-          <CommandEmpty>No results.</CommandEmpty>
+          <CommandEmpty>{t(locale, "No results.")}</CommandEmpty>
           {hits.length > 0 && (
             <CommandGroup heading={t(locale, "Records")}>
               {hits.map((h) => (

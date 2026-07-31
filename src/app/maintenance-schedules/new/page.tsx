@@ -38,7 +38,7 @@ export default async function NewMaintenanceSchedulePage() {
           </Field>
           <Field label={t(locale, "Lab")}>
             <Select name="lab_id" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {labs.map((l) => <option key={l.id as string} value={l.id as string}>{l.name as string}</option>)}
             </Select>
           </Field>

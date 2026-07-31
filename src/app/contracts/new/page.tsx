@@ -40,13 +40,13 @@ export default async function NewContractPage() {
           </Field>
           <Field label={t(locale, "Lab")}>
             <Select name="lab_id" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {labs.map((l) => <option key={l.id as string} value={l.id as string}>{l.name as string}</option>)}
             </Select>
           </Field>
           <Field label={t(locale, "Device")}>
             <Select name="device_id" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {devices.map((d) => <option key={d.id as string} value={d.id as string}>{d.asset_code as string}</option>)}
             </Select>
           </Field>
@@ -78,7 +78,7 @@ export default async function NewContractPage() {
           </Field>
           <Field label={t(locale, "Service item")}>
             <Select name="service_product_id" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {products.map((p) => (
                 <option key={p.id as string} value={p.id as string}>
                   {(p.name as string) ?? (p.item_code as string)}

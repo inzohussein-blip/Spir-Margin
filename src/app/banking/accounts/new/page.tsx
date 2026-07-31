@@ -29,7 +29,7 @@ export default function NewBankAccountPage() {
           </Field>
           <Field label={t(locale, "Account type")}>
             <Select name="account_type" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               <option value="Current">Current</option>
               <option value="Savings">{t(locale, "Savings")}</option>
               <option value="Credit Card">Credit Card</option>

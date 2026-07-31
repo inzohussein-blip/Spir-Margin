@@ -80,9 +80,9 @@ export default async function IssuesPage() {
                     <input type="hidden" name="id" value={i.id} />
                     <select name="status" defaultValue={i.status} className="rounded-md border border-outline-gray-2 px-2 py-1 text-xs">
                       <option value="open">open</option>
-                      <option value="replied">replied</option>
-                      <option value="on_hold">on hold</option>
-                      <option value="resolved">resolved</option>
+                      <option value="replied">{t(locale, "replied")}</option>
+                      <option value="on_hold">{t(locale, "on hold")}</option>
+                      <option value="resolved">{t(locale, "resolved")}</option>
                       <option value="closed">closed</option>
                     </select>
                     <button className="rounded-md bg-brand px-2 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Set")}</button>

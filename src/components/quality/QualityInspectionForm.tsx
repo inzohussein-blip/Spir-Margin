@@ -68,9 +68,9 @@ export function QualityInspectionForm({
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Inspection type")}</span>
             <select {...register("inspection_type")} className={cls}>
-              <option value="incoming">incoming</option>
-              <option value="outgoing">outgoing</option>
-              <option value="in_process">in process</option>
+              <option value="incoming">{t(locale, "incoming")}</option>
+              <option value="outgoing">{t(locale, "outgoing")}</option>
+              <option value="in_process">{t(locale, "in process")}</option>
             </select>
           </label>
           <label className="block">

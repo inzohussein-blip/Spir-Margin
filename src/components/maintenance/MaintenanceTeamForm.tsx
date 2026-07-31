@@ -95,8 +95,8 @@ export function MaintenanceTeamForm() {
               <label className="block text-xs">
                 <span className="text-ink-gray-5">{t(locale, "Type")}</span>
                 <select {...register(`tasks.${i}.maintenance_type`)} className={cls}>
-                  <option value="preventive">preventive</option>
-                  <option value="calibration">calibration</option>
+                  <option value="preventive">{t(locale, "preventive")}</option>
+                  <option value="calibration">{t(locale, "calibration")}</option>
                 </select>
               </label>
               <label className="block text-xs">

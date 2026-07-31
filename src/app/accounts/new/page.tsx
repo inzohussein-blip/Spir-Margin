@@ -34,7 +34,7 @@ export default async function NewAccountPage() {
           <Field label={t(locale, "Account type")}><TextInput name="account_type" placeholder="Bank / Receivable / …" /></Field>
           <Field label={t(locale, "Parent account")}>
             <Select name="parent_account" defaultValue="">
-              <option value="">— none —</option>
+              <option value="">{t(locale, "— none —")}</option>
               {groups.map((g) => <option key={g} value={g}>{g}</option>)}
             </Select>
           </Field>
