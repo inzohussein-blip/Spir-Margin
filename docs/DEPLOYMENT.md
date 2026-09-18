@@ -39,8 +39,12 @@ the numbered migrations and skip the demo seed section at the bottom.
 | `AUTH_SECRET` | **Required** on any hosted deploy | Signs session cookies. Without it the app refuses to start on a hosted deploy (it would otherwise use a public built-in key that lets anyone forge a session). Generate with `openssl rand -base64 48`. |
 | `DATABASE_URL` | Hosted Postgres | Connection string; unset = embedded PGlite. |
 
-The first user is seeded as `admin@spir.local` / `admin1234` — **change this
-password immediately** (Setup → Users) after the first sign-in.
+The first user is seeded as `admin@spir.local` / `admin1234`, plus a demo
+account `demo@spir.local` / `demo1234` (migration `0084_demo_user.sql`) —
+**change or disable these immediately** (Setup → Users) after the first sign-in.
+
+> For the hosted Supabase + Vercel wiring (connection string, `AUTH_SECRET`, the
+> demo login, and manual SQL), see [`HOSTED-SETUP.md`](./HOSTED-SETUP.md).
 
 ## 3. Backups
 

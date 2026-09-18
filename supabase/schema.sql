@@ -6659,6 +6659,10 @@ begin
     end if;
 end $$;
 
+-- ===== migration: 0084_demo_user.sql =====
+-- Demo login account: demo@spir.local / demo1234 (role admin). Idempotent.
+select fn_create_user('demo@spir.local', 'demo1234', 'Demo User', 'admin');
+
 create table if not exists _spir_migrations (filename text primary key, applied_at timestamptz not null default now());
 insert into _spir_migrations(filename) values
   ('0001_core_entities.sql'),
@@ -6742,7 +6746,8 @@ insert into _spir_migrations(filename) values
   ('0080_sales_returns.sql'),
   ('0081_return_batch_no_fix.sql'),
   ('0082_return_not_more_than_sold.sql'),
-  ('0083_login_throttle.sql')
+  ('0083_login_throttle.sql'),
+  ('0084_demo_user.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;
