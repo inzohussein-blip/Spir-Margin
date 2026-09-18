@@ -1,0 +1,43 @@
+name: Verify admin login
+
+# Manually-run check against the REAL hosted database (DATABASE_URL secret).
+# It reports whether an account can sign in, and — only when you ask — repairs
+# the password to the value held in the ADMIN_NEW_PASSWORD secret.
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: Account email to check
+        default: admin@spir.local
+        required: true
+      password:
+        description: Password to test (leave as default to try admin123)
+        default: admin123
+        required: true
+      reset:
+        description: If the check fails, reset to the ADMIN_NEW_PASSWORD secret
+        type: boolean
+        default: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify login against the hosted database
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ADMIN_NEW_PASSWORD: ${{ secrets.ADMIN_NEW_PASSWORD }}
+          CHECK_EMAIL: ${{ inputs.email }}
+          CHECK_PASSWORD: ${{ inputs.password }}
+          RESET: ${{ inputs.reset == true && '1' || '0' }}
+        run: node scripts/verify-admin.mjs
