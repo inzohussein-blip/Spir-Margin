@@ -1,5 +1,5 @@
 {
-  "name": "medical-device-webapp",
+  "name": "spir-margin",
   "version": "0.1.0",
   "private": true,
   "description": "Lightweight web app for medical-device sales, lab tracking, spare parts and reagent kits. Re-imagined from ERPNext on Next.js + Supabase.",

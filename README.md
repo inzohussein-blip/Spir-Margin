@@ -1,4 +1,4 @@
-# MedDevice — Medical Device & Lab Management
+# Spir-Margin — Medical Device & Lab Management
 
 A lightweight web app for **selling medical devices, tracking their location in
 labs, and managing spare parts and reagent kits** — re-imagined from
