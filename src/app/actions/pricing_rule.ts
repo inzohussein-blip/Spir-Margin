@@ -28,7 +28,7 @@ export async function createPricingRule(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/pricing-rules");
-  redirect("/pricing-rules");
+  redirect("/pricing-rules?saved=created");
 }
 
 export async function togglePricingRuleForm(fd: FormData) {

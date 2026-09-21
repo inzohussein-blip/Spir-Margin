@@ -32,7 +32,15 @@ export function Field({
 }
 
 export function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={inputCls} />;
+  // A native date/time input renders its placeholder and segment order from
+  // the element's own language, not the page's — so on an en-US browser it
+  // shows mm/dd/yyyy inside an Arabic form, and dd/mm/yyyy on an en-GB one.
+  // en-CA formats as yyyy-mm-dd, which matches both the value the input
+  // actually submits and how dates read elsewhere in the app. Keeping the
+  // native control preserves the platform date picker and mobile keyboard.
+  const isDateLike =
+    props.type === "date" || props.type === "datetime-local" || props.type === "month";
+  return <input {...props} lang={props.lang ?? (isDateLike ? "en-CA" : undefined)} className={inputCls} />;
 }
 
 export function TextArea(

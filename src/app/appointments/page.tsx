@@ -54,7 +54,7 @@ export default async function AppointmentsPage() {
         newLabel={t(locale, "New appointment")}
       >
         {rows.length === 0 ? (
-          <EmptyRow text={t(locale, "No appointments yet — schedule an install or service visit")} />
+          <EmptyRow text={t(locale, "No appointments yet — schedule an install or service visit")} actionHref="/appointments/new" actionLabel={t(locale, "New appointment")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

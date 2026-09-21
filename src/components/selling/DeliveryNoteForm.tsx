@@ -51,7 +51,7 @@ export function DeliveryNoteForm({ labs, batches }: { labs: Opt[]; batches: Batc
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Posting date")}</span>
-            <input type="date" {...register("posting_date")} className={cls} />
+            <input type="date" lang="en-CA" {...register("posting_date")} className={cls} />
           </label>
           <label className="block sm:col-span-2">
             <span className="font-medium text-ink-gray-8">{t(locale, "Notes")}</span>

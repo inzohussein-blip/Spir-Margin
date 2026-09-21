@@ -32,7 +32,7 @@ export async function createWarrantyClaim(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/warranty");
-  redirect("/warranty");
+  redirect("/warranty?saved=created");
 }
 
 /** Resolve/close a claim from the list. */
@@ -70,7 +70,7 @@ export async function createIssue(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/issues");
-  redirect("/issues");
+  redirect("/issues?saved=created");
 }
 
 /** Change an issue's status from the list (stamps resolved_on when closed out). */
@@ -94,5 +94,5 @@ export async function resolveIssueForm(fd: FormData) {
     .eq("id", id);
   await supabase.rpc("fn_set_issue_status", { p_id: id, p_status: "resolved" });
   revalidatePath("/issues");
-  redirect("/issues");
+  redirect("/issues?saved=created");
 }

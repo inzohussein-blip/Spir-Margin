@@ -35,7 +35,7 @@ export async function createLead(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/leads");
-  redirect("/leads");
+  redirect("/leads?saved=created");
 }
 
 /** Convert a lead into an active lab. */

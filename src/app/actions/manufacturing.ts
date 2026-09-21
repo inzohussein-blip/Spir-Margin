@@ -136,7 +136,7 @@ export async function createWorkOrder(fd: FormData) {
     notes: s("notes") ?? "",
   });
   if (!res.ok) throw new Error(res.error);
-  redirect("/work-orders");
+  redirect("/work-orders?saved=created");
 }
 
 /** FormData wrappers for inline <form action={…}> buttons. */

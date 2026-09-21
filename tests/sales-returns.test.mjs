@@ -69,10 +69,32 @@ test("a return posts a balanced reversing journal entry", async () => {
 
   const rows = (await db.query(`select account, debit, credit from journal_entry_accounts where journal_entry_id=$1`, [je.id])).rows;
   const by = Object.fromEntries(rows.map((r) => [r.account, `${Number(r.debit)}/${Number(r.credit)}`]));
-  assert.equal(by["Sales"], "100/0", "revenue reversed out of Sales");
-  assert.equal(by["Accounts Receivable"], "0/100", "receivable reduced");
-  assert.equal(by["Stock In Hand"], "20/0", "cost returned to stock");
-  assert.equal(by["Cost of Goods Sold"], "0/20", "COGS reduced");
+  // Resolve the accounts the way fn_post_sale_gl does — by type, not by
+  // display name, so translating the chart of accounts cannot break this.
+  const acct = Object.fromEntries(
+    (await db.query(
+      `select k, account_name from (
+         select 'ar' as k, account_name, account_number from accounts
+          where account_type='Receivable' and not is_group and not disabled
+          order by account_number limit 1) a
+       union all select k, account_name from (
+         select 'income' as k, account_name, account_number from accounts
+          where root_type='income' and not is_group and not disabled
+          order by account_number limit 1) b
+       union all select k, account_name from (
+         select 'cogs' as k, account_name, account_number from accounts
+          where account_type='Cost of Goods Sold' and not is_group and not disabled
+          order by account_number limit 1) c
+       union all select k, account_name from (
+         select 'stock' as k, account_name, account_number from accounts
+          where account_type='Stock' and not is_group and not disabled
+          order by account_number limit 1) d`,
+    )).rows.map((r) => [r.k, r.account_name]),
+  );
+  assert.equal(by[acct.income], "100/0", "revenue reversed out of the income account");
+  assert.equal(by[acct.ar], "0/100", "receivable reduced");
+  assert.equal(by[acct.stock], "20/0", "cost returned to stock");
+  assert.equal(by[acct.cogs], "0/20", "COGS reduced");
   await db.close();
 });
 

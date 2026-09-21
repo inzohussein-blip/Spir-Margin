@@ -63,7 +63,7 @@ export function InstallationNoteForm({
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Install date")}</span>
-            <input type="date" {...register("inst_date")} className={cls} />
+            <input type="date" lang="en-CA" {...register("inst_date")} className={cls} />
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Time")}</span>

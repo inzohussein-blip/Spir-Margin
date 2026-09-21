@@ -63,7 +63,7 @@ export function QualityInspectionForm({
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Report date")}</span>
-            <input type="date" {...register("report_date")} className={cls} />
+            <input type="date" lang="en-CA" {...register("report_date")} className={cls} />
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Inspection type")}</span>

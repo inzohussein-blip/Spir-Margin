@@ -26,7 +26,7 @@ export async function createMaintenanceSchedule(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/maintenance-schedules");
-  redirect("/maintenance-schedules");
+  redirect("/maintenance-schedules?saved=created");
 }
 
 /** Lay out (or refresh) the dated visit rows and activate the schedule. */

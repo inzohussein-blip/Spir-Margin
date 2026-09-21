@@ -80,7 +80,7 @@ export function PurchaseForm({
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Posting date")}</span>
-            <input type="date" {...register("posting_date")} className={cls} />
+            <input type="date" lang="en-CA" {...register("posting_date")} className={cls} />
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Supplier invoice no.")}</span>
@@ -138,7 +138,7 @@ export function PurchaseForm({
                     </label>
                     <label className="block text-xs">
                       <span className="text-ink-gray-5">{t(locale, "Expiry date (kit)")}</span>
-                      <input type="date" {...register(`items.${i}.expiry_date`)} className={cls} />
+                      <input type="date" lang="en-CA" {...register(`items.${i}.expiry_date`)} className={cls} />
                     </label>
                   </div>
                 )}

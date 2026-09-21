@@ -46,7 +46,7 @@ export default async function ProductsPage() {
       newLabel={t(locale, "New product")}
     >
         {products.length === 0 ? (
-          <EmptyRow text={t(locale, "No products yet")} />
+          <EmptyRow text={t(locale, "No products yet")} actionHref="/products/new" actionLabel={t(locale, "New product")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

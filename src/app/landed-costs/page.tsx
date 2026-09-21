@@ -40,7 +40,7 @@ export default async function LandedCostsPage() {
       filterPlaceholder={t(locale, "Filter by voucher / receipt…")}
     >
       {rows.length === 0 ? (
-        <EmptyRow text={t(locale, "No landed-cost vouchers yet.")} />
+        <EmptyRow text={t(locale, "No landed-cost vouchers yet.")} actionHref="/landed-costs/new" actionLabel={t(locale, "New landed cost")} />
       ) : (
         <table className="w-full text-sm">
           <thead>

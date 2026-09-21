@@ -36,7 +36,7 @@ export async function createOpportunity(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/opportunities");
-  redirect("/opportunities");
+  redirect("/opportunities?saved=created");
 }
 
 export async function setOpportunityStatusForm(fd: FormData) {

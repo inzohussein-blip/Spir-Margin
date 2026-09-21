@@ -24,7 +24,7 @@ export default async function LabsPage() {
       newLabel={t(locale, "New lab")}
     >
       {labs.length === 0 ? (
-        <EmptyRow text={t(locale, "No labs yet")} />
+        <EmptyRow text={t(locale, "No labs yet")} actionHref="/labs/new" actionLabel={t(locale, "New lab")} />
       ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

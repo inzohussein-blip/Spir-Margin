@@ -38,5 +38,5 @@ export async function createItemPrice(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/prices");
-  redirect("/prices");
+  redirect("/prices?saved=created");
 }

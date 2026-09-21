@@ -3,6 +3,8 @@ import Link from "next/link";
 import { PlusIcon } from "lucide-react";
 import { ListFilter } from "./ListFilter";
 import { ExportCsvButton } from "./ExportCsvButton";
+import { DensityToggle } from "./DensityToggle";
+import { ResponsiveTableLabels } from "./ResponsiveTableLabels";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
 
@@ -72,10 +74,14 @@ export function ListShell({
         {filterable && (
           <div className="flex items-center justify-between gap-3 border-b border-outline-gray-1 bg-surface-gray-1/40 px-3 py-2">
             <ListFilter placeholder={filterPlaceholder ?? `${t(locale, "Filter")}…`} />
-            <ExportCsvButton title={title} label={t(locale, "Export")} />
+            <div className="flex items-center gap-2">
+              <DensityToggle />
+              <ExportCsvButton title={title} label={t(locale, "Export")} />
+            </div>
           </div>
         )}
         <div data-desk-list className="overflow-x-auto">{children}</div>
+        <ResponsiveTableLabels />
       </div>
     </div>
   );

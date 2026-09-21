@@ -53,7 +53,7 @@ export default async function OpportunitiesPage() {
         actions={<Link href="/sales-team" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Sales team")}</Link>}
       >
         {rows.length === 0 ? (
-          <EmptyRow text={t(locale, "No opportunities yet")} />
+          <EmptyRow text={t(locale, "No opportunities yet")} actionHref="/opportunities/new" actionLabel={t(locale, "New opportunity")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

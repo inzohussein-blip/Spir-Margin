@@ -43,11 +43,11 @@ export function MaterialRequestForm({ products, warehouses }: { products: Opt[];
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Date")}</span>
-            <input type="date" {...register("transaction_date")} className={cls} />
+            <input type="date" lang="en-CA" {...register("transaction_date")} className={cls} />
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Required by")}</span>
-            <input type="date" {...register("required_by")} className={cls} />
+            <input type="date" lang="en-CA" {...register("required_by")} className={cls} />
           </label>
           <label className="block sm:col-span-2">
             <span className="font-medium text-ink-gray-8">{t(locale, "Notes")}</span>

@@ -101,11 +101,11 @@ export function BlanketOrderForm({
           )}
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "From date")}</span>
-            <input type="date" {...register("from_date")} className={cls} />
+            <input type="date" lang="en-CA" {...register("from_date")} className={cls} />
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "To date")}</span>
-            <input type="date" {...register("to_date")} className={cls} />
+            <input type="date" lang="en-CA" {...register("to_date")} className={cls} />
           </label>
           <label className="block sm:col-span-2">
             <span className="font-medium text-ink-gray-8">{t(locale, "Notes")}</span>

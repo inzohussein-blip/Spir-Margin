@@ -119,13 +119,13 @@ export function SalesOrderForm({
             <span className="mb-1 flex items-center gap-1.5 text-sm font-medium text-ink-gray-7">
               <CalendarDaysIcon size={14} className="text-ink-gray-4" /> {t(locale, "Order date")}
             </span>
-            <input type="date" {...register("transaction_date")} className={field} />
+            <input type="date" lang="en-CA" {...register("transaction_date")} className={field} />
           </label>
           <label className="block">
             <span className="mb-1 flex items-center gap-1.5 text-sm font-medium text-ink-gray-7">
               <CalendarDaysIcon size={14} className="text-ink-gray-4" /> {t(locale, "Delivery date")}
             </span>
-            <input type="date" {...register("delivery_date")} className={field} />
+            <input type="date" lang="en-CA" {...register("delivery_date")} className={field} />
           </label>
           <label className="block sm:col-span-2">
             <span className="mb-1 flex items-center gap-1.5 text-sm font-medium text-ink-gray-7">

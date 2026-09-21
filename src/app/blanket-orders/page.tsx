@@ -50,7 +50,7 @@ export default async function BlanketOrdersPage() {
         filterPlaceholder="Filter by order / party…"
       >
         {rows.length === 0 ? (
-          <EmptyRow text={t(locale, "No blanket orders yet — set up a long-term agreed rate with a lab or supplier")} />
+          <EmptyRow text={t(locale, "No blanket orders yet — set up a long-term agreed rate with a lab or supplier")} actionHref="/blanket-orders/new" actionLabel={t(locale, "New blanket order")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

@@ -1280,6 +1280,70 @@ tr, .card, [data-desk-shell] table tbody tr {
   background: color-mix(in srgb, var(--color-brand) 5%, transparent);
 }
 
+/* Row density — set by the toggle in the list toolbar, persisted per browser.
+   Compact trims the vertical padding without changing any page's markup. */
+[data-density="compact"] [data-desk-list] table thead th,
+[data-density="compact"] [data-desk-shell] table thead th {
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+}
+[data-density="compact"] [data-desk-list] table tbody td,
+[data-density="compact"] [data-desk-shell] table tbody td {
+  padding-top: 0.3rem;
+  padding-bottom: 0.3rem;
+}
+
+/* ── Mobile list tables become cards ───────────────────────────────────────
+   A six-column desk table squeezed into a 390px viewport is unreadable: the
+   columns clip and the text wraps to three lines per cell. Below `md` each
+   row becomes a card and each cell a "label — value" line, using the
+   `data-label` that ResponsiveTableLabels copies from the column headers.
+   Only applies once labelling has run (`[data-labelled]`), so a JS-less
+   visitor keeps the ordinary scrollable table rather than an unlabelled
+   stack. */
+@media (max-width: 767px) {
+  [data-desk-list] table[data-labelled] { display: block; width: 100%; }
+  [data-desk-list] table[data-labelled] thead { display: none; }
+  [data-desk-list] table[data-labelled] tbody { display: block; }
+
+  [data-desk-list] table[data-labelled] tbody tr {
+    display: block;
+    border: 1px solid var(--color-outline-gray-2);
+    border-radius: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    margin: 0.625rem;
+    background: var(--color-surface-white);
+  }
+  [data-desk-list] table[data-labelled] tbody tr:hover { background: var(--color-surface-white); }
+
+  [data-desk-list] table[data-labelled] tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.45rem 0 !important;
+    border: 0;
+    white-space: normal;
+    text-align: start;
+  }
+  [data-desk-list] table[data-labelled] tbody td + td {
+    border-top: 1px dashed var(--color-outline-gray-1);
+  }
+  [data-desk-list] table[data-labelled] tbody td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--color-ink-gray-5);
+  }
+  /* A cell with no header (row-action buttons) spans the card instead. */
+  [data-desk-list] table[data-labelled] tbody td:not([data-label]) {
+    justify-content: flex-end;
+  }
+  [data-desk-list] table[data-labelled] tbody td:not([data-label])::before { content: none; }
+}
+
 /* Soft, layered shadow utility for cards/panels. */
 .shadow-sm {
   box-shadow:

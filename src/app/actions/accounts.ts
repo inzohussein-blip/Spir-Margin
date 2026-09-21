@@ -19,5 +19,5 @@ export async function createAccount(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/accounts");
-  redirect("/accounts");
+  redirect("/accounts?saved=created");
 }

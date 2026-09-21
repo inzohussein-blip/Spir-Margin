@@ -58,7 +58,7 @@ export default async function WorkOrdersPage() {
         actions={<Link href="/boms" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "BOMs")}</Link>}
       >
         {rows.length === 0 ? (
-          <EmptyRow text={t(locale, "No work orders yet — assemble a kit from its BOM")} />
+          <EmptyRow text={t(locale, "No work orders yet — assemble a kit from its BOM")} actionHref="/work-orders/new" actionLabel={t(locale, "New work order")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

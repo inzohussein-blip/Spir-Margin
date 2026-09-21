@@ -184,13 +184,13 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
             ))}
           </select>
           <input
-            type="date"
+            type="date" lang="en-CA"
             value={dateRange.from}
             onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
             className="rounded-md border border-outline-gray-2 px-2 py-1.5 text-sm"
           />
           <input
-            type="date"
+            type="date" lang="en-CA"
             value={dateRange.to}
             onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
             className="rounded-md border border-outline-gray-2 px-2 py-1.5 text-sm"

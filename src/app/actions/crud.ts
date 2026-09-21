@@ -49,7 +49,7 @@ export async function createLab(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/labs");
-  redirect("/labs");
+  redirect("/labs?saved=created");
 }
 
 export async function updateLab(id: string, fd: FormData) {
@@ -69,7 +69,7 @@ export async function updateLab(id: string, fd: FormData) {
     .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/labs");
-  redirect("/labs");
+  redirect("/labs?saved=created");
 }
 
 // =========================================================================
@@ -92,7 +92,7 @@ export async function createDevice(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/devices");
-  redirect("/devices");
+  redirect("/devices?saved=created");
 }
 
 export async function updateDevice(id: string, fd: FormData) {
@@ -111,7 +111,7 @@ export async function updateDevice(id: string, fd: FormData) {
     .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/devices");
-  redirect("/devices");
+  redirect("/devices?saved=created");
 }
 
 /** Log a maintenance visit and roll the device's next-due date forward. */
@@ -142,7 +142,7 @@ export async function recordMaintenance(fd: FormData) {
 
   revalidatePath("/devices");
   revalidatePath("/");
-  redirect("/devices");
+  redirect("/devices?saved=created");
 }
 
 // =========================================================================
@@ -165,7 +165,7 @@ export async function createKitBatch(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/kits");
-  redirect("/kits");
+  redirect("/kits?saved=created");
 }
 
 export async function updateKitBatch(id: string, fd: FormData) {
@@ -182,7 +182,7 @@ export async function updateKitBatch(id: string, fd: FormData) {
     .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/kits");
-  redirect("/kits");
+  redirect("/kits?saved=created");
 }
 
 // =========================================================================
@@ -203,7 +203,7 @@ export async function submitWithdrawal(fd: FormData) {
   revalidatePath("/kits");
   revalidatePath("/labs");
   revalidatePath("/");
-  redirect("/kits");
+  redirect("/kits?saved=created");
 }
 
 export async function submitSale(fd: FormData) {
@@ -251,7 +251,7 @@ export async function createProduct(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/products");
-  redirect("/products");
+  redirect("/products?saved=created");
 }
 
 export async function updateProduct(id: string, fd: FormData) {
@@ -277,7 +277,7 @@ export async function updateProduct(id: string, fd: FormData) {
     .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/products");
-  redirect("/products");
+  redirect("/products?saved=created");
 }
 
 // Warehouses  <- ERPNext "Warehouse"
@@ -292,7 +292,7 @@ export async function createWarehouse(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/warehouses");
-  redirect("/warehouses");
+  redirect("/warehouses?saved=created");
 }
 
 // Companies  <- ERPNext "Supplier"
@@ -310,5 +310,5 @@ export async function createCompany(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/companies");
-  redirect("/companies");
+  redirect("/companies?saved=created");
 }

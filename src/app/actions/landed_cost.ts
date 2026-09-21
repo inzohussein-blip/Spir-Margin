@@ -31,7 +31,7 @@ export async function createLandedCost(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/landed-costs");
-  redirect("/landed-costs");
+  redirect("/landed-costs?saved=created");
 }
 
 /** Apply a draft voucher: spread its cost across the receipt's batches. */

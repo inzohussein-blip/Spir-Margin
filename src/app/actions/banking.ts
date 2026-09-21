@@ -52,7 +52,7 @@ export async function createBankAccount(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/banking");
-  redirect("/banking");
+  redirect("/banking?saved=created");
 }
 
 // ========================================================================
@@ -77,7 +77,7 @@ export async function createPaymentEntry(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/banking");
-  redirect("/banking/payments");
+  redirect("/banking/payments?saved=created");
 }
 
 // ========================================================================
@@ -233,7 +233,7 @@ export async function createRule(fd: FormData) {
     });
   }
   revalidatePath("/banking/rules");
-  redirect("/banking/rules");
+  redirect("/banking/rules?saved=created");
 }
 
 /**
@@ -285,7 +285,7 @@ export async function createInternalTransfer(fd: FormData) {
   if (btErr) throw new Error(btErr.message);
 
   revalidatePath("/banking");
-  redirect("/banking");
+  redirect("/banking?saved=created");
 }
 
 // ========================================================================

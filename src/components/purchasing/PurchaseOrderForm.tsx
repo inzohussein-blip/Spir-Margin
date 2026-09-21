@@ -78,11 +78,11 @@ export function PurchaseOrderForm({
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Order date")}</span>
-            <input type="date" {...register("transaction_date")} className={cls} />
+            <input type="date" lang="en-CA" {...register("transaction_date")} className={cls} />
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Required by")}</span>
-            <input type="date" {...register("required_by")} className={cls} />
+            <input type="date" lang="en-CA" {...register("required_by")} className={cls} />
           </label>
           <label className="block sm:col-span-2">
             <span className="font-medium text-ink-gray-8">{t(locale, "Notes")}</span>

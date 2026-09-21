@@ -13,6 +13,7 @@ import { OfflineProvider } from "@/components/offline/OfflineProvider";
 import { SyncStatus } from "@/components/offline/SyncStatus";
 import { ServiceWorkerRegistrar } from "@/components/offline/ServiceWorkerRegistrar";
 import { ErrorReporter } from "@/components/monitoring/ErrorReporter";
+import { Toasts } from "@/components/desk/Toasts";
 import { FeatureUnavailable } from "@/components/settings/FeatureUnavailable";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getNotifications } from "@/lib/notifications";
@@ -62,6 +63,7 @@ export default async function RootLayout({
         <OfflineProvider>
         <ErrorReporter />
         <ServiceWorkerRegistrar />
+        <Toasts />
         <NavProgress />
         {isBare || !user || isFocused ? (
           children

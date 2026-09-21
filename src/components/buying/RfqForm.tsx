@@ -52,11 +52,11 @@ export function RfqForm({ products, suppliers }: { products: Opt[]; suppliers: O
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Date")}</span>
-            <input type="date" {...register("transaction_date")} className={cls} />
+            <input type="date" lang="en-CA" {...register("transaction_date")} className={cls} />
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Reply by")}</span>
-            <input type="date" {...register("schedule_date")} className={cls} />
+            <input type="date" lang="en-CA" {...register("schedule_date")} className={cls} />
           </label>
           <label className="block sm:col-span-2">
             <span className="font-medium text-ink-gray-8">{t(locale, "Message to suppliers")}</span>

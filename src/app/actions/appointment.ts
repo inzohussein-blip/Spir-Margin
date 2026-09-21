@@ -29,7 +29,7 @@ export async function createAppointment(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/appointments");
-  redirect("/appointments");
+  redirect("/appointments?saved=created");
 }
 
 export async function setAppointmentStatusForm(fd: FormData) {

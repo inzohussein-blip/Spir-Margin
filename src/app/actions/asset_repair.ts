@@ -27,7 +27,7 @@ export async function createAssetRepair(fd: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath("/asset-repairs");
   revalidatePath("/devices");
-  redirect("/asset-repairs");
+  redirect("/asset-repairs?saved=created");
 }
 
 /** Complete a repair: log it and return the device to service. */

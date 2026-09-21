@@ -49,7 +49,7 @@ export default async function PickListsPage() {
         filterPlaceholder="Filter by pick / lab…"
       >
         {rows.length === 0 ? (
-          <EmptyRow text={t(locale, "No pick lists yet — create a picking sheet before a delivery")} />
+          <EmptyRow text={t(locale, "No pick lists yet — create a picking sheet before a delivery")} actionHref="/pick-lists/new" actionLabel={t(locale, "New pick list")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

@@ -42,5 +42,5 @@ export async function createExchangeRate(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/currency");
-  redirect("/currency");
+  redirect("/currency?saved=created");
 }

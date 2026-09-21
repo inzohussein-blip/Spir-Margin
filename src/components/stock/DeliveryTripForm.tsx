@@ -56,7 +56,7 @@ export function DeliveryTripForm({
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Departure date")}</span>
-            <input type="date" {...register("departure_date")} className={cls} />
+            <input type="date" lang="en-CA" {...register("departure_date")} className={cls} />
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Driver")}</span>

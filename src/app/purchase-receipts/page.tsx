@@ -50,7 +50,7 @@ export default async function PurchaseReceiptsPage() {
         filterPlaceholder="Filter by receipt / supplier…"
       >
         {rows.length === 0 ? (
-          <EmptyRow text={t(locale, "No purchase receipts yet — receive kits/devices into stock")} />
+          <EmptyRow text={t(locale, "No purchase receipts yet — receive kits/devices into stock")} actionHref="/purchase-receipts/new" actionLabel={t(locale, "New receipt")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

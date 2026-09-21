@@ -54,7 +54,7 @@ export default async function PaymentRequestsPage() {
         filterPlaceholder="Filter by request / invoice / lab…"
       >
         {rows.length === 0 ? (
-          <EmptyRow text={t(locale, "No payment requests yet — request payment against an unpaid invoice")} />
+          <EmptyRow text={t(locale, "No payment requests yet — request payment against an unpaid invoice")} actionHref="/payment-requests/new" actionLabel={t(locale, "New request")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

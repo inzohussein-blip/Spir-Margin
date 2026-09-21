@@ -42,7 +42,7 @@ export function StockReconForm({ batches }: { batches: BatchOpt[] }) {
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Posting date")}</span>
-            <input type="date" {...register("posting_date")} className={cls} />
+            <input type="date" lang="en-CA" {...register("posting_date")} className={cls} />
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Notes")}</span>

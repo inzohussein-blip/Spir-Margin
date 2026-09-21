@@ -46,7 +46,7 @@ export default async function KitsPage() {
       }
     >
       {kits.length === 0 ? (
-        <EmptyRow text={t(locale, "No kit batches yet")} />
+        <EmptyRow text={t(locale, "No kit batches yet")} actionHref="/kits/new" actionLabel={t(locale, "New batch")} />
       ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

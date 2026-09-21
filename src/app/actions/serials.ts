@@ -37,5 +37,5 @@ export async function createSerialNumber(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/serials");
-  redirect("/serials");
+  redirect("/serials?saved=created");
 }

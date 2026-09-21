@@ -98,7 +98,7 @@ export async function createPaymentTerm(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/payment-terms");
-  redirect("/payment-terms");
+  redirect("/payment-terms?saved=created");
 }
 
 /** FormData wrapper so the receive/cancel buttons can be plain <form> posts. */

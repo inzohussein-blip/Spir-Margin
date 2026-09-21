@@ -46,7 +46,7 @@ export default async function IssuesPage() {
       newLabel={t(locale, "New issue")}
     >
       {rows.length === 0 ? (
-        <EmptyRow text={t(locale, "No support issues yet")} />
+        <EmptyRow text={t(locale, "No support issues yet")} actionHref="/issues/new" actionLabel={t(locale, "New issue")} />
       ) : (
         <table className="w-full text-sm">
           <thead>

@@ -69,7 +69,7 @@ export function MaintenanceVisitForm({
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Visit date")}</span>
-            <input type="date" {...register("visit_date")} className={cls} />
+            <input type="date" lang="en-CA" {...register("visit_date")} className={cls} />
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Time")}</span>
@@ -125,7 +125,7 @@ export function MaintenanceVisitForm({
                 </label>
                 <label className="block text-xs">
                   <span className="text-ink-gray-5">{t(locale, "Next due")}</span>
-                  <input type="date" {...register(`purposes.${i}.next_due_date`)} className={cls} />
+                  <input type="date" lang="en-CA" {...register(`purposes.${i}.next_due_date`)} className={cls} />
                 </label>
                 <div className="flex items-end justify-end">
                   <Button type="button" variant="subtle" size="sm" onClick={() => remove(i)} disabled={fields.length === 1}>

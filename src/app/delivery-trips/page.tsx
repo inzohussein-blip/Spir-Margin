@@ -53,7 +53,7 @@ export default async function DeliveryTripsPage() {
         filterPlaceholder="Filter by trip / driver…"
       >
         {rows.length === 0 ? (
-          <EmptyRow text={t(locale, "No delivery trips yet — group delivery notes into a route")} />
+          <EmptyRow text={t(locale, "No delivery trips yet — group delivery notes into a route")} actionHref="/delivery-trips/new" actionLabel={t(locale, "New trip")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

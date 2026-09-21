@@ -31,7 +31,7 @@ export async function createContract(fd: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/contracts");
-  redirect("/contracts");
+  redirect("/contracts?saved=created");
 }
 
 /** Change a contract's status from the list. */
