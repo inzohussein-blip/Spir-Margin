@@ -1391,7 +1391,10 @@ const ar: Record<string, string> = {
   "Sign-in is unavailable right now": "تسجيل الدخول غير متاح حالياً",
   "Too many attempts. Try again later.": "محاولات كثيرة. حاول لاحقاً.",
   "Works offline": "يعمل بلا إنترنت",
+  "No sign-in": "بلا تسجيل دخول",
   "Multi-device": "متعدّد الأجهزة",
+  "Free trial. Runs entirely on this computer with no sign-in — you go straight in. Data never leaves this machine.":
+    "نسخة تجريبية مجانية. تعمل بالكامل على هذا الحاسوب بلا تسجيل دخول — تدخل مباشرةً. البيانات لا تغادر هذا الجهاز.",
 };
 
 const dict: Record<Locale, Record<string, string>> = { ar, en: {} };

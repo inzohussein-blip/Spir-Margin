@@ -37,11 +37,11 @@ export default function WelcomePage() {
             title={t(locale, "Local platform")}
             desc={t(
               locale,
-              "Runs entirely on this computer. No internet required. Data and accounts never leave this machine.",
+              "Free trial. Runs entirely on this computer with no sign-in — you go straight in. Data never leaves this machine.",
             )}
             icon={<MonitorIcon size={22} />}
             tag={<WifiOffIcon size={11} />}
-            tagLabel={t(locale, "Works offline")}
+            tagLabel={t(locale, "No sign-in")}
             tone="emerald"
             recommended={suggested === "local"}
             locale={locale}

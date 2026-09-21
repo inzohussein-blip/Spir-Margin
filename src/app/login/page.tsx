@@ -1,33 +1,32 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { GlobeIcon, MonitorIcon, WifiOffIcon, ShieldCheckIcon } from "lucide-react";
+import { GlobeIcon, ShieldCheckIcon } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { getLocale } from "@/lib/i18n-server";
-import { getPlatformMode, inferPlatformMode } from "@/lib/auth/platform-mode-server";
-import { LOCAL_ADMIN_EMAIL, LOCAL_ADMIN_PASSWORD } from "@/lib/auth/local-credentials";
+import { PLATFORM_MODE_COOKIE, resolvePlatform } from "@/lib/auth/platform-mode";
 import { CLOUD_ADMIN_EMAIL } from "@/lib/auth/cloud-credentials";
-import { isCloudBuild, isHybridBuild, isLocalBuild } from "@/lib/runtime/platform";
+import { isHybridBuild } from "@/lib/runtime/platform";
 import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Sign-in for the NETWORKED platform only. The local platform needs no
+ * sign-in, so this page never renders for it — both the middleware and the
+ * guard below send those visitors straight to `/`.
+ */
 export default function LoginPage({
   searchParams,
 }: {
   searchParams?: { next?: string };
 }) {
-  // Local trial has no sign-in — every request is already the local admin.
-  // Any direct hit on /login just goes home. (Middleware also handles this,
-  // but the redirect here belt-and-suspenders any deep link.)
-  if (isLocalBuild) redirect("/");
+  const platform = resolvePlatform(cookies().get(PLATFORM_MODE_COOKIE)?.value);
+  if (platform === "local") redirect("/");
+  if (platform === null) redirect("/welcome");
 
   const locale = getLocale();
-  const mode = isCloudBuild
-    ? "networked"
-    : getPlatformMode() ?? inferPlatformMode();
-  const isLocal = mode === "local";
   const next = typeof searchParams?.next === "string" ? searchParams.next : "";
-  const defaultEmail = isLocal ? LOCAL_ADMIN_EMAIL : isCloudBuild ? CLOUD_ADMIN_EMAIL : "";
 
   return (
     <div className="relative grid min-h-screen place-items-center overflow-hidden bg-surface-gray-1 p-4">
@@ -43,7 +42,10 @@ export default function LoginPage({
             </span>
             Spir-Margin
           </div>
-          <ModeBadge locale={locale} isLocal={isLocal} />
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-medium text-sky-700">
+            <GlobeIcon size={12} />
+            {t(locale, "Networked platform")}
+          </span>
         </header>
 
         <h1 className="text-xl font-bold text-ink-gray-9">{t(locale, "Sign in")}</h1>
@@ -51,46 +53,16 @@ export default function LoginPage({
           {t(locale, "Medical-device sales, lab tracking & banking.")}
         </p>
 
-        <LoginForm defaultEmail={defaultEmail} next={next} />
+        <LoginForm defaultEmail={CLOUD_ADMIN_EMAIL} next={next} />
 
-        <div className="mt-5 rounded-lg border border-outline-gray-2 bg-surface-gray-1 p-3 text-xs leading-relaxed text-ink-gray-6">
-          {isLocal ? (
-            <div className="space-y-2">
-              <div className="flex items-start gap-2">
-                <WifiOffIcon size={14} className="mt-0.5 shrink-0 text-brand" />
-                <span>
-                  {t(
-                    locale,
-                    "Note: this password and any account you create are stored only on this computer (embedded local database) and cannot be used from another device.",
-                  )}
-                </span>
-              </div>
-              <div className="rounded-md border border-dashed border-outline-gray-2 bg-surface-white px-2.5 py-2">
-                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-ink-gray-5">
-                  {t(locale, "Local sign-in:")}
-                </div>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <code className="rounded bg-surface-gray-1 px-1.5 py-0.5 font-mono text-[11px] text-ink-gray-8">
-                    {LOCAL_ADMIN_EMAIL}
-                  </code>
-                  <span className="text-ink-gray-4">/</span>
-                  <code className="rounded bg-surface-gray-1 px-1.5 py-0.5 font-mono text-[11px] text-ink-gray-8">
-                    {LOCAL_ADMIN_PASSWORD}
-                  </code>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-start gap-2">
-              <ShieldCheckIcon size={14} className="mt-0.5 shrink-0 text-brand" />
-              <span>
-                {t(
-                  locale,
-                  "Note: this account belongs to the shared online platform and works from any authorized computer.",
-                )}
-              </span>
-            </div>
-          )}
+        <div className="mt-5 flex items-start gap-2 rounded-lg border border-outline-gray-2 bg-surface-gray-1 p-3 text-xs leading-relaxed text-ink-gray-6">
+          <ShieldCheckIcon size={14} className="mt-0.5 shrink-0 text-brand" />
+          <span>
+            {t(
+              locale,
+              "Note: this account belongs to the shared online platform and works from any authorized computer.",
+            )}
+          </span>
         </div>
 
         {isHybridBuild ? (
@@ -102,23 +74,5 @@ export default function LoginPage({
         ) : null}
       </main>
     </div>
-  );
-}
-
-function ModeBadge({ locale, isLocal }: { locale: import("@/lib/i18n").Locale; isLocal: boolean }) {
-  const label = isLocal ? t(locale, "Local platform") : t(locale, "Networked platform");
-  const Icon = isLocal ? MonitorIcon : GlobeIcon;
-  return (
-    <span
-      className={
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium " +
-        (isLocal
-          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-          : "border-sky-200 bg-sky-50 text-sky-700")
-      }
-    >
-      <Icon size={12} />
-      {label}
-    </span>
   );
 }

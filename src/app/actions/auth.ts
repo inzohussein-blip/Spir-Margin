@@ -6,7 +6,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { SESSION_COOKIE, SESSION_MAX_AGE, createSessionToken, type SessionUser } from "@/lib/auth/session";
 import { lockoutRemaining, recordFailure, recordSuccess } from "@/lib/auth/rate-limit";
-import { PLATFORM_MODE_COOKIE, PLATFORM_MODE_MAX_AGE, type PlatformMode } from "@/lib/auth/platform-mode";
+import {
+  PLATFORM_MODE_COOKIE,
+  PLATFORM_MODE_MAX_AGE,
+  parsePlatformMode,
+  resolvePlatform,
+  type PlatformMode,
+} from "@/lib/auth/platform-mode";
 import { LOCAL_ADMIN_EMAIL, LOCAL_ADMIN_PASSWORD, LOCAL_ADMIN_ID } from "@/lib/auth/local-credentials";
 import { CLOUD_ADMIN_EMAIL, CLOUD_ADMIN_PASSWORD, CLOUD_ADMIN_ID } from "@/lib/auth/cloud-credentials";
 import { isCloudBuild, isLocalBuild } from "@/lib/runtime/platform";
@@ -70,10 +76,14 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
 
   if (!email || !password) return { error: "Enter your email and password" };
 
-  // --- LOCAL build (trial) -------------------------------------------------
-  // One fixed credential in code, no DB, no rate-limit, no bcrypt. If the
-  // build is exclusively local, everything below is dead code and tree-shakes.
-  if (isLocalBuild) {
+  // Which platform applies: the build flag, else the visitor's picker choice.
+  const platform = resolvePlatform(cookies().get(PLATFORM_MODE_COOKIE)?.value);
+
+  // --- LOCAL platform (trial) ----------------------------------------------
+  // One fixed credential in code, no DB, no rate-limit, no bcrypt. Reaching
+  // this at all is unusual: the local platform has no sign-in step, so
+  // middleware normally redirects /login straight to `/`.
+  if (platform === "local") {
     if (email !== LOCAL_ADMIN_EMAIL || password !== LOCAL_ADMIN_PASSWORD) {
       return { error: "Invalid email or password" };
     }
@@ -82,31 +92,21 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
     redirect(next);
   }
 
-  // --- CLOUD build (full, admin-only) --------------------------------------
-  // The fixed cloud admin in cloud-credentials.ts is the only login. The
-  // DB users table is intentionally not consulted in this build — this is
-  // the admin-only edition.
-  if (isCloudBuild) {
-    if (email !== CLOUD_ADMIN_EMAIL || password !== CLOUD_ADMIN_PASSWORD) {
-      return { error: "Invalid email or password" };
-    }
+  // --- NETWORKED platform (full, admin-only) -------------------------------
+  // The fixed cloud admin in cloud-credentials.ts is the only accepted login.
+  // It is checked before anything touches the database, so sign-in works even
+  // when the hosted DB is unreachable.
+  if (email === CLOUD_ADMIN_EMAIL && password === CLOUD_ADMIN_PASSWORD) {
     const bad = await trySetSession(CLOUD_ADMIN_USER);
     if (bad) return bad;
     redirect(next);
   }
 
-  // --- HYBRID dev build ----------------------------------------------------
-  // Legacy behaviour: platform-mode cookie routes to LOCAL constants or to
-  // fn_verify_login. Only reachable in `next dev` — production ships one of
-  // the two dedicated builds above.
-  const { getPlatformMode } = await import("@/lib/auth/platform-mode-server");
-  if (getPlatformMode() === "local") {
-    if (email !== LOCAL_ADMIN_EMAIL || password !== LOCAL_ADMIN_PASSWORD) {
-      return { error: "Invalid email or password" };
-    }
-    const bad = await trySetSession(LOCAL_ADMIN_USER);
-    if (bad) return bad;
-    redirect(next);
+  // The dedicated cloud build is admin-only and stops here. The hybrid build
+  // additionally accepts DB-backed accounts so existing users can still be
+  // exercised in development.
+  if (isCloudBuild) {
+    return { error: "Invalid email or password" };
   }
 
   const locked = await lockoutRemaining(email).catch(() => 0);
@@ -141,18 +141,24 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
 }
 
 export async function logoutAction() {
-  // Local trial: nothing to log out of — verifySessionToken always returns
-  // the local admin. Just go home so the button in the user menu does not
-  // strand the visitor on a redirect loop.
-  if (isLocalBuild) redirect("/");
-  cookies().delete(SESSION_COOKIE);
+  const jar = cookies();
+  jar.delete(SESSION_COOKIE);
+
+  if (resolvePlatform(jar.get(PLATFORM_MODE_COOKIE)?.value) === "local") {
+    // The local platform has no session to end. On the dedicated local build
+    // there is nowhere else to go, so stay home. On the hybrid build, drop the
+    // platform choice too — "sign out" is the way back to the picker.
+    if (isLocalBuild) redirect("/");
+    jar.delete(PLATFORM_MODE_COOKIE);
+    redirect("/welcome");
+  }
+
   redirect("/login");
 }
 
 /** Hybrid-build only: persist the visitor's platform choice before sign-in. */
 export async function setPlatformModeAction(formData: FormData) {
-  const raw = String(formData.get("mode") ?? "");
-  const mode: PlatformMode | null = raw === "local" || raw === "networked" ? raw : null;
+  const mode: PlatformMode | null = parsePlatformMode(String(formData.get("mode") ?? ""));
   if (!mode) redirect("/welcome");
   cookies().set(PLATFORM_MODE_COOKIE, mode!, {
     httpOnly: false,
@@ -161,7 +167,8 @@ export async function setPlatformModeAction(formData: FormData) {
     path: "/",
     maxAge: PLATFORM_MODE_MAX_AGE,
   });
-  redirect("/login");
+  // The local platform needs no sign-in, so go straight in.
+  redirect(mode === "local" ? "/" : "/login");
 }
 
 export async function changePasswordAction(_prev: unknown, formData: FormData) {

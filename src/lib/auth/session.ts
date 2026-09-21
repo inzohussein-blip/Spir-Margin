@@ -1,5 +1,4 @@
 import { SignJWT, jwtVerify } from "jose";
-import { isLocalBuild } from "@/lib/runtime/platform";
 import { LOCAL_ADMIN_EMAIL, LOCAL_ADMIN_ID } from "@/lib/auth/local-credentials";
 
 /**
@@ -10,9 +9,10 @@ import { LOCAL_ADMIN_EMAIL, LOCAL_ADMIN_ID } from "@/lib/auth/local-credentials"
  * Supabase service-role key (already a high-entropy server secret) so no extra
  * env var is strictly required. Set AUTH_SECRET in production for clarity.
  *
- * On the LOCAL trial build there is no sign-in step at all: `verifySessionToken`
- * returns the local admin unconditionally, so every request is treated as
- * signed-in and `/login` reroutes to `/`.
+ * `verifySessionToken` is a pure token check. The "local platform needs no
+ * sign-in" rule depends on the platform-mode cookie as well as the build flag,
+ * so it lives in the callers that can see cookies — `middleware.ts` and
+ * `getCurrentUser()` — which both fall back to LOCAL_TRIAL_USER.
  */
 
 export const SESSION_COOKIE = "spir_session";
@@ -27,8 +27,8 @@ export interface SessionUser {
   lab_id: string | null;
 }
 
-/** The implicit "you are signed in" user for the local trial build. */
-const LOCAL_TRIAL_USER: SessionUser = {
+/** The implicit "you are signed in" user on the local platform (no sign-in). */
+export const LOCAL_TRIAL_USER: SessionUser = {
   id: LOCAL_ADMIN_ID,
   email: LOCAL_ADMIN_EMAIL,
   full_name: "Administrator (Local trial)",
@@ -99,8 +99,6 @@ export async function createSessionToken(user: SessionUser): Promise<string> {
 }
 
 export async function verifySessionToken(token: string | undefined): Promise<SessionUser | null> {
-  // Local trial: no sign-in at all. Every request is the local admin.
-  if (isLocalBuild) return LOCAL_TRIAL_USER;
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secretKey());
