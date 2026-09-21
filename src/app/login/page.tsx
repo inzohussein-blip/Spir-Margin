@@ -3,6 +3,7 @@ import { MonitorIcon, GlobeIcon } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { getLocale } from "@/lib/i18n-server";
 import { getPlatformMode, inferPlatformMode } from "@/lib/auth/platform-mode-server";
+import { LOCAL_ADMIN_EMAIL, LOCAL_ADMIN_PASSWORD } from "@/lib/auth/local-credentials";
 import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -39,11 +40,11 @@ export default function LoginPage() {
               <br />
               {t(locale, "Local sign-in:")}{" "}
               <code className="rounded bg-surface-white px-1.5 py-0.5 font-mono text-[11px] text-ink-gray-8">
-                admin@spir.local
+                {LOCAL_ADMIN_EMAIL}
               </code>{" "}
               /{" "}
               <code className="rounded bg-surface-white px-1.5 py-0.5 font-mono text-[11px] text-ink-gray-8">
-                123
+                {LOCAL_ADMIN_PASSWORD}
               </code>
             </>
           ) : (

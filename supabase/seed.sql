@@ -324,7 +324,3 @@ begin
         perform fn_start_delivery_trip(v_trip);
     end if;
 end $$;
-
--- Local-only fixed admin credentials (PGlite runs seed.sql; hosted Supabase never does).
--- The local build ships with a single well-known admin: admin@spir.local / 123.
-update app_users set password_hash = crypt('123', gen_salt('bf')) where lower(email) = 'admin@spir.local';

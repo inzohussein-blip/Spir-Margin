@@ -7,6 +7,8 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { SESSION_COOKIE, SESSION_MAX_AGE, createSessionToken, type SessionUser } from "@/lib/auth/session";
 import { lockoutRemaining, recordFailure, recordSuccess } from "@/lib/auth/rate-limit";
 import { PLATFORM_MODE_COOKIE, PLATFORM_MODE_MAX_AGE, type PlatformMode } from "@/lib/auth/platform-mode";
+import { getPlatformMode } from "@/lib/auth/platform-mode-server";
+import { LOCAL_ADMIN_EMAIL, LOCAL_ADMIN_PASSWORD, LOCAL_ADMIN_ID } from "@/lib/auth/local-credentials";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
 
@@ -23,7 +25,26 @@ export async function loginAction(_prev: unknown, formData: FormData) {
   const password = String(formData.get("password") ?? "");
   if (!email || !password) return { error: "Enter your email and password" };
 
-  // Brute-force throttle: block further tries once too many have failed.
+  // Local platform: check against the fixed credentials that ship in the
+  // source (src/lib/auth/local-credentials.ts) — do NOT hit the database.
+  if (getPlatformMode() === "local") {
+    if (email.toLowerCase() === LOCAL_ADMIN_EMAIL && password === LOCAL_ADMIN_PASSWORD) {
+      const row: SessionUser = {
+        id: LOCAL_ADMIN_ID,
+        email: LOCAL_ADMIN_EMAIL,
+        full_name: "Administrator",
+        role: "admin",
+        lab_id: null,
+      };
+      const token = await createSessionToken(row);
+      cookies().set(SESSION_COOKIE, token, cookieOptions);
+      redirect("/");
+    }
+    return { error: "Invalid email or password" };
+  }
+
+  // Networked platform: real bcrypt check against fn_verify_login, gated
+  // by the persistent brute-force throttle.
   const locked = await lockoutRemaining(email);
   if (locked > 0) {
     const locale = getLocale();
