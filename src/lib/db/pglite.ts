@@ -30,27 +30,67 @@ export interface FkMeta {
   tables: Set<string>;
 }
 
-const DATA_DIR = process.env.PGLITE_DATA_DIR || path.join(process.cwd(), ".pglite-data");
+/**
+ * Which datastore a request is talking to. The two are completely separate —
+ * different engines, different data, no shared connection or ledger:
+ *
+ *   "trial" — the free trial platform. Embedded PGlite, seeded from
+ *             `seed-trial.sql` (a small demo dataset). Never reads
+ *             DATABASE_URL.
+ *   "full"  — the paid/full platform. Hosted Postgres over DATABASE_URL.
+ *             Never falls back to PGlite; without the variable it refuses.
+ */
+export type DbTarget = "trial" | "full";
+
 const MIGRATIONS_DIR = path.join(process.cwd(), "supabase", "migrations");
 const SEED_FILE = path.join(process.cwd(), "supabase", "seed.sql");
+const TRIAL_SEED_FILE = path.join(process.cwd(), "supabase", "seed-trial.sql");
 
 // date, time, timestamp, timestamptz, timetz -> keep as text (not JS Date)
 const DATE_OIDS = [1082, 1083, 1114, 1184, 1266];
 const asText = (v: string) => v;
 
-// The connection singleton lives on globalThis, not in module scope: Next.js
+/**
+ * Where PGlite keeps its files, or null to run entirely in memory.
+ *
+ * A serverless runtime (Vercel) mounts the deployment read-only, so writing
+ * to `<cwd>/.pglite-data` throws on boot. There is also nothing to gain: the
+ * filesystem is discarded between invocations. In-memory is the honest
+ * choice there — each cold start serves a fresh copy of the demo dataset,
+ * which is exactly what a trial should do. A normal Node server or desktop
+ * install still persists so the trial survives restarts.
+ */
+function pgliteDataDir(): string | null {
+  const explicit = process.env.PGLITE_DATA_DIR;
+  if (explicit) return explicit === "memory" ? null : explicit;
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) return null;
+  const dir = path.join(process.cwd(), ".pglite-data");
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.accessSync(dir, fs.constants.W_OK);
+    return dir;
+  } catch {
+    return null; // read-only filesystem — fall back to memory
+  }
+}
+
+// The connection singletons live on globalThis, not in module scope: Next.js
 // can load this module more than once (separate server-action and RSC bundles,
 // plus dev HMR), and a per-module `let` would then open a SECOND PGlite
 // instance against the same data dir — so a write on one instance would be
 // invisible to a read on the other. A global handle guarantees every code path
-// shares exactly one database connection.
+// shares exactly one connection PER TARGET.
 interface DbSingleton {
   fkMeta: FkMeta | null;
   dbRef: Db | null;
   bootPromise: Promise<{ db: Db; meta: FkMeta }> | null;
 }
-const g = globalThis as unknown as { __spirDb?: DbSingleton };
-const singleton: DbSingleton = (g.__spirDb ??= { fkMeta: null, dbRef: null, bootPromise: null });
+const fresh = (): DbSingleton => ({ fkMeta: null, dbRef: null, bootPromise: null });
+const g = globalThis as unknown as { __spirDbByTarget?: Record<DbTarget, DbSingleton> };
+const singletons: Record<DbTarget, DbSingleton> = (g.__spirDbByTarget ??= {
+  trial: fresh(),
+  full: fresh(),
+});
 
 async function introspect(db: Db): Promise<FkMeta> {
   const cols = await db.query<{ table_name: string; column_name: string }>(
@@ -82,8 +122,9 @@ async function bootPglite(): Promise<Db> {
   // Dynamic imports so a `SPIR_PLATFORM=cloud` build tree-shakes PGlite away.
   const { PGlite } = await import("@electric-sql/pglite");
   const { pgcrypto } = await import("@electric-sql/pglite/contrib/pgcrypto");
+  const dataDir = pgliteDataDir();
   const pg = new PGlite({
-    dataDir: DATA_DIR,
+    ...(dataDir ? { dataDir } : {}),
     extensions: { pgcrypto },
     parsers: Object.fromEntries(DATE_OIDS.map((oid) => [oid, asText])),
   });
@@ -91,10 +132,13 @@ async function bootPglite(): Promise<Db> {
 
   // Queries run as the bootstrap superuser, so RLS is bypassed (single-tenant
   // app). pgcrypto is already loaded via the constructor above.
-  await initSchema({
-    exec: (sql) => pg.exec(sql).then(() => undefined),
-    query: (sql, params) => pg.query(sql, params) as Promise<{ rows: any[] }>,
-  });
+  await initSchema(
+    {
+      exec: (sql) => pg.exec(sql).then(() => undefined),
+      query: (sql, params) => pg.query(sql, params) as Promise<{ rows: any[] }>,
+    },
+    "trial",
+  );
   return pg as unknown as Db;
 }
 
@@ -180,8 +224,15 @@ async function applyPendingMigrations(run: Runner): Promise<void> {
   }
 }
 
-/** Ensure the `authenticated` role, apply pending migrations, then seed once. */
-async function initSchema(run: Runner): Promise<void> {
+/**
+ * Ensure the `authenticated` role, apply pending migrations, then seed once.
+ *
+ * The trial platform seeds from `seed-trial.sql` — a deliberately small demo
+ * dataset — so the free trial shows a comprehensible system rather than the
+ * full ERP fixture. The full platform uses `seed.sql` (and in practice only
+ * on a genuinely empty database; a real deployment arrives already populated).
+ */
+async function initSchema(run: Runner, target: DbTarget): Promise<void> {
   // RLS policies reference the "authenticated" role — it must exist. On a hosted
   // Supabase database it already does, so the guard simply no-ops.
   await run.exec(`do $$ begin
@@ -196,7 +247,9 @@ async function initSchema(run: Runner): Promise<void> {
     `select count(*)::int as n from information_schema.tables where table_schema='public' and table_name='_spir_meta'`
   );
   if ((seeded.rows[0]?.n ?? 0) === 0) {
-    if (fs.existsSync(SEED_FILE)) await run.exec(fs.readFileSync(SEED_FILE, "utf8"));
+    const seedFile =
+      target === "trial" && fs.existsSync(TRIAL_SEED_FILE) ? TRIAL_SEED_FILE : SEED_FILE;
+    if (fs.existsSync(seedFile)) await run.exec(fs.readFileSync(seedFile, "utf8"));
     await run.exec(`create table if not exists _spir_meta (k text primary key);
       insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;`);
   }
@@ -231,10 +284,13 @@ async function bootPostgres(url: string): Promise<Db> {
       } catch {
         /* extension already present or insufficient privilege — safe to ignore */
       }
-      await initSchema({
-        exec: (sql) => client.query(sql).then(() => undefined),
-        query: (sql, params) => client.query(sql, params as any[]).then((r) => ({ rows: r.rows })),
-      });
+      await initSchema(
+        {
+          exec: (sql) => client.query(sql).then(() => undefined),
+          query: (sql, params) => client.query(sql, params as any[]).then((r) => ({ rows: r.rows })),
+        },
+        "full",
+      );
     } finally {
       await client.query("select pg_advisory_unlock($1)", [MIGRATION_LOCK_KEY]).catch(() => undefined);
       client.release();
@@ -252,34 +308,49 @@ async function bootPostgres(url: string): Promise<Db> {
 // Arbitrary fixed key identifying the schema-migration advisory lock.
 const MIGRATION_LOCK_KEY = 5_713_002;
 
-async function bootstrap(): Promise<{ db: Db; meta: FkMeta }> {
-  let db: Db;
-  if (isLocalBuild) {
-    // Trial build: PGlite only. Ignore DATABASE_URL even if set.
-    db = await bootPglite();
-  } else if (isCloudBuild) {
-    // Full build: hosted Postgres only. Refuse to boot without DATABASE_URL.
-    const url = process.env.DATABASE_URL;
-    if (!url) {
-      throw new Error(
-        "SPIR_PLATFORM=cloud requires DATABASE_URL to be set (hosted Postgres connection string).",
-      );
-    }
-    db = await bootPostgres(url);
-  } else {
-    // Hybrid dev build: fall back to whichever backend is configured.
-    const url = process.env.DATABASE_URL;
-    db = url ? await bootPostgres(url) : await bootPglite();
+/** True when the full platform has somewhere to store data. */
+export function isFullPlatformConfigured(): boolean {
+  return !!process.env.DATABASE_URL;
+}
+
+/** Thrown when the full platform is selected but DATABASE_URL is unset. */
+export class FullPlatformNotConfiguredError extends Error {
+  constructor() {
+    super(
+      "The full platform needs DATABASE_URL (a hosted Postgres connection string). " +
+        "It never falls back to the trial's embedded database.",
+    );
+    this.name = "FullPlatformNotConfiguredError";
   }
+}
+
+async function bootstrap(target: DbTarget): Promise<{ db: Db; meta: FkMeta }> {
+  // The two platforms are fully separate stores. The trial is always the
+  // embedded PGlite and ignores DATABASE_URL even when it is set; the full
+  // platform is always hosted Postgres and never borrows the trial's data.
+  const db =
+    target === "trial"
+      ? await bootPglite()
+      : await (async () => {
+          const url = process.env.DATABASE_URL;
+          if (!url) throw new FullPlatformNotConfiguredError();
+          return bootPostgres(url);
+        })();
   const meta = await introspect(db);
   return { db, meta };
 }
 
-export async function getDb(): Promise<{ db: Db; meta: FkMeta }> {
-  if (singleton.dbRef && singleton.fkMeta) return { db: singleton.dbRef, meta: singleton.fkMeta };
-  singleton.bootPromise ??= bootstrap();
-  const res = await singleton.bootPromise;
-  singleton.dbRef = res.db;
-  singleton.fkMeta = res.meta;
+export async function getDb(target: DbTarget): Promise<{ db: Db; meta: FkMeta }> {
+  const s = singletons[target];
+  if (s.dbRef && s.fkMeta) return { db: s.dbRef, meta: s.fkMeta };
+  // On failure clear the promise so the next request retries rather than
+  // caching a rejected boot forever.
+  s.bootPromise ??= bootstrap(target).catch((e) => {
+    s.bootPromise = null;
+    throw e;
+  });
+  const res = await s.bootPromise;
+  s.dbRef = res.db;
+  s.fkMeta = res.meta;
   return res;
 }

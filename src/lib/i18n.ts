@@ -1395,6 +1395,13 @@ const ar: Record<string, string> = {
   "Multi-device": "متعدّد الأجهزة",
   "Free trial. Runs entirely on this computer with no sign-in — you go straight in. Data never leaves this machine.":
     "نسخة تجريبية مجانية. تعمل بالكامل على هذا الحاسوب بلا تسجيل دخول — تدخل مباشرةً. البيانات لا تغادر هذا الجهاز.",
+  "Not configured on this server yet.": "غير مُهيّأة على هذا الخادم بعد.",
+  "The full platform is not configured on this server yet.":
+    "المنصّة الكاملة غير مُهيّأة على هذا الخادم بعد.",
+  "Note: this server is configured with DATABASE_URL, so the full platform uses the shared online database.":
+    "ملاحظة: تم ضبط DATABASE_URL على هذا الخادم، فالمنصّة الكاملة تستخدم قاعدة البيانات المشتركة عبر الإنترنت.",
+  "Note: DATABASE_URL is not set on this server, so only the free trial is available. The trial keeps its own separate demo database.":
+    "ملاحظة: لم يُضبَط DATABASE_URL على هذا الخادم، لذا النسخة التجريبية المجانية وحدها متاحة. التجريبية تحتفظ بقاعدة بيانات تجريبية منفصلة خاصّة بها.",
 };
 
 const dict: Record<Locale, Record<string, string>> = { ar, en: {} };

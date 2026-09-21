@@ -4,6 +4,7 @@ import Link from "next/link";
 import { PrinterIcon } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getDb } from "@/lib/db/pglite";
+import { currentDbTarget } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { Indicator } from "@/components/desk/Indicator";
 import { getLocale } from "@/lib/i18n-server";
@@ -88,7 +89,7 @@ export async function RecordDetail({
   extra?: ReactNode;
 }) {
   const locale = getLocale() as Locale;
-  const { db, meta } = await getDb();
+  const { db, meta } = await getDb(currentDbTarget());
 
   const rec = (await db.query<Record<string, unknown>>(`select * from "${table}" where id = $1`, [id])).rows[0];
   if (!rec) notFound();

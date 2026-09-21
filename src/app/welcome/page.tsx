@@ -2,14 +2,17 @@ import type { ReactNode } from "react";
 import { MonitorIcon, GlobeIcon, WifiOffIcon, CloudIcon } from "lucide-react";
 import { setPlatformModeAction } from "@/app/actions/auth";
 import { getLocale } from "@/lib/i18n-server";
-import { inferPlatformMode } from "@/lib/auth/platform-mode-server";
+import { isFullPlatformConfigured } from "@/lib/db/pglite";
 import { t, type Locale } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
 export default function WelcomePage() {
   const locale = getLocale();
-  const suggested = inferPlatformMode();
+  // The full platform stores everything in a hosted Postgres. Without
+  // DATABASE_URL there is nowhere for it to write, so its card is disabled
+  // rather than letting someone sign in to a system that cannot load.
+  const fullReady = isFullPlatformConfigured();
 
   return (
     <div className="relative grid min-h-screen place-items-center overflow-hidden bg-surface-gray-1 p-4">
@@ -43,7 +46,7 @@ export default function WelcomePage() {
             tag={<WifiOffIcon size={11} />}
             tagLabel={t(locale, "No sign-in")}
             tone="emerald"
-            recommended={suggested === "local"}
+            recommended={!fullReady}
             locale={locale}
           />
           <ModeCard
@@ -57,20 +60,22 @@ export default function WelcomePage() {
             tag={<CloudIcon size={11} />}
             tagLabel={t(locale, "Multi-device")}
             tone="sky"
-            recommended={suggested === "networked"}
+            recommended={fullReady}
+            disabled={!fullReady}
+            disabledNote={t(locale, "Not configured on this server yet.")}
             locale={locale}
           />
         </div>
 
         <p className="mt-6 rounded-md border border-outline-gray-2 bg-surface-gray-1 px-3 py-2 text-xs text-ink-gray-6">
-          {suggested === "local"
+          {fullReady
             ? t(
                 locale,
-                "Note: this server has no DATABASE_URL configured, so it will store data locally (embedded PGlite Postgres).",
+                "Note: this server is configured with DATABASE_URL, so the full platform uses the shared online database.",
               )
             : t(
                 locale,
-                "Note: this server is configured with DATABASE_URL, so it will use the shared online database.",
+                "Note: DATABASE_URL is not set on this server, so only the free trial is available. The trial keeps its own separate demo database.",
               )}
         </p>
       </main>
@@ -102,6 +107,8 @@ function ModeCard({
   tagLabel,
   tone,
   recommended,
+  disabled = false,
+  disabledNote,
   locale,
 }: {
   mode: "local" | "networked";
@@ -112,6 +119,8 @@ function ModeCard({
   tagLabel: string;
   tone: Tone;
   recommended: boolean;
+  disabled?: boolean;
+  disabledNote?: string;
   locale: Locale;
 }) {
   const c = toneClasses[tone];
@@ -120,9 +129,13 @@ function ModeCard({
       <input type="hidden" name="mode" value={mode} />
       <button
         type="submit"
+        disabled={disabled}
+        aria-disabled={disabled}
         className={
-          "group flex h-full w-full flex-col items-start gap-3 rounded-xl border border-outline-gray-2 bg-surface-white p-5 text-start shadow-sm transition hover:-translate-y-0.5 hover:shadow focus:outline-none focus:ring-2 " +
-          c.ring
+          "group flex h-full w-full flex-col items-start gap-3 rounded-xl border border-outline-gray-2 bg-surface-white p-5 text-start shadow-sm transition focus:outline-none focus:ring-2 " +
+          (disabled
+            ? "cursor-not-allowed opacity-55 grayscale"
+            : "hover:-translate-y-0.5 hover:shadow " + c.ring)
         }
       >
         <div className="flex w-full items-center justify-between">
@@ -132,7 +145,7 @@ function ModeCard({
               {tag}
               {tagLabel}
             </span>
-            {recommended ? (
+            {recommended && !disabled ? (
               <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700">
                 {t(locale, "Recommended")}
               </span>
@@ -141,8 +154,12 @@ function ModeCard({
         </div>
         <div className="text-base font-semibold text-ink-gray-9">{title}</div>
         <div className="text-sm leading-relaxed text-ink-gray-6">{desc}</div>
-        <div className="mt-auto pt-2 text-sm font-medium text-brand group-hover:underline">
-          {t(locale, "Continue")} →
+        <div className="mt-auto pt-2 text-sm font-medium">
+          {disabled ? (
+            <span className="text-ink-gray-5">{disabledNote}</span>
+          ) : (
+            <span className="text-brand group-hover:underline">{t(locale, "Continue")} →</span>
+          )}
         </div>
       </button>
     </form>

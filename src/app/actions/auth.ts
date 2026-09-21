@@ -16,6 +16,7 @@ import {
 import { LOCAL_ADMIN_EMAIL, LOCAL_ADMIN_PASSWORD, LOCAL_ADMIN_ID } from "@/lib/auth/local-credentials";
 import { CLOUD_ADMIN_EMAIL, CLOUD_ADMIN_PASSWORD, CLOUD_ADMIN_ID } from "@/lib/auth/cloud-credentials";
 import { isCloudBuild, isLocalBuild } from "@/lib/runtime/platform";
+import { isFullPlatformConfigured } from "@/lib/db/pglite";
 import type { LoginState } from "@/lib/auth/login-state";
 
 const cookieOptions = {
@@ -92,6 +93,13 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
     redirect(next);
   }
 
+  // The full platform lives in a hosted Postgres. Without DATABASE_URL there
+  // is no database to sign in to, and it must never borrow the trial's — so
+  // stop here rather than handing out a session that every page then fails on.
+  if (!isFullPlatformConfigured()) {
+    return { error: "The full platform is not configured on this server yet." };
+  }
+
   // --- NETWORKED platform (full, admin-only) -------------------------------
   // The fixed cloud admin in cloud-credentials.ts is the only accepted login.
   // It is checked before anything touches the database, so sign-in works even
@@ -160,6 +168,9 @@ export async function logoutAction() {
 export async function setPlatformModeAction(formData: FormData) {
   const mode: PlatformMode | null = parsePlatformMode(String(formData.get("mode") ?? ""));
   if (!mode) redirect("/welcome");
+  // Selecting the full platform without a hosted database would strand the
+  // visitor on a broken app; the picker disables that card, this enforces it.
+  if (mode === "networked" && !isFullPlatformConfigured()) redirect("/welcome");
   cookies().set(PLATFORM_MODE_COOKIE, mode!, {
     httpOnly: false,
     secure: process.env.NODE_ENV === "production",
