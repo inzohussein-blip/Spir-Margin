@@ -2,7 +2,7 @@ import Link from "next/link";
 import { MonitorIcon, GlobeIcon } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { getLocale } from "@/lib/i18n-server";
-import { getPlatformMode, inferPlatformMode } from "@/lib/auth/platform-mode";
+import { getPlatformMode, inferPlatformMode } from "@/lib/auth/platform-mode-server";
 import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";

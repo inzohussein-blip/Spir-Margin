@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { MonitorIcon, GlobeIcon } from "lucide-react";
 import { setPlatformModeAction } from "@/app/actions/auth";
 import { getLocale } from "@/lib/i18n-server";
-import { inferPlatformMode } from "@/lib/auth/platform-mode";
+import { inferPlatformMode } from "@/lib/auth/platform-mode-server";
 import { t, type Locale } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
