@@ -55,13 +55,28 @@ begin
 end $$;
 
 -- 3) Lock down fn_audit(): it is a trigger helper, not a public RPC.
+--
+-- `anon` and `authenticated` are Supabase-specific roles. The embedded PGlite
+-- backend only creates `authenticated` (see src/lib/db/pglite.ts), and `anon`
+-- does not exist there at all — revoking from a missing role aborts the whole
+-- migration with "role \"anon\" does not exist" and leaves the database
+-- unbootstrapped. Revoke per-role, and only from roles that actually exist.
 do $$
+declare r text;
 begin
-    if exists (
+    if not exists (
         select 1 from pg_proc p
         join pg_namespace n on n.oid = p.pronamespace
         where n.nspname = 'public' and p.proname = 'fn_audit'
     ) then
-        execute 'revoke execute on function public.fn_audit() from anon, authenticated, public';
+        return;
     end if;
+
+    execute 'revoke execute on function public.fn_audit() from public';
+
+    foreach r in array array['anon', 'authenticated'] loop
+        if exists (select 1 from pg_roles where rolname = r) then
+            execute format('revoke execute on function public.fn_audit() from %I', r);
+        end if;
+    end loop;
 end $$;
