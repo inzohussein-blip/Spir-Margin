@@ -1382,6 +1382,7 @@ const ar: Record<string, string> = {
     "ملاحظة: هذا الحساب يخصّ المنصّة المشتركة عبر الإنترنت ويعمل من أي حاسوب مُصرَّح له.",
   "Change platform": "تغيير المنصّة",
   "Choose a platform to continue": "اختر منصّة للمتابعة",
+  "Local sign-in:": "بيانات الدخول المحلية:",
 };
 
 const dict: Record<Locale, Record<string, string>> = { ar, en: {} };

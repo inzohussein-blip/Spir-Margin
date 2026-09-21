@@ -30,15 +30,28 @@ export default function LoginPage() {
         <LoginForm />
 
         <p className="mt-4 rounded-md border border-outline-gray-2 bg-surface-gray-1 px-3 py-2 text-xs leading-relaxed text-ink-gray-6">
-          {isLocal
-            ? t(
+          {isLocal ? (
+            <>
+              {t(
                 locale,
                 "Note: this password and any account you create are stored only on this computer (embedded local database) and cannot be used from another device.",
-              )
-            : t(
-                locale,
-                "Note: this account belongs to the shared online platform and works from any authorized computer.",
               )}
+              <br />
+              {t(locale, "Local sign-in:")}{" "}
+              <code className="rounded bg-surface-white px-1.5 py-0.5 font-mono text-[11px] text-ink-gray-8">
+                admin@spir.local
+              </code>{" "}
+              /{" "}
+              <code className="rounded bg-surface-white px-1.5 py-0.5 font-mono text-[11px] text-ink-gray-8">
+                123
+              </code>
+            </>
+          ) : (
+            t(
+              locale,
+              "Note: this account belongs to the shared online platform and works from any authorized computer.",
+            )
+          )}
         </p>
 
         <div className="mt-4 text-center text-xs text-ink-gray-5">
