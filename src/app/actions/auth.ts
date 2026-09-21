@@ -9,8 +9,6 @@ import { lockoutRemaining, recordFailure, recordSuccess } from "@/lib/auth/rate-
 import { PLATFORM_MODE_COOKIE, PLATFORM_MODE_MAX_AGE, type PlatformMode } from "@/lib/auth/platform-mode";
 import { getPlatformMode } from "@/lib/auth/platform-mode-server";
 import { LOCAL_ADMIN_EMAIL, LOCAL_ADMIN_PASSWORD, LOCAL_ADMIN_ID } from "@/lib/auth/local-credentials";
-import { getLocale } from "@/lib/i18n-server";
-import { t } from "@/lib/i18n";
 
 const cookieOptions = {
   httpOnly: true,
@@ -20,51 +18,81 @@ const cookieOptions = {
   maxAge: SESSION_MAX_AGE,
 };
 
-export async function loginAction(_prev: unknown, formData: FormData) {
-  const email = String(formData.get("email") ?? "").trim();
+/**
+ * Server-action return type for the login flow. The `error` string is a
+ * translation key looked up client-side by `t(locale, key)`. `lockedFor`
+ * carries the remaining seconds of a brute-force lockout when relevant.
+ */
+export type LoginState =
+  | null
+  | { error: string; lockedFor?: number };
+
+/** Only allow same-origin relative paths — never accept `//evil.com/...`. */
+function safeNext(raw: string): string {
+  if (!raw) return "/";
+  if (!raw.startsWith("/") || raw.startsWith("//")) return "/";
+  if (raw === "/login" || raw.startsWith("/login/")) return "/";
+  if (raw === "/welcome" || raw.startsWith("/welcome/")) return "/";
+  return raw;
+}
+
+async function issueSession(user: SessionUser, next: string): Promise<never> {
+  const token = await createSessionToken(user);
+  cookies().set(SESSION_COOKIE, token, cookieOptions);
+  redirect(next);
+}
+
+export async function loginAction(_prev: LoginState, formData: FormData): Promise<LoginState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
+  const next = safeNext(String(formData.get("next") ?? ""));
+
   if (!email || !password) return { error: "Enter your email and password" };
 
-  // Local platform: check against the fixed credentials that ship in the
-  // source (src/lib/auth/local-credentials.ts) — do NOT hit the database.
+  // --- Local platform ------------------------------------------------------
+  // The fixed credentials live in the source (src/lib/auth/local-credentials.ts).
+  // Sign-in never touches the database, so it works fully offline.
   if (getPlatformMode() === "local") {
-    if (email.toLowerCase() === LOCAL_ADMIN_EMAIL && password === LOCAL_ADMIN_PASSWORD) {
-      const row: SessionUser = {
-        id: LOCAL_ADMIN_ID,
-        email: LOCAL_ADMIN_EMAIL,
-        full_name: "Administrator",
-        role: "admin",
-        lab_id: null,
-      };
-      const token = await createSessionToken(row);
-      cookies().set(SESSION_COOKIE, token, cookieOptions);
-      redirect("/");
+    if (email === LOCAL_ADMIN_EMAIL && password === LOCAL_ADMIN_PASSWORD) {
+      await issueSession(
+        {
+          id: LOCAL_ADMIN_ID,
+          email: LOCAL_ADMIN_EMAIL,
+          full_name: "Administrator",
+          role: "admin",
+          lab_id: null,
+        },
+        next,
+      );
     }
     return { error: "Invalid email or password" };
   }
 
-  // Networked platform: real bcrypt check against fn_verify_login, gated
-  // by the persistent brute-force throttle.
-  const locked = await lockoutRemaining(email);
+  // --- Networked platform --------------------------------------------------
+  // Brute-force throttle then bcrypt-verify via fn_verify_login.
+  const locked = await lockoutRemaining(email).catch(() => 0);
   if (locked > 0) {
-    const locale = getLocale();
-    const mins = Math.ceil(locked / 60);
-    return { error: `${t(locale, "Too many attempts. Try again in")} ${mins} ${t(locale, "minute(s).")}` };
+    return { error: "Too many attempts. Try again later.", lockedFor: locked };
   }
 
   const supabase = createClient();
-  const { data, error } = await supabase.rpc("fn_verify_login", { p_email: email, p_password: password });
-  if (error) return { error: "Sign-in is unavailable right now" };
-  const row = (data as SessionUser[] | null)?.[0];
+  let data: SessionUser[] | null = null;
+  try {
+    const res = await supabase.rpc("fn_verify_login", { p_email: email, p_password: password });
+    if (res.error) return { error: "Sign-in is unavailable right now" };
+    data = res.data as SessionUser[] | null;
+  } catch {
+    return { error: "Sign-in is unavailable right now" };
+  }
+
+  const row = data?.[0];
   if (!row) {
-    await recordFailure(email);
+    await recordFailure(email).catch(() => undefined);
     return { error: "Invalid email or password" };
   }
 
-  await recordSuccess(email);
-  const token = await createSessionToken(row);
-  cookies().set(SESSION_COOKIE, token, cookieOptions);
-  redirect("/");
+  await recordSuccess(email).catch(() => undefined);
+  await issueSession(row, next);
 }
 
 export async function logoutAction() {

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MonitorIcon, GlobeIcon } from "lucide-react";
+import { GlobeIcon, MonitorIcon, WifiOffIcon, ShieldCheckIcon } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { getLocale } from "@/lib/i18n-server";
 import { getPlatformMode, inferPlatformMode } from "@/lib/auth/platform-mode-server";
@@ -8,59 +8,105 @@ import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
-export default function LoginPage() {
+export default function LoginPage({
+  searchParams,
+}: {
+  searchParams?: { next?: string };
+}) {
   const locale = getLocale();
   const mode = getPlatformMode() ?? inferPlatformMode();
   const isLocal = mode === "local";
+  const next = typeof searchParams?.next === "string" ? searchParams.next : "";
+  const defaultEmail = isLocal ? LOCAL_ADMIN_EMAIL : "";
 
   return (
-    <div className="grid min-h-screen place-items-center p-6">
-      <div className="w-full max-w-sm rounded-2xl border border-outline-gray-2 bg-surface-white p-8 shadow-md">
-        <div className="mb-6 flex items-center gap-2.5 text-lg font-bold tracking-tight text-ink-gray-8">
-          <span className="grid size-9 place-items-center rounded-lg bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm">S</span>
-          Spir-Margin
-        </div>
+    <div className="relative grid min-h-screen place-items-center overflow-hidden bg-surface-gray-1 p-4">
+      {/* Soft brand halos */}
+      <div aria-hidden className="pointer-events-none absolute -top-24 -start-24 size-64 rounded-full bg-brand/10 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute -bottom-24 -end-24 size-72 rounded-full bg-brand-dark/10 blur-3xl" />
 
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-outline-gray-2 bg-surface-gray-1 px-2.5 py-1 text-xs font-medium text-ink-gray-6">
-          {isLocal ? <MonitorIcon size={12} /> : <GlobeIcon size={12} />}
-          {isLocal ? t(locale, "Local platform") : t(locale, "Networked platform")}
-        </div>
+      <main className="relative w-full max-w-sm rounded-2xl border border-outline-gray-2 bg-surface-white/95 p-8 shadow-lg backdrop-blur-xl">
+        <header className="mb-6 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-ink-gray-9">
+            <span className="grid size-9 place-items-center rounded-lg bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm">
+              S
+            </span>
+            Spir-Margin
+          </div>
+          <ModeBadge locale={locale} isLocal={isLocal} />
+        </header>
 
         <h1 className="text-xl font-bold text-ink-gray-9">{t(locale, "Sign in")}</h1>
-        <p className="mb-6 mt-1 text-sm text-ink-gray-5">{t(locale, "Medical-device sales, lab tracking & banking.")}</p>
-        <LoginForm />
-
-        <p className="mt-4 rounded-md border border-outline-gray-2 bg-surface-gray-1 px-3 py-2 text-xs leading-relaxed text-ink-gray-6">
-          {isLocal ? (
-            <>
-              {t(
-                locale,
-                "Note: this password and any account you create are stored only on this computer (embedded local database) and cannot be used from another device.",
-              )}
-              <br />
-              {t(locale, "Local sign-in:")}{" "}
-              <code className="rounded bg-surface-white px-1.5 py-0.5 font-mono text-[11px] text-ink-gray-8">
-                {LOCAL_ADMIN_EMAIL}
-              </code>{" "}
-              /{" "}
-              <code className="rounded bg-surface-white px-1.5 py-0.5 font-mono text-[11px] text-ink-gray-8">
-                {LOCAL_ADMIN_PASSWORD}
-              </code>
-            </>
-          ) : (
-            t(
-              locale,
-              "Note: this account belongs to the shared online platform and works from any authorized computer.",
-            )
-          )}
+        <p className="mb-6 mt-1 text-sm text-ink-gray-5">
+          {t(locale, "Medical-device sales, lab tracking & banking.")}
         </p>
 
-        <div className="mt-4 text-center text-xs text-ink-gray-5">
+        <LoginForm defaultEmail={defaultEmail} next={next} />
+
+        <div className="mt-5 rounded-lg border border-outline-gray-2 bg-surface-gray-1 p-3 text-xs leading-relaxed text-ink-gray-6">
+          {isLocal ? (
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <WifiOffIcon size={14} className="mt-0.5 shrink-0 text-brand" />
+                <span>
+                  {t(
+                    locale,
+                    "Note: this password and any account you create are stored only on this computer (embedded local database) and cannot be used from another device.",
+                  )}
+                </span>
+              </div>
+              <div className="rounded-md border border-dashed border-outline-gray-2 bg-surface-white px-2.5 py-2">
+                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-ink-gray-5">
+                  {t(locale, "Local sign-in:")}
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <code className="rounded bg-surface-gray-1 px-1.5 py-0.5 font-mono text-[11px] text-ink-gray-8">
+                    {LOCAL_ADMIN_EMAIL}
+                  </code>
+                  <span className="text-ink-gray-4">/</span>
+                  <code className="rounded bg-surface-gray-1 px-1.5 py-0.5 font-mono text-[11px] text-ink-gray-8">
+                    {LOCAL_ADMIN_PASSWORD}
+                  </code>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2">
+              <ShieldCheckIcon size={14} className="mt-0.5 shrink-0 text-brand" />
+              <span>
+                {t(
+                  locale,
+                  "Note: this account belongs to the shared online platform and works from any authorized computer.",
+                )}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4 flex items-center justify-center gap-3 text-xs text-ink-gray-5">
           <Link href="/welcome" className="hover:text-brand hover:underline">
             {t(locale, "Change platform")}
           </Link>
         </div>
-      </div>
+      </main>
     </div>
+  );
+}
+
+function ModeBadge({ locale, isLocal }: { locale: import("@/lib/i18n").Locale; isLocal: boolean }) {
+  const label = isLocal ? t(locale, "Local platform") : t(locale, "Networked platform");
+  const Icon = isLocal ? MonitorIcon : GlobeIcon;
+  return (
+    <span
+      className={
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium " +
+        (isLocal
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+          : "border-sky-200 bg-sky-50 text-sky-700")
+      }
+    >
+      <Icon size={12} />
+      {label}
+    </span>
   );
 }

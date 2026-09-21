@@ -1383,6 +1383,15 @@ const ar: Record<string, string> = {
   "Change platform": "تغيير المنصّة",
   "Choose a platform to continue": "اختر منصّة للمتابعة",
   "Local sign-in:": "بيانات الدخول المحلية:",
+  "Signing in…": "جارٍ تسجيل الدخول…",
+  "Show password": "إظهار كلمة السر",
+  "Hide password": "إخفاء كلمة السر",
+  "Enter your email and password": "أدخل البريد الإلكتروني وكلمة السر",
+  "Invalid email or password": "بريد إلكتروني أو كلمة سر غير صحيحة",
+  "Sign-in is unavailable right now": "تسجيل الدخول غير متاح حالياً",
+  "Too many attempts. Try again later.": "محاولات كثيرة. حاول لاحقاً.",
+  "Works offline": "يعمل بلا إنترنت",
+  "Multi-device": "متعدّد الأجهزة",
 };
 
 const dict: Record<Locale, Record<string, string>> = { ar, en: {} };

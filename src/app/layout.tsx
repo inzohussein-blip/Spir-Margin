@@ -12,6 +12,7 @@ import { LocaleProvider } from "@/components/LocaleProvider";
 import { NavProgress } from "@/components/NavProgress";
 import { OfflineProvider } from "@/components/offline/OfflineProvider";
 import { SyncStatus } from "@/components/offline/SyncStatus";
+import { ServiceWorkerRegistrar } from "@/components/offline/ServiceWorkerRegistrar";
 import { ErrorReporter } from "@/components/monitoring/ErrorReporter";
 import { FeatureUnavailable } from "@/components/settings/FeatureUnavailable";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -61,6 +62,7 @@ export default async function RootLayout({
         <LocaleProvider locale={locale}>
         <OfflineProvider>
         <ErrorReporter />
+        <ServiceWorkerRegistrar />
         <NavProgress />
         {isBare || !user || isFocused ? (
           children
