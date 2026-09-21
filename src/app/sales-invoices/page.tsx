@@ -80,9 +80,9 @@ export default async function SalesInvoicesPage({
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label={t(locale, "Billed")} value={billed.toLocaleString()} hint={iqd(billed, rate)} accent="brand" />
-        <StatCard label={t(locale, "Outstanding")} value={outstanding.toLocaleString()} hint={iqd(outstanding, rate)} accent="amber" />
-        <StatCard label={t(locale, "Invoices")} value={agg.length.toLocaleString()} accent="green" />
+        <StatCard label={t(locale, "Billed")} value={billed.toLocaleString("en-US")} hint={iqd(billed, rate)} accent="brand" />
+        <StatCard label={t(locale, "Outstanding")} value={outstanding.toLocaleString("en-US")} hint={iqd(outstanding, rate)} accent="amber" />
+        <StatCard label={t(locale, "Invoices")} value={agg.length.toLocaleString("en-US")} accent="green" />
       </div>
 
       <ListShell
@@ -122,8 +122,8 @@ export default async function SalesInvoicesPage({
                     </td>
                     <td className="px-4 py-2">{inv.labs?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{inv.posting_date}</td>
-                    <td className="px-4 py-2">{Number(inv.total_amount).toLocaleString()}</td>
-                    <td className="px-4 py-2 text-ink-gray-5">{Number(inv.outstanding).toLocaleString()}</td>
+                    <td className="px-4 py-2">{Number(inv.total_amount).toLocaleString("en-US")}</td>
+                    <td className="px-4 py-2 text-ink-gray-5">{Number(inv.outstanding).toLocaleString("en-US")}</td>
                     <td className="px-4 py-2">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[inv.status] ?? "bg-surface-gray-2"}`}>
                         {statusLabel(locale, inv.status)}

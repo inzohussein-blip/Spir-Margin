@@ -20,7 +20,7 @@ export async function setUsdIqdRateAction(_prev: unknown, formData: FormData) {
   revalidatePath("/currency");
   revalidatePath("/tools/profit");
   revalidatePath("/tools/converter");
-  return { ok: true as const, message: `Today's rate set: 1 USD = ${rate.toLocaleString()} IQD` };
+  return { ok: true as const, message: `Today's rate set: 1 USD = ${rate.toLocaleString("en-US")} IQD` };
 }
 
 export async function getUsdIqdRate(): Promise<number> {

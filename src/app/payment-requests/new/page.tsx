@@ -29,7 +29,7 @@ export default async function NewPaymentRequestPage() {
 
   const invoices = ((invData as unknown as InvRow[]) ?? []).map((i) => ({
     id: i.id,
-    label: `${i.invoice_no}${i.labs?.name ? ` — ${i.labs.name}` : ""} (${Number(i.outstanding).toLocaleString()})`,
+    label: `${i.invoice_no}${i.labs?.name ? ` — ${i.labs.name}` : ""} (${Number(i.outstanding).toLocaleString("en-US")})`,
     lab_id: i.lab_id,
     outstanding: Number(i.outstanding),
   }));

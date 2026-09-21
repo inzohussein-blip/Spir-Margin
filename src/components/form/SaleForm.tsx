@@ -89,7 +89,7 @@ export function SaleForm({
         {/* Cost is authoritative from the product — the server re-reads it, so
             it's shown read-only here (never submitted). */}
         <div className="rounded-md border border-outline-gray-2 bg-surface-gray-1 px-3 py-2 text-sm text-ink-gray-6">
-          {buy.toLocaleString()} <span className="text-xs text-ink-gray-4">— {t(locale, "from product")}</span>
+          {buy.toLocaleString("en-US")} <span className="text-xs text-ink-gray-4">— {t(locale, "from product")}</span>
         </div>
       </Field>
       <Field label={t(locale, "Sell price")}>
@@ -102,7 +102,7 @@ export function SaleForm({
         />
       </Field>
       <div className="sm:col-span-2 rounded-md bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
-        {t(locale, "Profit on this sale:")} {profit.toLocaleString()}
+        {t(locale, "Profit on this sale:")} {profit.toLocaleString("en-US")}
       </div>
       <div className="sm:col-span-2">
         <SubmitButton>{t(locale, "Record sale")}</SubmitButton>

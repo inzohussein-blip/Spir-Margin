@@ -111,7 +111,7 @@ export function SalesReturnForm({ labs, products }: { labs: Opt[]; products: Pro
             <Button type="button" variant="subtle" size="sm" onClick={() => append({ product_id: "", qty: 1, sell_price: 0 })}>
               <PlusIcon size={14} className="mr-1" /> {t(locale, "Add item")}
             </Button>
-            <div className="text-sm font-semibold">{t(locale, "Total:")} {total.toLocaleString()}</div>
+            <div className="text-sm font-semibold">{t(locale, "Total:")} {total.toLocaleString("en-US")}</div>
           </div>
         </CardContent>
       </Card>

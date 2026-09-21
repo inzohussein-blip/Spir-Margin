@@ -54,7 +54,7 @@ export function PosTerminal({
   const rate = currency === "IQD" ? iqdRate : 1;
   const sym = currency === "IQD" ? "د.ع" : "$";
   const fmt = (n: number) =>
-    `${sym} ${(n * rate).toLocaleString(undefined, { maximumFractionDigits: currency === "IQD" ? 0 : 2 })}`;
+    `${sym} ${(n * rate).toLocaleString("en-US", { maximumFractionDigits: currency === "IQD" ? 0 : 2 })}`;
 
   function addProduct(p: Product) {
     setDone(null);

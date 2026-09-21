@@ -20,7 +20,7 @@ export function DailyRateCard({ currentRate }: { currentRate: number }) {
     <div className="rounded-xl border border-outline-gray-2 bg-surface-white p-5 shadow-sm">
       <h2 className="text-sm font-semibold text-ink-gray-8">Daily USD → IQD rate</h2>
       <p className="mt-1 text-sm text-ink-gray-5">
-        Today: <span className="font-bold text-ink-gray-9">{currentRate > 0 ? `1 USD = ${currentRate.toLocaleString()} IQD` : "not set"}</span>
+        Today: <span className="font-bold text-ink-gray-9">{currentRate > 0 ? `1 USD = ${currentRate.toLocaleString("en-US")} IQD` : "not set"}</span>
       </p>
       <form action={formAction} className="mt-3 flex flex-wrap items-end gap-2">
         <label className="block text-sm">

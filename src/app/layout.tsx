@@ -6,7 +6,6 @@ import { MobileSidebar } from "@/components/MobileSidebar";
 import { Awesomebar } from "@/components/desk/Awesomebar";
 import { NewButton } from "@/components/desk/NewButton";
 import { UserMenu } from "@/components/auth/UserMenu";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NotificationBell } from "@/components/desk/NotificationBell";
 import { LocaleProvider } from "@/components/LocaleProvider";
 import { NavProgress } from "@/components/NavProgress";
@@ -95,7 +94,6 @@ export default async function RootLayout({
                     <SyncStatus />
                   </div>
                   <NotificationBell items={notifications} locale={locale} />
-                  <LanguageSwitcher locale={locale} />
                   <UserMenu user={user} locale={locale} />
                 </div>
               </header>

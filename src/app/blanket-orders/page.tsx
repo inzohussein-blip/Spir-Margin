@@ -72,7 +72,7 @@ export default async function BlanketOrdersPage() {
                     <td className="px-4 py-2 capitalize text-ink-gray-5">{r.order_type}</td>
                     <td className="px-4 py-2">{(r.order_type === "purchasing" ? r.companies?.name : r.labs?.name) ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{r.from_date} → {r.to_date}</td>
-                    <td className="px-4 py-2 text-right">{agreedValue(r).toLocaleString()}</td>
+                    <td className="px-4 py-2 text-right">{agreedValue(r).toLocaleString("en-US")}</td>
                     <td className="px-4 py-2"><Indicator status={r.status} /></td>
                     <td className="px-4 py-2">
                       {r.status === "draft" ? (

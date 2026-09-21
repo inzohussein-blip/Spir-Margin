@@ -42,7 +42,7 @@ export default async function BankingPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label={t(locale, "Unreconciled amount")} value={totalUnrec.toLocaleString()} hint="across all accounts" accent="amber" />
+        <StatCard label={t(locale, "Unreconciled amount")} value={totalUnrec.toLocaleString("en-US")} hint="across all accounts" accent="amber" />
         <StatCard label={t(locale, "Unreconciled lines")} value={String(totalUnrecCount)} accent="red" />
         <StatCard label={t(locale, "Reconciled lines")} value={String(totalRecCount)} accent="green" />
       </div>
@@ -66,7 +66,7 @@ export default async function BankingPage() {
                     <div>
                       <div className="text-xs text-ink-gray-4">{t(locale, "Unreconciled")}</div>
                       <div className="font-semibold text-amber-600">
-                        {Number(a.unreconciled_amount).toLocaleString()} ({a.unreconciled_count})
+                        {Number(a.unreconciled_amount).toLocaleString("en-US")} ({a.unreconciled_count})
                       </div>
                     </div>
                     <div>

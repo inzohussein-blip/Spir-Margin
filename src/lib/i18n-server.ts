@@ -1,9 +1,15 @@
 import "server-only";
-import { cookies } from "next/headers";
-import { LOCALE_COOKIE, DEFAULT_LOCALE, type Locale } from "./i18n";
+import { DEFAULT_LOCALE, type Locale } from "./i18n";
 
-/** Current UI locale from the cookie (defaults to Arabic). */
+/**
+ * Current UI locale.
+ *
+ * The app is Arabic-only. English is still fully present in `i18n.ts` (the
+ * `Locale` type, the dictionary keys, every `t(locale, …)` call site) — it is
+ * simply never selected: this always returns Arabic, the language switcher is
+ * not rendered, and the `spir_locale` cookie is ignored. Re-enabling English
+ * later is a one-line change here plus putting the switcher back in the layout.
+ */
 export function getLocale(): Locale {
-  const v = cookies().get(LOCALE_COOKIE)?.value;
-  return v === "en" ? "en" : DEFAULT_LOCALE;
+  return DEFAULT_LOCALE;
 }

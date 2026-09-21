@@ -64,9 +64,9 @@ export default async function ChangeLogPage({
       filterable={false}
     >
       <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-3">
-        <StatCard label={t(locale, "Deletions")} value={deletes.toLocaleString()} accent={deletes ? "red" : "green"} />
-        <StatCard label={t(locale, "Changes")} value={updates.toLocaleString()} accent="amber" />
-        <StatCard label={t(locale, "Total tracked")} value={(deletes + updates).toLocaleString()} accent="brand" />
+        <StatCard label={t(locale, "Deletions")} value={deletes.toLocaleString("en-US")} accent={deletes ? "red" : "green"} />
+        <StatCard label={t(locale, "Changes")} value={updates.toLocaleString("en-US")} accent="amber" />
+        <StatCard label={t(locale, "Total tracked")} value={(deletes + updates).toLocaleString("en-US")} accent="brand" />
       </div>
 
       <div className="border-b border-outline-gray-1 bg-surface-gray-1/60 px-4 py-2 text-xs text-ink-gray-5">
@@ -92,7 +92,7 @@ export default async function ChangeLogPage({
             <tbody className="divide-y divide-outline-gray-1">
               {rows.map((r) => (
                 <tr key={r.id} className="hover:bg-surface-gray-1">
-                  <td className="whitespace-nowrap px-4 py-2 text-ink-gray-5">{new Date(r.changed_at).toLocaleString()}</td>
+                  <td className="whitespace-nowrap px-4 py-2 text-ink-gray-5">{new Date(r.changed_at).toLocaleString("en-US")}</td>
                   <td className="px-4 py-2">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${ACTION_STYLE[r.action]}`}>
                       {t(locale, ACTION_KEY[r.action] ?? r.action)}

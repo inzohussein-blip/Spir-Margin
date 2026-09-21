@@ -72,7 +72,7 @@ export default async function PurchaseReceiptsPage() {
                     <td className="px-4 py-2">{r.companies?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{r.posting_date}</td>
                     <td className="px-4 py-2 text-right text-ink-gray-5">{r.purchase_receipt_items?.length ?? 0}</td>
-                    <td className="px-4 py-2 text-right">{lineValue(r).toLocaleString()}</td>
+                    <td className="px-4 py-2 text-right">{lineValue(r).toLocaleString("en-US")}</td>
                     <td className="px-4 py-2"><Indicator status={r.status} /></td>
                     <td className="px-4 py-2">
                       {r.status === "draft" ? (

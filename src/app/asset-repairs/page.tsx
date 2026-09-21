@@ -49,7 +49,7 @@ export default async function AssetRepairsPage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label={t(locale, "Pending")} value={String(pending)} accent="amber" />
-        <StatCard label={t(locale, "Completed cost")} value={cost.toLocaleString()} accent="green" />
+        <StatCard label={t(locale, "Completed cost")} value={cost.toLocaleString("en-US")} accent="green" />
         <StatCard label={t(locale, "Total")} value={String(rows.length)} accent="brand" />
       </div>
 
@@ -80,7 +80,7 @@ export default async function AssetRepairsPage() {
                     </td>
                     <td className="px-4 py-2 text-ink-gray-5">{r.description ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{r.failure_date}</td>
-                    <td className="px-4 py-2">{Number(r.repair_cost).toLocaleString()}</td>
+                    <td className="px-4 py-2">{Number(r.repair_cost).toLocaleString("en-US")}</td>
                     <td className="px-4 py-2">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[r.status] ?? "bg-surface-gray-2"}`}>
                         {statusLabel(locale, r.status)}

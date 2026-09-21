@@ -77,7 +77,7 @@ export function PaymentRequestForm({
               {invoices.map((i) => <option key={i.id} value={i.id}>{i.label}</option>)}
             </select>
             {selected ? (
-              <span className="mt-1 block text-xs text-ink-gray-5">Outstanding: {selected.outstanding.toLocaleString()}</span>
+              <span className="mt-1 block text-xs text-ink-gray-5">Outstanding: {selected.outstanding.toLocaleString("en-US")}</span>
             ) : null}
           </label>
           <label className="block">

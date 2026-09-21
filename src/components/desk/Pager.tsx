@@ -44,8 +44,8 @@ export function Pager({ page, pageSize, total, hrefFor }: PagerProps) {
   return (
     <div className="flex items-center justify-between gap-3 border-t border-outline-gray-1 px-4 py-3 text-sm text-ink-gray-5">
       <span>
-        {t(locale, "Showing")} {first.toLocaleString()} {t(locale, "to")} {last.toLocaleString()}{" "}
-        {t(locale, "of")} {total.toLocaleString()}
+        {t(locale, "Showing")} {first.toLocaleString("en-US")} {t(locale, "to")} {last.toLocaleString("en-US")}{" "}
+        {t(locale, "of")} {total.toLocaleString("en-US")}
       </span>
       <div className="flex items-center gap-2">
         <Link href={hrefFor(page - 1)} className={`${btn} ${hasPrev ? "" : disabled}`} aria-disabled={!hasPrev}>

@@ -80,7 +80,7 @@ export default async function ErrorMonitorPage() {
             <tbody className="divide-y divide-outline-gray-1">
               {rows.map((r) => (
                 <tr key={r.id} className={r.resolved ? "opacity-50" : ""}>
-                  <td className="whitespace-nowrap px-4 py-2 text-ink-gray-5">{new Date(r.occurred_at).toLocaleString()}</td>
+                  <td className="whitespace-nowrap px-4 py-2 text-ink-gray-5">{new Date(r.occurred_at).toLocaleString("en-US")}</td>
                   <td className="px-4 py-2">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${r.severity === "warning" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
                       {t(locale, r.severity === "warning" ? "Warning" : "Error")}

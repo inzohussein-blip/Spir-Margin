@@ -73,7 +73,7 @@ interface Payment {
   posting_date: string;
 }
 
-const money = (n: number) => Number(n || 0).toLocaleString();
+const money = (n: number) => Number(n || 0).toLocaleString("en-US");
 
 export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
   const locale = useLocale();
@@ -335,7 +335,7 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
                     <span>{l.detail}</span>
                     <span className="flex items-center gap-2 text-xs text-ink-gray-5">
                       <Badge theme={l.action === "unmatch" ? "red" : l.action === "rules" ? "blue" : "green"} variant="subtle">{l.action}</Badge>
-                      {new Date(l.at).toLocaleTimeString()}
+                      {new Date(l.at).toLocaleTimeString("en-US")}
                     </span>
                   </li>
                 ))}

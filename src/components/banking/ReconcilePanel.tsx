@@ -130,7 +130,7 @@ export function ReconcilePanel({
                     }`}
                   >
                     {t.deposit > 0 ? "+" : "-"}
-                    {txnAmount(t).toLocaleString()}
+                    {txnAmount(t).toLocaleString("en-US")}
                   </span>
                 </button>
               </li>
@@ -168,7 +168,7 @@ export function ReconcilePanel({
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-semibold text-ink-gray-7">
-                      {Number(amt).toLocaleString()}
+                      {Number(amt).toLocaleString("en-US")}
                     </span>
                     <button
                       disabled={!selected || pending}

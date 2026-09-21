@@ -137,7 +137,7 @@ export function PickListForm({
             <Button type="button" variant="subtle" size="sm" onClick={() => append({ product_id: "", warehouse_id: "", qty: 1, batch_no: "" })}>
               <PlusIcon size={14} className="mr-1" /> {t(locale, "Add item")}
             </Button>
-            <div className="text-sm font-semibold">{t(locale, "Total qty:")} {totalQty.toLocaleString()}</div>
+            <div className="text-sm font-semibold">{t(locale, "Total qty:")} {totalQty.toLocaleString("en-US")}</div>
           </div>
         </CardContent>
       </Card>

@@ -244,8 +244,8 @@ export function StatementImport({ accounts }: { accounts: Account[] }) {
             <CardContent className="space-y-3 text-sm">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div><div className="text-xs text-ink-gray-5">{t(locale, "Rows")}</div><div className="font-semibold">{valid.length}</div></div>
-                <div><div className="text-xs text-ink-gray-5">{t(locale, "Credits")}</div><div className="font-semibold text-emerald-600">{totals.credits.toLocaleString()}</div></div>
-                <div><div className="text-xs text-ink-gray-5">{t(locale, "Debits")}</div><div className="font-semibold text-red-600">{totals.debits.toLocaleString()}</div></div>
+                <div><div className="text-xs text-ink-gray-5">{t(locale, "Credits")}</div><div className="font-semibold text-emerald-600">{totals.credits.toLocaleString("en-US")}</div></div>
+                <div><div className="text-xs text-ink-gray-5">{t(locale, "Debits")}</div><div className="font-semibold text-red-600">{totals.debits.toLocaleString("en-US")}</div></div>
                 <div><div className="text-xs text-ink-gray-5">{t(locale, "Period")}</div><div className="font-semibold">{totals.from} → {totals.to}</div></div>
               </div>
               <div className="overflow-x-auto rounded-lg border border-outline-gray-2">

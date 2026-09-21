@@ -23,7 +23,7 @@ const field =
   "focus:border-brand focus:shadow-md focus:ring-4 focus:ring-brand/15 focus:outline-none " +
   "hover:border-outline-gray-3";
 
-const money = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+const money = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 2 });
 
 export function SalesOrderForm({
   labs, products, orderId, defaults,

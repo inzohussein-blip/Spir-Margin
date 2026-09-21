@@ -54,7 +54,7 @@ export default async function CurrencyPage() {
                     <td className="px-4 py-2 text-ink-gray-5">{r.date}</td>
                     <td className="px-4 py-2 font-medium">{r.from_currency}</td>
                     <td className="px-4 py-2 font-medium">{r.to_currency}</td>
-                    <td className="px-4 py-2">{Number(r.exchange_rate).toLocaleString(undefined, { maximumFractionDigits: 6 })}</td>
+                    <td className="px-4 py-2">{Number(r.exchange_rate).toLocaleString("en-US", { maximumFractionDigits: 6 })}</td>
                     <td className="px-4 py-2 text-xs text-ink-gray-5">
                       {r.for_buying && `${t(locale, "buying")} `}{r.for_selling && t(locale, "selling")}
                     </td>

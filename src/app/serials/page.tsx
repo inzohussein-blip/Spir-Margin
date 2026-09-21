@@ -58,7 +58,7 @@ export default async function SerialsPage({
           </Link>
         </div>
       </div>
-      <Panel title={`${t(locale, "All Serials")} (${total.toLocaleString()})`}>
+      <Panel title={`${t(locale, "All Serials")} (${total.toLocaleString("en-US")})`}>
         <ListSearch basePath="/serials" q={q} placeholder={t(locale, "Serial")} />
         {rows.length === 0 ? (
           <EmptyRow text={q ? `${t(locale, "No matches for")} “${q}”` : t(locale, "No serial numbers — track individual serialized units here")} />

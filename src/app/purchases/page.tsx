@@ -69,13 +69,13 @@ export default async function PurchasesPage({
 
       {s && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatCard label={t(locale, "Received cost")} value={Number(s.total_received_cost).toLocaleString()} hint={`${s.received_count} ${t(locale, "received")}`} accent="green" />
-          <StatCard label={t(locale, "Draft cost")} value={Number(s.total_draft_cost).toLocaleString()} hint={`${s.draft_count} ${statusLabel(locale, "draft")}`} accent="amber" />
-          <StatCard label={t(locale, "Purchases")} value={total.toLocaleString()} accent="brand" />
+          <StatCard label={t(locale, "Received cost")} value={Number(s.total_received_cost).toLocaleString("en-US")} hint={`${s.received_count} ${t(locale, "received")}`} accent="green" />
+          <StatCard label={t(locale, "Draft cost")} value={Number(s.total_draft_cost).toLocaleString("en-US")} hint={`${s.draft_count} ${statusLabel(locale, "draft")}`} accent="amber" />
+          <StatCard label={t(locale, "Purchases")} value={total.toLocaleString("en-US")} accent="brand" />
         </div>
       )}
 
-      <Panel title={`${t(locale, "All Purchases")} (${total.toLocaleString()})`}>
+      <Panel title={`${t(locale, "All Purchases")} (${total.toLocaleString("en-US")})`}>
         <ListSearch basePath="/purchases" q={q} placeholder={t(locale, "Reference no.")} />
         {rows.length === 0 ? (
           <EmptyRow text={q ? `${t(locale, "No matches for")} “${q}”` : t(locale, "No purchases yet — record buying kits/devices from a supplier")} />
@@ -102,7 +102,7 @@ export default async function PurchasesPage({
                     <td className="px-4 py-2 text-ink-gray-5"><Link href={`/purchases/${p.id}`} className="text-brand hover:underline">{p.posting_date}</Link></td>
                     <td className="px-4 py-2 text-ink-gray-5">{p.due_date ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{p.purchase_items?.length ?? 0}</td>
-                    <td className="px-4 py-2">{Number(p.total_amount).toLocaleString()}</td>
+                    <td className="px-4 py-2">{Number(p.total_amount).toLocaleString("en-US")}</td>
                     <td className="px-4 py-2">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[p.status] ?? "bg-surface-gray-2"}`}>
                         {statusLabel(locale, p.status)}

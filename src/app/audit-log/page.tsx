@@ -73,7 +73,7 @@ export default async function AuditLogPage() {
               {rows.map((r) => (
                 <tr key={r.id} className="hover:bg-surface-gray-1">
                   <td className="whitespace-nowrap px-4 py-2 text-ink-gray-5">
-                    {new Date(r.changed_at).toLocaleString()}
+                    {new Date(r.changed_at).toLocaleString("en-US")}
                   </td>
                   <td className="px-4 py-2">{r.actor ?? "—"}</td>
                   <td className="px-4 py-2 font-medium">{r.table_name}</td>

@@ -51,7 +51,7 @@ export default async function JournalEntriesPage({
           <Link href="/journal-entries/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ {t(locale, "New journal")}</Link>
         </div>
       </div>
-      <Panel title={`${t(locale, "Entries")} (${total.toLocaleString()})`}>
+      <Panel title={`${t(locale, "Entries")} (${total.toLocaleString("en-US")})`}>
         <ListSearch basePath="/journal-entries" q={q} placeholder={t(locale, "Type")} />
         {rows.length === 0 ? (
           <EmptyRow text={q ? `${t(locale, "No matches for")} “${q}”` : t(locale, "No journal entries — post balanced debits and credits")} />
@@ -75,8 +75,8 @@ export default async function JournalEntriesPage({
                     <td className="px-4 py-2 text-ink-gray-5"><Link href={`/journal-entries/${j.id}`} className="text-brand hover:underline">{j.posting_date}</Link></td>
                     <td className="px-4 py-2">{j.voucher_type}</td>
                     <td className="px-4 py-2 text-ink-gray-5 max-w-xs truncate">{j.user_remark ?? "—"}</td>
-                    <td className="px-4 py-2">{Number(j.total_debit).toLocaleString()}</td>
-                    <td className="px-4 py-2">{Number(j.total_credit).toLocaleString()}</td>
+                    <td className="px-4 py-2">{Number(j.total_debit).toLocaleString("en-US")}</td>
+                    <td className="px-4 py-2">{Number(j.total_credit).toLocaleString("en-US")}</td>
                     <td className="px-4 py-2">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[j.status] ?? "bg-surface-gray-2"}`}>{statusLabel(locale, j.status)}</span>
                     </td>

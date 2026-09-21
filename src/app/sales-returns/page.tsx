@@ -51,8 +51,8 @@ export default async function SalesReturnsPage({
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <StatCard label={t(locale, "Credited (returns)")} value={credited.toLocaleString()} accent="amber" />
-        <StatCard label={t(locale, "Returns")} value={agg.length.toLocaleString()} accent="brand" />
+        <StatCard label={t(locale, "Credited (returns)")} value={credited.toLocaleString("en-US")} accent="amber" />
+        <StatCard label={t(locale, "Returns")} value={agg.length.toLocaleString("en-US")} accent="brand" />
       </div>
 
       <ListShell
@@ -92,7 +92,7 @@ export default async function SalesReturnsPage({
                     <td className="px-4 py-2 text-ink-gray-5">{r.posting_date}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{r.reason ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{r.sales_return_items?.length ?? 0}</td>
-                    <td className="px-4 py-2">{Number(r.total_amount).toLocaleString()}</td>
+                    <td className="px-4 py-2">{Number(r.total_amount).toLocaleString("en-US")}</td>
                     <td className="px-4 py-2">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[r.status] ?? "bg-surface-gray-2"}`}>{statusLabel(locale, r.status)}</span>
                     </td>

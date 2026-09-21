@@ -135,7 +135,7 @@ export function BomForm({
             <Button type="button" variant="subtle" size="sm" onClick={() => append({ component_id: "", qty: 1, rate: 0 })}>
               <PlusIcon size={14} className="mr-1" /> Add component
             </Button>
-            <div className="text-sm font-semibold">Material cost: {total.toLocaleString()}</div>
+            <div className="text-sm font-semibold">Material cost: {total.toLocaleString("en-US")}</div>
           </div>
         </CardContent>
       </Card>

@@ -56,7 +56,7 @@ export default async function DeliveryNotesPage({
           <Link href="/delivery-notes/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ {t(locale, "New delivery")}</Link>
         </div>
       </div>
-      <Panel title={`${t(locale, "Deliveries")} (${total.toLocaleString()})`}>
+      <Panel title={`${t(locale, "Deliveries")} (${total.toLocaleString("en-US")})`}>
         <ListSearch basePath="/delivery-notes" q={q} placeholder={t(locale, "Lab")} />
         {rows.length === 0 ? (
           <EmptyRow text={q ? `${t(locale, "No matches for")} “${q}”` : t(locale, "No delivery notes — submitting one withdraws kit stock to the lab")} />

@@ -37,7 +37,7 @@ export default async function SyncHealthPage() {
   const syncs = (syncRes.data as unknown as Sync[]) ?? [];
 
   const totalDowntime = outages.reduce((s, o) => s + Number(o.duration_seconds), 0);
-  const lastSync = syncs[0]?.synced_at ? new Date(syncs[0].synced_at).toLocaleString() : "—";
+  const lastSync = syncs[0]?.synced_at ? new Date(syncs[0].synced_at).toLocaleString("en-US") : "—";
   const failedSyncs = syncs.filter((s) => !s.ok).length;
 
   return (
@@ -74,8 +74,8 @@ export default async function SyncHealthPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {outages.map((o) => (
                   <tr key={o.id} className="hover:bg-surface-gray-1">
-                    <td className="whitespace-nowrap px-4 py-2 text-ink-gray-5">{new Date(o.went_offline_at).toLocaleString()}</td>
-                    <td className="whitespace-nowrap px-4 py-2 text-ink-gray-5">{new Date(o.came_online_at).toLocaleString()}</td>
+                    <td className="whitespace-nowrap px-4 py-2 text-ink-gray-5">{new Date(o.went_offline_at).toLocaleString("en-US")}</td>
+                    <td className="whitespace-nowrap px-4 py-2 text-ink-gray-5">{new Date(o.came_online_at).toLocaleString("en-US")}</td>
                     <td className="px-4 py-2 font-medium tabular-nums text-amber-700">{human(Number(o.duration_seconds))}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{o.user_email ?? "—"}</td>
                   </tr>
@@ -104,7 +104,7 @@ export default async function SyncHealthPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {syncs.map((s) => (
                   <tr key={s.id} className="hover:bg-surface-gray-1">
-                    <td className="whitespace-nowrap px-4 py-2 text-ink-gray-5">{new Date(s.synced_at).toLocaleString()}</td>
+                    <td className="whitespace-nowrap px-4 py-2 text-ink-gray-5">{new Date(s.synced_at).toLocaleString("en-US")}</td>
                     <td className="px-4 py-2">
                       {s.ok
                         ? <span className="inline-flex items-center gap-1 text-emerald-600"><CheckCircle2Icon size={14} /> {t(locale, "OK")}</span>

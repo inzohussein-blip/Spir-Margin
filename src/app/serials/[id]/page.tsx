@@ -138,7 +138,7 @@ export default async function SerialDetailPage({ params }: { params: { id: strin
                 <span className={`absolute grid size-2.5 place-items-center rounded-full ${TONE[e.tone]} start-[-22px] top-1.5 ring-4 ring-surface-white`} />
                 <p className="text-sm font-medium text-ink-gray-8">{e.text}</p>
                 <p className="text-xs text-ink-gray-4">
-                  {new Date(e.at).toLocaleString()}{e.actor ? ` · ${e.actor}` : ""}
+                  {new Date(e.at).toLocaleString("en-US")}{e.actor ? ` · ${e.actor}` : ""}
                 </p>
               </li>
             ))}

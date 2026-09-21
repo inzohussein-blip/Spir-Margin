@@ -38,8 +38,8 @@ export default async function OpportunitiesPage() {
 
       {s && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatCard label={t(locale, "Open pipeline")} value={Number(s.open_amount).toLocaleString()} hint={`${s.open_count} open`} accent="brand" />
-          <StatCard label={t(locale, "Weighted value")} value={Number(s.weighted_amount).toLocaleString()} hint="amount × probability" accent="amber" />
+          <StatCard label={t(locale, "Open pipeline")} value={Number(s.open_amount).toLocaleString("en-US")} hint={`${s.open_count} open`} accent="brand" />
+          <StatCard label={t(locale, "Weighted value")} value={Number(s.weighted_amount).toLocaleString("en-US")} hint="amount × probability" accent="amber" />
           <StatCard label={t(locale, "Won")} value={String(s.won_count)} accent="green" />
         </div>
       )}
@@ -74,7 +74,7 @@ export default async function OpportunitiesPage() {
                     <td className="px-4 py-2 font-medium"><Link href={`/opportunities/${o.id}`} className="text-brand hover:underline">{o.title}</Link></td>
                     <td className="px-4 py-2 text-ink-gray-5">{o.labs?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{o.sales_stage ?? "—"}</td>
-                    <td className="px-4 py-2">{Number(o.opportunity_amount).toLocaleString()}</td>
+                    <td className="px-4 py-2">{Number(o.opportunity_amount).toLocaleString("en-US")}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{Number(o.probability)}%</td>
                     <td className="px-4 py-2 text-ink-gray-5">{o.expected_closing ?? "—"}</td>
                     <td className="px-4 py-2">

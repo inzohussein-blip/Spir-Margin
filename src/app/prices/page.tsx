@@ -59,7 +59,7 @@ export default async function PricesPage() {
                     <td className="px-4 py-2 font-medium">{r.product_name}<span className="ml-1 text-xs text-ink-gray-4">{r.item_code}</span></td>
                     <td className="px-4 py-2">{r.price_list}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{r.lab_name ?? "— all —"}</td>
-                    <td className="px-4 py-2 font-medium">{Number(r.rate).toLocaleString()} {r.currency}</td>
+                    <td className="px-4 py-2 font-medium">{Number(r.rate).toLocaleString("en-US")} {r.currency}</td>
                     <td className="px-4 py-2">
                       {r.selling && <span className="mr-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">selling</span>}
                       {r.buying && <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">buying</span>}

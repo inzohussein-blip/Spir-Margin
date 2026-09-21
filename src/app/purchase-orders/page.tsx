@@ -67,8 +67,8 @@ export default async function PurchaseOrdersPage({
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label={t(locale, "Open orders")} value={String(open.length)} accent="amber" />
-        <StatCard label={t(locale, "Open value")} value={openValue.toLocaleString()} accent="brand" />
-        <StatCard label={t(locale, "Total")} value={agg.length.toLocaleString()} accent="green" />
+        <StatCard label={t(locale, "Open value")} value={openValue.toLocaleString("en-US")} accent="brand" />
+        <StatCard label={t(locale, "Total")} value={agg.length.toLocaleString("en-US")} accent="green" />
       </div>
 
       <ListShell
@@ -106,7 +106,7 @@ export default async function PurchaseOrdersPage({
                     <td className="px-4 py-2">{o.companies?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{o.transaction_date}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{o.purchase_order_items?.length ?? 0}</td>
-                    <td className="px-4 py-2">{Number(o.total_amount).toLocaleString()}</td>
+                    <td className="px-4 py-2">{Number(o.total_amount).toLocaleString("en-US")}</td>
                     <td className="px-4 py-2">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[o.status] ?? "bg-surface-gray-2"}`}>
                         {statusLabel(locale, o.status)}

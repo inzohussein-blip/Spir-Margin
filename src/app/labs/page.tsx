@@ -50,7 +50,7 @@ export default async function LabsPage() {
                     <td className="px-4 py-2"><Indicator status={l.status} /></td>
                     <td className="px-4 py-2 text-ink-gray-5">
                       {l.last_activity_at
-                        ? new Date(l.last_activity_at).toLocaleDateString()
+                        ? new Date(l.last_activity_at).toLocaleDateString("en-US")
                         : "—"}
                     </td>
                   </tr>

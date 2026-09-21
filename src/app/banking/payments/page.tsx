@@ -53,7 +53,7 @@ export default async function PaymentsPage() {
                     <td className="px-4 py-2">{p.payment_type}</td>
                     <td className="px-4 py-2">{p.party_name ?? "—"}</td>
                     <td className="px-4 py-2">
-                      {Number(p.received_amount || p.paid_amount).toLocaleString()}
+                      {Number(p.received_amount || p.paid_amount).toLocaleString("en-US")}
                     </td>
                     <td className="px-4 py-2 text-ink-gray-5">{p.posting_date}</td>
                     <td className="px-4 py-2">

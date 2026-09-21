@@ -40,8 +40,8 @@ export default async function PaymentRequestsPage() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label={t(locale, "Open requests")} value={String(outstanding.length)} accent="amber" />
-        <StatCard label={t(locale, "Requested value")} value={requestedValue.toLocaleString()} accent="brand" />
-        <StatCard label={t(locale, "Collected")} value={collected.toLocaleString()} accent="green" />
+        <StatCard label={t(locale, "Requested value")} value={requestedValue.toLocaleString("en-US")} accent="brand" />
+        <StatCard label={t(locale, "Collected")} value={collected.toLocaleString("en-US")} accent="green" />
       </div>
 
       <ListShell
@@ -76,7 +76,7 @@ export default async function PaymentRequestsPage() {
                     <td className="px-4 py-2 text-ink-gray-5">{r.sales_invoices?.invoice_no ?? "—"}</td>
                     <td className="px-4 py-2">{r.labs?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{r.posting_date}</td>
-                    <td className="px-4 py-2 text-right">{Number(r.amount).toLocaleString()}</td>
+                    <td className="px-4 py-2 text-right">{Number(r.amount).toLocaleString("en-US")}</td>
                     <td className="px-4 py-2"><Indicator status={r.status} /></td>
                     <td className="px-4 py-2">
                       {r.status === "draft" ? (

@@ -59,7 +59,7 @@ export default async function ProductBundlesPage() {
                     </td>
                     <td className="px-4 py-2 text-ink-gray-5">{b.description ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{b.product_bundle_items?.length ?? 0}</td>
-                    <td className="px-4 py-2">{Number(b.bundle_value).toLocaleString()}</td>
+                    <td className="px-4 py-2">{Number(b.bundle_value).toLocaleString("en-US")}</td>
                     <td className="px-4 py-2">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${b.is_active ? "bg-emerald-100 text-emerald-700" : "bg-surface-gray-2 text-ink-gray-6"}`}>
                         {b.is_active ? "active" : "inactive"}

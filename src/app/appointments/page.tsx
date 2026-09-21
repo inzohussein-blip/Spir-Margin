@@ -73,7 +73,7 @@ export default async function AppointmentsPage() {
                 {rows.map((a) => (
                   <tr key={a.id}>
                     <td className="px-4 py-2 font-medium"><Link href={`/appointments/${a.id}`} className="text-brand hover:underline">{a.appointment_no}</Link></td>
-                    <td className="px-4 py-2 text-ink-gray-5">{new Date(a.scheduled_time).toLocaleString()}</td>
+                    <td className="px-4 py-2 text-ink-gray-5">{new Date(a.scheduled_time).toLocaleString("en-US")}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{a.purpose}</td>
                     <td className="px-4 py-2">{a.labs?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{a.devices?.asset_code ?? "—"}</td>
