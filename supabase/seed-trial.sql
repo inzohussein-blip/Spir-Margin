@@ -12,25 +12,25 @@
 
 -- Supplier we buy from -------------------------------------------------
 insert into companies (id, name, role, country) values
-    ('00000000-0000-0000-0000-00000000de01'::uuid, 'Demo Diagnostics', 'parent', 'Germany')
+    ('00000000-0000-0000-0000-00000000de01'::uuid, 'شركة التشخيص التجريبية', 'parent', 'ألمانيا')
 on conflict do nothing;
 
 -- One warehouse --------------------------------------------------------
 insert into warehouses (id, name, city) values
-    ('00000000-0000-0000-0000-00000000de11'::uuid, 'Demo Store', 'Baghdad')
+    ('00000000-0000-0000-0000-00000000de11'::uuid, 'المخزن التجريبي', 'بغداد')
 on conflict do nothing;
 
 -- Two labs (one active, one inactive) ----------------------------------
 insert into labs (id, code, name, status, city, contact_name, phone) values
-    ('00000000-0000-0000-0000-00000000de21'::uuid, 'LAB-001', 'Demo Central Lab', 'active',   'Baghdad', 'Dr. Sara', '0770-000-0001'),
-    ('00000000-0000-0000-0000-00000000de22'::uuid, 'LAB-002', 'Demo Branch Lab',  'inactive', 'Basra',   'Dr. Omar', '0770-000-0002')
+    ('00000000-0000-0000-0000-00000000de21'::uuid, 'LAB-001', 'المختبر المركزي التجريبي', 'active',   'بغداد', 'د. سارة', '0770-000-0001'),
+    ('00000000-0000-0000-0000-00000000de22'::uuid, 'LAB-002', 'مختبر الفرع التجريبي',  'inactive', 'البصرة',   'د. عمر', '0770-000-0002')
 on conflict do nothing;
 
 -- Three products: one device, one kit, one spare part ------------------
 insert into products (id, item_code, name, product_type, brand, uom, supplier_id, shelf_life_in_days, default_buy_price, default_sell_price) values
-    ('00000000-0000-0000-0000-00000000de31'::uuid, 'DEV-01', 'Demo Chemistry Analyzer', 'device',     'Demo', 'Nos', '00000000-0000-0000-0000-00000000de01'::uuid, null, 20000, 26000),
-    ('00000000-0000-0000-0000-00000000de32'::uuid, 'KIT-01', 'Demo Reagent Kit (100T)', 'kit',        'Demo', 'Box', '00000000-0000-0000-0000-00000000de01'::uuid, 365,     50,    90),
-    ('00000000-0000-0000-0000-00000000de33'::uuid, 'SPR-01', 'Demo Sample Probe',       'spare_part', 'Demo', 'Nos', '00000000-0000-0000-0000-00000000de01'::uuid, null,   300,   450)
+    ('00000000-0000-0000-0000-00000000de31'::uuid, 'DEV-01', 'محلّل كيمياء تجريبي', 'device',     'تجريبي', 'عدد', '00000000-0000-0000-0000-00000000de01'::uuid, null, 20000, 26000),
+    ('00000000-0000-0000-0000-00000000de32'::uuid, 'KIT-01', 'كِت كواشف تجريبي (100 اختبار)', 'kit',        'تجريبي', 'علبة', '00000000-0000-0000-0000-00000000de01'::uuid, 365,     50,    90),
+    ('00000000-0000-0000-0000-00000000de33'::uuid, 'SPR-01', 'مسبار عيّنات تجريبي',       'spare_part', 'تجريبي', 'عدد', '00000000-0000-0000-0000-00000000de01'::uuid, null,   300,   450)
 on conflict do nothing;
 
 -- Two devices: one healthy, one with maintenance due soon --------------

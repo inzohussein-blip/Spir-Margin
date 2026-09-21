@@ -31,7 +31,7 @@ export interface SessionUser {
 export const LOCAL_TRIAL_USER: SessionUser = {
   id: LOCAL_ADMIN_ID,
   email: LOCAL_ADMIN_EMAIL,
-  full_name: "Administrator (Local trial)",
+  full_name: "المسؤول (نسخة تجريبية)",
   role: "admin",
   lab_id: null,
 };

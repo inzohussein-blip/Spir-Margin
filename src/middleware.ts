@@ -6,7 +6,10 @@ import { isHybridBuild } from "@/lib/runtime/platform";
 // Paths reachable without a session. The PWA manifest must be fetchable by the
 // browser before login so the app is installable (add to home screen). The
 // `/welcome` picker gates first-time visitors on the HYBRID build only.
-const PUBLIC_PATHS = ["/login", "/welcome", "/manifest.webmanifest"];
+// `/sw.js` no longer exists, but browsers that installed the old service
+// worker still request it. Letting it 404 cleanly is what makes them drop the
+// registration; redirecting it into the app would keep a dead worker alive.
+const PUBLIC_PATHS = ["/login", "/welcome", "/manifest.webmanifest", "/sw.js"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -36,7 +39,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // Hybrid build, no choice made yet: pick a platform first.
-  if (platform === null && !isWelcome && pathname !== "/manifest.webmanifest") {
+  if (platform === null && !isWelcome && !isPublic) {
     return NextResponse.redirect(new URL("/welcome", req.url));
   }
 

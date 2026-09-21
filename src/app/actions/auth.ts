@@ -57,7 +57,7 @@ async function trySetSession(user: SessionUser): Promise<LoginState> {
 const LOCAL_ADMIN_USER: SessionUser = {
   id: LOCAL_ADMIN_ID,
   email: LOCAL_ADMIN_EMAIL,
-  full_name: "Administrator (Local trial)",
+  full_name: "المسؤول (نسخة تجريبية)",
   role: "admin",
   lab_id: null,
 };
@@ -65,7 +65,7 @@ const LOCAL_ADMIN_USER: SessionUser = {
 const CLOUD_ADMIN_USER: SessionUser = {
   id: CLOUD_ADMIN_ID,
   email: CLOUD_ADMIN_EMAIL,
-  full_name: "Administrator",
+  full_name: "المسؤول",
   role: "admin",
   lab_id: null,
 };

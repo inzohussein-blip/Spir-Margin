@@ -26,7 +26,7 @@ export default async function NewDevicePage() {
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
         <Link href="/devices" className="hover:text-brand">
-          ← Devices
+          <span aria-hidden>→</span> {t(locale, "Devices")}
         </Link>
       </div>
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Device")}</h1>

@@ -6,6 +6,8 @@ import {
   getOpenPaymentEntries,
 } from "@/lib/banking";
 import { ReconcilePanel } from "@/components/banking/ReconcilePanel";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +16,7 @@ export default async function AccountReconcilePage({
 }: {
   params: { accountId: string };
 }) {
+  const locale = getLocale();
   const account = await getBankAccount(params.accountId);
   if (!account) notFound();
 
@@ -26,7 +29,7 @@ export default async function AccountReconcilePage({
     <div className="space-y-5">
       <div className="text-sm text-ink-gray-5">
         <Link href="/banking" className="hover:text-brand">
-          ← Banking
+          <span aria-hidden>→</span> {t(locale, "Banking")}
         </Link>
       </div>
       <div className="flex items-center justify-between">

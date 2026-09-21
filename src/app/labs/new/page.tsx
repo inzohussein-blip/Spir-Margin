@@ -24,7 +24,7 @@ export default async function NewLabPage() {
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-sm text-ink-gray-5">
         <Link href="/labs" className="hover:text-brand">
-          ← Labs
+          <span aria-hidden>→</span> {t(locale, "Labs")}
         </Link>
       </div>
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Lab")}</h1>

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { navGroups } from "@/lib/nav";
+import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +57,7 @@ export default async function WorkspacePage({ params }: { params: { slug: string
   const group = navGroups.find((g) => g.label.toLowerCase() === params.slug.toLowerCase());
   if (!group) notFound();
 
+  const locale = getLocale();
   const cards = NUMBER_CARDS[params.slug.toLowerCase()] ?? [];
   const supabase = createClient();
   const counts = await Promise.all(
@@ -67,17 +70,17 @@ export default async function WorkspacePage({ params }: { params: { slug: string
   return (
     <div className="space-y-6">
       <nav className="flex items-center gap-1.5 text-xs text-ink-gray-5">
-        <Link href="/" className="hover:text-brand">Home</Link>
+        <Link href="/" className="hover:text-brand">{t(locale, "Home")}</Link>
         <span className="text-ink-gray-3">/</span>
-        <span>{group.label}</span>
+        <span>{t(locale, group.label)}</span>
       </nav>
-      <h1 className="text-xl font-semibold text-ink-gray-8">{group.label}</h1>
+      <h1 className="text-xl font-semibold text-ink-gray-8">{t(locale, group.label)}</h1>
 
       {counts.length > 0 && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {counts.map((c) => (
             <div key={c.label} className="rounded-xl border border-outline-gray-2 bg-surface-white p-5 shadow-sm">
-              <div className="text-sm font-medium text-ink-gray-5">{c.label}</div>
+              <div className="text-sm font-medium text-ink-gray-5">{t(locale, c.label)}</div>
               <div className="mt-2 text-3xl font-bold text-ink-gray-8">{c.n}</div>
             </div>
           ))}
@@ -86,7 +89,7 @@ export default async function WorkspacePage({ params }: { params: { slug: string
 
       <section className="rounded-xl border border-outline-gray-2 bg-surface-white shadow-sm">
         <header className="border-b border-outline-gray-1 px-5 py-3 text-sm font-semibold text-ink-gray-7">
-          Shortcuts
+          {t(locale, "Shortcuts")}
         </header>
         <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-4">
           {group.items.map((item) => {
@@ -98,7 +101,7 @@ export default async function WorkspacePage({ params }: { params: { slug: string
                 className="flex items-center gap-3 rounded-lg border border-outline-gray-1 px-4 py-3 text-sm font-medium text-ink-gray-7 transition-colors hover:border-brand hover:bg-surface-gray-1"
               >
                 <Icon size={18} className="text-brand" />
-                {item.label}
+                {t(locale, item.label)}
               </Link>
             );
           })}

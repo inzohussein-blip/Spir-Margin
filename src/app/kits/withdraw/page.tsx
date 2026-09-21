@@ -15,7 +15,7 @@ export default async function WithdrawPage() {
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
         <Link href="/kits" className="hover:text-brand">
-          ← Kits
+          <span aria-hidden>→</span> {t(locale, "Kits")}
         </Link>
       </div>
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Record Withdrawal")}</h1>

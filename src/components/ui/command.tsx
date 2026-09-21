@@ -28,8 +28,11 @@ function Command({
 }
 
 function CommandDialog({
-  title = "Command Palette",
-  description = "Search for a command to run...",
+  // Screen-reader-only dialog title/description. The UI is Arabic-only, so
+  // these defaults are Arabic too — they are announced, and they also end up
+  // in the RSC payload of every page that mounts the command bar.
+  title = "لوحة الأوامر",
+  description = "ابحث عن أمر لتنفيذه…",
   children,
   className,
   showCloseButton = true,

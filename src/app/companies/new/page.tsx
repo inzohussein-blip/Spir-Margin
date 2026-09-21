@@ -20,7 +20,7 @@ export default async function NewCompanyPage() {
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
         <Link href="/companies" className="hover:text-brand">
-          ← Companies
+          <span aria-hidden>→</span> {t(locale, "Companies")}
         </Link>
       </div>
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Company")}</h1>

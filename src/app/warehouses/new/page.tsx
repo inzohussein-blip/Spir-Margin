@@ -23,7 +23,7 @@ export default async function NewWarehousePage() {
     <div className="space-y-4">
       <div className="text-sm text-ink-gray-5">
         <Link href="/warehouses" className="hover:text-brand">
-          ← Warehouses
+          <span aria-hidden>→</span> {t(locale, "Warehouses")}
         </Link>
       </div>
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Warehouse")}</h1>
