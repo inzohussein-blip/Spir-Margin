@@ -7,8 +7,9 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { SESSION_COOKIE, SESSION_MAX_AGE, createSessionToken, type SessionUser } from "@/lib/auth/session";
 import { lockoutRemaining, recordFailure, recordSuccess } from "@/lib/auth/rate-limit";
 import { PLATFORM_MODE_COOKIE, PLATFORM_MODE_MAX_AGE, type PlatformMode } from "@/lib/auth/platform-mode";
-import { getPlatformMode } from "@/lib/auth/platform-mode-server";
 import { LOCAL_ADMIN_EMAIL, LOCAL_ADMIN_PASSWORD, LOCAL_ADMIN_ID } from "@/lib/auth/local-credentials";
+import { CLOUD_ADMIN_EMAIL, CLOUD_ADMIN_PASSWORD, CLOUD_ADMIN_ID } from "@/lib/auth/cloud-credentials";
+import { isCloudBuild, isLocalBuild } from "@/lib/runtime/platform";
 import type { LoginState } from "@/lib/auth/login-state";
 
 const cookieOptions = {
@@ -46,6 +47,22 @@ async function trySetSession(user: SessionUser): Promise<LoginState> {
   }
 }
 
+const LOCAL_ADMIN_USER: SessionUser = {
+  id: LOCAL_ADMIN_ID,
+  email: LOCAL_ADMIN_EMAIL,
+  full_name: "Administrator (Local trial)",
+  role: "admin",
+  lab_id: null,
+};
+
+const CLOUD_ADMIN_USER: SessionUser = {
+  id: CLOUD_ADMIN_ID,
+  email: CLOUD_ADMIN_EMAIL,
+  full_name: "Administrator",
+  role: "admin",
+  lab_id: null,
+};
+
 export async function loginAction(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
@@ -53,26 +70,45 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
 
   if (!email || !password) return { error: "Enter your email and password" };
 
-  // --- Local platform ------------------------------------------------------
-  // The fixed credentials live in the source (src/lib/auth/local-credentials.ts).
-  // Sign-in never touches the database, so it works fully offline.
-  if (getPlatformMode() === "local") {
+  // --- LOCAL build (trial) -------------------------------------------------
+  // One fixed credential in code, no DB, no rate-limit, no bcrypt. If the
+  // build is exclusively local, everything below is dead code and tree-shakes.
+  if (isLocalBuild) {
     if (email !== LOCAL_ADMIN_EMAIL || password !== LOCAL_ADMIN_PASSWORD) {
       return { error: "Invalid email or password" };
     }
-    const bad = await trySetSession({
-      id: LOCAL_ADMIN_ID,
-      email: LOCAL_ADMIN_EMAIL,
-      full_name: "Administrator",
-      role: "admin",
-      lab_id: null,
-    });
+    const bad = await trySetSession(LOCAL_ADMIN_USER);
     if (bad) return bad;
     redirect(next);
   }
 
-  // --- Networked platform --------------------------------------------------
-  // Brute-force throttle then bcrypt-verify via fn_verify_login.
+  // --- CLOUD build (full, admin-only) --------------------------------------
+  // The fixed cloud admin in cloud-credentials.ts is the only login. The
+  // DB users table is intentionally not consulted in this build — this is
+  // the admin-only edition.
+  if (isCloudBuild) {
+    if (email !== CLOUD_ADMIN_EMAIL || password !== CLOUD_ADMIN_PASSWORD) {
+      return { error: "Invalid email or password" };
+    }
+    const bad = await trySetSession(CLOUD_ADMIN_USER);
+    if (bad) return bad;
+    redirect(next);
+  }
+
+  // --- HYBRID dev build ----------------------------------------------------
+  // Legacy behaviour: platform-mode cookie routes to LOCAL constants or to
+  // fn_verify_login. Only reachable in `next dev` — production ships one of
+  // the two dedicated builds above.
+  const { getPlatformMode } = await import("@/lib/auth/platform-mode-server");
+  if (getPlatformMode() === "local") {
+    if (email !== LOCAL_ADMIN_EMAIL || password !== LOCAL_ADMIN_PASSWORD) {
+      return { error: "Invalid email or password" };
+    }
+    const bad = await trySetSession(LOCAL_ADMIN_USER);
+    if (bad) return bad;
+    redirect(next);
+  }
+
   const locked = await lockoutRemaining(email).catch(() => 0);
   if (locked > 0) {
     return { error: "Too many attempts. Try again later.", lockedFor: locked };
@@ -109,7 +145,7 @@ export async function logoutAction() {
   redirect("/login");
 }
 
-/** Persist the visitor's platform choice (local vs networked) before sign-in. */
+/** Hybrid-build only: persist the visitor's platform choice before sign-in. */
 export async function setPlatformModeAction(formData: FormData) {
   const raw = String(formData.get("mode") ?? "");
   const mode: PlatformMode | null = raw === "local" || raw === "networked" ? raw : null;

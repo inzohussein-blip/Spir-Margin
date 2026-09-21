@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:local": "SPIR_PLATFORM=local next build",
+    "build:cloud": "SPIR_PLATFORM=cloud next build",
     "start": "next start",
+    "start:local": "SPIR_PLATFORM=local next start",
+    "start:cloud": "SPIR_PLATFORM=cloud next start",
     "test": "node --test tests/*.test.mjs",
     "lint": "next lint",
     "types": "supabase gen types typescript --local > src/lib/database.types.ts"

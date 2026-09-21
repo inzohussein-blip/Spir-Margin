@@ -1,22 +1,21 @@
 import "server-only";
-import { PGlite } from "@electric-sql/pglite";
-import { pgcrypto } from "@electric-sql/pglite/contrib/pgcrypto";
 import fs from "node:fs";
 import path from "node:path";
+import { isCloudBuild, isLocalBuild } from "@/lib/runtime/platform";
 
 /**
  * Data-source layer. Two interchangeable backends behind one `Db` interface:
  *
- *   • Embedded Postgres (PGlite/WASM) — the default. Runs this project's own
- *     SQL migrations + plpgsql functions in-process, persisted to a local data
- *     directory. Zero setup; ideal for local dev / a persistent Node server.
+ *   • Embedded Postgres (PGlite/WASM) — the LOCAL build. Runs this project's
+ *     own SQL migrations + plpgsql functions in-process, persisted to a local
+ *     data directory. Zero setup; ideal for the free trial installer.
  *
- *   • Hosted Postgres (node-postgres) — used when DATABASE_URL is set (e.g. a
- *     Supabase/Neon connection string for a Vercel deployment). Migrations are
- *     assumed already applied to that database.
+ *   • Hosted Postgres (node-postgres) — the CLOUD build. Talks to a hosted
+ *     Postgres/Supabase over `DATABASE_URL`. Migrations are auto-applied on
+ *     boot the first time.
  *
- * Both expose `query(sql, params) -> { rows, affectedRows }`, and date/time
- * types are returned as strings (matching PostgREST) so pages render them.
+ * `SPIR_PLATFORM` selects which backend is COMPILED IN. Both PGlite and pg
+ * are dynamic imports so the unused backend never lands in the other bundle.
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -80,6 +79,9 @@ async function introspect(db: Db): Promise<FkMeta> {
 // ---- embedded PGlite backend ----------------------------------------------
 
 async function bootPglite(): Promise<Db> {
+  // Dynamic imports so a `SPIR_PLATFORM=cloud` build tree-shakes PGlite away.
+  const { PGlite } = await import("@electric-sql/pglite");
+  const { pgcrypto } = await import("@electric-sql/pglite/contrib/pgcrypto");
   const pg = new PGlite({
     dataDir: DATA_DIR,
     extensions: { pgcrypto },
@@ -251,8 +253,24 @@ async function bootPostgres(url: string): Promise<Db> {
 const MIGRATION_LOCK_KEY = 5_713_002;
 
 async function bootstrap(): Promise<{ db: Db; meta: FkMeta }> {
-  const url = process.env.DATABASE_URL;
-  const db = url ? await bootPostgres(url) : await bootPglite();
+  let db: Db;
+  if (isLocalBuild) {
+    // Trial build: PGlite only. Ignore DATABASE_URL even if set.
+    db = await bootPglite();
+  } else if (isCloudBuild) {
+    // Full build: hosted Postgres only. Refuse to boot without DATABASE_URL.
+    const url = process.env.DATABASE_URL;
+    if (!url) {
+      throw new Error(
+        "SPIR_PLATFORM=cloud requires DATABASE_URL to be set (hosted Postgres connection string).",
+      );
+    }
+    db = await bootPostgres(url);
+  } else {
+    // Hybrid dev build: fall back to whichever backend is configured.
+    const url = process.env.DATABASE_URL;
+    db = url ? await bootPostgres(url) : await bootPglite();
+  }
   const meta = await introspect(db);
   return { db, meta };
 }

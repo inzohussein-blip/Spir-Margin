@@ -4,6 +4,8 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { getLocale } from "@/lib/i18n-server";
 import { getPlatformMode, inferPlatformMode } from "@/lib/auth/platform-mode-server";
 import { LOCAL_ADMIN_EMAIL, LOCAL_ADMIN_PASSWORD } from "@/lib/auth/local-credentials";
+import { CLOUD_ADMIN_EMAIL } from "@/lib/auth/cloud-credentials";
+import { isCloudBuild, isHybridBuild, isLocalBuild } from "@/lib/runtime/platform";
 import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -14,10 +16,14 @@ export default function LoginPage({
   searchParams?: { next?: string };
 }) {
   const locale = getLocale();
-  const mode = getPlatformMode() ?? inferPlatformMode();
+  const mode = isLocalBuild
+    ? "local"
+    : isCloudBuild
+      ? "networked"
+      : getPlatformMode() ?? inferPlatformMode();
   const isLocal = mode === "local";
   const next = typeof searchParams?.next === "string" ? searchParams.next : "";
-  const defaultEmail = isLocal ? LOCAL_ADMIN_EMAIL : "";
+  const defaultEmail = isLocal ? LOCAL_ADMIN_EMAIL : isCloudBuild ? CLOUD_ADMIN_EMAIL : "";
 
   return (
     <div className="relative grid min-h-screen place-items-center overflow-hidden bg-surface-gray-1 p-4">
@@ -83,11 +89,13 @@ export default function LoginPage({
           )}
         </div>
 
-        <div className="mt-4 flex items-center justify-center gap-3 text-xs text-ink-gray-5">
-          <Link href="/welcome" className="hover:text-brand hover:underline">
-            {t(locale, "Change platform")}
-          </Link>
-        </div>
+        {isHybridBuild ? (
+          <div className="mt-4 flex items-center justify-center gap-3 text-xs text-ink-gray-5">
+            <Link href="/welcome" className="hover:text-brand hover:underline">
+              {t(locale, "Change platform")}
+            </Link>
+          </div>
+        ) : null}
       </main>
     </div>
   );
