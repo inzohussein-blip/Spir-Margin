@@ -26,11 +26,15 @@ Apply the migrations to that database **before first use** (in order):
 # psql, or your platform's SQL runner, over supabase/migrations/*.sql in order,
 # or apply the single combined file:
 psql "$DATABASE_URL" -f supabase/schema.sql
+
+# optional — demo data, for a staging or evaluation database only:
+psql "$DATABASE_URL" -f supabase/seed.sql
 ```
 
-`supabase/schema.sql` is the full schema (all migrations + a demo seed) and is
-kept in sync with `supabase/migrations/`. For a clean production database, apply
-the numbered migrations and skip the demo seed section at the bottom.
+`supabase/schema.sql` is every migration concatenated, schema only — no demo
+data — so it is safe to run against a production database as-is. It is a
+generated file: rebuild it with `npm run schema` after adding a
+migration, and `npm test` fails if it drifts.
 
 ## 2. Required configuration
 

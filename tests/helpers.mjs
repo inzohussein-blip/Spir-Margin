@@ -10,6 +10,7 @@ import { dirname, join } from "node:path";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const MIGRATIONS_DIR = join(ROOT, "supabase", "migrations");
 export const SCHEMA_FILE = join(ROOT, "supabase", "schema.sql");
+export const SEED_FILE = join(ROOT, "supabase", "seed.sql");
 
 async function prelude(db) {
   await db.exec("create extension if not exists pgcrypto;");
@@ -34,6 +35,11 @@ export async function bootWithSchemaFile() {
   await prelude(db);
   await db.exec(readFileSync(SCHEMA_FILE, "utf8"));
   return db;
+}
+
+/** Load the optional demo seed into an already-migrated database. */
+export async function loadSeed(db) {
+  await db.exec(readFileSync(SEED_FILE, "utf8"));
 }
 
 /** Ensure at least one lab + one product exist; return their ids. */

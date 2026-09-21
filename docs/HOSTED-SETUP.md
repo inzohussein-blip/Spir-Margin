@@ -103,11 +103,14 @@ select * from fn_verify_login('demo@spir.local', 'demo1234');  -- صف واحد 
 إن فضّلت تهيئة القاعدة يدويًا بدل الاعتماد على الإطلاق التلقائي:
 
 ```bash
-# ملف واحد مجمّع (كل الـ migrations + بيانات تجريبية)
+# ملف واحد مجمّع (كل الـ migrations، المخطّط فقط بلا بيانات تجريبية)
 psql "$DATABASE_URL" -f supabase/schema.sql
 
-# أو الملفات المرقّمة بالترتيب (بدون البيانات التجريبية للإنتاج)
+# أو الملفات المرقّمة بالترتيب
 for f in supabase/migrations/*.sql; do psql "$DATABASE_URL" -f "$f"; done
+
+# اختياري — بيانات تجريبية، لقاعدة تجريبية فقط لا للإنتاج
+psql "$DATABASE_URL" -f supabase/seed.sql
 ```
 
 ثم اضبط `SPIR_SKIP_MIGRATIONS=1` في Vercel لتخطّي الإطلاق التلقائي.

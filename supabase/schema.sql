@@ -1,7 +1,17 @@
--- Spir-Margin — combined schema (all 70 migrations + seed). Run ONCE on an EMPTY DB.
--- Default login: admin@spir.local / admin1234 — change after first sign-in.
+-- Spir-Margin — combined schema (all 87 migrations). Run ONCE on an EMPTY DB.
+--
+-- GENERATED FILE — do not edit by hand. Rebuild with:
+--     npm run schema
+--
+-- Schema only: no demo data. For a demo database, follow this with
+--     psql "$DATABASE_URL" -f supabase/seed.sql
+--
+-- The full platform signs in with the fixed admin in
+-- src/lib/auth/cloud-credentials.ts; the app_users rows the migrations
+-- create exist for the hybrid build's database-backed accounts.
 create extension if not exists pgcrypto;
 do $$ begin if not exists (select 1 from pg_roles where rolname='authenticated') then create role authenticated; end if; end $$;
+do $$ begin if not exists (select 1 from pg_roles where rolname='anon') then create role anon; end if; end $$;
 
 -- ===== migration: 0001_core_entities.sql =====
 -- =====================================================================
@@ -5579,6 +5589,22 @@ alter table sales_order_items add column if not exists serial_no text;
 -- ===== migration: 0072_feature_settings.sql =====
 -- =====================================================================
 -- Migration 0072 : Feature settings & per-account access
+--
+-- Two independent controls, both admin-managed:
+--
+--  1. feature_flags — a global three-state switch per non-essential feature:
+--       'enabled'  (default) the feature works normally
+--       'disabled' the feature is visible but turned off (blocked when opened)
+--       'hidden'   the feature is removed from the app entirely
+--     A feature that has no row here is treated as 'enabled'.
+--
+--  2. user_feature_access — a per-account DENY list. The presence of a row
+--     means "this account may NOT use this feature" (essential or not). An
+--     account with no rows has full access (the default).
+--
+-- "Features" are the app's module groups (Selling, Buying, Stock, …). The
+-- application layer owns the catalogue of feature keys and which ones are core
+-- (and therefore never disable-/hide-able); the database just stores state.
 -- =====================================================================
 
 create table if not exists feature_flags (
@@ -5606,6 +5632,18 @@ create policy "authenticated_all" on user_feature_access for all to authenticate
 -- ===== migration: 0073_pos_idempotency.sql =====
 -- =====================================================================
 -- Migration 0073 : Idempotent POS checkout (offline-safe sales)
+--
+-- When the network drops, the browser queues sales in a local outbox and
+-- replays them when it comes back. A replay must NEVER double-post a sale
+-- (that would be a real money error), so each checkout carries a client-
+-- generated request id and is booked exactly once.
+--
+-- fn_pos_checkout runs as a single transaction and is idempotent on the
+-- request id: the first call books the sale and remembers its result; any
+-- later call with the same id just returns that stored result and changes
+-- nothing. It keeps every money-integrity rule of the old code path — the
+-- customer must exist, products must exist and be enabled, and the COST is
+-- always re-read from the product (never trusted from the client).
 -- =====================================================================
 
 create table if not exists idempotency_keys (
@@ -5618,6 +5656,206 @@ alter table idempotency_keys enable row level security;
 drop policy if exists "authenticated_all" on idempotency_keys;
 create policy "authenticated_all" on idempotency_keys for all to authenticated using (true) with check (true);
 
+-- p_lines is a JSON array of { product_id, qty, sell_price }.
+create or replace function fn_pos_checkout(p_request_id uuid, p_lab_id uuid, p_lines text)
+returns table(n_lines int, total_amount numeric)
+language plpgsql as $$
+declare
+    v_result jsonb;
+    it        jsonb;
+    v_pid     uuid;
+    v_qty     numeric;
+    v_sell    numeric;
+    v_buy     numeric;
+    v_disabled boolean;
+    v_count   int := 0;
+    v_total   numeric := 0;
+begin
+    if p_request_id is null then raise exception 'Missing request id'; end if;
+
+    -- Already processed? Return the stored result and do nothing else.
+    select result into v_result from idempotency_keys where key = p_request_id;
+    if found then
+        return query select (v_result->>'n_lines')::int, (v_result->>'total_amount')::numeric;
+        return;
+    end if;
+
+    if p_lab_id is null then raise exception 'Select a customer (lab).'; end if;
+    perform 1 from labs where id = p_lab_id;
+    if not found then raise exception 'Customer not found.'; end if;
+
+    for it in select * from jsonb_array_elements(p_lines::jsonb) loop
+        v_pid  := (it->>'product_id')::uuid;
+        v_qty  := (it->>'qty')::numeric;
+        v_sell := (it->>'sell_price')::numeric;
+        if v_pid is null then raise exception 'A product in the cart is invalid.'; end if;
+        if v_qty is null or v_qty <= 0 then raise exception 'Quantity must be greater than zero.'; end if;
+        if v_sell is null or v_sell < 0 then raise exception 'Sell price cannot be negative.'; end if;
+
+        -- Authoritative cost — never taken from the client.
+        select default_buy_price, is_disabled into v_buy, v_disabled from products where id = v_pid;
+        if not found then raise exception 'A product in the cart no longer exists.'; end if;
+        if v_disabled then raise exception 'A product in the cart is disabled.'; end if;
+
+        insert into sales (lab_id, product_id, qty, buy_price, sell_price)
+        values (p_lab_id, v_pid, v_qty, coalesce(v_buy, 0), v_sell);
+        v_count := v_count + 1;
+        v_total := v_total + v_qty * v_sell;
+    end loop;
+
+    if v_count = 0 then raise exception 'Cart is empty.'; end if;
+
+    v_result := jsonb_build_object('n_lines', v_count, 'total_amount', v_total);
+    insert into idempotency_keys (key, result) values (p_request_id, v_result);
+
+    return query select v_count, v_total;
+end; $$;
+
+-- ===== migration: 0074_monitoring.sql =====
+-- =====================================================================
+-- Migration 0074 : Monitoring (errors, connectivity & sync health)
+--
+-- Three admin/authorised-only monitoring surfaces:
+--   1. app_errors        — application errors reported from the client, error
+--                          boundaries and the server, so an operator can see
+--                          at a glance whether everything is working.
+--   2. audit_log (0065)  — reused for "what was deleted or changed".
+--   3. connectivity_events + sync_events — proof that, after the network drops
+--      and returns, the offline queue synced correctly, plus how long the
+--      connection was actually down.
+-- =====================================================================
+
+-- 1) Application error log --------------------------------------------------
+create table if not exists app_errors (
+    id          bigint generated always as identity primary key,
+    occurred_at timestamptz not null default now(),
+    severity    text not null default 'error' check (severity in ('error','warning')),
+    source      text not null default 'client' check (source in ('client','server')),
+    message     text not null,
+    detail      text,
+    path        text,
+    user_email  text,
+    resolved    boolean not null default false
+);
+create index if not exists idx_app_errors_time on app_errors(occurred_at desc);
+create index if not exists idx_app_errors_open on app_errors(resolved, occurred_at desc);
+
+-- 2) Connectivity outages (one row per completed offline period) ------------
+create table if not exists connectivity_events (
+    id               bigint generated always as identity primary key,
+    user_email       text,
+    went_offline_at  timestamptz not null,
+    came_online_at   timestamptz not null,
+    duration_seconds numeric not null,
+    created_at       timestamptz not null default now()
+);
+create index if not exists idx_connectivity_time on connectivity_events(came_online_at desc);
+
+-- 3) Sync results (one row per outbox flush) --------------------------------
+create table if not exists sync_events (
+    id         bigint generated always as identity primary key,
+    synced_at  timestamptz not null default now(),
+    user_email text,
+    item_count int not null default 0,
+    ok         boolean not null default true,
+    detail     text
+);
+create index if not exists idx_sync_time on sync_events(synced_at desc);
+
+alter table app_errors enable row level security;
+alter table connectivity_events enable row level security;
+alter table sync_events enable row level security;
+drop policy if exists "authenticated_all" on app_errors;
+drop policy if exists "authenticated_all" on connectivity_events;
+drop policy if exists "authenticated_all" on sync_events;
+create policy "authenticated_all" on app_errors for all to authenticated using (true) with check (true);
+create policy "authenticated_all" on connectivity_events for all to authenticated using (true) with check (true);
+create policy "authenticated_all" on sync_events for all to authenticated using (true) with check (true);
+
+-- ===== migration: 0075_audit_orders.sql =====
+-- =====================================================================
+-- Migration 0075 : Audit sales & purchase orders
+--
+-- Sales orders and purchase orders can now be edited and deleted from the UI,
+-- so they must be traceable like the other money-critical documents. Attach
+-- the existing immutable audit trigger (fn_audit, migration 0065) to the order
+-- headers and their line items, so every edit and deletion shows up in
+-- Monitoring → Change & Deletion Log.
+-- =====================================================================
+
+do $$
+declare t text;
+begin
+    foreach t in array array[
+        'sales_orders','sales_order_items','purchase_orders','purchase_order_items'
+    ]
+    loop
+        if to_regclass('public.'||t) is not null then
+            execute format('drop trigger if exists trg_audit on %I', t);
+            execute format(
+                'create trigger trg_audit after insert or update or delete on %I '
+                'for each row execute function fn_audit()', t);
+        end if;
+    end loop;
+end $$;
+
+-- ===== migration: 0076_sale_stock_deduction.sql =====
+-- =====================================================================
+-- Migration 0076 : Deduct stock on sale + prevent overselling
+--
+-- Until now a POS sale (fn_pos_checkout) and a sales-order delivery
+-- (fn_deliver_sales_order) only booked revenue in `sales` — they never touched
+-- inventory, so a kit could be sold past its available quantity (an oversell,
+-- and a wrong stock balance).
+--
+-- fn_consume_product_stock decrements batch stock for KIT products (FIFO, soonest
+-- expiry first) and raises if there isn't enough. Devices are serial-tracked and
+-- spare parts are untracked, so they are sold without a stock check (unchanged).
+--
+-- Stock is decremented directly on kit_batches (not via stock_movements) so this
+-- does NOT double-count profit — `sales` remains the single revenue source.
+-- Both sale paths run in one transaction, so an insufficient-stock error rolls
+-- the whole sale back. fn_pos_checkout stays idempotent: a replayed request
+-- short-circuits before any stock is touched.
+-- =====================================================================
+
+create or replace function fn_consume_product_stock(p_product_id uuid, p_qty numeric)
+returns void language plpgsql as $$
+declare
+    v_type      text;
+    v_name      text;
+    v_avail     numeric;
+    v_remaining numeric := p_qty;
+    v_take      numeric;
+    b           record;
+begin
+    select product_type, name into v_type, v_name from products where id = p_product_id;
+    -- Only kits carry batch-tracked quantity.
+    if v_type is distinct from 'kit' then return; end if;
+
+    select coalesce(sum(qty_available), 0) into v_avail
+      from kit_batches where product_id = p_product_id and qty_available > 0;
+
+    if v_avail < p_qty then
+        raise exception 'Insufficient stock for %: % available, % needed',
+            coalesce(v_name, 'product'), v_avail, p_qty
+            using errcode = 'check_violation';
+    end if;
+
+    for b in
+        select id, qty_available from kit_batches
+        where product_id = p_product_id and qty_available > 0
+        order by expiry_date nulls last, created_at
+        for update
+    loop
+        exit when v_remaining <= 0;
+        v_take := least(b.qty_available, v_remaining);
+        update kit_batches set qty_available = qty_available - v_take, updated_at = now() where id = b.id;
+        v_remaining := v_remaining - v_take;
+    end loop;
+end; $$;
+
+-- ---- POS checkout: same as 0073 + a stock check/deduction per line ----------
 create or replace function fn_pos_checkout(p_request_id uuid, p_lab_id uuid, p_lines text)
 returns table(n_lines int, total_amount numeric)
 language plpgsql as $$
@@ -5656,163 +5894,34 @@ begin
         if not found then raise exception 'A product in the cart no longer exists.'; end if;
         if v_disabled then raise exception 'A product in the cart is disabled.'; end if;
 
-        insert into sales (lab_id, product_id, qty, buy_price, sell_price)
-        values (p_lab_id, v_pid, v_qty, coalesce(v_buy, 0), v_sell);
-        v_count := v_count + 1;
-        v_total := v_total + v_qty * v_sell;
-    end loop;
-
-    if v_count = 0 then raise exception 'Cart is empty.'; end if;
-
-    v_result := jsonb_build_object('n_lines', v_count, 'total_amount', v_total);
-    insert into idempotency_keys (key, result) values (p_request_id, v_result);
-
-    return query select v_count, v_total;
-end; $$;
-
--- ===== migration: 0074_monitoring.sql =====
--- =====================================================================
--- Migration 0074 : Monitoring (errors, connectivity & sync health)
--- =====================================================================
-
-create table if not exists app_errors (
-    id          bigint generated always as identity primary key,
-    occurred_at timestamptz not null default now(),
-    severity    text not null default 'error' check (severity in ('error','warning')),
-    source      text not null default 'client' check (source in ('client','server')),
-    message     text not null,
-    detail      text,
-    path        text,
-    user_email  text,
-    resolved    boolean not null default false
-);
-create index if not exists idx_app_errors_time on app_errors(occurred_at desc);
-create index if not exists idx_app_errors_open on app_errors(resolved, occurred_at desc);
-
-create table if not exists connectivity_events (
-    id               bigint generated always as identity primary key,
-    user_email       text,
-    went_offline_at  timestamptz not null,
-    came_online_at   timestamptz not null,
-    duration_seconds numeric not null,
-    created_at       timestamptz not null default now()
-);
-create index if not exists idx_connectivity_time on connectivity_events(came_online_at desc);
-
-create table if not exists sync_events (
-    id         bigint generated always as identity primary key,
-    synced_at  timestamptz not null default now(),
-    user_email text,
-    item_count int not null default 0,
-    ok         boolean not null default true,
-    detail     text
-);
-create index if not exists idx_sync_time on sync_events(synced_at desc);
-
-alter table app_errors enable row level security;
-alter table connectivity_events enable row level security;
-alter table sync_events enable row level security;
-drop policy if exists "authenticated_all" on app_errors;
-drop policy if exists "authenticated_all" on connectivity_events;
-drop policy if exists "authenticated_all" on sync_events;
-create policy "authenticated_all" on app_errors for all to authenticated using (true) with check (true);
-create policy "authenticated_all" on connectivity_events for all to authenticated using (true) with check (true);
-create policy "authenticated_all" on sync_events for all to authenticated using (true) with check (true);
-
--- ===== migration: 0075_audit_orders.sql =====
--- =====================================================================
--- Migration 0075 : Audit sales & purchase orders
--- =====================================================================
-do $$
-declare t text;
-begin
-    foreach t in array array[
-        'sales_orders','sales_order_items','purchase_orders','purchase_order_items'
-    ]
-    loop
-        if to_regclass('public.'||t) is not null then
-            execute format('drop trigger if exists trg_audit on %I', t);
-            execute format(
-                'create trigger trg_audit after insert or update or delete on %I '
-                'for each row execute function fn_audit()', t);
-        end if;
-    end loop;
-end $$;
-
--- ===== migration: 0076_sale_stock_deduction.sql =====
--- =====================================================================
--- Migration 0076 : Deduct stock on sale + prevent overselling
--- =====================================================================
-create or replace function fn_consume_product_stock(p_product_id uuid, p_qty numeric)
-returns void language plpgsql as $$
-declare
-    v_type text; v_name text; v_avail numeric; v_remaining numeric := p_qty; v_take numeric; b record;
-begin
-    select product_type, name into v_type, v_name from products where id = p_product_id;
-    if v_type is distinct from 'kit' then return; end if;
-    select coalesce(sum(qty_available), 0) into v_avail
-      from kit_batches where product_id = p_product_id and qty_available > 0;
-    if v_avail < p_qty then
-        raise exception 'Insufficient stock for %: % available, % needed',
-            coalesce(v_name, 'product'), v_avail, p_qty using errcode = 'check_violation';
-    end if;
-    for b in select id, qty_available from kit_batches
-             where product_id = p_product_id and qty_available > 0
-             order by expiry_date nulls last, created_at for update
-    loop
-        exit when v_remaining <= 0;
-        v_take := least(b.qty_available, v_remaining);
-        update kit_batches set qty_available = qty_available - v_take, updated_at = now() where id = b.id;
-        v_remaining := v_remaining - v_take;
-    end loop;
-end; $$;
-
-create or replace function fn_pos_checkout(p_request_id uuid, p_lab_id uuid, p_lines text)
-returns table(n_lines int, total_amount numeric)
-language plpgsql as $$
-declare
-    v_result jsonb; it jsonb; v_pid uuid; v_qty numeric; v_sell numeric; v_buy numeric;
-    v_disabled boolean; v_count int := 0; v_total numeric := 0;
-begin
-    if p_request_id is null then raise exception 'Missing request id'; end if;
-    select result into v_result from idempotency_keys where key = p_request_id;
-    if found then
-        return query select (v_result->>'n_lines')::int, (v_result->>'total_amount')::numeric;
-        return;
-    end if;
-    if p_lab_id is null then raise exception 'Select a customer (lab).'; end if;
-    perform 1 from labs where id = p_lab_id;
-    if not found then raise exception 'Customer not found.'; end if;
-    for it in select * from jsonb_array_elements(p_lines::jsonb) loop
-        v_pid  := (it->>'product_id')::uuid;
-        v_qty  := (it->>'qty')::numeric;
-        v_sell := (it->>'sell_price')::numeric;
-        if v_pid is null then raise exception 'A product in the cart is invalid.'; end if;
-        if v_qty is null or v_qty <= 0 then raise exception 'Quantity must be greater than zero.'; end if;
-        if v_sell is null or v_sell < 0 then raise exception 'Sell price cannot be negative.'; end if;
-        select default_buy_price, is_disabled into v_buy, v_disabled from products where id = v_pid;
-        if not found then raise exception 'A product in the cart no longer exists.'; end if;
-        if v_disabled then raise exception 'A product in the cart is disabled.'; end if;
+        -- Reserve/deduct inventory (kits only) — raises if there isn't enough.
         perform fn_consume_product_stock(v_pid, v_qty);
+
         insert into sales (lab_id, product_id, qty, buy_price, sell_price)
         values (p_lab_id, v_pid, v_qty, coalesce(v_buy, 0), v_sell);
         v_count := v_count + 1;
         v_total := v_total + v_qty * v_sell;
     end loop;
+
     if v_count = 0 then raise exception 'Cart is empty.'; end if;
+
     v_result := jsonb_build_object('n_lines', v_count, 'total_amount', v_total);
     insert into idempotency_keys (key, result) values (p_request_id, v_result);
+
     return query select v_count, v_total;
 end; $$;
 
+-- ---- Sales-order delivery: same as 0017 + stock check/deduction per line ----
 create or replace function fn_deliver_sales_order(p_so_id uuid)
 returns int language plpgsql as $$
-declare v_status so_status; v_lab uuid; it record; v_buy numeric; n int := 0;
+declare
+    v_status so_status; v_lab uuid; it record; v_buy numeric; n int := 0;
 begin
     select status, lab_id into v_status, v_lab from sales_orders where id = p_so_id;
     if not found then raise exception 'Sales order not found'; end if;
     if v_status = 'delivered' then raise exception 'Sales order already delivered'; end if;
     if v_status = 'cancelled' then raise exception 'Sales order is cancelled'; end if;
+
     for it in select * from sales_order_items where sales_order_id = p_so_id loop
         select default_buy_price into v_buy from products where id = it.product_id;
         perform fn_consume_product_stock(it.product_id, it.qty);
@@ -5820,7 +5929,9 @@ begin
         values (v_lab, it.product_id, it.qty, coalesce(v_buy, 0), it.rate);
         n := n + 1;
     end loop;
-    update sales_orders set status = 'delivered', delivered_at = now(), updated_at = now() where id = p_so_id;
+
+    update sales_orders set status = 'delivered', delivered_at = now(), updated_at = now()
+     where id = p_so_id;
     return n;
 end; $$;
 
@@ -6010,6 +6121,32 @@ begin
 end; $$;
 
 -- ===== migration: 0079_audit_financial_docs.sql =====
+-- =====================================================================
+-- Migration 0079 : Close the audit-trail gaps on financial documents
+--
+-- Migrations 0065 and 0075 attached the immutable audit trigger (fn_audit)
+-- to the money-critical document HEADERS (sales invoices, purchase invoices,
+-- sales/purchase orders) and the order LINE items. But several money- and
+-- stock-critical tables were still untracked, so a change to them left no
+-- trace in Monitoring → Change & Deletion Log. Most importantly, a sales
+-- invoice's *line items* were not audited even though its header was — so a
+-- quantity or rate on a bill could be altered with no record of it.
+--
+-- This migration attaches the same append-only audit trigger to the
+-- remaining documents whose edits and deletions must be traceable:
+--   * sales_invoice_items      — what a lab was actually billed (lines)
+--   * sales_invoice_payments   — money recorded as received
+--   * quotations / _items      — prices offered to a lab
+--   * delivery_notes / _items  — stock leaving on a delivery
+--   * purchase_items           — purchase-invoice lines (header already audited)
+--   * purchase_receipts / _items — stock received against a PO
+--   * supplier_quotations / _items — prices offered by a supplier
+--
+-- fn_audit is fully generic (it snapshots to_jsonb(old/new) and reads the
+-- row's `id`), so no per-table wiring is needed. The block is idempotent and
+-- guards each table with to_regclass, matching migration 0075.
+-- =====================================================================
+
 do $$
 declare t text;
 begin
@@ -6168,10 +6305,7 @@ create or replace function fn_book_sales_return(
     p_notes text,
     p_lines text
 ) returns uuid language plpgsql as $$
-declare
-    v_id uuid; it jsonb; n int := 0;
-    v_pid uuid; v_qty numeric; v_sell numeric; v_buy numeric; v_type text; v_no text;
-    v_sold numeric; v_returned numeric; v_name text;
+declare v_id uuid; it jsonb; n int := 0; v_pid uuid; v_qty numeric; v_sell numeric; v_buy numeric; v_type text; v_no text;
 begin
     if p_request_id is not null then
         select id into v_id from sales_returns where client_request_id = p_request_id;
@@ -6194,28 +6328,13 @@ begin
         v_sell := coalesce((it->>'sell_price')::numeric, 0);
         select product_type, coalesce(default_buy_price, 0) into v_type, v_buy from products where id = v_pid;
 
-        -- Guard: never credit/restock more than the lab actually bought and
-        -- still holds un-returned.
-        select coalesce(sum(qty), 0) into v_sold
-          from sales where lab_id = p_lab_id and product_id = v_pid;
-        select coalesce(sum(ri.qty), 0) into v_returned
-          from sales_return_items ri
-          join sales_returns sr on sr.id = ri.return_id
-          where sr.lab_id = p_lab_id and ri.product_id = v_pid and sr.status = 'submitted';
-        if v_qty > v_sold - v_returned then
-            select name into v_name from products where id = v_pid;
-            raise exception 'Cannot return more than sold for %: sold %, already returned %, tried to return %',
-                coalesce(v_name, v_pid::text), v_sold, v_returned, v_qty
-                using errcode = 'check_violation';
-        end if;
-
         insert into sales_return_items (return_id, product_id, qty, buy_price, sell_price)
         values (v_id, v_pid, v_qty, coalesce(v_buy, 0), v_sell);
 
-        -- Put kit stock back as a dedicated returned-goods batch — one per line.
+        -- Put kit stock back as a dedicated returned-goods batch.
         if v_type = 'kit' then
             insert into kit_batches (batch_no, product_id, qty_received, qty_available, buy_price, sell_price)
-            values (v_no || '-L' || (n + 1), v_pid, v_qty, v_qty, coalesce(v_buy, 0), v_sell);
+            values (v_no || '-' || substr(v_pid::text, 1, 4), v_pid, v_qty, v_qty, coalesce(v_buy, 0), v_sell);
         end if;
         n := n + 1;
     end loop;
@@ -6273,6 +6392,152 @@ begin
                 for all to authenticated using (true) with check (true);
         $f$, t);
     end loop;
+end $$;
+
+-- ===== migration: 0081_return_batch_no_fix.sql =====
+-- =====================================================================
+-- Migration 0081 : Fix duplicate batch_no when a return repeats a product
+--
+-- fn_book_sales_return (0080) derived the returned-goods batch number from the
+-- product id (v_no || '-' || substr(product_id,1,4)). If a return listed the
+-- SAME kit product on two lines, both lines produced the same batch_no for the
+-- same product and hit the unique(batch_no, product_id) constraint, so the whole
+-- return failed. Derive the batch number from the LINE index instead, so every
+-- restock batch within a return is unique. Behaviour is otherwise identical.
+-- =====================================================================
+
+create or replace function fn_book_sales_return(
+    p_request_id uuid,
+    p_lab_id uuid,
+    p_posting_date text,
+    p_reason text,
+    p_notes text,
+    p_lines text
+) returns uuid language plpgsql as $$
+declare v_id uuid; it jsonb; n int := 0; v_pid uuid; v_qty numeric; v_sell numeric; v_buy numeric; v_type text; v_no text;
+begin
+    if p_request_id is not null then
+        select id into v_id from sales_returns where client_request_id = p_request_id;
+        if found then return v_id; end if;   -- idempotent replay
+    end if;
+    if p_lab_id is null then raise exception 'Pick a lab'; end if;
+
+    v_no := 'RET-' || to_char(now(), 'YYMM') || '-' || substr(gen_random_uuid()::text, 1, 6);
+    insert into sales_returns (return_no, client_request_id, lab_id, posting_date, reason, notes)
+    values (v_no, p_request_id, p_lab_id,
+            coalesce(nullif(p_posting_date, ''), current_date::text)::date,
+            nullif(p_reason, ''), nullif(p_notes, ''))
+    returning id into v_id;
+
+    for it in select * from jsonb_array_elements(p_lines::jsonb) loop
+        if coalesce(it->>'product_id', '') = '' then continue; end if;
+        v_qty := coalesce((it->>'qty')::numeric, 0);
+        if v_qty <= 0 then continue; end if;
+        v_pid := (it->>'product_id')::uuid;
+        v_sell := coalesce((it->>'sell_price')::numeric, 0);
+        select product_type, coalesce(default_buy_price, 0) into v_type, v_buy from products where id = v_pid;
+
+        insert into sales_return_items (return_id, product_id, qty, buy_price, sell_price)
+        values (v_id, v_pid, v_qty, coalesce(v_buy, 0), v_sell);
+
+        -- Put kit stock back as a dedicated returned-goods batch — one batch per
+        -- line (line index), so repeating a product across lines can't collide.
+        if v_type = 'kit' then
+            insert into kit_batches (batch_no, product_id, qty_received, qty_available, buy_price, sell_price)
+            values (v_no || '-L' || (n + 1), v_pid, v_qty, v_qty, coalesce(v_buy, 0), v_sell);
+        end if;
+        n := n + 1;
+    end loop;
+
+    if n = 0 then raise exception 'Add at least one line'; end if;
+
+    perform fn_post_return_gl(v_id);
+    return v_id;
+end $$;
+
+-- ===== migration: 0082_return_not_more_than_sold.sql =====
+-- =====================================================================
+-- Migration 0082 : A return can never exceed what was sold
+--
+-- fn_book_sales_return (0080/0081) booked a credit note with no link to the
+-- actual sales, so a lab could be credited for — and stock restocked for —
+-- more than it ever bought. That silently invents inventory and reverses
+-- revenue that was never booked. This is the money hole the returns feature
+-- must not have.
+--
+-- The `sales` table is this app's authoritative record of what actually left
+-- inventory and generated revenue (POS checkout and delivery both insert into
+-- it). So each return line is now validated against it: for a (lab, product),
+--     returned_now  <=  total_sold(lab,product)  -  already_returned(lab,product)
+-- Because the return header and each line are inserted as the loop runs, a
+-- product repeated across lines accumulates correctly (the second line sees the
+-- first). Over-return raises a clear error and rolls the whole return back.
+-- =====================================================================
+
+create or replace function fn_book_sales_return(
+    p_request_id uuid,
+    p_lab_id uuid,
+    p_posting_date text,
+    p_reason text,
+    p_notes text,
+    p_lines text
+) returns uuid language plpgsql as $$
+declare
+    v_id uuid; it jsonb; n int := 0;
+    v_pid uuid; v_qty numeric; v_sell numeric; v_buy numeric; v_type text; v_no text;
+    v_sold numeric; v_returned numeric; v_name text;
+begin
+    if p_request_id is not null then
+        select id into v_id from sales_returns where client_request_id = p_request_id;
+        if found then return v_id; end if;   -- idempotent replay
+    end if;
+    if p_lab_id is null then raise exception 'Pick a lab'; end if;
+
+    v_no := 'RET-' || to_char(now(), 'YYMM') || '-' || substr(gen_random_uuid()::text, 1, 6);
+    insert into sales_returns (return_no, client_request_id, lab_id, posting_date, reason, notes)
+    values (v_no, p_request_id, p_lab_id,
+            coalesce(nullif(p_posting_date, ''), current_date::text)::date,
+            nullif(p_reason, ''), nullif(p_notes, ''))
+    returning id into v_id;
+
+    for it in select * from jsonb_array_elements(p_lines::jsonb) loop
+        if coalesce(it->>'product_id', '') = '' then continue; end if;
+        v_qty := coalesce((it->>'qty')::numeric, 0);
+        if v_qty <= 0 then continue; end if;
+        v_pid := (it->>'product_id')::uuid;
+        v_sell := coalesce((it->>'sell_price')::numeric, 0);
+        select product_type, coalesce(default_buy_price, 0) into v_type, v_buy from products where id = v_pid;
+
+        -- Guard: never credit/restock more than the lab actually bought and
+        -- still holds un-returned.
+        select coalesce(sum(qty), 0) into v_sold
+          from sales where lab_id = p_lab_id and product_id = v_pid;
+        select coalesce(sum(ri.qty), 0) into v_returned
+          from sales_return_items ri
+          join sales_returns sr on sr.id = ri.return_id
+          where sr.lab_id = p_lab_id and ri.product_id = v_pid and sr.status = 'submitted';
+        if v_qty > v_sold - v_returned then
+            select name into v_name from products where id = v_pid;
+            raise exception 'Cannot return more than sold for %: sold %, already returned %, tried to return %',
+                coalesce(v_name, v_pid::text), v_sold, v_returned, v_qty
+                using errcode = 'check_violation';
+        end if;
+
+        insert into sales_return_items (return_id, product_id, qty, buy_price, sell_price)
+        values (v_id, v_pid, v_qty, coalesce(v_buy, 0), v_sell);
+
+        -- Put kit stock back as a dedicated returned-goods batch — one per line.
+        if v_type = 'kit' then
+            insert into kit_batches (batch_no, product_id, qty_received, qty_available, buy_price, sell_price)
+            values (v_no || '-L' || (n + 1), v_pid, v_qty, v_qty, coalesce(v_buy, 0), v_sell);
+        end if;
+        n := n + 1;
+    end loop;
+
+    if n = 0 then raise exception 'Add at least one line'; end if;
+
+    perform fn_post_return_gl(v_id);
+    return v_id;
 end $$;
 
 -- ===== migration: 0083_login_throttle.sql =====
@@ -6335,335 +6600,434 @@ drop policy if exists "authenticated_all" on login_attempts;
 create policy "authenticated_all" on login_attempts
     for all to authenticated using (true) with check (true);
 
--- ===== seed data (demo) =====
--- =====================================================================
--- Seed data for local development / demo
--- Run after migrations 0001-0005.
--- =====================================================================
-
--- Companies -----------------------------------------------------------
-insert into companies (id, name, role, country) values
-    ('00000000-0000-0000-0000-0000000000a1', 'Roche Diagnostics', 'parent',   'Switzerland'),
-    ('00000000-0000-0000-0000-0000000000a2', 'Siemens Healthineers', 'supplier', 'Germany')
-on conflict do nothing;
-
--- Warehouses ----------------------------------------------------------
-insert into warehouses (id, name, city) values
-    ('00000000-0000-0000-0000-0000000000b1', 'Main Store - Baghdad', 'Baghdad'),
-    ('00000000-0000-0000-0000-0000000000b2', 'Cold Store - Basra',   'Basra')
-on conflict do nothing;
-
--- Labs ----------------------------------------------------------------
-insert into labs (id, code, name, status, city, latitude, longitude, contact_name, phone) values
-    ('00000000-0000-0000-0000-0000000000c1', 'LAB-001', 'Al-Kindy Teaching Lab', 'active',   'Baghdad', 33.3152, 44.3661, 'Dr. Sara', '0770-000-0001'),
-    ('00000000-0000-0000-0000-0000000000c2', 'LAB-002', 'Basra Central Lab',     'active',   'Basra',   30.5085, 47.7835, 'Dr. Omar', '0770-000-0002'),
-    ('00000000-0000-0000-0000-0000000000c3', 'LAB-003', 'Mosul Private Lab',     'inactive', 'Mosul',   36.3350, 43.1189, 'Dr. Layla','0770-000-0003')
-on conflict do nothing;
-
--- Products ------------------------------------------------------------
-insert into products (id, item_code, name, product_type, brand, uom, supplier_id, shelf_life_in_days, default_buy_price, default_sell_price) values
-    ('00000000-0000-0000-0000-0000000000d1', 'DEV-CHEM-01', 'Cobas c311 Chemistry Analyzer', 'device',     'Roche',   'Nos', '00000000-0000-0000-0000-0000000000a1', null, 45000, 60000),
-    ('00000000-0000-0000-0000-0000000000d2', 'DEV-HEM-01',  'Sysmex XN-550 Hematology',      'device',     'Siemens', 'Nos', '00000000-0000-0000-0000-0000000000a2', null, 30000, 40000),
-    ('00000000-0000-0000-0000-0000000000d3', 'KIT-GLU-01',  'Glucose Reagent Kit (100T)',    'kit',        'Roche',   'Box', '00000000-0000-0000-0000-0000000000a1', 365, 80, 130),
-    ('00000000-0000-0000-0000-0000000000d4', 'KIT-CBC-01',  'CBC Reagent Kit (200T)',        'kit',        'Siemens', 'Box', '00000000-0000-0000-0000-0000000000a2', 180, 120, 200),
-    ('00000000-0000-0000-0000-0000000000d5', 'SP-PUMP-01',  'Peristaltic Pump Spare',        'spare_part', 'Roche',   'Nos', '00000000-0000-0000-0000-0000000000a1', null, 200, 320)
-on conflict do nothing;
-
--- Devices -------------------------------------------------------------
-insert into devices (asset_code, product_id, serial_no, status, lab_id, purchase_date, purchase_price, maintenance_required, next_maintenance_date) values
-    ('ACC-ASS-0001', '00000000-0000-0000-0000-0000000000d1', 'C311-778812', 'installed',      '00000000-0000-0000-0000-0000000000c1', '2024-03-10', 45000, true, current_date + 12),
-    ('ACC-ASS-0002', '00000000-0000-0000-0000-0000000000d2', 'XN-550-4471', 'in_maintenance', '00000000-0000-0000-0000-0000000000c2', '2023-11-01', 30000, true, current_date - 3),
-    ('ACC-ASS-0003', '00000000-0000-0000-0000-0000000000d1', 'C311-778813', 'installed',      '00000000-0000-0000-0000-0000000000c1', '2024-06-20', 45000, true, current_date + 200),
-    ('ACC-ASS-0004', '00000000-0000-0000-0000-0000000000d2', 'XN-550-4472', 'out_of_order',   '00000000-0000-0000-0000-0000000000c3', '2022-09-15', 30000, false, null)
-on conflict do nothing;
-
--- Kit batches ---------------------------------------------------------
--- Reorder levels (feed the reordering-rules suggestions) -----------------
-update products set reorder_level = 200 where id = '00000000-0000-0000-0000-0000000000d3';
-update products set reorder_level = 10  where id = '00000000-0000-0000-0000-0000000000d5';
-
--- Serial-tracked spare with a demo life cycle (feeds the serial timeline) --
-insert into serial_numbers (id, serial_no, product_id, status, warehouse_id, purchase_rate, warranty_period_days, warranty_expiry_date)
-values ('00000000-0000-0000-0000-0000000000e5', 'SN-PUMP-0001', '00000000-0000-0000-0000-0000000000d5', 'active',
-        '00000000-0000-0000-0000-0000000000b1', 200, 365, current_date + 300)
-on conflict do nothing;
-update serial_numbers set warehouse_id = '00000000-0000-0000-0000-0000000000b2'
- where id = '00000000-0000-0000-0000-0000000000e5';
-update serial_numbers set warehouse_id = null, lab_id = '00000000-0000-0000-0000-0000000000c1', status = 'delivered'
- where id = '00000000-0000-0000-0000-0000000000e5';
-
-insert into kit_batches (batch_no, product_id, warehouse_id, supplier_id, manufacturing_date, expiry_date, qty_received, qty_available, buy_price, sell_price) values
-    ('B-GLU-2401', '00000000-0000-0000-0000-0000000000d3', '00000000-0000-0000-0000-0000000000b2', '00000000-0000-0000-0000-0000000000a1', '2025-06-01', current_date + 20,  100, 60, 80, 130),
-    ('B-GLU-2402', '00000000-0000-0000-0000-0000000000d3', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000a1', '2025-08-01', current_date + 120, 100, 95, 80, 130),
-    ('B-CBC-2401', '00000000-0000-0000-0000-0000000000d4', '00000000-0000-0000-0000-0000000000b2', '00000000-0000-0000-0000-0000000000a2', '2025-05-15', current_date + 55,  80,  40, 120, 200)
-on conflict do nothing;
-
--- Sales (drives profit KPI) ------------------------------------------
-insert into sales (lab_id, product_id, qty, buy_price, sell_price, sold_at) values
-    ('00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-0000000000d3', 40, 80,  130, now() - interval '10 days'),
-    ('00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-0000000000d1', 1,  45000, 60000, now() - interval '40 days'),
-    ('00000000-0000-0000-0000-0000000000c2', '00000000-0000-0000-0000-0000000000d4', 30, 120, 200, now() - interval '5 days')
-on conflict do nothing;
-
--- Stock movements / withdrawals (drives lab active state) ------------
-insert into stock_movements (kit_batch_id, lab_id, type, qty, buy_price, sell_price, moved_at)
-select b.id, '00000000-0000-0000-0000-0000000000c1', 'withdrawal', 5, b.buy_price, b.sell_price, now() - interval '3 days'
-from kit_batches b where b.batch_no = 'B-GLU-2401'
-on conflict do nothing;
-
--- =====================================================================
--- Banking demo data (migrations 0007-0009)
--- =====================================================================
-insert into bank_accounts (id, account_name, bank, account_type, account_no, currency, is_company_account) values
-    ('00000000-0000-0000-0000-0000000000e1', 'Main Operating', 'Trade Bank of Iraq', 'Current', '0011-2233', 'USD', true)
-on conflict do nothing;
-
--- a received payment from a lab, awaiting a matching bank line
-insert into payment_entries (id, naming_series, payment_type, party_type, party_lab_id, party_name, received_amount, bank_account_id, reference_no, posting_date) values
-    ('00000000-0000-0000-0000-0000000000f1', 'ACC-PAY-0001', 'receive', 'lab', '00000000-0000-0000-0000-0000000000c1', 'Al-Kindy Teaching Lab', 5200, '00000000-0000-0000-0000-0000000000e1', 'WIRE-778', current_date - 2),
-    ('00000000-0000-0000-0000-0000000000f2', 'ACC-PAY-0002', 'pay',     'company', null, 'Roche Diagnostics', 0, '00000000-0000-0000-0000-0000000000e1', 'PO-5521', current_date - 6)
-on conflict do nothing;
-update payment_entries set paid_amount = 3100 where id = '00000000-0000-0000-0000-0000000000f2';
-
--- imported bank statement lines
-insert into bank_transactions (id, date, bank_account_id, deposit, withdrawal, description, reference_number, transaction_id) values
-    ('00000000-0000-0000-0000-0000000000d1', current_date - 2, '00000000-0000-0000-0000-0000000000e1', 5200, 0, 'INWARD WIRE AL-KINDY LAB', 'WIRE-778', 'BNK-1001'),
-    ('00000000-0000-0000-0000-0000000000d2', current_date - 6, '00000000-0000-0000-0000-0000000000e1', 0, 3100, 'OUTWARD ROCHE DIAGNOSTICS', 'PO-5521', 'BNK-1002'),
-    ('00000000-0000-0000-0000-0000000000d3', current_date - 1, '00000000-0000-0000-0000-0000000000e1', 0, 90,  'CARD FEE BANK CHARGES',     null,      'BNK-1003')
-on conflict do nothing;
-
--- a matching rule: bank charges -> classify as bank entry
-insert into bank_transaction_rules (id, rule_name, transaction_type, priority, classify_as) values
-    ('00000000-0000-0000-0000-0000000000c9', 'Bank charges', 'withdrawal', 1, 'bank_entry')
-on conflict do nothing;
-insert into bank_rule_conditions (rule_id, field, operator, value) values
-    ('00000000-0000-0000-0000-0000000000c9', 'description', 'contains', 'BANK CHARGES')
-on conflict do nothing;
-
--- Demo receivables + procurement (drives the dashboard operations panels) ----
-do $$
-declare v_lab uuid; v_prod uuid; v_inv uuid; v_sup uuid; v_po uuid;
-begin
-    select id into v_lab from labs where code = 'LAB-001';
-    select id into v_prod from products where product_type = 'kit' limit 1;
-    select id into v_sup from companies limit 1;
-
-    -- a partly-paid invoice -> shows under Outstanding Receivables
-    if v_lab is not null and v_prod is not null
-       and not exists (select 1 from sales_invoices where invoice_no = 'SI-2601') then
-        insert into sales_invoices (invoice_no, lab_id) values ('SI-2601', v_lab) returning id into v_inv;
-        insert into sales_invoice_items (invoice_id, product_id, qty, rate) values (v_inv, v_prod, 20, 130);
-        perform fn_submit_sales_invoice(v_inv);
-        perform fn_record_invoice_payment(v_inv, 1000);   -- 2600 billed, 1600 outstanding
-    end if;
-
-    -- an unpaid invoice
-    if v_lab is not null and v_prod is not null
-       and not exists (select 1 from sales_invoices where invoice_no = 'SI-2602') then
-        insert into sales_invoices (invoice_no, lab_id) values ('SI-2602', v_lab) returning id into v_inv;
-        insert into sales_invoice_items (invoice_id, product_id, qty, rate) values (v_inv, v_prod, 8, 130);
-        perform fn_submit_sales_invoice(v_inv);
-    end if;
-
-    -- a submitted purchase order -> shows under Open Purchase Orders
-    if v_sup is not null and v_prod is not null
-       and not exists (select 1 from purchase_orders where po_no = 'PO-2601') then
-        insert into purchase_orders (po_no, supplier_id) values ('PO-2601', v_sup) returning id into v_po;
-        insert into purchase_order_items (po_id, product_id, qty, rate) values (v_po, v_prod, 50, 80);
-        perform fn_submit_purchase_order(v_po);
-    end if;
-end $$;
-
--- Demo preventive-maintenance schedule (drives the dashboard PM panel) -------
-do $$
-declare v_dev uuid; v_lab uuid; v_sched uuid;
-begin
-    select id, lab_id into v_dev, v_lab from devices order by asset_code limit 1;
-    if v_dev is not null and not exists (select 1 from maintenance_schedules where schedule_no = 'MS-DEMO-1') then
-        insert into maintenance_schedules (schedule_no, lab_id, device_id, periodicity, start_date, no_of_visits)
-        values ('MS-DEMO-1', v_lab, v_dev, 'monthly', current_date + 10, 6)
-        returning id into v_sched;
-        perform fn_generate_maintenance_schedule(v_sched);
-    end if;
-end $$;
-
--- Demo maintenance visits (feed the field-service board) -------------------
-insert into maintenance_visits (visit_no, lab_id, visit_date, maintenance_type, completion_status, status, service_person, notes) values
-  ('MV-2601', '00000000-0000-0000-0000-0000000000c1', current_date,     'scheduled',   'pending', 'submitted', 'Eng. Ali',  'Preventive maintenance due'),
-  ('MV-2602', '00000000-0000-0000-0000-0000000000c2', current_date - 1, 'breakdown',   'partial', 'submitted', 'Eng. Sara', 'Analyzer error E-14'),
-  ('MV-2603', '00000000-0000-0000-0000-0000000000c1', current_date - 3, 'scheduled',   'full',    'submitted', 'Eng. Ali',  'PM completed'),
-  ('MV-2604', '00000000-0000-0000-0000-0000000000c2', current_date,     'unscheduled', 'pending', 'submitted', 'Eng. Omar', 'Customer call-out')
-on conflict do nothing;
-
--- Demo support issue -------------------------------------------------------
-do $$
-declare v_lab uuid; v_dev uuid;
-begin
-    select id, (select id from devices where lab_id = labs.id limit 1)
-      into v_lab, v_dev from labs where code = 'LAB-001';
-    if v_lab is not null and not exists (select 1 from issues where issue_no = 'ISS-0001') then
-        insert into issues (issue_no, subject, lab_id, device_id, status, priority, issue_type, description)
-        values ('ISS-0001', 'Analyzer shows error E-14 on startup', v_lab, v_dev,
-                'open', 'High', 'Hardware', 'Device fails self-test intermittently.');
-    end if;
-end $$;
-
--- (portal demo user is seeded separately by seed.sql, after the enum commit)
-
--- Demo service contract (drives the dashboard 'Expiring contracts' card) -----
-do $$
-declare v_lab uuid; v_dev uuid;
-begin
-    select id, (select id from devices where lab_id = labs.id limit 1)
-      into v_lab, v_dev from labs where code = 'LAB-001';
-    if v_lab is not null and not exists (select 1 from contracts where contract_no = 'AMC-2601') then
-        insert into contracts (contract_no, lab_id, device_id, status, start_date, end_date, contract_value, signee, signed_on, contract_terms)
-        values ('AMC-2601', v_lab, v_dev, 'active', current_date - 305, current_date + 30, 2400,
-                'Dr. Sara', current_date - 305, 'Annual maintenance: 2 preventive visits + breakdown support.');
-    end if;
-end $$;
-
--- Demo RFQ with two suppliers -----------------------------------------------
-do $$
-declare v_prod uuid; v_rfq uuid; v_s1 uuid; v_s2 uuid;
-begin
-    select id into v_prod from products where product_type='kit' limit 1;
-    select id into v_s1 from companies order by name limit 1;
-    select id into v_s2 from companies order by name offset 1 limit 1;
-    if v_prod is not null and v_s1 is not null and not exists (select 1 from rfqs where rfq_no='RFQ-2601') then
-        insert into rfqs (rfq_no, status, message) values ('RFQ-2601','submitted','Please quote your best price + lead time.') returning id into v_rfq;
-        insert into rfq_items (rfq_id, product_id, qty) values (v_rfq, v_prod, 100);
-        insert into rfq_suppliers (rfq_id, supplier_id) values (v_rfq, v_s1);
-        if v_s2 is not null then insert into rfq_suppliers (rfq_id, supplier_id) values (v_rfq, v_s2); end if;
-    end if;
-end $$;
-
--- Demo appointment ----------------------------------------------------------
-do $$
-declare v_lab uuid; v_dev uuid;
-begin
-    select id, (select id from devices where lab_id = labs.id limit 1)
-      into v_lab, v_dev from labs where code = 'LAB-001';
-    if v_lab is not null and not exists (select 1 from appointments where appointment_no = 'APT-2601') then
-        insert into appointments (appointment_no, lab_id, device_id, purpose, scheduled_time, status, contact_name)
-        values ('APT-2601', v_lab, v_dev, 'service', now() + interval '3 days', 'confirmed', 'Dr. Sara');
-    end if;
-end $$;
-
--- Demo maintenance team + members + tasks -----------------------------------
-do $$
-declare v_team uuid;
-begin
-    if not exists (select 1 from maintenance_teams where name = 'Field Service Team') then
-        insert into maintenance_teams (name, manager_name, description)
-        values ('Field Service Team', 'Eng. Kareem', 'Handles installs, PM visits and breakdowns.')
-        returning id into v_team;
-        insert into maintenance_team_members (team_id, member_name, role) values
-            (v_team, 'Eng. Kareem', 'Manager'),
-            (v_team, 'Tech. Omar', 'Technician'),
-            (v_team, 'Tech. Lina', 'Technician');
-        insert into maintenance_tasks (team_id, task_name, maintenance_type, periodicity, start_date, status) values
-            (v_team, 'Quarterly PM checklist', 'preventive', 'Quarterly', current_date, 'planned'),
-            (v_team, 'Annual calibration', 'calibration', 'Yearly', current_date, 'planned');
-    end if;
-end $$;
-
--- Demo credit limit (LAB-001 has invoices ~2640 outstanding; set a low limit) -
-update labs set credit_limit = 2000 where code = 'LAB-001';
-
--- Demo pricing rule: 10% off any kit when qty >= 50 --------------------------
-do $$
-declare v_prod uuid;
-begin
-    select id into v_prod from products where product_type='kit' limit 1;
-    if not exists (select 1 from pricing_rules where title='Bulk kit 10%') then
-        insert into pricing_rules (title, product_id, min_qty, discount_percentage)
-        values ('Bulk kit 10%', v_prod, 50, 10);
-    end if;
-end $$;
-
--- Demo purchase receipt (received into stock) --------------------------------
-do $$
-declare v_sup uuid; v_prod uuid; v_wh uuid; v_r uuid;
-begin
-    select id into v_sup from companies limit 1;
-    select id into v_prod from products where product_type='kit' limit 1;
-    select id into v_wh from warehouses limit 1;
-    if v_prod is not null and not exists (select 1 from purchase_receipts where receipt_no='PR-2601') then
-        insert into purchase_receipts (receipt_no, supplier_id) values ('PR-2601', v_sup) returning id into v_r;
-        insert into purchase_receipt_items (receipt_id, product_id, qty, rate, warehouse_id, batch_no, expiry_date)
-        values (v_r, v_prod, 40, 42, v_wh, 'B-PR-2601', current_date + 200);
-        perform fn_submit_purchase_receipt(v_r);
-    end if;
-end $$;
-
--- Demo payment request (requested against an unpaid invoice) ------------------
-do $$
-declare v_inv uuid; v_lab uuid; v_out numeric;
-begin
-    select id, lab_id, outstanding into v_inv, v_lab, v_out
-        from sales_invoices where status in ('unpaid','partly_paid') order by outstanding desc limit 1;
-    if v_inv is not null and v_out > 0
-       and not exists (select 1 from payment_requests where request_no='PREQ-2601') then
-        insert into payment_requests (request_no, invoice_id, lab_id, amount, message)
-        values ('PREQ-2601', v_inv, v_lab, least(v_out, 500), 'Kindly settle the outstanding balance.');
-        perform fn_submit_payment_request((select id from payment_requests where request_no='PREQ-2601'));
-    end if;
-end $$;
-
--- Demo blanket order (active selling agreement with a lab) --------------------
-do $$
-declare v_lab uuid; v_prod uuid; v_sell numeric; v_bo uuid;
-begin
-    select id into v_lab from labs limit 1;
-    select id, default_sell_price into v_prod, v_sell from products where product_type='kit' limit 1;
-    if v_lab is not null and v_prod is not null
-       and not exists (select 1 from blanket_orders where order_no='BO-2601') then
-        insert into blanket_orders (order_no, order_type, lab_id, to_date, notes)
-        values ('BO-2601', 'selling', v_lab, current_date + 365, 'Annual reagent-kit supply agreement.')
-        returning id into v_bo;
-        insert into blanket_order_items (order_id, product_id, qty, rate)
-        values (v_bo, v_prod, 500, coalesce(nullif(v_sell,0), 60));
-        perform fn_submit_blanket_order(v_bo);
-    end if;
-end $$;
-
--- Demo pick list (open, released to the floor) -------------------------------
-do $$
-declare v_lab uuid; v_prod uuid; v_wh uuid; v_pl uuid;
-begin
-    select id into v_lab from labs limit 1;
-    select id into v_prod from products where product_type='kit' limit 1;
-    select id into v_wh from warehouses limit 1;
-    if v_prod is not null and not exists (select 1 from pick_lists where pick_no='PICK-2601') then
-        insert into pick_lists (pick_no, lab_id, purpose) values ('PICK-2601', v_lab, 'delivery')
-        returning id into v_pl;
-        insert into pick_list_items (pick_id, product_id, warehouse_id, qty, batch_no)
-        values (v_pl, v_prod, v_wh, 12, 'B-PR-2601');
-        perform fn_open_pick_list(v_pl);
-    end if;
-end $$;
-
--- Demo delivery trip (in transit, one stop) ----------------------------------
-do $$
-declare v_lab uuid; v_dn uuid; v_trip uuid;
-begin
-    select id into v_lab from labs limit 1;
-    select id into v_dn from delivery_notes order by posting_date desc limit 1;
-    if not exists (select 1 from delivery_trips where trip_no='TRIP-2601') then
-        insert into delivery_trips (trip_no, driver_name, vehicle)
-        values ('TRIP-2601', 'Ahmed K.', 'Van 12-A') returning id into v_trip;
-        insert into delivery_trip_stops (trip_id, lab_id, delivery_note_id, address, seq)
-        values (v_trip, v_lab, v_dn, 'Central district, main road', 1);
-        perform fn_start_delivery_trip(v_trip);
-    end if;
-end $$;
-
 -- ===== migration: 0084_demo_user.sql =====
--- Demo login account: demo@spir.local / demo1234 (role admin). Idempotent.
+-- =====================================================================
+-- Migration 0084 : Demo login account
+--
+-- A ready-to-use demo administrator so the platform can be explored right
+-- after the schema is applied — on the embedded PGlite backend and on a hosted
+-- Postgres (Supabase) database alike.
+--
+-- Credentials: demo@spir.local / demo1234  (role: admin)
+--
+-- Idempotent (fn_create_user skips an existing email). In a real production
+-- database, DISABLE or change this account after first sign-in:
+--     update app_users set is_active = false where email = 'demo@spir.local';
+-- =====================================================================
+
 select fn_create_user('demo@spir.local', 'demo1234', 'Demo User', 'admin');
 
-create table if not exists _spir_migrations (filename text primary key, applied_at timestamptz not null default now());
+-- ===== migration: 0085_security_hardening.sql =====
+-- =====================================================================
+-- Migration 0085 : Security hardening
+--
+-- Addresses the Supabase database-linter findings on the hosted project:
+--
+--   1. SECURITY DEFINER views (24)  — switch to SECURITY INVOKER so RLS
+--      is enforced against the querying user instead of the view's owner.
+--   2. Mutable function search_path (89) — pin every fn_* / trg_* in the
+--      public schema to `public, pg_temp` so no schema-shadowing attack
+--      can hijack a call. The value is stable across sessions once ALTERed.
+--   3. fn_audit() reachable via /rest/v1/rpc — revoke EXECUTE from the
+--      anon and authenticated roles. It is only ever called from
+--      triggers (internally), never from client code.
+-- =====================================================================
+
+-- 1) Views: enforce security_invoker so RLS applies per caller.
+do $$
+declare v record;
+begin
+    for v in
+        select c.relname
+        from pg_class c
+        join pg_namespace n on n.oid = c.relnamespace
+        where c.relkind = 'v'
+          and n.nspname = 'public'
+          and not exists (
+              select 1 from unnest(coalesce(c.reloptions, array[]::text[])) as o
+              where o in ('security_invoker=true', 'security_invoker=on')
+          )
+    loop
+        execute format('alter view public.%I set (security_invoker = true)', v.relname);
+    end loop;
+end $$;
+
+-- 2) Functions: pin search_path on every fn_* / trg_* in public.
+do $$
+declare r record;
+begin
+    for r in
+        select n.nspname,
+               p.proname,
+               pg_get_function_identity_arguments(p.oid) as args
+        from pg_proc p
+        join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public'
+          and p.prokind = 'f'
+          and (p.proname like 'fn\_%' escape '\'
+               or p.proname like 'trg\_%' escape '\')
+    loop
+        execute format(
+            'alter function %I.%I(%s) set search_path = public, pg_temp',
+            r.nspname, r.proname, r.args
+        );
+    end loop;
+end $$;
+
+-- 3) Lock down fn_audit(): it is a trigger helper, not a public RPC.
+--
+-- `anon` and `authenticated` are Supabase-specific roles. The embedded PGlite
+-- backend only creates `authenticated` (see src/lib/db/pglite.ts), and `anon`
+-- does not exist there at all — revoking from a missing role aborts the whole
+-- migration with "role \"anon\" does not exist" and leaves the database
+-- unbootstrapped. Revoke per-role, and only from roles that actually exist.
+do $$
+declare r text;
+begin
+    if not exists (
+        select 1 from pg_proc p
+        join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public' and p.proname = 'fn_audit'
+    ) then
+        return;
+    end if;
+
+    execute 'revoke execute on function public.fn_audit() from public';
+
+    foreach r in array array['anon', 'authenticated'] loop
+        if exists (select 1 from pg_roles where rolname = r) then
+            execute format('revoke execute on function public.fn_audit() from %I', r);
+        end if;
+    end loop;
+end $$;
+
+-- ===== migration: 0086_pgcrypto_search_path.sql =====
+-- =====================================================================
+-- Migration 0086 : Restore pgcrypto reach for the auth helpers
+--
+-- Migration 0085 pinned `search_path` to `public, pg_temp` on every
+-- fn_* / trg_* function. On hosted Supabase, `gen_salt` and `crypt`
+-- (from pgcrypto) live in the `extensions` schema, so the three auth
+-- helpers stopped resolving them and calls to fn_create_user /
+-- fn_set_password / fn_verify_login failed with "function gen_salt does
+-- not exist".
+--
+-- Add `extensions` to the search_path for those three functions.
+-- =====================================================================
+
+alter function public.fn_verify_login(text, text)
+    set search_path = public, extensions, pg_temp;
+
+alter function public.fn_set_password(uuid, text)
+    set search_path = public, extensions, pg_temp;
+
+alter function public.fn_create_user(text, text, text, app_user_role)
+    set search_path = public, extensions, pg_temp;
+
+-- ===== migration: 0087_arabic_master_data.sql =====
+-- =====================================================================
+-- Migration 0087 : Arabic master data
+--
+-- The UI is Arabic-only, but the master data seeded by migrations 0012–0052
+-- is English, so every dropdown, chart of accounts and category list read
+-- half-translated ("Bank Accounts", "Standard Selling", "Prospecting"…).
+--
+-- Several of these names are referenced BY NAME rather than by id:
+--     accounts.parent_account            -> accounts.account_name
+--     customer_groups.default_price_list -> price_lists.price_list_name
+-- so each rename updates the referencing column first, parents before
+-- children, to keep the links intact.
+--
+-- Proper nouns are deliberately left alone: brand names (Roche, Siemens…)
+-- and unit symbols (L, mL, kg) are not translated.
+--
+-- Re-runnable. A plain "rename where the name is still English" is not: the
+-- renames free up the English names, so replaying a seed migration re-inserts
+-- the English rows, and the next replay of this file collides on the unique
+-- name. Every rename therefore goes through translate(), which drops the
+-- re-inserted English duplicate when the Arabic row is already there.
+-- =====================================================================
+
+-- ── Chart of accounts ────────────────────────────────────────────────
+-- Rename parents first, repointing children, then the leaves.
+do $$
+declare
+    pairs text[][] := array[
+        ['Application of Funds (Assets)', 'الأصول'],
+        ['Source of Funds (Liabilities)', 'الخصوم'],
+        ['Income',                        'الإيرادات'],
+        ['Expenses',                      'المصروفات'],
+        ['Bank Accounts',                 'الحسابات المصرفية'],
+        ['Accounts Receivable',           'الذمم المدينة'],
+        ['Stock In Hand',                 'المخزون'],
+        ['Fixed Assets',                  'الأصول الثابتة'],
+        ['Accounts Payable',              'الذمم الدائنة'],
+        ['Sales',                         'المبيعات'],
+        ['Cost of Goods Sold',            'تكلفة البضاعة المباعة'],
+        ['Bank Charges',                  'رسوم مصرفية']
+    ];
+    i int;
+begin
+    for i in 1 .. array_length(pairs, 1) loop
+        if exists (select 1 from accounts where account_name = pairs[i][2]) then
+            -- Arabic row already present: drop the re-seeded English duplicate
+            -- instead of colliding on the unique account_name.
+            update accounts set parent_account = pairs[i][2] where parent_account = pairs[i][1];
+            delete from accounts where account_name = pairs[i][1];
+            continue;
+        end if;
+        -- Repoint children before the parent row itself changes name.
+        update accounts set parent_account = pairs[i][2] where parent_account = pairs[i][1];
+        update accounts set account_name  = pairs[i][2] where account_name  = pairs[i][1];
+    end loop;
+end $$;
+
+-- ── Everything else ─────────────────────────────────────────────────
+-- One table of translations, applied through a single guard. Rows are
+-- (table, name column, English, Arabic).
+do $$
+declare
+    pairs text[][] := array[
+        -- Units of measure (the symbols L / mL / kg stay as they are)
+        ['uoms', 'uom_name', 'Nos',        'عدد'],
+        ['uoms', 'uom_name', 'Box',        'علبة'],
+        ['uoms', 'uom_name', 'Unit',       'وحدة'],
+        ['uoms', 'uom_name', 'Pack',       'حزمة'],
+        ['uoms', 'uom_name', 'Vial',       'قارورة'],
+        ['uoms', 'uom_name', 'Test',       'اختبار'],
+        ['uoms', 'uom_name', 'Litre',      'لتر'],
+        ['uoms', 'uom_name', 'Millilitre', 'مليلتر'],
+        ['uoms', 'uom_name', 'Kg',         'كيلوغرام'],
+
+        -- Item groups
+        ['item_groups', 'name', 'Devices',     'أجهزة'],
+        ['item_groups', 'name', 'Reagents',    'كواشف'],
+        ['item_groups', 'name', 'Spare Parts', 'قطع غيار'],
+        ['item_groups', 'name', 'Consumables', 'مستهلكات'],
+
+        -- Modes of payment
+        ['modes_of_payment', 'name', 'Cash',          'نقداً'],
+        ['modes_of_payment', 'name', 'Wire Transfer', 'حوالة مصرفية'],
+        ['modes_of_payment', 'name', 'Cheque',        'صك'],
+        ['modes_of_payment', 'name', 'Card',          'بطاقة'],
+
+        -- Price lists (customer_groups.default_price_list is repointed below)
+        ['price_lists', 'price_list_name', 'Standard Selling', 'قائمة البيع القياسية'],
+        ['price_lists', 'price_list_name', 'Standard Buying',  'قائمة الشراء القياسية'],
+
+        -- Payment terms
+        ['payment_terms', 'name', 'Due on Receipt', 'مستحق عند الاستلام'],
+        ['payment_terms', 'name', 'Net 30',         'صافي 30 يوماً'],
+        ['payment_terms', 'name', 'Net 60',         'صافي 60 يوماً'],
+
+        -- Territories (city names are already local)
+        ['territories', 'name', 'All Territories', 'كل المناطق'],
+        ['territories', 'name', 'Baghdad',         'بغداد'],
+        ['territories', 'name', 'Basra',           'البصرة'],
+        ['territories', 'name', 'Erbil',           'أربيل'],
+        ['territories', 'name', 'Mosul',           'الموصل'],
+
+        -- Customer & supplier groups
+        ['customer_groups', 'name', 'All Customer Groups', 'كل مجموعات العملاء'],
+        ['customer_groups', 'name', 'Government Labs',     'مختبرات حكومية'],
+        ['customer_groups', 'name', 'Private Labs',        'مختبرات خاصة'],
+        ['customer_groups', 'name', 'Hospital Labs',       'مختبرات مستشفيات'],
+        ['supplier_groups', 'name', 'All Supplier Groups', 'كل مجموعات المورّدين'],
+        ['supplier_groups', 'name', 'Manufacturers',       'مصنّعون'],
+        ['supplier_groups', 'name', 'Distributors',        'موزّعون'],
+        ['supplier_groups', 'name', 'Local Suppliers',     'مورّدون محليون'],
+
+        -- Asset categories
+        ['asset_categories', 'name', 'Chemistry Analyzers',   'محلّلات كيمياء'],
+        ['asset_categories', 'name', 'Hematology Analyzers',  'محلّلات دم'],
+        ['asset_categories', 'name', 'Immunoassay Analyzers', 'محلّلات مناعية'],
+        ['asset_categories', 'name', 'Microscopes',           'مجاهر'],
+        ['asset_categories', 'name', 'Centrifuges',           'أجهزة طرد مركزي'],
+
+        -- Warehouse types
+        ['warehouse_types', 'name', 'Stock',    'مخزون'],
+        ['warehouse_types', 'name', 'Cold',     'مبرّد'],
+        ['warehouse_types', 'name', 'Transit',  'عبور'],
+        ['warehouse_types', 'name', 'Rejected', 'مرفوض'],
+
+        -- CRM masters
+        ['sales_stages', 'name', 'Prospecting',    'استكشاف'],
+        ['sales_stages', 'name', 'Qualification',  'تأهيل'],
+        ['sales_stages', 'name', 'Needs Analysis', 'تحليل الحاجات'],
+        ['sales_stages', 'name', 'Proposal',       'عرض'],
+        ['sales_stages', 'name', 'Negotiation',    'تفاوض'],
+        ['sales_stages', 'name', 'Closed',         'مغلقة'],
+        ['opportunity_types', 'name', 'Sales',        'بيع'],
+        ['opportunity_types', 'name', 'Maintenance',  'صيانة'],
+        ['opportunity_types', 'name', 'Support',      'دعم'],
+        ['opportunity_types', 'name', 'Installation', 'تركيب'],
+        ['opportunity_lost_reasons', 'name', 'Price too high',   'السعر مرتفع'],
+        ['opportunity_lost_reasons', 'name', 'Chose competitor', 'اختار منافساً'],
+        ['opportunity_lost_reasons', 'name', 'No budget',        'لا ميزانية'],
+        ['opportunity_lost_reasons', 'name', 'Timing',           'التوقيت'],
+
+        -- Support masters
+        ['issue_types', 'name', 'Hardware',     'عتاد'],
+        ['issue_types', 'name', 'Software',     'برمجيات'],
+        ['issue_types', 'name', 'Consumable',   'مستهلك'],
+        ['issue_types', 'name', 'Installation', 'تركيب'],
+        ['issue_priorities', 'name', 'Low',    'منخفضة'],
+        ['issue_priorities', 'name', 'Medium', 'متوسطة'],
+        ['issue_priorities', 'name', 'High',   'عالية'],
+        ['issue_priorities', 'name', 'Urgent', 'عاجلة']
+    ];
+    i int;
+    taken boolean;
+begin
+    for i in 1 .. array_length(pairs, 1) loop
+        -- A price list is referenced by name, so repoint before renaming.
+        if pairs[i][1] = 'price_lists' then
+            update customer_groups set default_price_list = pairs[i][4]
+             where default_price_list = pairs[i][3];
+        end if;
+
+        execute format('select exists (select 1 from %I where %I = $1)', pairs[i][1], pairs[i][2])
+           into taken using pairs[i][4];
+
+        if taken then
+            -- The Arabic row is already there; this is a replay after a seed
+            -- migration re-inserted the English one. Drop the duplicate rather
+            -- than collide on the unique name — unless something still points
+            -- at it, in which case leaving it is the safe outcome.
+            begin
+                execute format('delete from %I where %I = $1', pairs[i][1], pairs[i][2])
+                  using pairs[i][3];
+            exception when foreign_key_violation then
+                null;
+            end;
+        else
+            execute format('update %I set %I = $1 where %I = $2',
+                           pairs[i][1], pairs[i][2], pairs[i][2])
+              using pairs[i][4], pairs[i][3];
+        end if;
+    end loop;
+end $$;
+
+-- ── Terms & conditions (title + body) ───────────────────────────────
+update terms_and_conditions
+   set title = 'شروط البيع القياسية',
+       terms = 'الدفع خلال 30 يوماً. تبقى البضاعة ملكاً لنا حتى سداد كامل الثمن.'
+ where title = 'Standard Sales Terms'
+   and not exists (select 1 from terms_and_conditions where title = 'شروط البيع القياسية');
+
+-- ===== migration: 0088_fk_indexes.sql =====
+-- =====================================================================
+-- Migration 0088 : Cover every foreign key with an index
+--
+-- 90 foreign keys had no covering index. Postgres does not create one
+-- automatically for the REFERENCING side, so each of these made two things
+-- slow: any join or filter on the column, and — more sharply — every DELETE
+-- or UPDATE of the referenced parent row, which must scan the whole child
+-- table to enforce the constraint.
+--
+-- This is the `unindexed_foreign_keys` finding from the Supabase performance
+-- advisor. Index names follow idx_<table>_<column>; `if not exists` makes the
+-- whole file safely repeatable.
+--
+-- Generated by walking pg_constraint for single-column FKs with no index
+-- whose first key matches the constrained column.
+-- =====================================================================
+
+create index if not exists idx_app_users_lab_id on app_users(lab_id);
+create index if not exists idx_appointments_device_id on appointments(device_id);
+create index if not exists idx_appointments_lab_id on appointments(lab_id);
+create index if not exists idx_asset_movement_items_source_lab_id on asset_movement_items(source_lab_id);
+create index if not exists idx_asset_movement_items_source_warehouse_id on asset_movement_items(source_warehouse_id);
+create index if not exists idx_asset_movement_items_target_lab_id on asset_movement_items(target_lab_id);
+create index if not exists idx_asset_movement_items_target_warehouse_id on asset_movement_items(target_warehouse_id);
+create index if not exists idx_bank_accounts_party_company_id on bank_accounts(party_company_id);
+create index if not exists idx_bank_accounts_party_lab_id on bank_accounts(party_lab_id);
+create index if not exists idx_bank_transaction_rules_party_company_id on bank_transaction_rules(party_company_id);
+create index if not exists idx_bank_transaction_rules_party_lab_id on bank_transaction_rules(party_lab_id);
+create index if not exists idx_bank_transactions_import_log_id on bank_transactions(import_log_id);
+create index if not exists idx_bank_transactions_matched_rule_id on bank_transactions(matched_rule_id);
+create index if not exists idx_bank_transactions_party_company_id on bank_transactions(party_company_id);
+create index if not exists idx_bank_transactions_party_lab_id on bank_transactions(party_lab_id);
+create index if not exists idx_blanket_order_items_product_id on blanket_order_items(product_id);
+create index if not exists idx_blanket_orders_lab_id on blanket_orders(lab_id);
+create index if not exists idx_blanket_orders_supplier_id on blanket_orders(supplier_id);
+create index if not exists idx_bom_items_component_id on bom_items(component_id);
+create index if not exists idx_bom_items_source_warehouse on bom_items(source_warehouse);
+create index if not exists idx_contracts_device_id on contracts(device_id);
+create index if not exists idx_contracts_service_product_id on contracts(service_product_id);
+create index if not exists idx_delivery_note_items_kit_batch_id on delivery_note_items(kit_batch_id);
+create index if not exists idx_delivery_notes_lab_id on delivery_notes(lab_id);
+create index if not exists idx_delivery_trip_stops_delivery_note_id on delivery_trip_stops(delivery_note_id);
+create index if not exists idx_delivery_trip_stops_lab_id on delivery_trip_stops(lab_id);
+create index if not exists idx_devices_product_id on devices(product_id);
+create index if not exists idx_devices_warehouse_id on devices(warehouse_id);
+create index if not exists idx_installation_note_items_device_id on installation_note_items(device_id);
+create index if not exists idx_item_prices_supplier_id on item_prices(supplier_id);
+create index if not exists idx_journal_entry_accounts_party_company_id on journal_entry_accounts(party_company_id);
+create index if not exists idx_journal_entry_accounts_party_lab_id on journal_entry_accounts(party_lab_id);
+create index if not exists idx_kit_batches_supplier_id on kit_batches(supplier_id);
+create index if not exists idx_kit_batches_warehouse_id on kit_batches(warehouse_id);
+create index if not exists idx_leads_converted_lab_id on leads(converted_lab_id);
+create index if not exists idx_maintenance_schedules_lab_id on maintenance_schedules(lab_id);
+create index if not exists idx_maintenance_schedules_team_id on maintenance_schedules(team_id);
+create index if not exists idx_maintenance_visit_purposes_device_id on maintenance_visit_purposes(device_id);
+create index if not exists idx_material_request_items_product_id on material_request_items(product_id);
+create index if not exists idx_material_request_items_warehouse_id on material_request_items(warehouse_id);
+create index if not exists idx_material_requests_purchase_id on material_requests(purchase_id);
+create index if not exists idx_opportunities_lab_id on opportunities(lab_id);
+create index if not exists idx_opportunities_lead_id on opportunities(lead_id);
+create index if not exists idx_payment_entries_party_company_id on payment_entries(party_company_id);
+create index if not exists idx_payment_entries_party_lab_id on payment_entries(party_lab_id);
+create index if not exists idx_payment_requests_lab_id on payment_requests(lab_id);
+create index if not exists idx_payment_requests_mode_of_payment_id on payment_requests(mode_of_payment_id);
+create index if not exists idx_pick_list_items_product_id on pick_list_items(product_id);
+create index if not exists idx_pick_list_items_warehouse_id on pick_list_items(warehouse_id);
+create index if not exists idx_pick_lists_lab_id on pick_lists(lab_id);
+create index if not exists idx_pick_lists_sales_order_id on pick_lists(sales_order_id);
+create index if not exists idx_product_bundle_items_component_id on product_bundle_items(component_id);
+create index if not exists idx_purchase_invoices_payment_term_id on purchase_invoices(payment_term_id);
+create index if not exists idx_purchase_items_product_id on purchase_items(product_id);
+create index if not exists idx_purchase_items_warehouse_id on purchase_items(warehouse_id);
+create index if not exists idx_purchase_order_items_product_id on purchase_order_items(product_id);
+create index if not exists idx_purchase_orders_purchase_id on purchase_orders(purchase_id);
+create index if not exists idx_purchase_receipt_items_product_id on purchase_receipt_items(product_id);
+create index if not exists idx_purchase_receipt_items_warehouse_id on purchase_receipt_items(warehouse_id);
+create index if not exists idx_purchase_receipts_purchase_order_id on purchase_receipts(purchase_order_id);
+create index if not exists idx_purchase_receipts_supplier_id on purchase_receipts(supplier_id);
+create index if not exists idx_quality_inspections_product_id on quality_inspections(product_id);
+create index if not exists idx_quotation_items_product_id on quotation_items(product_id);
+create index if not exists idx_quotations_lab_id on quotations(lab_id);
+create index if not exists idx_quotations_opportunity_id on quotations(opportunity_id);
+create index if not exists idx_quotations_sales_order_id on quotations(sales_order_id);
+create index if not exists idx_rfq_items_product_id on rfq_items(product_id);
+create index if not exists idx_rfq_suppliers_supplier_id on rfq_suppliers(supplier_id);
+create index if not exists idx_rfq_suppliers_supplier_quotation_id on rfq_suppliers(supplier_quotation_id);
+create index if not exists idx_sales_kit_batch_id on sales(kit_batch_id);
+create index if not exists idx_sales_product_id on sales(product_id);
+create index if not exists idx_sales_invoice_items_product_id on sales_invoice_items(product_id);
+create index if not exists idx_sales_invoices_sales_order_id on sales_invoices(sales_order_id);
+create index if not exists idx_sales_order_items_product_id on sales_order_items(product_id);
+create index if not exists idx_sales_orders_lab_id on sales_orders(lab_id);
+create index if not exists idx_sales_return_items_product_id on sales_return_items(product_id);
+create index if not exists idx_serial_numbers_device_id on serial_numbers(device_id);
+create index if not exists idx_serial_numbers_warehouse_id on serial_numbers(warehouse_id);
+create index if not exists idx_stock_entries_from_warehouse on stock_entries(from_warehouse);
+create index if not exists idx_stock_entries_to_warehouse on stock_entries(to_warehouse);
+create index if not exists idx_stock_entry_items_batch_id on stock_entry_items(batch_id);
+create index if not exists idx_stock_reconciliation_items_kit_batch_id on stock_reconciliation_items(kit_batch_id);
+create index if not exists idx_supplier_quotation_items_product_id on supplier_quotation_items(product_id);
+create index if not exists idx_supplier_quotations_purchase_id on supplier_quotations(purchase_id);
+create index if not exists idx_supplier_quotations_supplier_id on supplier_quotations(supplier_id);
+create index if not exists idx_warranty_claims_device_id on warranty_claims(device_id);
+create index if not exists idx_warranty_claims_product_id on warranty_claims(product_id);
+create index if not exists idx_work_orders_batch_id on work_orders(batch_id);
+create index if not exists idx_work_orders_bom_id on work_orders(bom_id);
+create index if not exists idx_work_orders_fg_warehouse on work_orders(fg_warehouse);
+
+create table if not exists _spir_migrations (
+  filename text primary key,
+  applied_at timestamptz not null default now()
+);
 insert into _spir_migrations(filename) values
   ('0001_core_entities.sql'),
   ('0002_devices_batches.sql'),
@@ -6747,7 +7111,11 @@ insert into _spir_migrations(filename) values
   ('0081_return_batch_no_fix.sql'),
   ('0082_return_not_more_than_sold.sql'),
   ('0083_login_throttle.sql'),
-  ('0084_demo_user.sql')
+  ('0084_demo_user.sql'),
+  ('0085_security_hardening.sql'),
+  ('0086_pgcrypto_search_path.sql'),
+  ('0087_arabic_master_data.sql'),
+  ('0088_fk_indexes.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;

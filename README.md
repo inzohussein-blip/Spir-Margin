@@ -141,8 +141,10 @@ Postgres** — the code automatically uses it whenever `DATABASE_URL` is set
 1. **Create a Postgres database** (Supabase, Neon, RDS, …) and grab its
    connection string.
 2. **Apply the schema** — run every file in `supabase/migrations/` in order
-   against that database (Supabase SQL editor, `psql`, or `supabase db push`).
-   Optionally load `supabase/seed.sql` for demo data.
+   against that database (Supabase SQL editor, `psql`, or `supabase db push`),
+   or apply the generated single-file equivalent `supabase/schema.sql`.
+   Optionally load `supabase/seed.sql` afterwards for demo data — it is a
+   separate step, and not for a production database.
 3. **Import the repo in Vercel.** The Next.js app is at the **repository root**
    (no Root Directory setting needed); Framework Preset **Next.js**.
 4. **Set the env var** `DATABASE_URL` to your connection string. Optional:
@@ -158,7 +160,8 @@ Locally, leave `DATABASE_URL` unset to keep using embedded PGlite.
 .                         # ← Next.js app lives at the repo root
 ├── supabase/
 │   ├── migrations/        # SQL schema (المرحلة الأولى)
-│   └── seed.sql           # demo data
+│   ├── schema.sql         # generated: all migrations in one file
+│   └── seed.sql           # demo data (optional, loaded separately)
 ├── src/
 │   ├── app/
 │   │   ├── page.tsx       # dashboard (المرحلة الثانية)
