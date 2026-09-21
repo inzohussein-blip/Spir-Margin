@@ -1,3 +1,4 @@
+import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
@@ -36,7 +37,7 @@ export default async function PaymentTermsPage() {
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Payment Terms")}</h1>
         <div className="flex gap-2">
           <Link href="/purchases" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">← {t(locale, "Purchases")}</Link>
-          <Link href="/payment-terms/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ {t(locale, "New term")}</Link>
+          <Link href="/payment-terms/new" className="inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"><PlusIcon size={15} /> {t(locale, "New term")}</Link>
         </div>
       </div>
       <Panel title={`${t(locale, "Terms")} (${rows.length})`}>

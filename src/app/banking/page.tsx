@@ -1,3 +1,4 @@
+import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { getRecSummary } from "@/lib/banking";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -37,7 +38,7 @@ export default async function BankingPage() {
           <Link href="/banking/transfer" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Transfer")}</Link>
           <Link href="/banking/rules" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Rules")}</Link>
           <Link href="/banking/import" className="rounded-md border border-brand px-3 py-2 text-sm font-medium text-brand hover:bg-blue-50">{t(locale, "Import statement")}</Link>
-          <Link href="/banking/accounts/new" className="rounded-md bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ Bank account</Link>
+          <Link href="/banking/accounts/new" className="rounded-md bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-dark"><PlusIcon size={15} /> {t(locale, "Bank account")}</Link>
         </div>
       </div>
 

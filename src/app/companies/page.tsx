@@ -1,3 +1,4 @@
+import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
@@ -37,10 +38,8 @@ export default async function CompaniesPage() {
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Companies")}</h1>
         <Link
           href="/companies/new"
-          className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
-        >
-          + New company
-        </Link>
+          className="inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
+        ><PlusIcon size={15} /> {t(locale, "New company")}</Link>
       </div>
       <Panel title={`${t(locale, "Suppliers & partners")} (${rows.length})`}>
         {rows.length === 0 ? (

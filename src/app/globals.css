@@ -1211,9 +1211,35 @@ body {
 /* Print: drop the app chrome and print only the document sheet. */
 @media print {
   @page { margin: 14mm; }
+
   body { background: #fff !important; }
   .no-print { display: none !important; }
   main { padding: 0 !important; }
+
+  /* Backgrounds and brand colours are informational on a document — the
+     status pill and the header mark lose their meaning in monochrome — so
+     ask the browser to print them rather than drop them to save ink. */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* Never strand a heading, a table row or a totals block across a page
+     break, and repeat the line-item header on every continuation page. */
+  h1, h2, h3 { break-after: avoid-page; }
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+  tr, img { break-inside: avoid; }
+
+  /* The desk shell's chrome has no place on paper. */
+  aside, header.sticky, #nav-progress, [data-sonner-toaster] { display: none !important; }
+
+  /* Links print as plain text — a blue underline on paper is noise, and the
+     href is meaningless once the sheet leaves the screen. */
+  a { color: inherit !important; text-decoration: none !important; }
+
+  /* Screen-only depth effects waste toner and can render as grey boxes. */
+  .shadow-sm, .shadow-md, .shadow-lg { box-shadow: none !important; }
+
+  /* Content entrance animation must not leave a page mid-fade. */
+  main > * { animation: none !important; }
 }
 
 /* =====================================================================

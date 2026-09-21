@@ -1,3 +1,4 @@
+import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n-server";
@@ -43,7 +44,7 @@ export default async function AssetMovementsPage() {
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Asset Movements")}</h1>
         <div className="flex gap-2">
           <Link href="/devices" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Devices")}</Link>
-          <Link href="/asset-movements/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ {t(locale, "New movement")}</Link>
+          <Link href="/asset-movements/new" className="inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"><PlusIcon size={15} /> {t(locale, "New movement")}</Link>
         </div>
       </div>
 

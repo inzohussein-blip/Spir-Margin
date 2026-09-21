@@ -31,7 +31,7 @@ export default async function NewAccountPage() {
               <option value="equity">{t(locale, "equity")}</option>
             </Select>
           </Field>
-          <Field label={t(locale, "Account type")}><TextInput name="account_type" placeholder="Bank / Receivable / …" /></Field>
+          <Field label={t(locale, "Account type")}><TextInput name="account_type" placeholder={`${t(locale, "Bank")} / ${t(locale, "Receivable")} / …`} /></Field>
           <Field label={t(locale, "Parent account")}>
             <Select name="parent_account" defaultValue="">
               <option value="">{t(locale, "— none —")}</option>

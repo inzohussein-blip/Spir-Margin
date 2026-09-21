@@ -4,6 +4,7 @@ import { DocumentSheet, type DocLine } from "@/components/print/DocumentSheet";
 import { getUsdIqdRate } from "@/app/actions/currency";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
+import { fmtNum } from "@/lib/format";
 import { statusLabel } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
@@ -62,7 +63,8 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
       ]}
       notes={inv.notes}
       footer={rate > 0
-        ? `Balance due ≈ ${new Intl.NumberFormat("en-US").format(Math.round(Number(inv.outstanding) * rate))} IQD (1 USD = ${new Intl.NumberFormat("en-US").format(rate)} IQD) — Spir-Margin`
+        ? `${t(locale, "Balance due")} ≈ ${fmtNum(Math.round(Number(inv.outstanding) * rate))} ${t(locale, "IQD")}`
+          + ` (1 ${t(locale, "USD")} = ${fmtNum(rate)} ${t(locale, "IQD")}) — Spir-Margin`
         : undefined}
     />
   );

@@ -1,3 +1,4 @@
+import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n-server";
@@ -36,7 +37,7 @@ export default async function AccountsPage() {
           <Link href="/journal-entries" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Journal entries")}</Link>
           <Link href="/cost-centers" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Cost centers")}</Link>
           <Link href="/taxes" className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Taxes")}</Link>
-          <Link href="/accounts/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">+ {t(locale, "New account")}</Link>
+          <Link href="/accounts/new" className="inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"><PlusIcon size={15} /> {t(locale, "New account")}</Link>
         </div>
       </div>
       <Panel title={`${t(locale, "Accounts")} (${rows.length})`}>
@@ -58,11 +59,11 @@ export default async function AccountsPage() {
                 {rows.map((a) => (
                   <tr key={a.id}>
                     <td className="px-4 py-2 text-ink-gray-5">{a.account_number ?? "—"}</td>
-                    <td className={`px-4 py-2 ${a.is_group ? "font-semibold text-ink-gray-8" : "pl-8 text-ink-gray-7"}`}>{a.account_name}</td>
+                    <td className={`px-4 py-2 ${a.is_group ? "font-semibold text-ink-gray-8" : "ps-8 text-ink-gray-7"}`}>{a.account_name}</td>
                     <td className="px-4 py-2">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${rootBadge[a.root_type] ?? "bg-surface-gray-2"}`}>{a.root_type}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${rootBadge[a.root_type] ?? "bg-surface-gray-2"}`}>{t(locale, a.root_type)}</span>
                     </td>
-                    <td className="px-4 py-2 text-ink-gray-5">{a.account_type ?? "—"}</td>
+                    <td className="px-4 py-2 text-ink-gray-5">{a.account_type ? t(locale, a.account_type) : "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{a.parent_account ?? "—"}</td>
                   </tr>
                 ))}

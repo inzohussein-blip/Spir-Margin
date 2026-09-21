@@ -1,3 +1,4 @@
+import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -129,10 +130,8 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Dashboard")}</h1>
         <Link
           href="/sales/new"
-          className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
-        >
-          + {t(locale, "Record sale")}
-        </Link>
+          className="inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
+        ><PlusIcon size={15} /> {t(locale, "Record sale")}</Link>
       </div>
 
       {/* KPI row */}

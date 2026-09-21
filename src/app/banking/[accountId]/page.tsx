@@ -1,3 +1,4 @@
+import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -42,9 +43,7 @@ export default async function AccountReconcilePage({
         <Link
           href={`/banking/${params.accountId}/transactions/new`}
           className="rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1"
-        >
-          + Manual transaction
-        </Link>
+        ><PlusIcon size={15} /> {t(locale, "Manual transaction")}</Link>
       </div>
 
       <ReconcilePanel

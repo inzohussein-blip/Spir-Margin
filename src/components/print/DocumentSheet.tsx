@@ -54,7 +54,7 @@ export function DocumentSheet({
   return (
     <div className="mx-auto max-w-3xl">
       <div className="no-print mb-4 flex items-center justify-between">
-        <Link href={backHref} className="text-sm text-ink-gray-5 hover:text-brand">← {t(locale, "Back")}</Link>
+        <Link href={backHref} className="text-sm text-ink-gray-5 hover:text-brand"><span aria-hidden>→</span> {t(locale, "Back")}</Link>
         <PrintButton />
       </div>
 
@@ -68,7 +68,7 @@ export function DocumentSheet({
             </div>
             <p className="mt-1 text-xs text-ink-gray-5">{t(locale, "Medical devices · lab supplies · reagent kits")}</p>
           </div>
-          <div className="text-right">
+          <div className="text-end">
             <h1 className="text-2xl font-bold uppercase tracking-wide text-ink-gray-9">{docType}</h1>
             <p className="mt-1 text-sm font-medium">{docNo}</p>
             <p className="text-xs text-ink-gray-5">{date}</p>
@@ -100,25 +100,25 @@ export function DocumentSheet({
         ) : null}
 
         {/* Lines */}
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b-2 border-outline-gray-3 text-left text-xs uppercase text-ink-gray-5">
+        <table className="w-full text-sm print:break-inside-auto">
+          <thead className="print:table-header-group">
+            <tr className="border-b-2 border-outline-gray-3 text-start text-xs uppercase text-ink-gray-5">
               <th className="py-2">{t(locale, "Item")}</th>
-              <th className="py-2 text-right">{t(locale, "Qty")}</th>
-              <th className="py-2 text-right">{t(locale, "Rate")}</th>
-              <th className="py-2 text-right">{t(locale, "Amount")}</th>
+              <th className="py-2 text-end">{t(locale, "Qty")}</th>
+              <th className="py-2 text-end">{t(locale, "Rate")}</th>
+              <th className="py-2 text-end">{t(locale, "Amount")}</th>
             </tr>
           </thead>
           <tbody>
             {lines.map((l, i) => (
-              <tr key={i} className="border-b border-outline-gray-1">
+              <tr key={i} className="border-b border-outline-gray-1 print:break-inside-avoid">
                 <td className="py-2">
                   <span className="font-medium">{l.label}</span>
                   {l.sub ? <span className="block text-xs text-ink-gray-4">{l.sub}</span> : null}
                 </td>
-                <td className="py-2 text-right">{l.qty}</td>
-                <td className="py-2 text-right">{money(l.rate, currency)}</td>
-                <td className="py-2 text-right">{money(l.amount, currency)}</td>
+                <td className="py-2 text-end">{l.qty}</td>
+                <td className="py-2 text-end">{money(l.rate, currency)}</td>
+                <td className="py-2 text-end">{money(l.amount, currency)}</td>
               </tr>
             ))}
           </tbody>
@@ -131,7 +131,7 @@ export function DocumentSheet({
               {totals.map((t, i) => (
                 <tr key={i} className={t.strong ? "border-t-2 border-outline-gray-3" : ""}>
                   <td className={`py-1.5 ${t.strong ? "font-bold" : "text-ink-gray-6"}`}>{t.label}</td>
-                  <td className={`py-1.5 text-right ${t.strong ? "text-lg font-bold" : ""}`}>{money(t.value, currency)}</td>
+                  <td className={`py-1.5 text-end ${t.strong ? "text-lg font-bold" : ""}`}>{money(t.value, currency)}</td>
                 </tr>
               ))}
             </tbody>

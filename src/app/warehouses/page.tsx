@@ -1,3 +1,4 @@
+import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n-server";
@@ -30,10 +31,8 @@ export default async function WarehousesPage() {
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Warehouses")}</h1>
         <Link
           href="/warehouses/new"
-          className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
-        >
-          + New warehouse
-        </Link>
+          className="inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
+        ><PlusIcon size={15} /> {t(locale, "New warehouse")}</Link>
       </div>
       <Panel title={`${t(locale, "All Warehouses")} (${rows.length})`}>
         {rows.length === 0 ? (
