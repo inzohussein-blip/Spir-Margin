@@ -9,6 +9,7 @@ import { lockoutRemaining, recordFailure, recordSuccess } from "@/lib/auth/rate-
 import { PLATFORM_MODE_COOKIE, PLATFORM_MODE_MAX_AGE, type PlatformMode } from "@/lib/auth/platform-mode";
 import { getPlatformMode } from "@/lib/auth/platform-mode-server";
 import { LOCAL_ADMIN_EMAIL, LOCAL_ADMIN_PASSWORD, LOCAL_ADMIN_ID } from "@/lib/auth/local-credentials";
+import type { LoginState } from "@/lib/auth/login-state";
 
 const cookieOptions = {
   httpOnly: true,
@@ -17,15 +18,6 @@ const cookieOptions = {
   path: "/",
   maxAge: SESSION_MAX_AGE,
 };
-
-/**
- * Server-action return type for the login flow. The `error` string is a
- * translation key looked up client-side by `t(locale, key)`. `lockedFor`
- * carries the remaining seconds of a brute-force lockout when relevant.
- */
-export type LoginState =
-  | null
-  | { error: string; lockedFor?: number };
 
 /** Only allow same-origin relative paths — never accept `//evil.com/...`. */
 function safeNext(raw: string): string {
@@ -36,9 +28,22 @@ function safeNext(raw: string): string {
   return raw;
 }
 
-async function setSession(user: SessionUser): Promise<void> {
-  const token = await createSessionToken(user);
-  cookies().set(SESSION_COOKIE, token, cookieOptions);
+/**
+ * Sign the session cookie for `user`. Returns null on success, or a
+ * LoginState error when signing/setting the cookie fails — the caller then
+ * surfaces the failure to the form instead of crashing into the error
+ * boundary. `redirect()` is always called by the caller, never here, so
+ * NEXT_REDIRECT throws cannot be caught inside this helper.
+ */
+async function trySetSession(user: SessionUser): Promise<LoginState> {
+  try {
+    const token = await createSessionToken(user);
+    cookies().set(SESSION_COOKIE, token, cookieOptions);
+    return null;
+  } catch (e) {
+    console.error("[auth] createSessionToken failed:", e);
+    return { error: "Sign-in is unavailable right now" };
+  }
 }
 
 export async function loginAction(_prev: LoginState, formData: FormData): Promise<LoginState> {
@@ -52,17 +57,18 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   // The fixed credentials live in the source (src/lib/auth/local-credentials.ts).
   // Sign-in never touches the database, so it works fully offline.
   if (getPlatformMode() === "local") {
-    if (email === LOCAL_ADMIN_EMAIL && password === LOCAL_ADMIN_PASSWORD) {
-      await setSession({
-        id: LOCAL_ADMIN_ID,
-        email: LOCAL_ADMIN_EMAIL,
-        full_name: "Administrator",
-        role: "admin",
-        lab_id: null,
-      });
-      redirect(next);
+    if (email !== LOCAL_ADMIN_EMAIL || password !== LOCAL_ADMIN_PASSWORD) {
+      return { error: "Invalid email or password" };
     }
-    return { error: "Invalid email or password" };
+    const bad = await trySetSession({
+      id: LOCAL_ADMIN_ID,
+      email: LOCAL_ADMIN_EMAIL,
+      full_name: "Administrator",
+      role: "admin",
+      lab_id: null,
+    });
+    if (bad) return bad;
+    redirect(next);
   }
 
   // --- Networked platform --------------------------------------------------
@@ -72,13 +78,17 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
     return { error: "Too many attempts. Try again later.", lockedFor: locked };
   }
 
-  const supabase = createClient();
   let data: SessionUser[] | null = null;
   try {
+    const supabase = createClient();
     const res = await supabase.rpc("fn_verify_login", { p_email: email, p_password: password });
-    if (res.error) return { error: "Sign-in is unavailable right now" };
+    if (res.error) {
+      console.error("[auth] fn_verify_login error:", res.error);
+      return { error: "Sign-in is unavailable right now" };
+    }
     data = res.data as SessionUser[] | null;
-  } catch {
+  } catch (e) {
+    console.error("[auth] fn_verify_login threw:", e);
     return { error: "Sign-in is unavailable right now" };
   }
 
@@ -89,7 +99,8 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   }
 
   await recordSuccess(email).catch(() => undefined);
-  await setSession(row);
+  const bad = await trySetSession(row);
+  if (bad) return bad;
   redirect(next);
 }
 

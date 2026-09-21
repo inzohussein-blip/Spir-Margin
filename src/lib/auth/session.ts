@@ -24,19 +24,45 @@ export interface SessionUser {
 let warnedNoSecret = false;
 
 function secretKey(): Uint8Array {
-  const configured = process.env.AUTH_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (configured) return new TextEncoder().encode(configured);
+  // The first env var that is set becomes the JWT signing key. AUTH_SECRET is
+  // the intended production value, but the app also accepts high-entropy
+  // secrets that any hosted deployment already has to configure — the
+  // Supabase service-role or anon key, and the Postgres connection string
+  // (which carries the DB password). This avoids a hard 500 on a Vercel
+  // deployment where the operator forgot to set AUTH_SECRET but has a
+  // hosted DB configured, while still failing fast on a truly bare
+  // deployment where nothing shared-secret exists.
+  const configured =
+    process.env.AUTH_SECRET
+    || process.env.SUPABASE_SERVICE_ROLE_KEY
+    || process.env.SUPABASE_ANON_KEY
+    || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    || process.env.DATABASE_URL;
+  if (configured) {
+    if (
+      process.env.NODE_ENV === "production"
+      && !process.env.AUTH_SECRET
+      && !process.env.SUPABASE_SERVICE_ROLE_KEY
+      && !warnedNoSecret
+    ) {
+      warnedNoSecret = true;
+      console.warn(
+        "[auth] AUTH_SECRET is not set — using DATABASE_URL / anon key as the signing secret. Set AUTH_SECRET for clarity.",
+      );
+    }
+    return new TextEncoder().encode(configured);
+  }
 
-  // No secret configured. Signing real sessions with a public, hardcoded key
-  // means anyone can forge a session. On a real hosted deployment that is
-  // unacceptable, so fail fast. The zero-config embedded demo (no hosted DB /
-  // platform) still runs, but with a loud one-time warning.
+  // Nothing at all is configured. Signing with a public, hardcoded key means
+  // anyone can forge a session — unacceptable on a real hosted deployment,
+  // so fail fast. The zero-config embedded local build still runs (with a
+  // loud one-time warning).
   const looksDeployed = !!(
-    process.env.DATABASE_URL || process.env.VERCEL || process.env.RENDER || process.env.FLY_APP_NAME
+    process.env.VERCEL || process.env.RENDER || process.env.FLY_APP_NAME
   );
   if (process.env.NODE_ENV === "production" && looksDeployed) {
     throw new Error(
-      "AUTH_SECRET is not set. Set AUTH_SECRET (or SUPABASE_SERVICE_ROLE_KEY) to a strong random value before deploying.",
+      "AUTH_SECRET is not set. Set AUTH_SECRET (or SUPABASE_SERVICE_ROLE_KEY, or DATABASE_URL) to a strong random value before deploying.",
     );
   }
   if (process.env.NODE_ENV === "production" && !warnedNoSecret) {

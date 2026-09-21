@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { EyeIcon, EyeOffIcon, Loader2Icon, LogInIcon, MailIcon, LockIcon } from "lucide-react";
-import { loginAction, type LoginState } from "@/app/actions/auth";
+import { loginAction } from "@/app/actions/auth";
+import type { LoginState } from "@/lib/auth/login-state";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
 
