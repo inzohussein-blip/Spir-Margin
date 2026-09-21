@@ -1,21 +1,29 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/session";
+import { PLATFORM_MODE_COOKIE } from "@/lib/auth/platform-mode";
 
 // Paths reachable without a session. The PWA manifest must be fetchable by the
-// browser before login so the app is installable (add to home screen).
-const PUBLIC_PATHS = ["/login", "/manifest.webmanifest"];
+// browser before login so the app is installable (add to home screen). The
+// `/welcome` picker gates first-time visitors before they even see `/login`.
+const PUBLIC_PATHS = ["/login", "/welcome", "/manifest.webmanifest"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 
   const user = await verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
+  const hasMode = !!req.cookies.get(PLATFORM_MODE_COOKIE)?.value;
 
   const isPortal = pathname === "/portal" || pathname.startsWith("/portal/");
 
-  // Signed-in users have no reason to see the login page.
-  if (user && pathname === "/login") {
+  // Signed-in users have no reason to see the picker or the login page.
+  if (user && (pathname === "/login" || pathname === "/welcome")) {
     return NextResponse.redirect(new URL(user.role === "customer" ? "/portal" : "/", req.url));
+  }
+
+  // First-time visitors pick their platform before signing in.
+  if (!user && !hasMode && pathname !== "/welcome" && !pathname.startsWith("/welcome/") && pathname !== "/manifest.webmanifest") {
+    return NextResponse.redirect(new URL("/welcome", req.url));
   }
 
   // Everything else requires a session.

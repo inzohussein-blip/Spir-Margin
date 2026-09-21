@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { SESSION_COOKIE, SESSION_MAX_AGE, createSessionToken, type SessionUser } from "@/lib/auth/session";
 import { lockoutRemaining, recordFailure, recordSuccess } from "@/lib/auth/rate-limit";
+import { PLATFORM_MODE_COOKIE, PLATFORM_MODE_MAX_AGE, type PlatformMode } from "@/lib/auth/platform-mode";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
 
@@ -47,6 +48,21 @@ export async function loginAction(_prev: unknown, formData: FormData) {
 
 export async function logoutAction() {
   cookies().delete(SESSION_COOKIE);
+  redirect("/login");
+}
+
+/** Persist the visitor's platform choice (local vs networked) before sign-in. */
+export async function setPlatformModeAction(formData: FormData) {
+  const raw = String(formData.get("mode") ?? "");
+  const mode: PlatformMode | null = raw === "local" || raw === "networked" ? raw : null;
+  if (!mode) redirect("/welcome");
+  cookies().set(PLATFORM_MODE_COOKIE, mode!, {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: PLATFORM_MODE_MAX_AGE,
+  });
   redirect("/login");
 }
 

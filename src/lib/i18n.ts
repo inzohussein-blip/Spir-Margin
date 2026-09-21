@@ -1360,6 +1360,28 @@ const ar: Record<string, string> = {
   "Some sales are still on this device.": "بعض المبيعات لا تزال على هذا الجهاز.",
   "Sales will be saved here until the connection returns.":
     "ستُحفَظ المبيعات هنا حتى عودة الاتصال.",
+  // welcome / platform picker + login note
+  "Choose your platform": "اختر نوع المنصّة",
+  "Pick how you want to run Spir-Margin. You can change this later.":
+    "اختر الطريقة التي ترغب بتشغيل Spir-Margin بها. يمكنك تغيير ذلك لاحقاً.",
+  "Local platform": "منصّة محلية",
+  "Runs entirely on this computer. No internet required. Data and accounts never leave this machine.":
+    "يعمل بالكامل على هذا الحاسوب. لا يحتاج إلى إنترنت، ولا تغادر البيانات أو الحسابات هذا الجهاز.",
+  "Networked platform": "منصّة مربوطة",
+  "Connects to a shared online database, so the same account works from any authorized computer.":
+    "يتّصل بقاعدة بيانات مشتركة عبر الإنترنت، فيعمل الحساب نفسه من أيّ حاسوب مُصرَّح له.",
+  "Recommended": "مُوصى به",
+  "Continue": "متابعة",
+  "Note: this server has no DATABASE_URL configured, so it will store data locally (embedded PGlite Postgres).":
+    "ملاحظة: لم يتم ضبط DATABASE_URL على هذا الخادم، لذا ستُخزَّن البيانات محلياً (Postgres مضمّن عبر PGlite).",
+  "Note: this server is configured with DATABASE_URL, so it will use the shared online database.":
+    "ملاحظة: تم ضبط DATABASE_URL على هذا الخادم، لذا سيستخدم قاعدة البيانات المشتركة عبر الإنترنت.",
+  "Note: this password and any account you create are stored only on this computer (embedded local database) and cannot be used from another device.":
+    "ملاحظة: كلمة السر وأي حساب تنشئه محفوظان فقط على هذا الحاسوب (قاعدة بيانات محلية مضمّنة) ولا يمكن استخدامهما من جهاز آخر.",
+  "Note: this account belongs to the shared online platform and works from any authorized computer.":
+    "ملاحظة: هذا الحساب يخصّ المنصّة المشتركة عبر الإنترنت ويعمل من أي حاسوب مُصرَّح له.",
+  "Change platform": "تغيير المنصّة",
+  "Choose a platform to continue": "اختر منصّة للمتابعة",
 };
 
 const dict: Record<Locale, Record<string, string>> = { ar, en: {} };

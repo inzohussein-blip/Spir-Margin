@@ -34,8 +34,12 @@ export default async function RootLayout({
   const pathname = headers().get("x-pathname") ?? "";
   const locale = getLocale();
   const dir = locale === "ar" ? "rtl" : "ltr";
-  // The login page renders standalone — no sidebar/header shell.
-  const isBare = pathname === "/login" || pathname.startsWith("/login/");
+  // The login page and platform picker render standalone — no sidebar/header shell.
+  const isBare =
+    pathname === "/login" ||
+    pathname.startsWith("/login/") ||
+    pathname === "/welcome" ||
+    pathname.startsWith("/welcome/");
   // Focused pages keep auth but provide their own chrome (POS terminal, and the
   // customer portal, which must never show the staff desk shell).
   const isFocused =
