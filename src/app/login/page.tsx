@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { GlobeIcon, MonitorIcon, WifiOffIcon, ShieldCheckIcon } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { getLocale } from "@/lib/i18n-server";
@@ -15,12 +16,15 @@ export default function LoginPage({
 }: {
   searchParams?: { next?: string };
 }) {
+  // Local trial has no sign-in — every request is already the local admin.
+  // Any direct hit on /login just goes home. (Middleware also handles this,
+  // but the redirect here belt-and-suspenders any deep link.)
+  if (isLocalBuild) redirect("/");
+
   const locale = getLocale();
-  const mode = isLocalBuild
-    ? "local"
-    : isCloudBuild
-      ? "networked"
-      : getPlatformMode() ?? inferPlatformMode();
+  const mode = isCloudBuild
+    ? "networked"
+    : getPlatformMode() ?? inferPlatformMode();
   const isLocal = mode === "local";
   const next = typeof searchParams?.next === "string" ? searchParams.next : "";
   const defaultEmail = isLocal ? LOCAL_ADMIN_EMAIL : isCloudBuild ? CLOUD_ADMIN_EMAIL : "";

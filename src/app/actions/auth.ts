@@ -141,6 +141,10 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
 }
 
 export async function logoutAction() {
+  // Local trial: nothing to log out of — verifySessionToken always returns
+  // the local admin. Just go home so the button in the user menu does not
+  // strand the visitor on a redirect loop.
+  if (isLocalBuild) redirect("/");
   cookies().delete(SESSION_COOKIE);
   redirect("/login");
 }

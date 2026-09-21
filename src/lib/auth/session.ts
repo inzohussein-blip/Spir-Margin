@@ -1,4 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
+import { isLocalBuild } from "@/lib/runtime/platform";
+import { LOCAL_ADMIN_EMAIL, LOCAL_ADMIN_ID } from "@/lib/auth/local-credentials";
 
 /**
  * Signed-cookie sessions for the app's built-in auth. Uses `jose` (Web Crypto),
@@ -7,6 +9,10 @@ import { SignJWT, jwtVerify } from "jose";
  * The signing secret comes from AUTH_SECRET; if unset it falls back to the
  * Supabase service-role key (already a high-entropy server secret) so no extra
  * env var is strictly required. Set AUTH_SECRET in production for clarity.
+ *
+ * On the LOCAL trial build there is no sign-in step at all: `verifySessionToken`
+ * returns the local admin unconditionally, so every request is treated as
+ * signed-in and `/login` reroutes to `/`.
  */
 
 export const SESSION_COOKIE = "spir_session";
@@ -20,6 +26,15 @@ export interface SessionUser {
   /** Set only for portal (customer) users — the lab they may see. */
   lab_id: string | null;
 }
+
+/** The implicit "you are signed in" user for the local trial build. */
+const LOCAL_TRIAL_USER: SessionUser = {
+  id: LOCAL_ADMIN_ID,
+  email: LOCAL_ADMIN_EMAIL,
+  full_name: "Administrator (Local trial)",
+  role: "admin",
+  lab_id: null,
+};
 
 let warnedNoSecret = false;
 
@@ -84,6 +99,8 @@ export async function createSessionToken(user: SessionUser): Promise<string> {
 }
 
 export async function verifySessionToken(token: string | undefined): Promise<SessionUser | null> {
+  // Local trial: no sign-in at all. Every request is the local admin.
+  if (isLocalBuild) return LOCAL_TRIAL_USER;
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secretKey());
