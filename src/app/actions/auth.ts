@@ -36,10 +36,9 @@ function safeNext(raw: string): string {
   return raw;
 }
 
-async function issueSession(user: SessionUser, next: string): Promise<never> {
+async function setSession(user: SessionUser): Promise<void> {
   const token = await createSessionToken(user);
   cookies().set(SESSION_COOKIE, token, cookieOptions);
-  redirect(next);
 }
 
 export async function loginAction(_prev: LoginState, formData: FormData): Promise<LoginState> {
@@ -54,16 +53,14 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   // Sign-in never touches the database, so it works fully offline.
   if (getPlatformMode() === "local") {
     if (email === LOCAL_ADMIN_EMAIL && password === LOCAL_ADMIN_PASSWORD) {
-      await issueSession(
-        {
-          id: LOCAL_ADMIN_ID,
-          email: LOCAL_ADMIN_EMAIL,
-          full_name: "Administrator",
-          role: "admin",
-          lab_id: null,
-        },
-        next,
-      );
+      await setSession({
+        id: LOCAL_ADMIN_ID,
+        email: LOCAL_ADMIN_EMAIL,
+        full_name: "Administrator",
+        role: "admin",
+        lab_id: null,
+      });
+      redirect(next);
     }
     return { error: "Invalid email or password" };
   }
@@ -92,7 +89,8 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   }
 
   await recordSuccess(email).catch(() => undefined);
-  await issueSession(row, next);
+  await setSession(row);
+  redirect(next);
 }
 
 export async function logoutAction() {
