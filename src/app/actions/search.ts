@@ -20,6 +20,11 @@ const ENTITY: Record<string, { label: string; href: (id: string) => string }> = 
   sales_invoice: { label: "Invoice", href: (id) => `/sales-invoices/${id}` },
   purchase_order: { label: "Purchase Order", href: (id) => `/purchase-orders/${id}` },
   issue: { label: "Issue", href: (id) => `/issues/${id}` },
+  sale_request: { label: "Sales request", href: (id) => `/sale-requests/${id}` },
+  transport_authorization: {
+    label: "Transport authorisation",
+    href: (id) => `/authorizations/${id}`,
+  },
 };
 
 interface Row { entity: string; record_id: string; label: string; sublabel: string | null; }

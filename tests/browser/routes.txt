@@ -10,6 +10,8 @@
 /asset-repairs
 /asset-repairs/new
 /audit-log
+/authorizations
+/authorizations/new
 /banking
 /banking/accounts/new
 /banking/import
@@ -105,6 +107,8 @@
 /reports/sales-by-product
 /rfqs
 /rfqs/new
+/sale-requests
+/sale-requests/new
 /sales-invoices
 /sales-invoices/new
 /sales-orders
@@ -130,6 +134,7 @@
 /tools/converter
 /tools/profit
 /users
+/w/shortcuts
 /warehouses
 /warehouses/new
 /warranty

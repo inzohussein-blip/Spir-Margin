@@ -9,6 +9,10 @@ export const dynamic = "force-dynamic";
 
 /** Number cards per workspace: a label + the table to count. */
 const NUMBER_CARDS: Record<string, { label: string; table: string }[]> = {
+  shortcuts: [
+    { label: "Sales requests", table: "sale_requests" },
+    { label: "Transport authorisations", table: "transport_authorizations" },
+  ],
   selling: [
     { label: "Labs", table: "labs" },
     { label: "Sales Invoices", table: "sales_invoices" },

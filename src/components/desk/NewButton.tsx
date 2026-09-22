@@ -8,6 +8,10 @@ import { t, type Locale } from "@/lib/i18n";
 
 // Common create targets, Frappe-Desk "+ New" style.
 const CREATE = [
+  // First, because these are the two the company writes most — which is the
+  // whole point of the Shortcuts group.
+  { href: "/sale-requests/new", label: "Sales request" },
+  { href: "/authorizations/new", label: "Transport authorisation" },
   { href: "/labs/new", label: "Lab" },
   { href: "/quotations/new", label: "Quotation" },
   { href: "/sales-orders/new", label: "Sales Order" },
