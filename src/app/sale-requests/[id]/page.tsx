@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PrinterIcon } from "lucide-react";
+import { PrinterIcon, PencilIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Panel } from "@/components/dashboard/Panel";
 import { Indicator } from "@/components/desk/Indicator";
@@ -65,6 +65,14 @@ export default async function SaleRequestPage({ params }: { params: { id: string
         </div>
         <div className="flex items-center gap-2">
           <Indicator status={req.status === "cancelled" ? "inactive" : req.status === "draft" ? "pending" : "active"} label={t(locale, req.status)} />
+          {req.status === "draft" ? (
+            <Link
+              href={`/sale-requests/${req.id}/edit`}
+              className="inline-flex items-center gap-1.5 rounded-md border border-outline-gray-2 px-3 py-2 text-sm font-medium text-ink-gray-7 hover:border-brand hover:text-brand"
+            >
+              <PencilIcon size={15} /> {t(locale, "Edit")}
+            </Link>
+          ) : null}
           <Link
             href={`/sale-requests/${req.id}/print`}
             className="inline-flex items-center gap-1.5 rounded-md bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark"

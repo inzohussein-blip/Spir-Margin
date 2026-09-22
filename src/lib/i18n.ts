@@ -1059,6 +1059,11 @@ const ar: Record<string, string> = {
   "One of the values is outside what this field allows": "إحدى القيم خارج ما يسمح به الحقل",
   "One of the values is too long": "إحدى القيم أطول من المسموح",
   // company identity, sales requests and transport authorisations
+  "Save the changes": "حفظ التعديلات",
+  "Edit the request": "تعديل الطلب",
+  "Only a draft can be edited. Cancel it and write a new one instead.": "المسوّدة وحدها قابلة للتعديل. ألغِه واكتب طلباً جديداً بدلاً من ذلك.",
+  "Issue the same journey again": "إصدار التخويل نفسه من جديد",
+  "Transport authorisations expiring (≤ 60 days)": "تخويلات نقل تقارب الانتهاء (خلال ≤ 60 يوماً)",
   "Sales request": "طلب بيع",
   "Transport authorisation": "تخويل نقل",
   "These details are printed on receipts, authorisations and every other document. They stay on this computer and are not sent anywhere.": "تُطبع هذه التفاصيل على الوصولات والتخويلات وكل مستند آخر. وتبقى على هذا الحاسوب ولا تُرسل إلى أي مكان.",

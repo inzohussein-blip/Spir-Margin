@@ -83,6 +83,65 @@ export async function saveSaleRequest(input: SaleRequestInput) {
   redirect(`/sale-requests/${id}?saved=created`);
 }
 
+/**
+ * Replace a draft's contents.
+ *
+ * Only while it is a draft: once it is confirmed the customer has been given
+ * a receipt, and quietly changing what that receipt said is not an edit — it
+ * is a different document, which is what cancelling and reissuing is for.
+ *
+ * The lines are replaced wholesale rather than diffed. They have no identity
+ * anyone refers to, so matching them up would be work in service of nothing.
+ */
+export async function updateSaleRequest(id: string, input: SaleRequestInput) {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Not signed in" };
+
+  const lines = usable(input.items);
+  if (lines.length === 0) return { error: "Add at least one line" };
+  if (!input.lab_id && !(input.customer_name ?? "").trim()) {
+    return { error: "Choose a lab or enter a customer name" };
+  }
+
+  const supabase = createClient();
+  const current = await supabase.from("sale_requests").select("status").eq("id", id).single();
+  if ((current.data as { status: string } | null)?.status !== "draft") {
+    return { error: "Only a draft can be edited. Cancel it and write a new one instead." };
+  }
+
+  const { error } = await supabase
+    .from("sale_requests")
+    .update({
+      request_date: input.request_date,
+      lab_id: input.lab_id || null,
+      customer_name: (input.customer_name ?? "").trim() || null,
+      customer_phone: (input.customer_phone ?? "").trim() || null,
+      currency: input.currency || "USD",
+      discount: Number(input.discount ?? 0) || 0,
+      notes: (input.notes ?? "").trim() || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) return formError(error);
+
+  await supabase.from("sale_request_items").delete().eq("request_id", id);
+  const { error: itemsError } = await supabase.from("sale_request_items").insert(
+    lines.map((l, i) => ({
+      request_id: id,
+      product_id: l.product_id || null,
+      description: l.description.trim(),
+      qty: Number(l.qty),
+      rate: Number(l.rate) || 0,
+      line_no: i + 1,
+    })),
+  );
+  if (itemsError) return formError(itemsError);
+
+  revalidatePath(`/sale-requests/${id}`);
+  revalidatePath("/sale-requests");
+  redirect(`/sale-requests/${id}?saved=updated`);
+}
+
 export async function setSaleRequestStatus(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) return;

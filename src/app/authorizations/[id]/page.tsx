@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PrinterIcon, BanIcon } from "lucide-react";
+import { PrinterIcon, BanIcon, CopyIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Panel } from "@/components/dashboard/Panel";
 import { Indicator } from "@/components/desk/Indicator";
-import { cancelAuthorization } from "@/app/actions/authorization";
+import { cancelAuthorization, reissueAuthorization } from "@/app/actions/authorization";
 import { getLocale } from "@/lib/i18n-server";
 import { fmtDate, fmtNum } from "@/lib/format";
 import { t } from "@/lib/i18n";
@@ -131,8 +131,15 @@ export default async function AuthorizationPage({ params }: { params: { id: stri
         </Panel>
       ) : null}
 
+      <form action={reissueAuthorization} className="inline-block">
+        <input type="hidden" name="id" value={doc.id} />
+        <button className="inline-flex items-center gap-1.5 rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:border-brand hover:text-brand">
+          <CopyIcon size={15} /> {t(locale, "Issue the same journey again")}
+        </button>
+      </form>
+
       {doc.status === "issued" ? (
-        <form action={cancelAuthorization}>
+        <form action={cancelAuthorization} className="inline-block ms-2">
           <input type="hidden" name="id" value={doc.id} />
           <button className="inline-flex items-center gap-1.5 rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:border-red-300 hover:text-red-700">
             <BanIcon size={15} /> {t(locale, "Cancel this authorisation")}

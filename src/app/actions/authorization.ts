@@ -97,6 +97,86 @@ export async function saveAuthorization(input: AuthorizationInput) {
   redirect(`/authorizations/${id}?saved=created`);
 }
 
+/**
+ * Issue a fresh authorisation carrying the same journey and manifest.
+ *
+ * An authorisation that has been printed and carried is not edited — the
+ * paper someone is holding would then disagree with the record. The same
+ * trip next week is a NEW document with its own number and dates, and this
+ * is that, without re-typing the manifest.
+ */
+export async function reissueAuthorization(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) return;
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("transport_authorizations")
+    .select("addressed_to, bearer_name, bearer_id_no, bearer_phone, driver_name, vehicle_type, vehicle_plate, from_governorate, to_governorate, destination, purpose, notes, valid_from, valid_to")
+    .eq("id", id)
+    .single();
+  const src = data as Record<string, unknown> | null;
+  if (!src) return;
+
+  // Keep the original's length, starting today — a week-long permit stays a
+  // week rather than silently becoming a day.
+  const span = Math.max(
+    0,
+    Math.round(
+      (new Date(String(src.valid_to)).getTime() - new Date(String(src.valid_from)).getTime()) / 86400000,
+    ),
+  );
+  const today = new Date();
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const validTo = new Date(today.getTime() + span * 86400000);
+
+  const { db } = await getDb();
+  const no = await db.query<{ n: string }>(`select fn_next_doc_no('ta') as n`);
+
+  const { data: created } = await supabase
+    .from("transport_authorizations")
+    .insert({
+      auth_no: no.rows[0].n,
+      issue_date: iso(today),
+      valid_from: iso(today),
+      valid_to: iso(validTo),
+      addressed_to: src.addressed_to,
+      bearer_name: src.bearer_name,
+      bearer_id_no: src.bearer_id_no,
+      bearer_phone: src.bearer_phone,
+      driver_name: src.driver_name,
+      vehicle_type: src.vehicle_type,
+      vehicle_plate: src.vehicle_plate,
+      from_governorate: src.from_governorate,
+      to_governorate: src.to_governorate,
+      destination: src.destination,
+      purpose: src.purpose,
+      notes: src.notes,
+      created_by: user.email,
+    })
+    .select("id")
+    .single();
+  const newId = (created as { id: string } | null)?.id;
+  if (!newId) return;
+
+  const { data: items } = await supabase
+    .from("transport_authorization_items")
+    .select("device_id, description, qty, unit, serial_no, line_no")
+    .eq("auth_id", id)
+    .order("line_no");
+  const rows = (items as Record<string, unknown>[]) ?? [];
+  if (rows.length) {
+    await supabase
+      .from("transport_authorization_items")
+      .insert(rows.map((r) => ({ ...r, auth_id: newId })));
+  }
+
+  revalidatePath("/authorizations");
+  redirect(`/authorizations/${newId}?saved=created`);
+}
+
 export async function cancelAuthorization(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) return;

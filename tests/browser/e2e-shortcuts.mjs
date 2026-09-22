@@ -119,6 +119,36 @@ check("no Arabic-Indic digits anywhere", !/[٠-٩]/.test(letter));
 await p.emulateMedia({ media: "print" });
 await p.screenshot({ path: `${SHOT}/authorization.png`, fullPage: true });
 
+// ── Editing a draft, and reissuing a journey ────────────────────────
+await p.goto(H + "/sale-requests", { waitUntil: "domcontentloaded", timeout: 120000 });
+// A row, not the "new" button that also lives under /sale-requests/.
+await p.locator('a[href^="/sale-requests/"]:not([href$="/new"])').first().click();
+await p.waitForURL((u) => /\/sale-requests\/[0-9a-f-]{36}$/.test(u.pathname), { timeout: 60000 });
+const canEdit = await p.locator('a:has-text("تعديل")').count();
+check("a draft can be edited", canEdit === 1);
+if (canEdit) {
+  await p.locator('a:has-text("تعديل")').click();
+  await p.locator('input[name="customer_name"]').waitFor({ state: "visible", timeout: 60000 });
+  check("the edit form arrives filled in",
+    (await p.inputValue('input[name="customer_name"]')) === "مستشفى الكندي",
+    await p.inputValue('input[name="customer_name"]'));
+  await p.fill('input[name="customer_name"]', "مستشفى اليرموك");
+  await p.click('button:has-text("حفظ التعديلات")');
+  await p.waitForURL((u) => !u.pathname.endsWith("/edit"), { timeout: 60000 }).catch(() => {});
+  check("the edit is kept", (await p.locator("body").innerText()).includes("مستشفى اليرموك"));
+}
+
+await p.goto(H + "/authorizations", { waitUntil: "domcontentloaded", timeout: 120000 });
+await p.locator('a[href^="/authorizations/"]:not([href$="/new"])').first().click();
+await p.waitForURL((u) => /\/authorizations\/[0-9a-f-]{36}$/.test(u.pathname), { timeout: 60000 });
+const firstRef = (await p.locator("h1").innerText()).trim();
+await p.click('button:has-text("إصدار التخويل نفسه")');
+await p.waitForTimeout(4000);
+const secondRef = (await p.locator("h1").innerText()).trim();
+check("reissuing mints a new reference", secondRef !== firstRef, `${firstRef} -> ${secondRef}`);
+check("and carries the manifest over",
+  (await p.locator("body").innerText()).includes("محلّل كيمياء"));
+
 check("no uncaught page errors", errs.length === 0, errs.slice(0, 2).join(" | "));
 done();
 await browser.close();

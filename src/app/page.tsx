@@ -1,4 +1,4 @@
-import { fmtNum } from "@/lib/format";
+import { fmtNum, fmtDate } from "@/lib/format";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -68,6 +68,7 @@ export default async function DashboardPage() {
     issuesRes,
     contractsRes,
     pmRes,
+    authRes,
   ] = await Promise.all([
     supabase.from("v_profit_summary").select("*").single(),
     supabase.from("v_active_labs").select("*").order("name"),
@@ -99,6 +100,17 @@ export default async function DashboardPage() {
       .lte("scheduled_date", horizon)
       .order("scheduled_date", { ascending: true })
       .limit(12),
+    // Authorisations still in force but running out. Equipment is usually
+    // still out there when one lapses, and the person carrying it finds out
+    // at a checkpoint — so it belongs with the other things about to expire.
+    supabase
+      .from("transport_authorizations")
+      .select("id, auth_no, bearer_name, from_governorate, to_governorate, valid_to")
+      .eq("status", "issued")
+      .gte("valid_to", today)
+      .lte("valid_to", horizon)
+      .order("valid_to")
+      .limit(10),
   ]);
 
   const profit = (profitRes.data as ProfitSummary) ?? {
@@ -110,6 +122,11 @@ export default async function DashboardPage() {
   const labs = (labsRes.data as ActiveLab[]) ?? [];
   const alerts = (maintRes.data as MaintenanceAlert[]) ?? [];
   const kits = (kitsRes.data as ExpiringKit[]) ?? [];
+  const expiringAuths =
+    (authRes.data as {
+      id: string; auth_no: string; bearer_name: string;
+      from_governorate: string; to_governorate: string; valid_to: string;
+    }[]) ?? [];
   const invoices = (invRes.data as InvoiceRow[]) ?? [];
   const pos = (poRes.data as PoRow[]) ?? [];
   const openWorkOrders = (woRes.data as { status: string }[])?.length ?? 0;
@@ -401,6 +418,49 @@ export default async function DashboardPage() {
           </div>
         )}
       </Panel>
+
+      {/* Authorisations running out — same shape as the other expiry panels */}
+      {expiringAuths.length > 0 ? (
+        <Panel title={t(locale, "Transport authorisations expiring (≤ 60 days)")}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
+                  <th className="px-4 py-2">{t(locale, "Reference")}</th>
+                  <th className="px-4 py-2">{t(locale, "Authorised person")}</th>
+                  <th className="px-4 py-2">{t(locale, "Route")}</th>
+                  <th className="px-4 py-2">{t(locale, "Valid to")}</th>
+                  <th className="px-4 py-2">{t(locale, "Days left")}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-gray-1">
+                {expiringAuths.map((a) => {
+                  const days = Math.round(
+                    (new Date(a.valid_to).getTime() - new Date(today).getTime()) / 86400_000,
+                  );
+                  return (
+                    <tr key={a.id}>
+                      <td className="px-4 py-2 font-medium">
+                        <Link href={`/authorizations/${a.id}`} className="text-brand hover:underline" dir="ltr">
+                          {a.auth_no}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-2">{a.bearer_name}</td>
+                      <td className="px-4 py-2 text-ink-gray-6">
+                        {a.from_governorate} ← {a.to_governorate}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-2 text-ink-gray-5">{fmtDate(a.valid_to)}</td>
+                      <td className={`px-4 py-2 tabular-nums ${days <= 3 ? "font-semibold text-amber-700" : "text-ink-gray-6"}`}>
+                        {fmtNum(days)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+      ) : null}
 
       {/* Expiring kits — full width */}
       <Panel title={t(locale, "Kits Near Expiry (≤ 90 days)")}>

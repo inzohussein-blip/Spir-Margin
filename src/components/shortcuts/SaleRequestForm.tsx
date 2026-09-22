@@ -4,7 +4,7 @@ import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon, Trash2Icon, Loader2Icon, AlertCircleIcon } from "lucide-react";
-import { saveSaleRequest, type SaleRequestInput } from "@/app/actions/sale_request";
+import { saveSaleRequest, updateSaleRequest, type SaleRequestInput } from "@/app/actions/sale_request";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useLocale } from "@/components/LocaleProvider";
 import { fmtNum } from "@/lib/format";
@@ -24,14 +24,25 @@ const cls =
  * customer is still on the phone. Picking a product fills the description and
  * the price, and both stay editable.
  */
-export function SaleRequestForm({ labs, products }: { labs: Opt[]; products: ProductOpt[] }) {
+export function SaleRequestForm({
+  labs,
+  products,
+  requestId,
+  defaults,
+}: {
+  labs: Opt[];
+  products: ProductOpt[];
+  requestId?: string;
+  defaults?: SaleRequestInput;
+}) {
   const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
+  const editing = Boolean(requestId);
   const { register, control, handleSubmit, setValue } = useForm<SaleRequestInput>({
-    defaultValues: {
+    defaultValues: defaults ?? {
       lab_id: "",
       customer_name: "",
       customer_phone: "",
@@ -62,7 +73,9 @@ export function SaleRequestForm({ labs, products }: { labs: Opt[]; products: Pro
   const onSubmit = handleSubmit((values) => {
     setError(null);
     start(async () => {
-      const res = await saveSaleRequest(values);
+      const res = requestId
+        ? await updateSaleRequest(requestId, values)
+        : await saveSaleRequest(values);
       if (res && "error" in res && res.error) setError(t(locale, res.error));
       else router.refresh();
     });
@@ -194,7 +207,7 @@ export function SaleRequestForm({ labs, products }: { labs: Opt[]; products: Pro
         className="inline-flex items-center gap-2 rounded-md bg-brand px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-brand-dark active:scale-95 disabled:opacity-60"
       >
         {pending ? <Loader2Icon size={15} className="animate-spin" /> : null}
-        {t(locale, "Save the request")}
+        {t(locale, editing ? "Save the changes" : "Save the request")}
       </button>
     </form>
   );
