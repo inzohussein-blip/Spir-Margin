@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -17,7 +18,7 @@ export async function createAccount(fd: FormData) {
     is_group: fd.get("is_group") != null,
     currency: String(fd.get("currency") || "USD"),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/accounts");
   redirect("/accounts?saved=created");
 }

@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -50,7 +51,7 @@ export async function createBankAccount(fd: FormData) {
     is_company_account: bool(fd, "is_company_account"),
     is_default: bool(fd, "is_default"),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/banking");
   redirect("/banking?saved=created");
 }
@@ -75,7 +76,7 @@ export async function createPaymentEntry(fd: FormData) {
     reference_date: str(fd, "reference_date"),
     remarks: str(fd, "remarks"),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/banking");
   redirect("/banking/payments?saved=created");
 }
@@ -94,7 +95,7 @@ export async function createBankTransaction(fd: FormData) {
     reference_number: str(fd, "reference_number"),
     transaction_id: str(fd, "transaction_id"),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath(`/banking/${req(fd, "bank_account_id")}`);
   redirect(`/banking/${req(fd, "bank_account_id")}`);
 }
@@ -221,7 +222,7 @@ export async function createRule(fd: FormData) {
     })
     .select("id")
     .single();
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
 
   const condValue = str(fd, "condition_value");
   if (condValue) {

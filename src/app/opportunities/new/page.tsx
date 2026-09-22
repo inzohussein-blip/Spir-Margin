@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import Link from "next/link";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -24,7 +25,7 @@ export default async function NewOpportunityPage() {
       </div>
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Opportunity")}</h1>
       <FormCard title={t(locale, "Opportunity details")}>
-        <form action={createOpportunity} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <ValidatedForm action={createOpportunity} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Title")} required>
             <TextInput name="title" required placeholder="Cobas analyzer for Al-Kindy" />
           </Field>
@@ -72,7 +73,7 @@ export default async function NewOpportunityPage() {
           <div className="sm:col-span-2">
             <SubmitButton>{t(locale, "Create opportunity")}</SubmitButton>
           </div>
-        </form>
+        </ValidatedForm>
       </FormCard>
     </div>
   );

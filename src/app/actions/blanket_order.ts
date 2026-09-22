@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -57,7 +58,7 @@ export async function saveBlanketOrder(input: BlanketOrderInput) {
 export async function submitBlanketOrderForm(fd: FormData) {
   const supabase = createClient();
   const { error } = await supabase.rpc("fn_submit_blanket_order", { p_order_id: String(fd.get("id")) });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/blanket-orders");
 }
 

@@ -10,7 +10,26 @@ import { withAuditActor } from "@/lib/audit/actor";
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-type Result = { data: any; error: { message: string } | null; count?: number };
+/**
+ * `error` mirrors supabase-js's shape, plus the two fields that make a
+ * database failure explainable to the person who caused it: the SQLSTATE
+ * `code` (23505 = duplicate, 23503 = still referenced, …) and the
+ * `constraint` that rejected the row. Without them all a caller can do is
+ * show the raw Postgres sentence.
+ */
+type DbError = { message: string; code?: string; constraint?: string; detail?: string };
+type Result = { data: any; error: DbError | null; count?: number };
+
+/** Keep the Postgres diagnostics that `new Error(...)` would throw away. */
+function dbError(e: unknown): DbError {
+  const anyE = e as { message?: string; code?: string; constraint?: string; detail?: string };
+  return {
+    message: e instanceof Error ? e.message : String(e),
+    ...(anyE?.code ? { code: anyE.code } : {}),
+    ...(anyE?.constraint ? { constraint: anyE.constraint } : {}),
+    ...(anyE?.detail ? { detail: anyE.detail } : {}),
+  };
+}
 
 const q = (id: string) => `"${id.replace(/"/g, '""')}"`;
 
@@ -302,7 +321,7 @@ class Query implements PromiseLike<Result> {
         try {
           return await runSet();
         } catch (e2) {
-          return { data: null, error: { message: e2 instanceof Error ? e2.message : String(e2) } };
+          return { data: null, error: dbError(e2) };
         }
       }
       try {
@@ -320,10 +339,10 @@ class Query implements PromiseLike<Result> {
           try {
             return await runSet();
           } catch (e2) {
-            return { data: null, error: { message: e2 instanceof Error ? e2.message : String(e2) } };
+            return { data: null, error: dbError(e2) };
           }
         }
-        return { data: null, error: { message: msg } };
+        return { data: null, error: dbError(e) };
       }
     }
 
@@ -416,8 +435,7 @@ class Query implements PromiseLike<Result> {
       }
       return { data: rows, error: null, count };
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      return { data: null, error: { message } };
+      return { data: null, error: dbError(e) };
     }
   }
 

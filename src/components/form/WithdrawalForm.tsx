@@ -5,6 +5,7 @@ import { submitWithdrawal } from "@/app/actions/crud";
 import { Field, TextInput, Select, SubmitButton } from "./Fields";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 
 interface BatchOpt {
   id: string;
@@ -32,7 +33,7 @@ export function WithdrawalForm({
   const selected = batches.find((b) => b.id === batchId);
 
   return (
-    <form
+    <ValidatedForm
       action={submitWithdrawal}
       className="grid grid-cols-1 gap-4 sm:grid-cols-2"
     >
@@ -107,6 +108,6 @@ export function WithdrawalForm({
       <div className="sm:col-span-2">
         <SubmitButton>{t(locale, "Record withdrawal")}</SubmitButton>
       </div>
-    </form>
+    </ValidatedForm>
   );
 }

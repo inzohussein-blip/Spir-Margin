@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import Link from "next/link";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -13,7 +14,7 @@ export default function NewRatePage() {
       </div>
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Exchange Rate")}</h1>
       <FormCard title={t(locale, "Rate")}>
-        <form action={createExchangeRate} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <ValidatedForm action={createExchangeRate} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Date")}><TextInput name="date" type="date" /></Field>
           <Field label={t(locale, "Rate")} required><TextInput name="exchange_rate" type="number" step="0.000001" required /></Field>
           <Field label={t(locale, "From currency")} required><TextInput name="from_currency" required placeholder="USD" /></Field>
@@ -23,7 +24,7 @@ export default function NewRatePage() {
             <Checkbox name="for_selling" label="For selling" defaultChecked />
           </div>
           <div className="sm:col-span-2"><SubmitButton>{t(locale, "Create rate")}</SubmitButton></div>
-        </form>
+        </ValidatedForm>
       </FormCard>
     </div>
   );

@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -76,10 +77,10 @@ export default async function LeadsPage() {
                       {l.converted_lab_id ? (
                         <span className="text-xs text-emerald-600">→ lab</span>
                       ) : (
-                        <form action={convertLeadForm}>
+                        <ValidatedForm action={convertLeadForm}>
                           <input type="hidden" name="id" value={l.id} />
                           <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Convert to lab")}</button>
-                        </form>
+                        </ValidatedForm>
                       )}
                     </td>
                   </tr>

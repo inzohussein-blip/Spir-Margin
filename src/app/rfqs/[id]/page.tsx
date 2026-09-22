@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -85,12 +86,12 @@ export default async function RfqDetailPage({ params }: { params: { id: string }
                       {s.supplier_quotation_id ? (
                         <Link href="/supplier-quotations" className="text-xs text-brand hover:underline">{t(locale, "view quotation")}</Link>
                       ) : (
-                        <form action={rfqToQuotationForm} className="flex items-center gap-1">
+                        <ValidatedForm action={rfqToQuotationForm} className="flex items-center gap-1">
                           <input type="hidden" name="rfq_supplier_id" value={s.id} />
                           <input type="hidden" name="rfq_id" value={rfq.id} />
                           <input name="quote_no" placeholder={t(locale, "quote no.")} className="w-28 rounded-md border border-outline-gray-2 px-2 py-1 text-xs" />
                           <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Record quote")}</button>
-                        </form>
+                        </ValidatedForm>
                       )}
                     </td>
                   </tr>

@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { assertFeature } from "@/lib/features";
@@ -104,7 +105,7 @@ export async function deletePurchaseOrderForm(fd: FormData) {
     .delete()
     .eq("id", id)
     .in("status", ["draft", "cancelled"]);
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/purchase-orders");
 }
 

@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import Link from "next/link";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -19,7 +20,7 @@ export default async function NewMaintenanceSchedulePage() {
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Maintenance Schedule")}</h1>
 
       <FormCard title={t(locale, "Schedule details")}>
-        <form action={createMaintenanceSchedule} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <ValidatedForm action={createMaintenanceSchedule} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Schedule no.")} required>
             <TextInput name="schedule_no" required placeholder="MS-0001" />
           </Field>
@@ -65,7 +66,7 @@ export default async function NewMaintenanceSchedulePage() {
           <div className="sm:col-span-2">
             <SubmitButton>{t(locale, "Create schedule")}</SubmitButton>
           </div>
-        </form>
+        </ValidatedForm>
       </FormCard>
       <p className="text-xs text-ink-gray-5">{t(locale, "After creating, press")} <em>{t(locale, "Generate")}</em> {t(locale, "to lay out the visit dates and set the device's next-maintenance date.")}</p>
     </div>

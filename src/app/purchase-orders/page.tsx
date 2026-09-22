@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import Link from "next/link";
 import { PencilIcon, Trash2Icon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -116,28 +117,28 @@ export default async function PurchaseOrdersPage({
                       <div className="flex flex-wrap items-center gap-2">
                         {o.status === "draft" && (
                           <>
-                            <form action={submitPurchaseOrderForm}>
+                            <ValidatedForm action={submitPurchaseOrderForm}>
                               <input type="hidden" name="id" value={o.id} />
                               <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Submit")}</button>
-                            </form>
+                            </ValidatedForm>
                             <Link href={`/purchase-orders/${o.id}/edit`} className="inline-flex items-center gap-1 rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:border-brand hover:text-brand">
                               <PencilIcon size={12} /> {t(locale, "Edit")}
                             </Link>
-                            <form action={cancelPurchaseOrderForm}>
+                            <ValidatedForm action={cancelPurchaseOrderForm}>
                               <input type="hidden" name="id" value={o.id} />
                               <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Cancel")}</button>
-                            </form>
+                            </ValidatedForm>
                           </>
                         )}
                         {o.status === "submitted" && (
-                          <form action={poToPurchaseInvoiceForm} className="flex items-center gap-1">
+                          <ValidatedForm action={poToPurchaseInvoiceForm} className="flex items-center gap-1">
                             <input type="hidden" name="id" value={o.id} />
                             <input name="reference" placeholder={t(locale, "supplier inv#")} className="w-28 rounded-md border border-outline-gray-2 px-2 py-1 text-xs" />
                             <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Bill")}</button>
-                          </form>
+                          </ValidatedForm>
                         )}
                         {(o.status === "draft" || o.status === "cancelled") && (
-                          <form action={deletePurchaseOrderForm}>
+                          <ValidatedForm action={deletePurchaseOrderForm}>
                             <input type="hidden" name="id" value={o.id} />
                             <ConfirmSubmit
                               confirmText={t(locale, "Delete this order permanently? This cannot be undone.")}
@@ -145,7 +146,7 @@ export default async function PurchaseOrdersPage({
                             >
                               <Trash2Icon size={12} /> {t(locale, "Delete")}
                             </ConfirmSubmit>
-                          </form>
+                          </ValidatedForm>
                         )}
                         {o.status !== "draft" && o.status !== "submitted" && o.status !== "cancelled" && (
                           <span className="text-xs text-ink-gray-4">—</span>

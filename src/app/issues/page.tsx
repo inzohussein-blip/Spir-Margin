@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n-server";
@@ -76,7 +77,7 @@ export default async function IssuesPage() {
                 </td>
                 <td className="px-4 py-2 text-ink-gray-5">{i.opening_date}</td>
                 <td className="px-4 py-2">
-                  <form action={setIssueStatusForm} className="flex items-center gap-2">
+                  <ValidatedForm action={setIssueStatusForm} className="flex items-center gap-2">
                     <input type="hidden" name="id" value={i.id} />
                     <select name="status" defaultValue={i.status} className="rounded-md border border-outline-gray-2 px-2 py-1 text-xs">
                       <option value="open">open</option>
@@ -87,7 +88,7 @@ export default async function IssuesPage() {
                     </select>
                     <button className="rounded-md bg-brand px-2 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Set")}</button>
                     <Indicator status={i.status} />
-                  </form>
+                  </ValidatedForm>
                 </td>
               </tr>
             ))}

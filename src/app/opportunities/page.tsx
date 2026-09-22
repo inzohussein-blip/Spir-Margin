@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EmptyRow } from "@/components/dashboard/Panel";
@@ -78,7 +79,7 @@ export default async function OpportunitiesPage() {
                     <td className="px-4 py-2 text-ink-gray-5">{Number(o.probability)}%</td>
                     <td className="px-4 py-2 text-ink-gray-5">{o.expected_closing ?? "—"}</td>
                     <td className="px-4 py-2">
-                      <form action={setOpportunityStatusForm} className="flex items-center gap-2">
+                      <ValidatedForm action={setOpportunityStatusForm} className="flex items-center gap-2">
                         <input type="hidden" name="id" value={o.id} />
                         <select name="status" defaultValue={o.status} className="rounded-md border border-outline-gray-2 px-2 py-1 text-xs">
                           <option value="open">open</option>
@@ -88,7 +89,7 @@ export default async function OpportunitiesPage() {
                           <option value="closed">closed</option>
                         </select>
                         <button className="rounded-md bg-brand px-2 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Set")}</button>
-                      </form>
+                      </ValidatedForm>
                     </td>
                   </tr>
                 ))}

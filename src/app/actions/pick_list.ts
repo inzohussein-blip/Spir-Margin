@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -57,14 +58,14 @@ export async function savePickList(input: PickListInput) {
 export async function openPickListForm(fd: FormData) {
   const supabase = createClient();
   const { error } = await supabase.rpc("fn_open_pick_list", { p_pick_id: String(fd.get("id")) });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/pick-lists");
 }
 
 export async function completePickListForm(fd: FormData) {
   const supabase = createClient();
   const { error } = await supabase.rpc("fn_complete_pick_list", { p_pick_id: String(fd.get("id")) });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/pick-lists");
 }
 

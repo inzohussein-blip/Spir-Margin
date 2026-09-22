@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { createClient } from "@/lib/supabase/server";
 import { ListShell } from "@/components/desk/ListShell";
 import { EmptyRow } from "@/components/dashboard/Panel";
@@ -65,12 +66,12 @@ export default async function LandedCostsPage() {
                 <td className="px-4 py-2"><Indicator status={r.status} locale={locale} /></td>
                 <td className="px-4 py-2 text-end">
                   {r.status === "draft" ? (
-                    <form action={applyLandedCostForm}>
+                    <ValidatedForm action={applyLandedCostForm}>
                       <input type="hidden" name="id" value={r.id} />
                       <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">
                         {t(locale, "Apply")}
                       </button>
-                    </form>
+                    </ValidatedForm>
                   ) : (
                     <span className="text-xs text-ink-gray-4">{t(locale, "Applied")}</span>
                   )}

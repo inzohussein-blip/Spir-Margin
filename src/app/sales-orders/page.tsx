@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { PencilIcon, Trash2Icon } from "lucide-react";
@@ -101,24 +102,24 @@ export default async function SalesOrdersPage({
                     <td className="px-4 py-2">
                       <div className="flex flex-wrap gap-2">
                         {(o.status === "draft" || o.status === "confirmed") && (
-                          <form action={deliverSalesOrderForm}>
+                          <ValidatedForm action={deliverSalesOrderForm}>
                             <input type="hidden" name="id" value={o.id} />
                             <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Deliver")}</button>
-                          </form>
+                          </ValidatedForm>
                         )}
                         {o.status === "draft" && (
                           <>
                             <Link href={`/sales-orders/${o.id}/edit`} className="inline-flex items-center gap-1 rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:border-brand hover:text-brand">
                               <PencilIcon size={12} /> {t(locale, "Edit")}
                             </Link>
-                            <form action={cancelSalesOrderForm}>
+                            <ValidatedForm action={cancelSalesOrderForm}>
                               <input type="hidden" name="id" value={o.id} />
                               <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Cancel")}</button>
-                            </form>
+                            </ValidatedForm>
                           </>
                         )}
                         {(o.status === "draft" || o.status === "cancelled") && (
-                          <form action={deleteSalesOrderForm}>
+                          <ValidatedForm action={deleteSalesOrderForm}>
                             <input type="hidden" name="id" value={o.id} />
                             <ConfirmSubmit
                               confirmText={t(locale, "Delete this order permanently? This cannot be undone.")}
@@ -126,7 +127,7 @@ export default async function SalesOrdersPage({
                             >
                               <Trash2Icon size={12} /> {t(locale, "Delete")}
                             </ConfirmSubmit>
-                          </form>
+                          </ValidatedForm>
                         )}
                         {o.status !== "draft" && o.status !== "confirmed" && o.status !== "cancelled" && (
                           <span className="text-xs text-ink-gray-4">—</span>

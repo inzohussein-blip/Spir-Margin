@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { createClient } from "@/lib/supabase/server";
 import { ListShell } from "@/components/desk/ListShell";
 import { EmptyRow } from "@/components/dashboard/Panel";
@@ -50,9 +51,9 @@ export default async function ReorderPage({ searchParams }: { searchParams: { cr
         <p className="text-sm text-ink-gray-5">
           {t(locale, "Products below their reorder level. Generating raises one draft PO per supplier.")}
         </p>
-        <form action={generateReorderPos}>
+        <ValidatedForm action={generateReorderPos}>
           <SubmitButton disabled={withSupplier === 0}>{t(locale, "Generate draft POs")}</SubmitButton>
-        </form>
+        </ValidatedForm>
       </div>
 
       {rows.length === 0 ? (

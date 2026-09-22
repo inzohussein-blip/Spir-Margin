@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -41,14 +42,14 @@ export async function savePaymentRequest(input: PaymentRequestInput) {
 export async function submitPaymentRequestForm(fd: FormData) {
   const supabase = createClient();
   const { error } = await supabase.rpc("fn_submit_payment_request", { p_request_id: String(fd.get("id")) });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/payment-requests");
 }
 
 export async function payPaymentRequestForm(fd: FormData) {
   const supabase = createClient();
   const { error } = await supabase.rpc("fn_pay_payment_request", { p_request_id: String(fd.get("id")) });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/payment-requests");
   revalidatePath("/sales-invoices");
 }

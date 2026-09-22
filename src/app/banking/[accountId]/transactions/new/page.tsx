@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import Link from "next/link";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -17,7 +18,7 @@ export default function NewTransactionPage({
       </div>
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Bank Transaction")}</h1>
       <FormCard title={t(locale, "Statement line (manual)")}>
-        <form action={createBankTransaction} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <ValidatedForm action={createBankTransaction} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <input type="hidden" name="bank_account_id" value={params.accountId} />
           <Field label={t(locale, "Date")}>
             <TextInput name="date" type="date" />
@@ -42,7 +43,7 @@ export default function NewTransactionPage({
           <div className="sm:col-span-2">
             <SubmitButton>{t(locale, "Add transaction")}</SubmitButton>
           </div>
-        </form>
+        </ValidatedForm>
       </FormCard>
     </div>
   );

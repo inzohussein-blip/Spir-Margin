@@ -5,6 +5,7 @@ import { submitSale } from "@/app/actions/crud";
 import { Field, TextInput, Select, SubmitButton } from "./Fields";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 
 interface ProductOpt {
   id: string;
@@ -44,7 +45,7 @@ export function SaleForm({
   const profit = (sell - buy) * (qty || 0);
 
   return (
-    <form action={submitSale} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <ValidatedForm action={submitSale} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <Field label={t(locale, "Lab")} required>
         <Select name="lab_id" required defaultValue="">
           <option value="" disabled>
@@ -107,6 +108,6 @@ export function SaleForm({
       <div className="sm:col-span-2">
         <SubmitButton>{t(locale, "Record sale")}</SubmitButton>
       </div>
-    </form>
+    </ValidatedForm>
   );
 }

@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -100,7 +101,7 @@ export async function deleteSalesInvoiceForm(fd: FormData) {
   const supabase = createClient();
   const id = String(fd.get("id"));
   const { error } = await supabase.from("sales_invoices").delete().eq("id", id).eq("status", "draft");
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/sales-invoices");
 }
 

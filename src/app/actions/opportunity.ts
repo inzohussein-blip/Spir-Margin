@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -34,7 +35,7 @@ export async function createOpportunity(fd: FormData) {
     contact_mobile: str(fd, "contact_mobile"),
     notes: str(fd, "notes"),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/opportunities");
   redirect("/opportunities?saved=created");
 }
@@ -45,6 +46,6 @@ export async function setOpportunityStatusForm(fd: FormData) {
     .from("opportunities")
     .update({ status: String(fd.get("status")), updated_at: new Date().toISOString() })
     .eq("id", String(fd.get("id")));
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/opportunities");
 }

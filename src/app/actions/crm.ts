@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -33,7 +34,7 @@ export async function createLead(fd: FormData) {
     source: str(fd, "source"),
     notes: str(fd, "notes"),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/leads");
   redirect("/leads?saved=created");
 }
@@ -46,7 +47,7 @@ export async function convertLeadForm(fd: FormData) {
     p_lead_id: String(fd.get("id")),
     p_code: code,
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/leads");
   revalidatePath("/labs");
 }

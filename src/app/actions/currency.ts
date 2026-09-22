@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -40,7 +41,7 @@ export async function createExchangeRate(fd: FormData) {
     for_buying: fd.get("for_buying") != null,
     for_selling: fd.get("for_selling") != null,
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/currency");
   redirect("/currency?saved=created");
 }

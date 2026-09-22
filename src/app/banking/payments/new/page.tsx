@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import Link from "next/link";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -29,7 +30,7 @@ export default async function NewPaymentPage() {
       </div>
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Payment Entry")}</h1>
       <FormCard title={t(locale, "Payment details")}>
-        <form action={createPaymentEntry} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <ValidatedForm action={createPaymentEntry} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Payment type")} required>
             <Select name="payment_type" required defaultValue="receive">
               <option value="receive">{t(locale, "Receive (from lab)")}</option>
@@ -77,7 +78,7 @@ export default async function NewPaymentPage() {
           <div className="sm:col-span-2">
             <SubmitButton>{t(locale, "Create payment")}</SubmitButton>
           </div>
-        </form>
+        </ValidatedForm>
       </FormCard>
     </div>
   );

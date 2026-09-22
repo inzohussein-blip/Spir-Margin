@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import Link from "next/link";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -25,7 +26,7 @@ export default async function NewWarrantyClaimPage() {
       </div>
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Warranty Claim")}</h1>
       <FormCard title={t(locale, "Claim details")}>
-        <form action={createWarrantyClaim} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <ValidatedForm action={createWarrantyClaim} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Complaint date")}>
             <TextInput name="complaint_date" type="date" />
           </Field>
@@ -88,7 +89,7 @@ export default async function NewWarrantyClaimPage() {
           <div className="sm:col-span-2">
             <SubmitButton>{t(locale, "Create claim")}</SubmitButton>
           </div>
-        </form>
+        </ValidatedForm>
       </FormCard>
     </div>
   );

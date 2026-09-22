@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -29,7 +30,7 @@ export async function createLandedCost(fd: FormData) {
     allocation_method: str(fd, "allocation_method") ?? "by_value",
     notes: str(fd, "notes"),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/landed-costs");
   redirect("/landed-costs?saved=created");
 }
@@ -38,7 +39,7 @@ export async function createLandedCost(fd: FormData) {
 export async function applyLandedCostForm(fd: FormData) {
   const supabase = createClient();
   const { error } = await supabase.rpc("fn_apply_landed_cost", { p_voucher_id: String(fd.get("id")) });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/landed-costs");
   revalidatePath("/stock-balance");
 }

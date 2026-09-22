@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -30,7 +31,7 @@ export async function saveMaterialRequest(input: MaterialRequestInput) {
 export async function convertMaterialRequestForm(fd: FormData) {
   const supabase = createClient();
   const { error } = await supabase.rpc("fn_material_request_to_purchase", { p_mr_id: String(fd.get("id")) });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/material-requests");
   revalidatePath("/purchases");
 }

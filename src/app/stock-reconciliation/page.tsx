@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -69,10 +70,10 @@ export default async function StockReconPage() {
                     </td>
                     <td className="px-4 py-2">
                       {r.status === "draft" ? (
-                        <form action={postStockReconciliationForm}>
+                        <ValidatedForm action={postStockReconciliationForm}>
                           <input type="hidden" name="id" value={r.id} />
                           <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Post")}</button>
-                        </form>
+                        </ValidatedForm>
                       ) : (
                         <span className="text-xs text-ink-gray-4">—</span>
                       )}

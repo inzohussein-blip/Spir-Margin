@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import Link from "next/link";
 import { PencilIcon, Trash2Icon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -132,18 +133,18 @@ export default async function SalesInvoicesPage({
                     <td className="px-4 py-2">
                       {inv.status === "draft" ? (
                         <div className="flex flex-wrap gap-2">
-                          <form action={submitSalesInvoiceForm}>
+                          <ValidatedForm action={submitSalesInvoiceForm}>
                             <input type="hidden" name="id" value={inv.id} />
                             <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Submit")}</button>
-                          </form>
+                          </ValidatedForm>
                           <Link href={`/sales-invoices/${inv.id}/edit`} className="inline-flex items-center gap-1 rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:border-brand hover:text-brand">
                             <PencilIcon size={12} /> {t(locale, "Edit")}
                           </Link>
-                          <form action={cancelSalesInvoiceForm}>
+                          <ValidatedForm action={cancelSalesInvoiceForm}>
                             <input type="hidden" name="id" value={inv.id} />
                             <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Cancel")}</button>
-                          </form>
-                          <form action={deleteSalesInvoiceForm}>
+                          </ValidatedForm>
+                          <ValidatedForm action={deleteSalesInvoiceForm}>
                             <input type="hidden" name="id" value={inv.id} />
                             <ConfirmSubmit
                               confirmText={t(locale, "Delete this draft invoice? This cannot be undone.")}
@@ -151,14 +152,14 @@ export default async function SalesInvoicesPage({
                             >
                               <Trash2Icon size={12} /> {t(locale, "Delete")}
                             </ConfirmSubmit>
-                          </form>
+                          </ValidatedForm>
                         </div>
                       ) : inv.status === "unpaid" || inv.status === "partly_paid" ? (
-                        <form action={recordInvoicePaymentForm} className="flex items-center gap-1">
+                        <ValidatedForm action={recordInvoicePaymentForm} className="flex items-center gap-1">
                           <input type="hidden" name="id" value={inv.id} />
                           <input name="amount" type="number" step="0.01" min="0" placeholder={t(locale, "amount")} className="w-24 rounded-md border border-outline-gray-2 px-2 py-1 text-xs" />
                           <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Pay")}</button>
-                        </form>
+                        </ValidatedForm>
                       ) : (
                         <span className="text-xs text-ink-gray-4">—</span>
                       )}

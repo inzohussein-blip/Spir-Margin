@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -26,7 +27,7 @@ export async function createPricingRule(fd: FormData) {
     valid_upto: str(fd, "valid_upto"),
     priority: Number(str(fd, "priority") ?? "0"),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/pricing-rules");
   redirect("/pricing-rules?saved=created");
 }

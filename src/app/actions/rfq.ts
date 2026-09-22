@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -64,7 +65,7 @@ export async function rfqToQuotationForm(fd: FormData) {
     p_rfq_supplier_id: String(fd.get("rfq_supplier_id")),
     p_quote_no: String(fd.get("quote_no") || `SQ-${Date.now()}`),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath(`/rfqs/${fd.get("rfq_id")}`);
   revalidatePath("/supplier-quotations");
 }

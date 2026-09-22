@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -30,7 +31,7 @@ export async function saveSupplierQuotation(input: SupplierQuotationInput) {
 export async function convertSupplierQuotationForm(fd: FormData) {
   const supabase = createClient();
   const { error } = await supabase.rpc("fn_supplier_quotation_to_purchase", { p_sq_id: String(fd.get("id")) });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/supplier-quotations");
   revalidatePath("/purchases");
 }

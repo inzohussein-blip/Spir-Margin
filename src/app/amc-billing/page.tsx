@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { createClient } from "@/lib/supabase/server";
 import { ListShell } from "@/components/desk/ListShell";
 import { EmptyRow } from "@/components/dashboard/Panel";
@@ -54,9 +55,9 @@ export default async function AmcBillingPage({
         <p className="text-sm text-ink-gray-5">
           {t(locale, "Draft invoices will be created for all contracts due today.")}
         </p>
-        <form action={generateAmcInvoices}>
+        <ValidatedForm action={generateAmcInvoices}>
           <SubmitButton disabled={rows.length === 0}>{t(locale, "Generate invoices")}</SubmitButton>
-        </form>
+        </ValidatedForm>
       </div>
 
       {rows.length === 0 ? (

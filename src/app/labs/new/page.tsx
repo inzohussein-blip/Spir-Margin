@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import Link from "next/link";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -30,7 +31,7 @@ export default async function NewLabPage() {
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Lab")}</h1>
 
       <FormCard title={t(locale, "Lab details")}>
-        <form action={createLab} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <ValidatedForm action={createLab} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Code")} required>
             <TextInput name="code" required placeholder="LAB-004" />
           </Field>
@@ -81,7 +82,7 @@ export default async function NewLabPage() {
           <div className="sm:col-span-2">
             <SubmitButton>{t(locale, "Create lab")}</SubmitButton>
           </div>
-        </form>
+        </ValidatedForm>
       </FormCard>
     </div>
   );

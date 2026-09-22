@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -32,7 +33,7 @@ export default async function PortalTicketsPage() {
     <PortalShell labName={labName} active="tickets">
       <div className="space-y-6">
         <Panel title={t(locale, "Open a fault ticket")}>
-          <form action={createPortalTicket} className="space-y-3 p-4">
+          <ValidatedForm action={createPortalTicket} className="space-y-3 p-4">
             <label className="block text-sm">
               <span className="font-medium text-ink-gray-8">{t(locale, "Subject")}</span>
               <input name="subject" required className={cls} placeholder={t(locale, "e.g. Analyzer error on startup")} />
@@ -44,7 +45,7 @@ export default async function PortalTicketsPage() {
             <button className="rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark">
               {t(locale, "Submit ticket")}
             </button>
-          </form>
+          </ValidatedForm>
         </Panel>
 
         <Panel title={`${t(locale, "My tickets")} (${issues.length})`}>

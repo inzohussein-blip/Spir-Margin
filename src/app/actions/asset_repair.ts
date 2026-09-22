@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -24,7 +25,7 @@ export async function createAssetRepair(fd: FormData) {
     downtime: s(fd, "downtime"),
     repair_cost: Number(s(fd, "repair_cost") ?? "0"),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/asset-repairs");
   revalidatePath("/devices");
   redirect("/asset-repairs?saved=created");

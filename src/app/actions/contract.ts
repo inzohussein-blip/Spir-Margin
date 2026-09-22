@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -29,7 +30,7 @@ export async function createContract(fd: FormData) {
     service_product_id: str(fd, "service_product_id"),
     next_billing_date: str(fd, "next_billing_date"),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/contracts");
   redirect("/contracts?saved=created");
 }
@@ -41,6 +42,6 @@ export async function setContractStatusForm(fd: FormData) {
   const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
   if (status === "active") patch.signed_on = new Date().toISOString().slice(0, 10);
   const { error } = await supabase.from("contracts").update(patch).eq("id", String(fd.get("id")));
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/contracts");
 }

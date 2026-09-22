@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -29,6 +30,6 @@ export async function createPortalTicket(fd: FormData) {
     priority: "Medium",
     raised_by: user.email,
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/portal/tickets");
 }

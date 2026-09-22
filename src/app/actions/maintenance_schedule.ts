@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -24,7 +25,7 @@ export async function createMaintenanceSchedule(fd: FormData) {
     no_of_visits: Number(s(fd, "no_of_visits") ?? "4"),
     notes: s(fd, "notes"),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/maintenance-schedules");
   redirect("/maintenance-schedules?saved=created");
 }

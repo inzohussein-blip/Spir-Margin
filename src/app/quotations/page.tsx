@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import Link from "next/link";
 import { PencilIcon, Trash2Icon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -89,17 +90,17 @@ export default async function QuotationsPage({
                       <div className="flex flex-wrap items-center gap-2">
                         <Link href={`/quotations/${q.id}/print`} className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Print")}</Link>
                         {q.status !== "ordered" && (q.labs) ? (
-                          <form action={convertQuotationForm}>
+                          <ValidatedForm action={convertQuotationForm}>
                             <input type="hidden" name="id" value={q.id} />
                             <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "→ Sales order")}</button>
-                          </form>
+                          </ValidatedForm>
                         ) : null}
                         {q.status !== "ordered" ? (
                           <>
                             <Link href={`/quotations/${q.id}/edit`} className="inline-flex items-center gap-1 rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:border-brand hover:text-brand">
                               <PencilIcon size={12} /> {t(locale, "Edit")}
                             </Link>
-                            <form action={deleteQuotationForm}>
+                            <ValidatedForm action={deleteQuotationForm}>
                               <input type="hidden" name="id" value={q.id} />
                               <ConfirmSubmit
                                 confirmText={t(locale, "Delete this quotation? This cannot be undone.")}
@@ -107,7 +108,7 @@ export default async function QuotationsPage({
                               >
                                 <Trash2Icon size={12} /> {t(locale, "Delete")}
                               </ConfirmSubmit>
-                            </form>
+                            </ValidatedForm>
                           </>
                         ) : null}
                       </div>

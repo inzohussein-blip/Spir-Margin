@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -30,7 +31,7 @@ export async function createWarrantyClaim(fd: FormData) {
     charge_amount: Number(str(fd, "charge_amount") ?? "0") || 0,
     insurer_name: str(fd, "insurer_name"),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/warranty");
   redirect("/warranty?saved=created");
 }
@@ -48,7 +49,7 @@ export async function resolveWarrantyClaimForm(fd: FormData) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/warranty");
 }
 
@@ -68,7 +69,7 @@ export async function createIssue(fd: FormData) {
     description: str(fd, "description"),
     opening_date: str(fd, "opening_date") ?? new Date().toISOString().slice(0, 10),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/issues");
   redirect("/issues?saved=created");
 }
@@ -80,7 +81,7 @@ export async function setIssueStatusForm(fd: FormData) {
     p_id: String(fd.get("id")),
     p_status: String(fd.get("status")),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/issues");
 }
 

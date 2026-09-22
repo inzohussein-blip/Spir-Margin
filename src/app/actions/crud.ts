@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -47,7 +48,7 @@ export async function createLab(fd: FormData) {
     latitude: str(fd, "latitude") ? num(fd, "latitude") : null,
     longitude: str(fd, "longitude") ? num(fd, "longitude") : null,
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/labs");
   redirect("/labs?saved=created");
 }
@@ -67,7 +68,7 @@ export async function updateLab(id: string, fd: FormData) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/labs");
   redirect("/labs?saved=created");
 }
@@ -90,7 +91,7 @@ export async function createDevice(fd: FormData) {
     maintenance_required: bool(fd, "maintenance_required"),
     next_maintenance_date: str(fd, "next_maintenance_date"),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/devices");
   redirect("/devices?saved=created");
 }
@@ -109,7 +110,7 @@ export async function updateDevice(id: string, fd: FormData) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/devices");
   redirect("/devices?saved=created");
 }
@@ -128,7 +129,7 @@ export async function recordMaintenance(fd: FormData) {
     cost: num(fd, "cost"),
     next_due_date: nextDue,
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
 
   // move the device back to "installed" and update its next maintenance date
   await supabase
@@ -163,7 +164,7 @@ export async function createKitBatch(fd: FormData) {
     buy_price: num(fd, "buy_price"),
     sell_price: num(fd, "sell_price"),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/kits");
   redirect("/kits?saved=created");
 }
@@ -180,7 +181,7 @@ export async function updateKitBatch(id: string, fd: FormData) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/kits");
   redirect("/kits?saved=created");
 }
@@ -199,7 +200,7 @@ export async function submitWithdrawal(fd: FormData) {
     sell_price: num(fd, "sell_price"),
     note: str(fd, "note"),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/kits");
   revalidatePath("/labs");
   revalidatePath("/");
@@ -220,7 +221,7 @@ export async function submitSale(fd: FormData) {
       { product_id: req(fd, "product_id"), qty: num(fd, "qty"), sell_price: num(fd, "sell_price") },
     ]),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/");
   revalidatePath("/reports/sales-by-product");
   redirect("/");
@@ -249,7 +250,7 @@ export async function createProduct(fd: FormData) {
     reorder_level: num(fd, "reorder_level"),
     description: str(fd, "description"),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/products");
   redirect("/products?saved=created");
 }
@@ -275,7 +276,7 @@ export async function updateProduct(id: string, fd: FormData) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/products");
   redirect("/products?saved=created");
 }
@@ -290,7 +291,7 @@ export async function createWarehouse(fd: FormData) {
     address: str(fd, "address"),
     phone: str(fd, "phone"),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/warehouses");
   redirect("/warehouses?saved=created");
 }
@@ -308,7 +309,7 @@ export async function createCompany(fd: FormData) {
     phone: str(fd, "phone"),
     country: str(fd, "country"),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/companies");
   redirect("/companies?saved=created");
 }

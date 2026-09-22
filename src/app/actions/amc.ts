@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -13,7 +14,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function generateAmcInvoices() {
   const supabase = createClient();
   const { data, error } = await supabase.rpc("fn_run_amc_billing");
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   const count = Number(data) || 0;
   revalidatePath("/amc-billing");
   revalidatePath("/sales-invoices");

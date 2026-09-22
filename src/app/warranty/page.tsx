@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -85,10 +86,10 @@ export default async function WarrantyPage() {
                     </td>
                     <td className="px-4 py-2">
                       {w.status !== "closed" && w.status !== "cancelled" ? (
-                        <form action={resolveWarrantyClaimForm}>
+                        <ValidatedForm action={resolveWarrantyClaimForm}>
                           <input type="hidden" name="id" value={w.id} />
                           <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Resolve")}</button>
-                        </form>
+                        </ValidatedForm>
                       ) : (
                         <span className="text-xs text-ink-gray-4">—</span>
                       )}

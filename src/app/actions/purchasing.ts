@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -96,7 +97,7 @@ export async function createPaymentTerm(fd: FormData) {
     mode_of_payment: (String(fd.get("mode_of_payment") ?? "").trim() || null),
     description: (String(fd.get("description") ?? "").trim() || null),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/payment-terms");
   redirect("/payment-terms?saved=created");
 }

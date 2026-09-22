@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createLandedCost } from "@/app/actions/landed_cost";
@@ -27,7 +28,7 @@ export default async function NewLandedCostPage() {
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New landed cost")}</h1>
 
       <FormCard title={t(locale, "Import costs")}>
-        <form action={createLandedCost} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <ValidatedForm action={createLandedCost} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Voucher no.")}>
             <TextInput name="voucher_no" placeholder="auto if blank" />
           </Field>
@@ -63,7 +64,7 @@ export default async function NewLandedCostPage() {
           <div className="sm:col-span-2">
             <SubmitButton>{t(locale, "Create landed cost")}</SubmitButton>
           </div>
-        </form>
+        </ValidatedForm>
       </FormCard>
     </div>
   );

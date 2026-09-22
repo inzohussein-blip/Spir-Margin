@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -77,14 +78,14 @@ export async function deleteQuotationForm(fd: FormData) {
   const supabase = createClient();
   const id = String(fd.get("id"));
   const { error } = await supabase.from("quotations").delete().eq("id", id).neq("status", "ordered");
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/quotations");
 }
 
 export async function convertQuotationForm(fd: FormData) {
   const supabase = createClient();
   const { error } = await supabase.rpc("fn_quotation_to_sales_order", { p_quote_id: String(fd.get("id")) });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/quotations");
   revalidatePath("/sales-orders");
 }

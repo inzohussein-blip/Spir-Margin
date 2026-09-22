@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import Link from "next/link";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -31,7 +32,7 @@ export default async function NewKitBatchPage() {
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Kit Batch")}</h1>
 
       <FormCard title={t(locale, "Batch details")}>
-        <form
+        <ValidatedForm
           action={createKitBatch}
           className="grid grid-cols-1 gap-4 sm:grid-cols-2"
         >
@@ -89,7 +90,7 @@ export default async function NewKitBatchPage() {
           <div className="sm:col-span-2">
             <SubmitButton>{t(locale, "Create batch")}</SubmitButton>
           </div>
-        </form>
+        </ValidatedForm>
       </FormCard>
     </div>
   );

@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -10,7 +11,7 @@ export async function setLabCreditLimitForm(fd: FormData) {
     .from("labs")
     .update({ credit_limit: Number(fd.get("credit_limit") || 0) })
     .eq("id", String(fd.get("id")));
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/credit-limits");
   revalidatePath("/labs");
 }

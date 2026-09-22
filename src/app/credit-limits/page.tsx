@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
@@ -74,11 +75,11 @@ export default async function CreditLimitsPage() {
                       )}
                     </td>
                     <td className="px-4 py-2">
-                      <form action={setLabCreditLimitForm} className="flex items-center gap-1">
+                      <ValidatedForm action={setLabCreditLimitForm} className="flex items-center gap-1">
                         <input type="hidden" name="id" value={r.id} />
                         <input name="credit_limit" type="number" step="0.01" min="0" defaultValue={Number(r.credit_limit)} className="w-28 rounded-md border border-outline-gray-2 px-2 py-1 text-xs" />
                         <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Save")}</button>
-                      </form>
+                      </ValidatedForm>
                     </td>
                   </tr>
                 ))}

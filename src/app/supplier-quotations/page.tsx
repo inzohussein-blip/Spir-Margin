@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -61,10 +62,10 @@ export default async function SupplierQuotationsPage() {
                     <td className="px-4 py-2"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[q.status] ?? "bg-surface-gray-2"}`}>{statusLabel(locale, q.status)}</span></td>
                     <td className="px-4 py-2">
                       {q.status !== "ordered" ? (
-                        <form action={convertSupplierQuotationForm}>
+                        <ValidatedForm action={convertSupplierQuotationForm}>
                           <input type="hidden" name="id" value={q.id} />
                           <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "→ Purchase")}</button>
-                        </form>
+                        </ValidatedForm>
                       ) : <span className="text-xs text-ink-gray-4">—</span>}
                     </td>
                   </tr>

@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -111,7 +112,7 @@ export async function deleteSalesOrderForm(fd: FormData) {
     .delete()
     .eq("id", id)
     .in("status", ["draft", "cancelled"]);
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/sales-orders");
 }
 
@@ -121,7 +122,7 @@ export async function deliverSalesOrderForm(fd: FormData) {
   const { error } = await supabase.rpc("fn_deliver_sales_order", {
     p_so_id: String(fd.get("id")),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/sales-orders");
   revalidatePath("/");
 }
@@ -134,6 +135,6 @@ export async function cancelSalesOrderForm(fd: FormData) {
     .update({ status: "cancelled", updated_at: new Date().toISOString() })
     .eq("id", String(fd.get("id")))
     .eq("status", "draft");
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/sales-orders");
 }

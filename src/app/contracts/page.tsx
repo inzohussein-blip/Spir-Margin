@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { EmptyRow } from "@/components/dashboard/Panel";
@@ -116,7 +117,7 @@ export default async function ContractsPage({
                       </td>
                       <td className="px-4 py-2">{money(Number(c.contract_value))}</td>
                       <td className="px-4 py-2">
-                        <form action={setContractStatusForm} className="flex items-center gap-2">
+                        <ValidatedForm action={setContractStatusForm} className="flex items-center gap-2">
                           <input type="hidden" name="id" value={c.id} />
                           <select name="status" defaultValue={c.status} className="rounded-md border border-outline-gray-2 px-2 py-1 text-xs">
                             <option value="unsigned">{statusLabel(locale, "unsigned")}</option>
@@ -126,7 +127,7 @@ export default async function ContractsPage({
                           </select>
                           <button className="rounded-md bg-brand px-2 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Set")}</button>
                           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[c.status] ?? "bg-surface-gray-2"}`}>{statusLabel(locale, c.status)}</span>
-                        </form>
+                        </ValidatedForm>
                       </td>
                     </tr>
                   );

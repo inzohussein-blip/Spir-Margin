@@ -934,6 +934,15 @@ const ar: Record<string, string> = {
   "Appointment no.": "رقم الموعد",
   "Asset category": "فئة الأصل",
   "Bank": "المصرف",
+  // what the database refused, said plainly
+  "Already used:": "مستخدم مسبقاً:",
+  "This value is already used in": "هذه القيمة مستخدمة مسبقاً في",
+  "A record with these details already exists": "يوجد سجلّ بهذه البيانات مسبقاً",
+  "This record is linked to others, so it cannot be saved or removed as is": "هذا السجلّ مرتبط بسجلّات أخرى، فلا يمكن حفظه أو حذفه بهذه الصورة",
+  "Required field:": "حقل مطلوب:",
+  "A required field is empty": "أحد الحقول المطلوبة فارغ",
+  "One of the values is outside what this field allows": "إحدى القيم خارج ما يسمح به الحقل",
+  "One of the values is too long": "إحدى القيم أطول من المسموح",
   // offline-first platform, welcome screen and database sync
   "Run the whole company from one place.": "أدر الشركة بالكامل من مكان واحد.",
   "Devices, labs, stock, sales, maintenance and accounts — in one system that keeps working when the network does not.": "الأجهزة والمختبرات والمخزون والمبيعات والصيانة والحسابات — في نظام واحد يواصل العمل حين تتوقف الشبكة.",

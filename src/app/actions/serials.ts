@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -35,7 +36,7 @@ export async function createSerialNumber(fd: FormData) {
     amc_expiry_date: str(fd, "amc_expiry_date"),
     description: str(fd, "description"),
   });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/serials");
   redirect("/serials?saved=created");
 }

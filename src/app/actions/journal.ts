@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -45,6 +46,6 @@ export async function saveJournalEntry(input: JournalInput) {
 export async function postJournalEntryForm(fd: FormData) {
   const supabase = createClient();
   const { error } = await supabase.rpc("fn_post_journal_entry", { p_je_id: String(fd.get("id")) });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/journal-entries");
 }

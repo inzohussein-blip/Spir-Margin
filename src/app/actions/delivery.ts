@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -31,7 +32,7 @@ export async function saveDeliveryNote(input: DeliveryNoteInput) {
 export async function submitDeliveryNoteForm(fd: FormData) {
   const supabase = createClient();
   const { error } = await supabase.rpc("fn_submit_delivery_note", { p_dn_id: String(fd.get("id")) });
-  if (error) throw new Error(error.message);
+  if (error) return formError(error);
   revalidatePath("/delivery-notes");
   revalidatePath("/kits");
   revalidatePath("/labs");
