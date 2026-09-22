@@ -1,4 +1,4 @@
--- Spir-Margin — combined schema (all 90 migrations). Run ONCE on an EMPTY DB.
+-- Spir-Margin — combined schema (all 93 migrations). Run ONCE on an EMPTY DB.
 --
 -- GENERATED FILE — do not edit by hand. Rebuild with:
 --     npm run schema
@@ -7428,6 +7428,163 @@ update journal_entries set user_remark = replace(user_remark, 'Auto GL for sales
 update app_users set full_name = 'المستخدم التجريبي'
  where email = 'demo@spir.local' and full_name = 'Demo User';
 
+-- ===== migration: 0092_prune_change_log.sql =====
+-- =====================================================================
+-- Migration 0092 : Keep one month of change log
+--
+-- `_spir_changes` recorded every row change forever, with the whole row as
+-- JSON. On a working install that grows without limit: disk, and a slower
+-- scan on every sync.
+--
+-- One month is kept. Two rules decide what may go:
+--
+--   * it must already have been pushed to the peer — an unsent change is the
+--     only copy of that work outside this machine's tables, so it stays no
+--     matter how old it is;
+--   * it must be older than the retention window.
+--
+-- `_spir_row_version` is NOT pruned. It is one small row per record ever
+-- touched (no payload), and it is what last-writer-wins compares against —
+-- dropping it would let an old change coming back from a peer overwrite
+-- newer data.
+--
+-- The cost of the window: a machine that has been away longer than a month
+-- may find the peer has forgotten changes it never pulled. It is not silent —
+-- `_spir_sync_state.pulled_through` would point before the peer's oldest
+-- remaining row, which `fn_spir_sync_gap` reports so the app can say a full
+-- refresh is needed rather than quietly skipping the gap.
+-- =====================================================================
+
+create table if not exists _spir_retention (
+    only_row boolean primary key default true check (only_row),
+    keep_days int not null default 30 check (keep_days between 1 and 3650)
+);
+insert into _spir_retention (only_row) values (true) on conflict do nothing;
+
+/**
+ * Delete pushed changes older than the window. Returns how many went.
+ */
+create or replace function fn_spir_prune_changes() returns integer
+language plpgsql as $$
+declare
+    v_keep int;
+    v_pushed bigint;
+    v_n int;
+begin
+    select keep_days into v_keep from _spir_retention;
+    v_keep := coalesce(v_keep, 30);
+
+    -- Never past what the peer has accepted. With no peer configured nothing
+    -- has been pushed, so nothing is eligible and the log is kept whole —
+    -- which is right: it is the only record of what would need to sync.
+    select coalesce(max(pushed_through), 0) into v_pushed from _spir_sync_state;
+
+    delete from _spir_changes
+     where seq <= v_pushed
+       and changed_at < now() - make_interval(days => v_keep);
+    get diagnostics v_n = row_count;
+    return v_n;
+end $$;
+
+/**
+ * True when the peer's log no longer reaches back to where we stopped
+ * reading, so a pull would silently skip changes. The caller passes the
+ * peer's oldest remaining seq — only the sync engine can see the far side.
+ */
+create or replace function fn_spir_sync_gap(p_peer_oldest_seq bigint)
+returns boolean language sql stable as $$
+    select coalesce(
+        (select pulled_through from _spir_sync_state where peer = 'remote') < p_peer_oldest_seq - 1,
+        false)
+$$;
+
+-- ===== migration: 0093_peer_setting.sql =====
+-- =====================================================================
+-- Migration 0093 : Where the hosted database is configured
+--
+-- The welcome screen promises "add a hosted database later and the work
+-- already done here will sync up to it". That was true of the engine but not
+-- of the operator: the connection string could only come from DATABASE_URL,
+-- which means editing environment variables and restarting — not something a
+-- single company without an operations team can do.
+--
+-- It lives here instead, so it can be set, tested and cleared from Settings.
+-- DATABASE_URL still wins when it is set, so an existing hosted deployment
+-- keeps behaving exactly as before and nothing in the UI can override how a
+-- server was deployed.
+--
+-- This table is local on purpose. It is excluded from the change log (its
+-- name starts with `_spir`), so one machine's connection string never syncs
+-- onto another — each machine says for itself where it syncs to.
+-- =====================================================================
+
+create table if not exists _spir_peer (
+    only_row      boolean primary key default true check (only_row),
+    database_url  text,
+    updated_at    timestamptz not null default now()
+);
+insert into _spir_peer (only_row) values (true) on conflict do nothing;
+
+-- ===== migration: 0094_sync_rejects.sql =====
+-- =====================================================================
+-- Migration 0094 : Changes the far end refused
+--
+-- The engine steps over a change the peer rejects rather than retrying it
+-- forever, because stopping would strand every later change behind one bad
+-- row. But it kept only the first rejection, in `last_error`, and stepped
+-- over the rest — so two databases could drift apart with nothing to show
+-- for it but a single stale sentence.
+--
+-- Every rejection is recorded here instead, with enough to act on: which
+-- record, which direction it was going, and what the far end said. A row is
+-- resolved when a later pass gets the same change across, or when someone
+-- decides it no longer matters.
+-- =====================================================================
+
+create table if not exists _spir_sync_rejects (
+    id          bigserial primary key,
+    direction   text not null check (direction in ('push', 'pull')),
+    table_name  text not null,
+    pk          jsonb not null,
+    op          char(1) not null check (op in ('I', 'U', 'D')),
+    error       text not null,
+    first_seen  timestamptz not null default now(),
+    last_seen   timestamptz not null default now(),
+    attempts    int not null default 1,
+    resolved_at timestamptz
+);
+
+-- One open row per record per direction: a change that keeps failing counts
+-- up rather than filling the table with identical rows.
+create unique index if not exists idx_spir_rejects_open
+    on _spir_sync_rejects(direction, table_name, pk)
+    where resolved_at is null;
+
+create index if not exists idx_spir_rejects_unresolved
+    on _spir_sync_rejects(last_seen desc) where resolved_at is null;
+
+/** Record a refusal, or count up the one already open for that record. */
+create or replace function fn_spir_note_reject(
+    p_direction text, p_table text, p_pk jsonb, p_op char, p_error text
+) returns void language plpgsql as $$
+begin
+    insert into _spir_sync_rejects (direction, table_name, pk, op, error)
+    values (p_direction, p_table, p_pk, p_op, p_error)
+    on conflict (direction, table_name, pk) where resolved_at is null
+    do update set last_seen = now(),
+                  attempts  = _spir_sync_rejects.attempts + 1,
+                  error     = excluded.error;
+end $$;
+
+/** Mark a record's rejection settled once its change finally gets across. */
+create or replace function fn_spir_clear_reject(
+    p_direction text, p_table text, p_pk jsonb
+) returns void language sql as $$
+    update _spir_sync_rejects set resolved_at = now()
+     where direction = p_direction and table_name = p_table and pk = p_pk
+       and resolved_at is null;
+$$;
+
 create table if not exists _spir_migrations (
   filename text primary key,
   applied_at timestamptz not null default now()
@@ -7522,7 +7679,10 @@ insert into _spir_migrations(filename) values
   ('0088_fk_indexes.sql'),
   ('0089_change_log.sql'),
   ('0090_arabic_master_data_2.sql'),
-  ('0091_arabic_generated_text.sql')
+  ('0091_arabic_generated_text.sql'),
+  ('0092_prune_change_log.sql'),
+  ('0093_peer_setting.sql'),
+  ('0094_sync_rejects.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;

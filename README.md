@@ -24,6 +24,16 @@ which every machine agrees on because each row carries the time and origin of
 the change that last set it — so the result does not depend on who syncs
 first. Sync runs automatically in the background and on demand from the header.
 
+Both ends keep one month of change history; older changes that the peer has
+already accepted are pruned. A machine away longer than that is told to
+restore from a backup rather than silently syncing an incomplete copy.
+
+Settings holds the two operational controls: **Backup and restore** (a full
+copy of this machine's database, which is the only other copy of the records
+when no hosted database is configured) and **Hosted database** (the connection
+string, tested before it is saved). `DATABASE_URL` still wins when set, so a
+deployed server behaves exactly as deployed.
+
 Losing the network degrades sync, never the app. Sign-in is the same story:
 the built-in account in `src/lib/auth/demo-credentials.ts` is checked in code
 before anything touches a database, so a fresh, offline machine can still get

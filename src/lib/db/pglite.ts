@@ -90,8 +90,16 @@ interface DbSingleton {
   fkMeta: FkMeta | null;
   dbRef: Db | null;
   bootPromise: Promise<{ db: Db; meta: FkMeta }> | null;
+  /** The raw PGlite behind `dbRef`, which backup and restore need. */
+  raw?: PgliteHandle | null;
 }
-const fresh = (): DbSingleton => ({ fkMeta: null, dbRef: null, bootPromise: null });
+
+/** The slice of PGlite's own API this module uses beyond `Db`. */
+interface PgliteHandle {
+  dumpDataDir(): Promise<Blob | File>;
+  close(): Promise<void>;
+}
+const fresh = (): DbSingleton => ({ fkMeta: null, dbRef: null, bootPromise: null, raw: null });
 const g = globalThis as unknown as { __spirLocal?: DbSingleton; __spirRemote?: DbSingleton };
 const local: DbSingleton = (g.__spirLocal ??= fresh());
 const remote: DbSingleton = (g.__spirRemote ??= fresh());
@@ -142,6 +150,7 @@ async function bootPglite(): Promise<Db> {
     },
     { seed: true },
   );
+  local.raw = pg as unknown as PgliteHandle;
   return pg as unknown as Db;
 }
 
@@ -341,8 +350,48 @@ async function bootPostgres(url: string): Promise<Db> {
 // Arbitrary fixed key identifying the schema-migration advisory lock.
 const MIGRATION_LOCK_KEY = 5_713_002;
 
+/**
+ * The hosted database to sync with, or null when there is none.
+ *
+ * `DATABASE_URL` wins when it is set, so a server deployed with one keeps
+ * behaving exactly as it was deployed and nothing in the UI can override it.
+ * Otherwise the value saved from Settings is used, which is what lets a
+ * company attach a hosted database later without touching the environment.
+ */
+export async function remoteUrl(): Promise<string | null> {
+  const fromEnv = process.env.DATABASE_URL;
+  if (fromEnv) return fromEnv;
+  try {
+    const { db } = await getDb();
+    const r = await db.query<{ database_url: string | null }>(
+      `select database_url from _spir_peer`,
+    );
+    return r.rows[0]?.database_url || null;
+  } catch {
+    // A database too old to have the table, or not open yet.
+    return null;
+  }
+}
+
 /** True when a hosted database is configured to sync with. */
-export function isRemoteConfigured(): boolean {
+export async function isRemoteConfigured(): Promise<boolean> {
+  return (await remoteUrl()) !== null;
+}
+
+/** Set (or, with null, clear) the hosted database this machine syncs to. */
+export async function setRemoteUrl(url: string | null): Promise<void> {
+  const { db } = await getDb();
+  await db.query(
+    `insert into _spir_peer (only_row, database_url, updated_at) values (true, $1, now())
+     on conflict (only_row) do update set database_url = excluded.database_url, updated_at = now()`,
+    [url],
+  );
+  // Whatever pool we had points at the old address.
+  resetRemoteDb();
+}
+
+/** Whether the address came from the environment, so the UI can say so. */
+export function remoteUrlIsFromEnvironment(): boolean {
   return !!process.env.DATABASE_URL;
 }
 
@@ -377,7 +426,7 @@ export async function getDb(): Promise<{ db: Db; meta: FkMeta }> {
  * error: the company keeps working and syncs when the link comes back.
  */
 export async function getRemoteDb(): Promise<Db | null> {
-  const url = process.env.DATABASE_URL;
+  const url = await remoteUrl();
   if (!url) return null;
   if (remote.dbRef) return remote.dbRef;
   remote.bootPromise ??= (async () => {
@@ -403,4 +452,82 @@ export function resetRemoteDb(): void {
   remote.dbRef = null;
   remote.fkMeta = null;
   remote.bootPromise = null;
+}
+
+// ---- backup and restore ---------------------------------------------------
+
+/**
+ * A complete copy of this machine's database, as a gzipped Postgres data
+ * directory.
+ *
+ * With no hosted database configured — the default — every record the company
+ * has is in one folder on one computer, so being able to take a copy of it is
+ * not a convenience. Restoring is the same file going back.
+ */
+export async function dumpLocalDatabase(): Promise<Blob> {
+  const { db } = await getDb();
+  if (!local.raw) throw new Error("The local database is not open.");
+  // A dump taken while first-boot migrations are still settling can fail.
+  // One quiet query confirms the database is actually answering, and a
+  // single retry covers the moment in between.
+  await db.query("select 1");
+  try {
+    return await local.raw.dumpDataDir();
+  } catch (e) {
+    console.warn("[backup] first dump attempt failed, retrying:", (e as Error).message);
+    await new Promise((r) => setTimeout(r, 750));
+    return local.raw.dumpDataDir();
+  }
+}
+
+/**
+ * Replace this machine's database with a backup.
+ *
+ * The running instance is closed and reopened over the SAME data directory
+ * with the dump loaded, so the restored data is on disk and no restart is
+ * needed. If reopening fails the singleton is cleared rather than left
+ * pointing at a closed connection, so the next request re-boots cleanly.
+ *
+ * This replaces everything, including the change log — so after a restore
+ * this machine's sync cursors describe the backup's history, not the history
+ * of whatever was here before. A peer will resend anything it holds that the
+ * restored copy is missing.
+ */
+export async function restoreLocalDatabase(dump: Blob): Promise<void> {
+  const { PGlite } = await import("@electric-sql/pglite");
+  const { pgcrypto } = await import("@electric-sql/pglite/contrib/pgcrypto");
+  const dataDir = pgliteDataDir();
+
+  // Close the live instance first: it holds the data directory open.
+  if (local.raw) await local.raw.close().catch(() => undefined);
+  local.dbRef = null;
+  local.fkMeta = null;
+  local.bootPromise = null;
+  local.raw = null;
+
+  if (dataDir) fs.rmSync(dataDir, { recursive: true, force: true });
+
+  const pg = await PGlite.create({
+    ...(dataDir ? { dataDir } : {}),
+    loadDataDir: dump,
+    extensions: { pgcrypto },
+    parsers: Object.fromEntries(DATE_OIDS.map((oid) => [oid, asText])),
+  });
+  await pg.waitReady;
+
+  // A backup may predate migrations this build carries, so bring it forward
+  // before anything queries it.
+  await initSchema(
+    {
+      exec: (sql) => pg.exec(sql).then(() => undefined),
+      query: (sql, params) => pg.query(sql, params) as Promise<{ rows: any[] }>,
+    },
+    { seed: false },
+  );
+
+  const db = pg as unknown as Db;
+  local.raw = pg as unknown as PgliteHandle;
+  local.dbRef = db;
+  local.fkMeta = await introspect(db);
+  local.bootPromise = Promise.resolve({ db, meta: local.fkMeta });
 }

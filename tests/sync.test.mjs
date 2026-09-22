@@ -320,3 +320,94 @@ test("an interrupted push resumes where it stopped, losing and duplicating nothi
   // And a further pass moves nothing at all.
   assert.deepEqual(await sync(a, hub), { sent: 0, got: 0 });
 });
+
+test("the change log keeps one month of pushed changes", async () => {
+  const a = wrap(await bootWithMigrations());
+  const hub = wrap(await bootWithMigrations());
+
+  await a.query(`insert into labs (code, name) values ('L-KEEP','يبقى')`);
+  await a.query(`insert into labs (code, name) values ('L-GONE','يُحذف')`);
+  await sync(a, hub);
+
+  // Age one of them past the window; both are already pushed.
+  await a.query(
+    `update _spir_changes set changed_at = now() - interval '45 days' where row->>'code' = 'L-GONE'`);
+  const pruned = Number((await a.query(`select fn_spir_prune_changes() as n`)).rows[0].n);
+  assert.equal(pruned, 1, "only the aged, already-pushed change should go");
+
+  const left = await a.query(`select row->>'code' as code from _spir_changes where table_name='labs'`);
+  assert.deepEqual(left.rows.map((r) => r.code), ["L-KEEP"]);
+
+  // The rows themselves are untouched — this prunes history, not data.
+  const labs = await a.query(`select count(*)::int n from labs where code in ('L-KEEP','L-GONE')`);
+  assert.equal(labs.rows[0].n, 2, "pruning the log must not touch the records");
+
+  // And the register last-writer-wins depends on survives.
+  const ver = await a.query(`select count(*)::int n from _spir_row_version where table_name='labs'`);
+  assert.ok(ver.rows[0].n >= 2, "row versions must outlive the pruned log");
+});
+
+test("an unsent change is never pruned, however old", async () => {
+  const a = wrap(await bootWithMigrations());
+  // Nothing has been pushed, so nothing is eligible — this is the machine
+  // with no hosted database, where the log is the only record of the work.
+  await a.query(`insert into labs (code, name) values ('L-UNSENT','لم يُرسل')`);
+  await a.query(`update _spir_changes set changed_at = now() - interval '400 days'`);
+  const pruned = Number((await a.query(`select fn_spir_prune_changes() as n`)).rows[0].n);
+  assert.equal(pruned, 0);
+  const n = await a.query(`select count(*)::int n from _spir_changes where row->>'code'='L-UNSENT'`);
+  assert.equal(n.rows[0].n, 1);
+});
+
+test("a refused change is recorded, not forgotten", async () => {
+  const a = wrap(await bootWithMigrations());
+  const hubPg = await bootWithMigrations();
+  const hub = wrap(hubPg);
+
+  await a.query(`insert into labs (code, name) values ('L-OK','مقبول')`);
+  await a.query(`insert into labs (code, name) values ('L-BAD','مرفوض')`);
+
+  // A peer that refuses one specific record and accepts the rest.
+  const picky = {
+    query: async (sql, params = []) => {
+      if (/_spir_apply_change/.test(sql) && JSON.stringify(params).includes("L-BAD")) {
+        throw new Error("check constraint violated");
+      }
+      return hubPg.query(sql, params);
+    },
+  };
+
+  // Push by hand so the refusal goes through the engine's own bookkeeping.
+  const me = await nodeId(a);
+  const { pushed } = await cursors(a);
+  const batch = await a.query(
+    `select seq, origin, origin_seq, table_name, op, pk, row, changed_at from _spir_changes
+      where origin=$1 and seq>$2 order by seq`, [me, pushed]);
+  for (const c of batch.rows) {
+    try {
+      await applyOne(picky, c);
+      await a.query(`select fn_spir_clear_reject('push',$1,$2::jsonb)`, [c.table_name, JSON.stringify(c.pk)]);
+    } catch (e) {
+      await a.query(`select fn_spir_note_reject('push',$1,$2::jsonb,$3,$4)`,
+        [c.table_name, JSON.stringify(c.pk), c.op, e.message]);
+    }
+  }
+
+  // The good one landed; the bad one is on the record rather than lost.
+  assert.equal(
+    Number((await hub.query(`select count(*)::int n from labs where code='L-OK'`)).rows[0].n), 1,
+    "the accepted change should still get through");
+  const open = await a.query(
+    `select table_name, attempts, error from _spir_sync_rejects where resolved_at is null`);
+  assert.equal(open.rows.length, 1, "the refusal should be recorded");
+  assert.equal(open.rows[0].table_name, "labs");
+  assert.match(open.rows[0].error, /check constraint/);
+
+  // And once it finally gets across, it stops being listed.
+  const bad = batch.rows.find((c) => JSON.stringify(c.row).includes("L-BAD"));
+  await applyOne(hub, bad);
+  await a.query(`select fn_spir_clear_reject('push',$1,$2::jsonb)`,
+    [bad.table_name, JSON.stringify(bad.pk)]);
+  const after = await a.query(`select count(*)::int n from _spir_sync_rejects where resolved_at is null`);
+  assert.equal(after.rows[0].n, 0, "a change that gets through should clear its rejection");
+});

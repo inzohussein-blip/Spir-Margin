@@ -28,9 +28,9 @@ export const dynamic = "force-dynamic";
  * and gets out of the way. It is the only page besides sign-in that renders
  * without a session.
  */
-export default function WelcomePage() {
+export default async function WelcomePage() {
   const locale = getLocale();
-  const synced = isRemoteConfigured();
+  const synced = await isRemoteConfigured();
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-surface-gray-1">

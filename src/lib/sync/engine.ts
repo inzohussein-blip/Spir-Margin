@@ -86,7 +86,7 @@ async function cursors(db: Db): Promise<{ pushed: string; pulled: string }> {
 
 /** Where sync stands right now, without touching the network. */
 export async function syncStatus(): Promise<SyncStatus> {
-  const configured = isRemoteConfigured();
+  const configured = await isRemoteConfigured();
   const { db } = await getDb();
   const me = await nodeId(db);
   const { pushed } = await cursors(db);
@@ -209,8 +209,10 @@ async function push(
           ],
         );
         total++;
+        await noteResolved(local, "push", c);
       } catch (e) {
-        rejected.push(`${c.table_name} ${JSON.stringify(c.pk)}: ${(e as Error).message}`);
+        await noteRejected(local, "push", c, (e as Error).message);
+        rejected.push(`${c.table_name}: ${(e as Error).message}`);
       }
       cursor = c.seq;
     }
@@ -253,9 +255,11 @@ async function pull(
       if (c.origin !== me) {
         try {
           await applyOne(local, c);
+          await noteResolved(local, "pull", c);
           total++;
         } catch (e) {
-          rejected.push(`${c.table_name} ${JSON.stringify(c.pk)}: ${(e as Error).message}`);
+          await noteRejected(local, "pull", c, (e as Error).message);
+          rejected.push(`${c.table_name}: ${(e as Error).message}`);
         }
       }
       cursor = c.seq;
@@ -276,7 +280,7 @@ async function pull(
  * the last completed batch, which the next run simply replays.
  */
 export async function runSync(): Promise<SyncResult> {
-  if (!isRemoteConfigured()) {
+  if (!(await isRemoteConfigured())) {
     return { ok: false, pushed: 0, pulled: 0, error: "No hosted database is configured" };
   }
 
@@ -294,9 +298,32 @@ export async function runSync(): Promise<SyncResult> {
     // else is taken in. Order does not affect the outcome — the row-version
     // register makes the result the same either way — but it does mean an
     // interrupted run has already banked the local changes.
+    // Has the peer pruned past where we stopped reading? Then a pull would
+    // skip changes without saying so. Better to report it than to converge
+    // on a quietly incomplete copy.
+    const oldest = await peer.query<{ s: string | null }>(
+      `select min(seq)::text as s from _spir_changes`,
+    );
+    if (oldest.rows[0]?.s) {
+      const gap = await local.query<{ g: boolean }>(`select fn_spir_sync_gap($1::bigint) as g`, [
+        oldest.rows[0].s,
+      ]);
+      if (gap.rows[0]?.g) {
+        const msg =
+          "This machine has been away longer than the hosted database keeps its history. " +
+          "Restore it from a recent backup, or take a copy from a machine that is up to date.";
+        await noteError(local, msg);
+        return { ok: false, pushed: 0, pulled: 0, error: msg };
+      }
+    }
+
     const rejected: string[] = [];
     const pushedCount = await push(local, peer, me, pushFrom, rejected);
     const pulled = await pull(local, peer, me, pullFrom, rejected);
+
+    // Now that the peer has accepted our changes, the old ones are safe to
+    // forget. Failing to prune is never worth failing a sync over.
+    await local.query(`select fn_spir_prune_changes()`).catch(() => undefined);
 
     // Rows the other end refused are surfaced, not swallowed: the header turns
     // amber and names the first one.
@@ -327,5 +354,114 @@ async function noteError(local: Db, message: string): Promise<void> {
        on conflict (peer) do update set last_error = excluded.last_error`,
       [PEER, message],
     )
+    .catch(() => undefined);
+}
+
+/**
+ * Keep what the far end refused, so it can be looked at and retried.
+ *
+ * Stepping over a rejection is the right call — stopping would strand every
+ * later change behind one bad row — but forgetting it is not: the two
+ * databases would then differ with nothing to show for it.
+ */
+async function noteRejected(
+  local: Db,
+  direction: "push" | "pull",
+  c: ChangeRow,
+  error: string,
+): Promise<void> {
+  await local
+    .query(`select fn_spir_note_reject($1, $2, $3::jsonb, $4, $5)`, [
+      direction,
+      c.table_name,
+      JSON.stringify(c.pk),
+      c.op,
+      error.slice(0, 500),
+    ])
+    .catch(() => undefined);
+}
+
+/** A later pass got this record across, so its rejection is settled. */
+async function noteResolved(local: Db, direction: "push" | "pull", c: ChangeRow): Promise<void> {
+  await local
+    .query(`select fn_spir_clear_reject($1, $2, $3::jsonb)`, [
+      direction,
+      c.table_name,
+      JSON.stringify(c.pk),
+    ])
+    .catch(() => undefined);
+}
+
+export interface SyncReject {
+  id: string;
+  direction: "push" | "pull";
+  table: string;
+  op: "I" | "U" | "D";
+  error: string;
+  attempts: number;
+  lastSeen: string;
+}
+
+/** Changes the far end is still refusing. */
+export async function listRejects(limit = 50): Promise<SyncReject[]> {
+  const { db } = await getDb();
+  const r = await db
+    .query<{
+      id: string; direction: "push" | "pull"; table_name: string;
+      op: "I" | "U" | "D"; error: string; attempts: number; last_seen: string;
+    }>(
+      `select id::text, direction, table_name, op, error, attempts, last_seen
+         from _spir_sync_rejects
+        where resolved_at is null
+        order by last_seen desc
+        limit ${Math.max(1, Math.min(limit, 200))}`,
+    )
+    .catch(() => ({ rows: [] }));
+  return r.rows.map((x) => ({
+    id: x.id,
+    direction: x.direction,
+    table: x.table_name,
+    op: x.op,
+    error: x.error,
+    attempts: Number(x.attempts),
+    lastSeen: x.last_seen,
+  }));
+}
+
+/**
+ * Retry a rejected change by rewinding just past it, so the next pass sends
+ * it again. Only a push can be retried this way — a pull is the peer's row
+ * to resend, and the next pass reads it anyway.
+ */
+export async function retryReject(id: string): Promise<SyncResult> {
+  const { db: local } = await getDb();
+  const row = await local.query<{ direction: string; table_name: string; pk: unknown }>(
+    `select direction, table_name, pk from _spir_sync_rejects where id = $1::bigint and resolved_at is null`,
+    [id],
+  );
+  const r = row.rows[0];
+  if (!r) return { ok: false, pushed: 0, pulled: 0, error: "That change is no longer waiting" };
+
+  if (r.direction === "push") {
+    const me = await nodeId(local);
+    // Move the cursor back to just before this record's oldest unsent change,
+    // so the normal push picks it up again along with anything after it.
+    await local.query(
+      `update _spir_sync_state
+          set pushed_through = coalesce((
+              select min(seq) - 1 from _spir_changes
+               where origin = $2 and table_name = $3 and pk = $4::jsonb), pushed_through)
+        where peer = 'remote'`,
+      [null, me, r.table_name, JSON.stringify(r.pk)],
+    );
+  }
+  return runSync();
+}
+
+/** Stop tracking a rejection the company has decided not to act on. */
+export async function dismissReject(id: string): Promise<void> {
+  const { db } = await getDb();
+  await db
+    .query(`update _spir_sync_rejects set resolved_at = now() where id = $1::bigint`, [id])
     .catch(() => undefined);
 }

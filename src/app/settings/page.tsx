@@ -1,8 +1,12 @@
-import { SettingsIcon, ToggleLeftIcon, ShieldIcon, Trash2Icon, LockIcon } from "lucide-react";
+import { SettingsIcon, ToggleLeftIcon, ShieldIcon, Trash2Icon, LockIcon, HardDriveIcon, CloudIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { ConfirmSubmit } from "@/components/settings/ConfirmSubmit";
+import { BackupPanel } from "@/components/settings/BackupPanel";
+import { PeerPanel } from "@/components/settings/PeerPanel";
+import { getPeerInfoAction } from "@/app/actions/peer";
+import { isRemoteConfigured } from "@/lib/db/pglite";
 import { setFeatureStateAction, setUserAccessAction, deleteUserAccountAction } from "@/app/actions/settings";
 import { TOGGLEABLE_FEATURES, type FeatureState } from "@/lib/features";
 import { navGroups } from "@/lib/nav";
@@ -55,6 +59,18 @@ export default async function SettingsPage() {
           <p className="text-sm text-ink-gray-5">{t(locale, "Manage which non-essential features are available across the app.")}</p>
         </div>
       </div>
+
+      {/* ---- Hosted database ---- */}
+      <Panel title={<span className="flex items-center gap-2"><CloudIcon size={16} className="text-brand" /> {t(locale, "Hosted database")}</span>}>
+        <PeerPanel info={await getPeerInfoAction()} />
+      </Panel>
+
+      {/* ---- Backup ----
+           First on the page on purpose: with no hosted database this file is
+           the only other copy of the company's records. */}
+      <Panel title={<span className="flex items-center gap-2"><HardDriveIcon size={16} className="text-brand" /> {t(locale, "Backup and restore")}</span>}>
+        <BackupPanel synced={await isRemoteConfigured()} />
+      </Panel>
 
       {/* ---- Feature switches ---- */}
       <Panel title={<span className="flex items-center gap-2"><ToggleLeftIcon size={16} className="text-brand" /> {t(locale, "Non-essential features")}</span>}>

@@ -1,7 +1,8 @@
-import { AlertTriangleIcon, HardDriveIcon } from "lucide-react";
+import { AlertTriangleIcon, HardDriveIcon, RotateCwIcon, XIcon } from "lucide-react";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { syncDetail } from "@/lib/sync/engine";
+import { syncDetail, listRejects } from "@/lib/sync/engine";
+import { retryRejectAction, dismissRejectAction } from "@/app/actions/sync";
 import { fmtDateTime, fmtNum } from "@/lib/format";
 import { t, type Locale } from "@/lib/i18n";
 
@@ -22,7 +23,7 @@ const OP_STYLE: Record<string, string> = {
  * added into one number that hides both.
  */
 export async function DatabaseSyncPanel({ locale }: { locale: Locale }) {
-  const d = await syncDetail();
+  const [d, rejects] = await Promise.all([syncDetail(), listRejects()]);
 
   if (!d.configured) {
     return (
@@ -78,6 +79,62 @@ export async function DatabaseSyncPanel({ locale }: { locale: Locale }) {
             </p>
           </div>
         </div>
+      ) : null}
+
+      {rejects.length > 0 ? (
+        <Panel
+          title={
+            <span className="flex items-center gap-2 text-red-700">
+              <AlertTriangleIcon size={16} />
+              {t(locale, "Refused by the other side")} ({fmtNum(rejects.length)})
+            </span>
+          }
+        >
+          <p className="px-4 pt-3 text-sm leading-relaxed text-ink-gray-6">
+            {t(locale, "These changes were stepped over so the rest could get through. Until they are dealt with, the two databases differ on these records.")}
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
+                  <th className="px-4 py-2">{t(locale, "Record")}</th>
+                  <th className="px-4 py-2">{t(locale, "Direction")}</th>
+                  <th className="px-4 py-2">{t(locale, "Attempts")}</th>
+                  <th className="px-4 py-2">{t(locale, "Reason")}</th>
+                  <th className="px-4 py-2" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-gray-1">
+                {rejects.map((r) => (
+                  <tr key={r.id} className="hover:bg-surface-gray-1">
+                    <td className="px-4 py-2 font-medium">{t(locale, r.table)}</td>
+                    <td className="px-4 py-2 text-ink-gray-5">
+                      {t(locale, r.direction === "push" ? "Sending" : "Receiving")}
+                    </td>
+                    <td className="px-4 py-2 tabular-nums text-ink-gray-6">{fmtNum(r.attempts)}</td>
+                    <td className="max-w-md px-4 py-2 text-ink-gray-5">
+                      <span className="line-clamp-2 break-words">{r.error}</span>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-2">
+                      <form action={retryRejectAction} className="inline">
+                        <input type="hidden" name="id" value={r.id} />
+                        <button className="inline-flex items-center gap-1 rounded border border-outline-gray-2 px-2 py-1 text-xs font-medium text-ink-gray-7 hover:border-brand hover:text-brand">
+                          <RotateCwIcon size={12} /> {t(locale, "Try again")}
+                        </button>
+                      </form>
+                      <form action={dismissRejectAction} className="ms-1.5 inline">
+                        <input type="hidden" name="id" value={r.id} />
+                        <button className="inline-flex items-center gap-1 rounded border border-outline-gray-2 px-2 py-1 text-xs font-medium text-ink-gray-5 hover:border-red-300 hover:text-red-700">
+                          <XIcon size={12} /> {t(locale, "Ignore")}
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
       ) : null}
 
       <Panel

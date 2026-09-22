@@ -58,6 +58,15 @@ database stood up from it does not then replay anything.
   should NOT sync — telemetry describing one machine — goes in the exclusion
   list inside that function.
 
+## Sync tables
+
+`_spir_changes` is the change log, `_spir_row_version` the per-row clock that
+last-writer-wins compares against, `_spir_sync_state` the cursors,
+`_spir_sync_rejects` what the far end refused, `_spir_retention` how long
+history is kept (30 days), and `_spir_peer` this machine's hosted database.
+All are excluded from the log by the `_spir` prefix, so none of them sync —
+each machine's cursors, retention and peer are its own.
+
 ## Two known irregularities
 
 - **`0028` does not exist.** A historical gap. Renumbering the files after it
