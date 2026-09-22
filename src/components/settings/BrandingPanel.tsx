@@ -127,7 +127,7 @@ export function BrandingPanel({ branding }: { branding: Branding }) {
       <div className="grid gap-4 border-t border-outline-gray-2 pt-5 sm:grid-cols-2">
         <Field
           label={t(locale, "Document prefix")}
-          hint={t(locale, "Goes in front of every document number. Give each computer a different one so two receipts can never share a number.")}
+          hint={t(locale, "Goes in front of every document number. Leave it empty and this computer uses a tag of its own, so two computers can never share a number either way.")}
         >
           <input name="doc_prefix" defaultValue={branding.docPrefix ?? ""} className={input}
             dir="ltr" maxLength={8} placeholder="SPR" />

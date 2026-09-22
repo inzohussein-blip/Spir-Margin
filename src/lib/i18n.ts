@@ -1059,6 +1059,7 @@ const ar: Record<string, string> = {
   "One of the values is outside what this field allows": "إحدى القيم خارج ما يسمح به الحقل",
   "One of the values is too long": "إحدى القيم أطول من المسموح",
   // company identity, sales requests and transport authorisations
+  "Goes in front of every document number. Leave it empty and this computer uses a tag of its own, so two computers can never share a number either way.": "تسبق رقم كل مستند. اتركها فارغة فيستخدم هذا الحاسوب رمزاً خاصاً به، فلا يتشارك حاسوبان رقماً في الحالتين.",
   "Save the changes": "حفظ التعديلات",
   "Edit the request": "تعديل الطلب",
   "Only a draft can be edited. Cancel it and write a new one instead.": "المسوّدة وحدها قابلة للتعديل. ألغِه واكتب طلباً جديداً بدلاً من ذلك.",

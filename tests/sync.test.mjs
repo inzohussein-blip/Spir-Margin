@@ -411,3 +411,39 @@ test("a refused change is recorded, not forgotten", async () => {
   const after = await a.query(`select count(*)::int n from _spir_sync_rejects where resolved_at is null`);
   assert.equal(after.rows[0].n, 0, "a change that gets through should clear its rejection");
 });
+
+test("two unconfigured machines cannot mint the same document number", async () => {
+  // The number is unique per machine only because of the prefix, and the
+  // prefix starts empty. Without a fallback both machines write
+  // REQ-2026-0001, and since the column is unique the second one to sync is
+  // refused — an official document, already printed, silently stranded.
+  const a = wrap(await bootWithMigrations());
+  const b = wrap(await bootWithMigrations());
+
+  const na = (await a.query(`select fn_next_doc_no('req') as n`)).rows[0].n;
+  const nb = (await b.query(`select fn_next_doc_no('req') as n`)).rows[0].n;
+  assert.notEqual(na, nb, `both machines minted ${na}`);
+  assert.match(na, /^[0-9A-F]{4}-REQ-\d{4}-0001$/);
+
+  // A prefix chosen in Settings still wins: a company that picked BGD
+  // wants to read BGD.
+  await a.query(`update _spir_branding set doc_prefix = 'BGD'`);
+  const chosen = (await a.query(`select fn_next_doc_no('req') as n`)).rows[0].n;
+  assert.match(chosen, /^BGD-REQ-\d{4}-0002$/, chosen);
+});
+
+test("document numbers run in sequence, per kind and per year", async () => {
+  const db = wrap(await bootWithMigrations());
+  const nums = [];
+  for (let i = 0; i < 3; i++) {
+    nums.push((await db.query(`select fn_next_doc_no('req') as n`)).rows[0].n);
+  }
+  assert.deepEqual(
+    nums.map((n) => n.slice(-4)),
+    ["0001", "0002", "0003"],
+    "a run of documents should read as a run",
+  );
+  // A different kind counts on its own.
+  const ta = (await db.query(`select fn_next_doc_no('ta') as n`)).rows[0].n;
+  assert.match(ta, /-TA-\d{4}-0001$/, ta);
+});
