@@ -3,6 +3,7 @@
 import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 export interface MRLineInput { product_id: string; qty: number; warehouse_id?: string; }
 export interface MaterialRequestInput { transaction_date: string; required_by?: string | null; notes?: string; items: MRLineInput[]; }
@@ -14,7 +15,7 @@ export async function saveMaterialRequest(input: MaterialRequestInput) {
 
   const { data: header, error: hErr } = await supabase
     .from("material_requests")
-    .insert({ transaction_date: input.transaction_date || new Date().toISOString().slice(0, 10), required_by: input.required_by || null, notes: input.notes || null })
+    .insert({ transaction_date: input.transaction_date || localDate(), required_by: input.required_by || null, notes: input.notes || null })
     .select("id")
     .single();
   if (hErr) return { ok: false as const, error: hErr.message };

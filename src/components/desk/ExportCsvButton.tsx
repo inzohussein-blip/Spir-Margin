@@ -4,6 +4,7 @@ import { t } from "@/lib/i18n";
 import { useLocale } from "@/components/LocaleProvider";
 import { useRef } from "react";
 import { DownloadIcon } from "lucide-react";
+import { localDate } from "@/lib/dates";
 
 /**
  * Exports the visible ListShell table to CSV — reads the rendered table so it
@@ -44,7 +45,7 @@ export function ExportCsvButton({ title, label = "Export" }: { title: string; la
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${title.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `${title.replace(/\s+/g, "-").toLowerCase()}-${localDate()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }

@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 const cls =
   "mt-1 w-full rounded-md border border-outline-gray-2 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
@@ -19,7 +20,7 @@ export function JournalForm({ accounts }: { accounts: string[] }) {
   const [pending, start] = useTransition();
   const { register, control, handleSubmit } = useForm<JournalInput>({
     defaultValues: {
-      posting_date: new Date().toISOString().slice(0, 10),
+      posting_date: localDate(),
       user_remark: "",
       lines: [
         { account: "", debit: 0, credit: 0 },

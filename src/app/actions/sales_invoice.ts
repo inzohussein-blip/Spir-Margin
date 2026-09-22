@@ -3,6 +3,7 @@
 import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 export interface InvoiceLineInput {
   product_id: string;
@@ -32,7 +33,7 @@ export async function saveSalesInvoice(input: SalesInvoiceInput) {
     .insert({
       invoice_no: input.invoice_no || null,
       lab_id: input.lab_id,
-      posting_date: input.posting_date || new Date().toISOString().slice(0, 10),
+      posting_date: input.posting_date || localDate(),
       due_date: input.due_date || null,
       currency: input.currency || "USD",
       notes: input.notes || null,
@@ -74,7 +75,7 @@ export async function updateSalesInvoice(id: string, input: SalesInvoiceInput) {
     .update({
       invoice_no: input.invoice_no || null,
       lab_id: input.lab_id,
-      posting_date: input.posting_date || new Date().toISOString().slice(0, 10),
+      posting_date: input.posting_date || localDate(),
       due_date: input.due_date || null,
       currency: input.currency || "USD",
       notes: input.notes || null,

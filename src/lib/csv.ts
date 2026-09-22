@@ -1,3 +1,4 @@
+import { localDate } from "@/lib/dates";
 // Minimal, safe CSV builder for server-side (whole-table) exports. Values are
 // quoted when they contain a comma, quote or newline; a UTF-8 BOM is prepended
 // so Excel opens Arabic text correctly.
@@ -19,7 +20,7 @@ export function csvResponse(filename: string, csv: string): Response {
   return new Response(csv, {
     headers: {
       "content-type": "text/csv; charset=utf-8",
-      "content-disposition": `attachment; filename="${filename}-${new Date().toISOString().slice(0, 10)}.csv"`,
+      "content-disposition": `attachment; filename="${filename}-${localDate()}.csv"`,
       "cache-control": "no-store",
     },
   });

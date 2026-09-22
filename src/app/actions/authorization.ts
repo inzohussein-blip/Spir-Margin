@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { getStaffUser } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/pglite";
 import { formError } from "@/lib/db/form-error";
+import { localDate } from "@/lib/dates";
 
 export interface AuthorizationLine {
   device_id?: string | null;
@@ -35,7 +36,7 @@ export interface AuthorizationInput {
 }
 
 export async function saveAuthorization(input: AuthorizationInput) {
-  const user = await getCurrentUser();
+  const user = await getStaffUser();
   if (!user) return { error: "Not signed in" };
 
   const lines = (input.items ?? []).filter(
@@ -106,7 +107,7 @@ export async function saveAuthorization(input: AuthorizationInput) {
  * is that, without re-typing the manifest.
  */
 export async function reissueAuthorization(formData: FormData) {
-  const user = await getCurrentUser();
+  const user = await getStaffUser();
   if (!user) return;
   const id = String(formData.get("id") ?? "");
   if (!id) return;
@@ -129,7 +130,7 @@ export async function reissueAuthorization(formData: FormData) {
     ),
   );
   const today = new Date();
-  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const iso = (d: Date) => localDate(d);
   const validTo = new Date(today.getTime() + span * 86400000);
 
   const { db } = await getDb();
@@ -178,7 +179,7 @@ export async function reissueAuthorization(formData: FormData) {
 }
 
 export async function cancelAuthorization(formData: FormData) {
-  const user = await getCurrentUser();
+  const user = await getStaffUser();
   if (!user) return;
   const id = String(formData.get("id") ?? "");
   if (!id) return;

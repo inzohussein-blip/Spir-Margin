@@ -61,9 +61,14 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(() => setPending(getOutbox()), []);
 
+  // The outbox follows whether the SERVER answers, never navigator.onLine.
+  // navigator.onLine says whether this computer has a network, but the app's
+  // server runs on this same computer: with Wi-Fi off it is still right there.
+  // Gating on it diverted every sale made without internet into this
+  // browser's storage — out of the database, the stock and the backups —
+  // until the network came back.
   const flush = useCallback(async () => {
     if (flushing.current) return;
-    if (typeof navigator !== "undefined" && !navigator.onLine) return;
     const items = getOutbox();
     if (items.length === 0) return;
 
@@ -112,12 +117,6 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   const submitSale = useCallback(async (payload: PosSalePayload): Promise<SubmitResult> => {
     const id = newId();
     const item: OutboxItem = { id, type: "pos_sale", payload, createdAt: Date.now() };
-
-    if (typeof navigator !== "undefined" && !navigator.onLine) {
-      enqueue(item);
-      refresh();
-      return { status: "queued" };
-    }
     try {
       const res = await createPosSale(payload.labId, payload.lines, id);
       if (res.ok) return { status: "synced", count: res.count, total: res.total };
@@ -134,11 +133,6 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   const submitSalesOrder = useCallback(async (payload: SalesOrderPayload): Promise<SoSubmitResult> => {
     const id = newId();
     const item: OutboxItem = { id, type: "sales_order", payload, createdAt: Date.now() };
-    if (typeof navigator !== "undefined" && !navigator.onLine) {
-      enqueue(item);
-      refresh();
-      return { status: "queued" };
-    }
     try {
       const res = await saveSalesOrder(soInput(payload), id);
       if (res.ok) return { status: "synced", id: res.salesOrderId };
@@ -175,11 +169,19 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
     window.addEventListener("online", goOnline);
     window.addEventListener("offline", goOffline);
     const unsub = subscribeOutbox(refresh);
-    // Attempt a sync on first mount if we're online with a non-empty queue.
-    if (navigator.onLine) void flush();
+    // Anything queued is sent as soon as the server answers again — which is
+    // usually "the program was restarted", an event no browser announces. So
+    // try on mount, when the window comes back into view, and every 20 seconds
+    // while something is waiting. flush() is a no-op on an empty queue.
+    void flush();
+    const onVisible = () => { if (document.visibilityState === "visible") void flush(); };
+    document.addEventListener("visibilitychange", onVisible);
+    const timer = window.setInterval(() => { if (getOutbox().length > 0) void flush(); }, 20_000);
     return () => {
       window.removeEventListener("online", goOnline);
       window.removeEventListener("offline", goOffline);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.clearInterval(timer);
       unsub();
     };
   }, [refresh, flush]);

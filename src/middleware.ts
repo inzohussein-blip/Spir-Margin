@@ -6,8 +6,12 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/session";
 // `/welcome` is the public landing screen. `/sw.js` no longer exists, but
 // browsers that installed the old service worker still request it — letting it
 // 404 cleanly is what makes them drop the registration; redirecting it into the
-// app would keep a dead worker alive.
-const PUBLIC_PATHS = ["/login", "/welcome", "/manifest.webmanifest", "/sw.js"];
+// app would keep a dead worker alive. `/offline-sw.js` and the page it shows
+// when the program is not running must load for anyone, signed in or not.
+const PUBLIC_PATHS = [
+  "/login", "/welcome", "/manifest.webmanifest", "/sw.js",
+  "/offline-sw.js", "/offline.html",
+];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

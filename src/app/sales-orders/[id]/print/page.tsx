@@ -34,7 +34,7 @@ export default async function SalesOrderPrintPage({ params }: { params: { id: st
   const rate = await getUsdIqdRate();
   const docNo = so.naming_series || `SO-${so.id.slice(0, 8).toUpperCase()}`;
   const lines: DocLine[] = (so.sales_order_items ?? []).map((it) => ({
-    label: it.products?.name ?? "Item",
+    label: it.products?.name ?? t(locale, "Item"),
     sub: [it.products?.item_code, it.serial_no ? `S/N: ${it.serial_no}` : null].filter(Boolean).join(" · ") || null,
     qty: Number(it.qty),
     rate: Number(it.rate),

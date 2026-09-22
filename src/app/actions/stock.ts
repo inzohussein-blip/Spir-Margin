@@ -3,6 +3,7 @@
 import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 export interface ReconLineInput { kit_batch_id: string; counted_qty: number; }
 export interface StockReconInput { posting_date: string; notes?: string; items: ReconLineInput[]; }
@@ -14,7 +15,7 @@ export async function saveStockReconciliation(input: StockReconInput) {
 
   const { data: header, error: hErr } = await supabase
     .from("stock_reconciliations")
-    .insert({ posting_date: input.posting_date || new Date().toISOString().slice(0, 10), notes: input.notes || null })
+    .insert({ posting_date: input.posting_date || localDate(), notes: input.notes || null })
     .select("id")
     .single();
   if (hErr) return { ok: false as const, error: hErr.message };

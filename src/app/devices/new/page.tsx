@@ -43,7 +43,7 @@ export default async function NewDevicePage() {
           <Field label={t(locale, "Product")} required>
             <Select name="product_id" required defaultValue="">
               <option value="" disabled>
-                Select a device…
+                {t(locale, "Select a device…")}
               </option>
               {products.map((p) => (
                 <option key={p.id} value={p.id}>

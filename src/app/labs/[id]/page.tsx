@@ -72,7 +72,7 @@ export default async function LabDetailPage({ params }: { params: { id: string }
       <Panel title={`${t(locale, "Sales invoices")} (${invoices.length})`}>
         {invoices.length === 0 ? <EmptyRow text={t(locale, "No invoices yet")} /> : (
           <table className="w-full text-sm">
-            <thead><tr className="text-left text-xs uppercase text-ink-gray-4">
+            <thead><tr className="text-start text-xs uppercase text-ink-gray-4">
               <th className="px-4 py-2">{t(locale, "Invoice")}</th><th className="px-4 py-2">{t(locale, "Date")}</th>
               <th className="px-4 py-2">{t(locale, "Status")}</th><th className="px-4 py-2 text-end">{t(locale, "Amount")}</th><th className="px-4 py-2 text-end">{t(locale, "Outstanding")}</th>
             </tr></thead>
@@ -94,7 +94,7 @@ export default async function LabDetailPage({ params }: { params: { id: string }
       <Panel title={`${t(locale, "Devices")} (${devices.length})`}>
         {devices.length === 0 ? <EmptyRow text={t(locale, "No devices yet")} /> : (
           <table className="w-full text-sm">
-            <thead><tr className="text-left text-xs uppercase text-ink-gray-4">
+            <thead><tr className="text-start text-xs uppercase text-ink-gray-4">
               <th className="px-4 py-2">{t(locale, "Code")}</th><th className="px-4 py-2">{t(locale, "Product")}</th>
               <th className="px-4 py-2">{t(locale, "Serial no.")}</th><th className="px-4 py-2">{t(locale, "Status")}</th>
             </tr></thead>

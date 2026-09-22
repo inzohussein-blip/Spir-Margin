@@ -2,24 +2,21 @@
 
 import { useEffect } from "react";
 
+const WORKER = "/offline-sw.js";
+
 /**
- * Removes any service worker this app previously installed, and drops its
- * caches.
+ * Installs the one service worker this app uses, and retires any other.
  *
- * An earlier build shipped `/sw.js`, which cached `/_next/*` and whole HTML
- * documents. That is unsafe for the Next.js App Router: a page's HTML, its
- * RSC flight payloads and its JS chunks are keyed to one build ID, so after
- * a redeploy the worker could answer with a chunk from the previous build.
- * The browser then rejects the stale chunk (observed as a 400 on
- * /_next/static/chunks/app/page-*.js), the client navigation collapses and
- * the user lands in the error boundary — which is exactly the
- * "حدث خطأ ما" screen reported right after signing in.
+ * `/offline-sw.js` does a single job: when the program on this computer does
+ * not answer a full page load, it shows a page that explains and retries on
+ * its own, instead of the browser's "site can't be reached". It caches no app
+ * code, which is what made the earlier `/sw.js` unsafe: that one cached
+ * `/_next/*` and HTML, so after an update it could answer with a chunk from
+ * the previous build, the browser rejected it, and the user landed on the
+ * error screen right after signing in.
  *
- * Offline support does not need a worker here. The local trial serves
- * everything from a Node process on the same machine, so there is no network
- * to lose; the cloud build is inherently online. Rather than ship a
- * carefully-tuned worker for no gain, unregister it and clear the caches so
- * anyone who already installed the old one recovers on their next visit.
+ * So any registration that is not this worker — `/sw.js` included — is
+ * removed, and this one is registered.
  */
 export function ServiceWorkerRegistrar() {
   useEffect(() => {
@@ -29,15 +26,17 @@ export function ServiceWorkerRegistrar() {
     void (async () => {
       try {
         const regs = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map((r) => r.unregister().catch(() => false)));
-        if ("caches" in window) {
-          const keys = await caches.keys();
-          await Promise.all(
-            keys.filter((k) => k.startsWith("spir-")).map((k) => caches.delete(k)),
-          );
-        }
+        await Promise.all(
+          regs
+            .filter((r) => {
+              const url = (r.active ?? r.waiting ?? r.installing)?.scriptURL ?? "";
+              return !url.endsWith(WORKER);
+            })
+            .map((r) => r.unregister().catch(() => false)),
+        );
+        await navigator.serviceWorker.register(WORKER, { scope: "/" });
       } catch {
-        /* best-effort cleanup; the app must work regardless */
+        /* best effort; the app works the same without it */
       }
     })();
   }, []);

@@ -4,6 +4,13 @@ import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { localDate } from "@/lib/dates";
+
+/** Who is acting, for the audit trail behind the reconciliation log. */
+async function actor(): Promise<string | null> {
+  return (await getCurrentUser())?.email ?? null;
+}
 
 // ------- FormData helpers (mirrors crud.ts) -------------------------------
 function str(fd: FormData, k: string): string | null {
@@ -65,7 +72,7 @@ export async function createPaymentEntry(fd: FormData) {
   const amount = num(fd, "amount");
   const { error } = await supabase.from("payment_entries").insert({
     payment_type: type,
-    posting_date: str(fd, "posting_date") ?? new Date().toISOString().slice(0, 10),
+    posting_date: str(fd, "posting_date") ?? localDate(),
     ...party(fd, "party"),
     party_name: str(fd, "party_name"),
     mode_of_payment: str(fd, "mode_of_payment"),
@@ -88,7 +95,7 @@ export async function createBankTransaction(fd: FormData) {
   const supabase = createClient();
   const { error } = await supabase.from("bank_transactions").insert({
     bank_account_id: req(fd, "bank_account_id"),
-    date: str(fd, "date") ?? new Date().toISOString().slice(0, 10),
+    date: str(fd, "date") ?? localDate(),
     deposit: num(fd, "deposit"),
     withdrawal: num(fd, "withdrawal"),
     description: str(fd, "description"),
@@ -110,45 +117,64 @@ export async function reconcile(
   amount?: number
 ) {
   const supabase = createClient();
-  const { error } = await supabase.rpc("fn_reconcile_transaction", {
+  const { error } = await supabase.rpc("fn_reconcile_transaction_as", {
     p_txn_id: txnId,
     p_payment_id: paymentId,
     p_amount: amount ?? null,
+    p_actor: await actor(),
   });
   if (error) return { ok: false as const, error: error.message };
-  revalidatePath(`/banking/${accountId}`);
-  revalidatePath("/banking");
-  return { ok: true as const };
+  // No revalidatePath here: every banking page is force-dynamic, so it
+  // rebuilds on the next visit anyway, and revalidating re-renders the route
+  // the workbench is standing on — which remounts it and throws the user back
+  // to the first tab after each action.
+return { ok: true as const };
 }
 
-export async function unreconcile(txnId: string, accountId: string) {
+export async function unreconcile(txnId: string) {
   const supabase = createClient();
-  const { error } = await supabase.rpc("fn_unreconcile_transaction", {
+  const { error } = await supabase.rpc("fn_unreconcile_transaction_as", {
     p_txn_id: txnId,
+    p_actor: await actor(),
   });
   if (error) return { ok: false as const, error: error.message };
-  revalidatePath(`/banking/${accountId}`);
-  revalidatePath("/banking");
-  return { ok: true as const };
+  // No revalidatePath here: every banking page is force-dynamic, so it
+  // rebuilds on the next visit anyway, and revalidating re-renders the route
+  // the workbench is standing on — which remounts it and throws the user back
+  // to the first tab after each action.
+return { ok: true as const };
 }
 
-/** Run the rule engine over every unreconciled transaction of an account. */
-export async function applyRulesForAccount(accountId: string) {
+/**
+ * Run the rule engine over the unreconciled transactions of an account, or
+ * over just the ones named — a whole statement is often not what the user
+ * means when they have ticked a handful of lines.
+ */
+export async function applyRulesForAccount(accountId: string, only?: string[]) {
   const supabase = createClient();
-  const { data: txns, error } = await supabase
+  let q = supabase
     .from("bank_transactions")
     .select("id")
     .eq("bank_account_id", accountId)
     .neq("status", "reconciled");
+  if (only && only.length) q = q.in("id", only);
+  const { data: txns, error } = await q;
   if (error) return { ok: false as const, error: error.message };
 
+  const who = await actor();
   let matched = 0;
   for (const t of txns ?? []) {
-    const { data } = await supabase.rpc("fn_apply_rules", { p_txn_id: t.id });
+    const { data } = await supabase.rpc("fn_apply_rules_as", {
+      p_txn_id: t.id,
+      p_actor: who,
+    });
     if (data) matched++;
   }
-  revalidatePath(`/banking/${accountId}`);
-  return { ok: true as const, matched };
+  // No revalidatePath here: every banking page is force-dynamic, so it
+  // rebuilds on the next visit anyway, and revalidating re-renders the route
+  // the workbench is standing on — which remounts it and throws the user back
+  // to the first tab after each action.
+return { ok: true as const, matched };
 }
 
 /**
@@ -192,16 +218,18 @@ export async function createVoucherAndReconcile(input: {
     .single();
   if (pErr) return { ok: false as const, error: pErr.message };
 
-  const { error: rErr } = await supabase.rpc("fn_reconcile_transaction", {
+  const { error: rErr } = await supabase.rpc("fn_reconcile_transaction_as", {
     p_txn_id: input.txnId,
     p_payment_id: pe.id,
     p_amount: null,
+    p_actor: await actor(),
   });
   if (rErr) return { ok: false as const, error: rErr.message };
-
-  revalidatePath(`/banking/${input.accountId}`);
-  revalidatePath("/banking");
-  return { ok: true as const, paymentId: pe.id };
+  // No revalidatePath here: every banking page is force-dynamic, so it
+  // rebuilds on the next visit anyway, and revalidating re-renders the route
+  // the workbench is standing on — which remounts it and throws the user back
+  // to the first tab after each action.
+return { ok: true as const, paymentId: pe.id };
 }
 
 // ========================================================================
@@ -250,7 +278,7 @@ export async function createInternalTransfer(fd: FormData) {
   if (fromId === toId) throw new Error("Source and destination must differ");
   const amount = num(fd, "amount");
   if (amount <= 0) throw new Error("Amount must be positive");
-  const date = str(fd, "date") ?? new Date().toISOString().slice(0, 10);
+  const date = str(fd, "date") ?? localDate();
   const ref = str(fd, "reference_no") ?? `XFER-${Date.now()}`;
 
   const { error: peErr } = await supabase.from("payment_entries").insert({
@@ -462,15 +490,121 @@ export async function loadReconcileData(input: {
     .order("date", { ascending: false });
   if (input.dateFrom) tq = tq.gte("date", input.dateFrom);
   if (input.dateTo) tq = tq.lte("date", input.dateTo);
-  const [{ data: t }, { data: p }] = await Promise.all([
+
+  // Payments come from fn_open_payments (migration 0100): a payment that is
+  // only partly allocated is still open for the rest of it, and `remaining`
+  // is what can still be matched.
+  const [{ data: t }, { data: p }, older] = await Promise.all([
     tq,
-    supabase
-      .from("payment_entries")
-      .select(
-        "id, payment_type, party_name, paid_amount, received_amount, reference_no, posting_date, is_reconciled"
-      )
-      .eq("is_reconciled", false)
-      .order("posting_date", { ascending: false }),
+    supabase.rpc("fn_open_payments", {}),
+    input.dateFrom
+      ? supabase
+          .rpc("fn_older_unreconciled", {
+            p_account: input.bankAccountId,
+            p_before: input.dateFrom,
+          })
+          .single()
+      : Promise.resolve({ data: null }),
   ]);
-  return { txns: (t as unknown[]) ?? [], payments: (p as unknown[]) ?? [] };
+
+  const o = (older as { data: { n: number; total: number } | null }).data;
+  return {
+    txns: (t as unknown[]) ?? [],
+    payments: (p as unknown[]) ?? [],
+    older: { n: Number(o?.n ?? 0), total: Number(o?.total ?? 0) },
+  };
 }
+
+/**
+ * Create a payment for each of several bank lines and reconcile them, for the
+ * end-of-month case where a batch of lines has no voucher at all. Stops at
+ * nothing: a line that fails is reported and the rest still go through.
+ */
+export async function createVouchersForTransactions(
+  txnIds: string[],
+  accountId: string
+) {
+  let done = 0;
+  const failed: string[] = [];
+  for (const id of txnIds) {
+    const res = await createVoucherAndReconcile({ txnId: id, accountId });
+    if (res.ok) done++;
+    else failed.push(res.error);
+  }
+  return { ok: true as const, done, failed };
+}
+
+/**
+ * Reconciliation history for one bank account, read from the audit trail
+ * (migration 0099) rather than from the browser. Every match and unmatch is
+ * a row in `bank_transaction_payments`, so the log is complete regardless of
+ * which machine or browser performed the action.
+ */
+export async function loadReconcileLog(bankAccountId: string, limit = 100) {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("fn_bank_action_log", {
+    p_account: bankAccountId,
+    p_limit: limit,
+  });
+  if (error) return [] as BankActionLogEntry[];
+  return (data ?? []) as BankActionLogEntry[];
+}
+
+/**
+ * What is currently matched on an account, so a wrong match can be seen and
+ * undone. The workbench itself lists only unreconciled lines, which is
+ * exactly why a settled one needed a place of its own.
+ */
+export async function loadAllocations(input: {
+  bankAccountId: string;
+  dateFrom?: string;
+  dateTo?: string;
+}) {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("fn_allocations", {
+    p_account: input.bankAccountId,
+    p_from: input.dateFrom ?? null,
+    p_to: input.dateTo ?? null,
+  });
+  if (error) return [] as Allocation[];
+  return (data ?? []) as Allocation[];
+}
+
+/** Remove ONE allocation; both sides reopen for exactly the amount freed. */
+export async function unallocate(allocId: string) {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("fn_unallocate_as", {
+    p_alloc_id: allocId,
+    p_actor: await actor(),
+  });
+  if (error) return { ok: false as const, error: error.message };
+  // No revalidatePath here: every banking page is force-dynamic, so it
+  // rebuilds on the next visit anyway, and revalidating re-renders the route
+  // the workbench is standing on — which remounts it and throws the user back
+  // to the first tab after each action.
+return { ok: true as const };
+}
+
+export type Allocation = {
+  alloc_id: string;
+  txn_id: string;
+  txn_date: string;
+  txn_description: string | null;
+  txn_reference: string | null;
+  txn_total: number;
+  txn_unallocated: number;
+  txn_status: string;
+  payment_id: string | null;
+  party_name: string | null;
+  payment_type: string | null;
+  payment_reference: string | null;
+  allocated: number;
+  allocated_at: string;
+};
+
+export type BankActionLogEntry = {
+  at: string;
+  action: "match" | "unmatch";
+  detail: string;
+  actor: string | null;
+};

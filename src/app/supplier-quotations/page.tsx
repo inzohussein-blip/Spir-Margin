@@ -46,7 +46,7 @@ export default async function SupplierQuotationsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">{t(locale, "Supplier")}</th><th className="px-4 py-2">{t(locale, "Date")}</th><th className="px-4 py-2">{t(locale, "Valid till")}</th>
                   <th className="px-4 py-2">{t(locale, "Items")}</th><th className="px-4 py-2">{t(locale, "Total")}</th><th className="px-4 py-2">{t(locale, "Status")}</th><th className="px-4 py-2">{t(locale, "Action")}</th>
                 </tr>

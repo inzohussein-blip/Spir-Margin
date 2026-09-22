@@ -1,6 +1,6 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createPortalClient as createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
@@ -54,7 +54,7 @@ export default async function PortalTicketsPage() {
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">{t(locale, "Issue no.")}</th>
                   <th className="px-4 py-2">{t(locale, "Subject")}</th>
                   <th className="px-4 py-2">{t(locale, "Date")}</th>

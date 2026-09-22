@@ -3,6 +3,7 @@
 import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 export interface PaymentRequestInput {
   request_no: string;
@@ -28,7 +29,7 @@ export async function savePaymentRequest(input: PaymentRequestInput) {
       lab_id: input.lab_id || null,
       amount: Number(input.amount),
       mode_of_payment_id: input.mode_of_payment_id || null,
-      posting_date: input.posting_date || new Date().toISOString().slice(0, 10),
+      posting_date: input.posting_date || localDate(),
       message: input.message || null,
     })
     .select("id")

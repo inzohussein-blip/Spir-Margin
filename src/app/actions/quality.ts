@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 export interface QiReadingInput {
   parameter: string;
@@ -38,7 +39,7 @@ export async function saveQualityInspection(input: QualityInspectionInput) {
     .from("quality_inspections")
     .insert({
       qi_no: input.qi_no || null,
-      report_date: input.report_date || new Date().toISOString().slice(0, 10),
+      report_date: input.report_date || localDate(),
       inspection_type: input.inspection_type,
       product_id: input.product_id || null,
       batch_id: input.batch_id || null,

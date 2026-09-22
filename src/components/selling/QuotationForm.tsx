@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 interface Opt { id: string; label: string; }
 interface ProductOpt extends Opt { sell: number; }
@@ -35,7 +36,7 @@ export function QuotationForm({
   const { register, control, handleSubmit, setValue } = useForm<QuotationInput>({
     defaultValues: defaults ?? {
       lab_id: "",
-      transaction_date: new Date().toISOString().slice(0, 10),
+      transaction_date: localDate(),
       valid_till: "",
       notes: "",
       items: [{ product_id: "", qty: 1, rate: 0 }],

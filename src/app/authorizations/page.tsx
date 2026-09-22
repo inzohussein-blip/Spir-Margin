@@ -6,6 +6,7 @@ import { Indicator } from "@/components/desk/Indicator";
 import { getLocale } from "@/lib/i18n-server";
 import { fmtDate } from "@/lib/format";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ export default async function AuthorizationsPage() {
     .order("issue_date", { ascending: false })
     .limit(200);
   const rows = (data as unknown as Row[]) ?? [];
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDate();
 
   return (
     <ListShell

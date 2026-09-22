@@ -4,6 +4,7 @@ import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { assertFeature } from "@/lib/features";
+import { localDate } from "@/lib/dates";
 
 export interface PoLineInput {
   product_id: string;
@@ -32,7 +33,7 @@ export async function savePurchaseOrder(input: PurchaseOrderInput) {
     .insert({
       po_no: input.po_no || null,
       supplier_id: input.supplier_id || null,
-      transaction_date: input.transaction_date || new Date().toISOString().slice(0, 10),
+      transaction_date: input.transaction_date || localDate(),
       required_by: input.required_by || null,
       notes: input.notes || null,
     })
@@ -75,7 +76,7 @@ export async function updatePurchaseOrder(id: string, input: PurchaseOrderInput)
     .update({
       po_no: input.po_no || null,
       supplier_id: input.supplier_id || null,
-      transaction_date: input.transaction_date || new Date().toISOString().slice(0, 10),
+      transaction_date: input.transaction_date || localDate(),
       required_by: input.required_by || null,
       notes: input.notes || null,
       updated_at: new Date().toISOString(),

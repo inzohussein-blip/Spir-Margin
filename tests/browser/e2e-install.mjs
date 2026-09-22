@@ -31,10 +31,18 @@ await p.fill('input[name="password"]', ACCOUNT.password);
 await p.locator('form:has(input[name="password"]) button[type="submit"]').first().click();
 await p.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 180000 }).catch(() => {});
 
-// Chromium's own verdict, which is the thing that actually decides.
+// Chromium's own verdict, which is the thing that actually decides. It fetches
+// and parses the manifest after the page settles, so "no-manifest" right after
+// a navigation means "not read yet" rather than "not installable" — poll until
+// it has made up its mind.
 const cdp = await ctx.newCDPSession(p);
 await cdp.send("Page.enable");
-const { installabilityErrors } = await cdp.send("Page.getInstallabilityErrors");
+let installabilityErrors = [];
+for (let i = 0; i < 15; i++) {
+  ({ installabilityErrors } = await cdp.send("Page.getInstallabilityErrors"));
+  if (installabilityErrors.length === 0) break;
+  await p.waitForTimeout(1000);
+}
 check("the browser reports no reason it cannot be installed", installabilityErrors.length === 0,
   JSON.stringify(installabilityErrors));
 

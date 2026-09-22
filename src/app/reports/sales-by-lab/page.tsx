@@ -26,7 +26,7 @@ export default async function SalesByLabReport() {
       {rows.length === 0 ? <EmptyRow text={t(locale, "No sales yet")} /> : (
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-xs uppercase text-ink-gray-4">
+            <tr className="text-start text-xs uppercase text-ink-gray-4">
               <th className="px-4 py-2">{t(locale, "Lab")}</th><th className="px-4 py-2 text-right">{t(locale, "Invoices")}</th>
               <th className="px-4 py-2 text-right">{t(locale, "Billed")}</th><th className="px-4 py-2 text-right">{t(locale, "Paid")}</th><th className="px-4 py-2 text-right">{t(locale, "Outstanding")}</th>
             </tr>

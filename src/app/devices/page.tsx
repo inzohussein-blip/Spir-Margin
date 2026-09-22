@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -71,13 +72,15 @@ export default async function DevicesPage({
               <tbody className="divide-y divide-outline-gray-1">
                 {devices.map((d) => (
                   <tr key={d.id}>
-                    <td className="px-4 py-2 font-medium">{d.asset_code}</td>
+                    <td className="px-4 py-2 font-medium">
+                      <Link href={`/devices/${d.id}`} className="text-brand hover:underline">{d.asset_code}</Link>
+                    </td>
                     <td className="px-4 py-2">{d.products?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">
                       {d.serial_no ?? "—"}
                     </td>
                     <td className="px-4 py-2 text-ink-gray-5">
-                      {d.labs?.name ?? "unassigned"}
+                      {d.labs?.name ?? t(locale, "Unassigned")}
                     </td>
                     <td className="px-4 py-2"><Indicator status={d.status} /></td>
                     <td className="px-4 py-2 text-ink-gray-5">

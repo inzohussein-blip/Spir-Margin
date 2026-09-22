@@ -64,7 +64,7 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
       <Panel title={`${t(locale, "Stock batches")} (${batches.length})`}>
         {batches.length === 0 ? <EmptyRow text={t(locale, "No stock on hand")} /> : (
           <table className="w-full text-sm">
-            <thead><tr className="text-left text-xs uppercase text-ink-gray-4">
+            <thead><tr className="text-start text-xs uppercase text-ink-gray-4">
               <th className="px-4 py-2">{t(locale, "Batches")}</th><th className="px-4 py-2">{t(locale, "Warehouses")}</th>
               <th className="px-4 py-2 text-end">{t(locale, "Qty")}</th><th className="px-4 py-2">{t(locale, "Expiry")}</th>
             </tr></thead>

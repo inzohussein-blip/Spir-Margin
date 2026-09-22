@@ -130,6 +130,38 @@ async function introspect(db: Db): Promise<FkMeta> {
 
 // ---- embedded PGlite backend ----------------------------------------------
 
+/**
+ * The time zone "today" is judged in.
+ *
+ * PGlite starts in GMT, and nothing set it otherwise — so in Iraq (UTC+3),
+ * from midnight to 3 a.m. every `current_date` was yesterday: document dates,
+ * what falls due today, and on New Year's night the year inside a document
+ * number. The machine's own zone is the right answer for an app that runs on
+ * the company's computers; SPIR_TIMEZONE overrides it.
+ */
+export function workingTimeZone(): string {
+  const configured = process.env.SPIR_TIMEZONE?.trim();
+  if (configured) return configured;
+  try {
+    const machine = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (machine) return machine;
+  } catch {
+    /* fall through */
+  }
+  return "Asia/Baghdad";
+}
+
+/** Put a freshly opened connection on the working time zone. */
+async function applyTimeZone(pg: { query: (sql: string, params?: unknown[]) => Promise<unknown> }) {
+  const tz = workingTimeZone();
+  try {
+    // set_config takes the zone as a bound value, so nothing is spliced into SQL.
+    await pg.query("select set_config('timezone', $1, false)", [tz]);
+  } catch (e) {
+    console.warn(`[db] unknown time zone "${tz}", staying on GMT:`, (e as Error).message);
+  }
+}
+
 async function bootPglite(): Promise<Db> {
   const { PGlite } = await import("@electric-sql/pglite");
   const { pgcrypto } = await import("@electric-sql/pglite/contrib/pgcrypto");
@@ -140,6 +172,7 @@ async function bootPglite(): Promise<Db> {
     parsers: Object.fromEntries(DATE_OIDS.map((oid) => [oid, asText])),
   });
   await pg.waitReady;
+  await applyTimeZone(pg);
 
   // Queries run as the bootstrap superuser, so RLS is bypassed (single-tenant
   // app). pgcrypto is already loaded via the constructor above.
@@ -471,13 +504,22 @@ export async function dumpLocalDatabase(): Promise<Blob> {
   // One quiet query confirms the database is actually answering, and a
   // single retry covers the moment in between.
   await db.query("select 1");
-  try {
-    return await local.raw.dumpDataDir();
-  } catch (e) {
-    console.warn("[backup] first dump attempt failed, retrying:", (e as Error).message);
-    await new Promise((r) => setTimeout(r, 750));
-    return local.raw.dumpDataDir();
+  // Dumping while the engine is still busy with an earlier request fails, and
+  // it has been seen to fail twice in a row under load. A backup is the one
+  // thing that must not quietly give up, so try a few times with a widening
+  // pause and surface the real reason if they all fail.
+  let last: unknown;
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    try {
+      return await local.raw.dumpDataDir();
+    } catch (e) {
+      last = e;
+      console.warn(`[backup] dump attempt ${attempt} failed:`, (e as Error).message);
+      await new Promise((r) => setTimeout(r, attempt * 750));
+      await db.query("select 1").catch(() => undefined);
+    }
   }
+  throw last;
 }
 
 /**
@@ -514,6 +556,7 @@ export async function restoreLocalDatabase(dump: Blob): Promise<void> {
     parsers: Object.fromEntries(DATE_OIDS.map((oid) => [oid, asText])),
   });
   await pg.waitReady;
+  await applyTimeZone(pg);
 
   // A backup may predate migrations this build carries, so bring it forward
   // before anything queries it.

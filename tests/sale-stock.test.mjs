@@ -35,7 +35,7 @@ test("overselling a kit is rejected and books nothing", async () => {
 
   await assert.rejects(
     () => db.query(`select fn_pos_checkout($1,$2,$3)`, [randomUUID(), labId, line(kit, 5)]),
-    /insufficient stock/i,
+    /الكمية غير كافية/,
   );
   // The whole checkout rolled back: no sale, stock untouched.
   const sales = await db.query(`select count(*)::int n from sales where product_id=$1`, [kit]);

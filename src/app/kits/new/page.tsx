@@ -42,7 +42,7 @@ export default async function NewKitBatchPage() {
           <Field label={t(locale, "Product (kit)")} required>
             <Select name="product_id" required defaultValue="">
               <option value="" disabled>
-                Select a kit…
+                {t(locale, "Select a kit…")}
               </option>
               {products.map((p) => (
                 <option key={p.id} value={p.id}>

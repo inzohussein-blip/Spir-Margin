@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient, createUserClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import {
   SESSION_COOKIE,
@@ -75,7 +75,8 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
 
   let data: SessionUser[] | null = null;
   try {
-    const supabase = createClient();
+    // Signing in is the one thing a visitor without a session must be able to do.
+    const supabase = createPublicClient();
     const res = await supabase.rpc("fn_verify_login", { p_email: email, p_password: password });
     if (res.error) {
       console.error("[auth] fn_verify_login error:", res.error);
@@ -112,7 +113,7 @@ export async function changePasswordAction(_prev: unknown, formData: FormData) {
   const next = String(formData.get("new_password") ?? "");
   if (next.length < 8) return { error: "New password must be at least 8 characters" };
 
-  const supabase = createClient();
+  const supabase = createUserClient();
   const { data } = await supabase.rpc("fn_verify_login", { p_email: user.email, p_password: current });
   if (!((data as unknown[] | null)?.length)) return { error: "Current password is incorrect" };
 

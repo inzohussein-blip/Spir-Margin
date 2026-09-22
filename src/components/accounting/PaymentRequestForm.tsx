@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 interface InvoiceOpt { id: string; label: string; lab_id: string | null; outstanding: number; }
 interface Opt { id: string; label: string; }
@@ -34,7 +35,7 @@ export function PaymentRequestForm({
       lab_id: "",
       amount: 0,
       mode_of_payment_id: "",
-      posting_date: new Date().toISOString().slice(0, 10),
+      posting_date: localDate(),
       message: "",
     },
   });

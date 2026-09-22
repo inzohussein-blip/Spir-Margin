@@ -52,7 +52,7 @@ export default async function LeadsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">{t(locale, "Name")}</th>
                   <th className="px-4 py-2">{t(locale, "Company")}</th>
                   <th className="px-4 py-2">{t(locale, "City")}</th>
@@ -75,7 +75,7 @@ export default async function LeadsPage() {
                     </td>
                     <td className="px-4 py-2">
                       {l.converted_lab_id ? (
-                        <span className="text-xs text-emerald-600">→ lab</span>
+                        <span className="text-xs text-emerald-600">{t(locale, "Converted to a lab")}</span>
                       ) : (
                         <ValidatedForm action={convertLeadForm}>
                           <input type="hidden" name="id" value={l.id} />

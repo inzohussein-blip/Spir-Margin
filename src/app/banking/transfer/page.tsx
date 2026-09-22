@@ -39,7 +39,7 @@ export default async function TransferPage() {
             </Field>
             <Field label={t(locale, "To account")} required>
               <Select name="to_account_id" required defaultValue="">
-                <option value="" disabled>Select…</option>
+                <option value="" disabled>{t(locale, "Select…")}</option>
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>{a.account_name} ({a.currency})</option>
                 ))}

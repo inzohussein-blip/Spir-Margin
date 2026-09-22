@@ -15,8 +15,14 @@ const page = await ctx.newPage();
 const findings = [];
 const consoleErrors = [];
 page.on("pageerror", (e) => consoleErrors.push({ url: page.url(), msg: String(e).slice(0, 220) }));
+// Moving to the next route cancels the previous page's link prefetches, and
+// Next reports each cancelled one as a console error. That is the crawler's
+// own doing, not the app's — counting it once hid a real 404 among five of
+// these on the dashboard.
+const PREFETCH_CANCELLED = /Failed to fetch RSC payload .* Falling back to browser navigation/;
 page.on("console", (m) => {
-  if (m.type() === "error") consoleErrors.push({ url: page.url(), msg: m.text().slice(0, 220) });
+  if (m.type() === "error" && !PREFETCH_CANCELLED.test(m.text()))
+    consoleErrors.push({ url: page.url(), msg: m.text().slice(0, 220) });
 });
 
 // Sign in once with the built-in account.
@@ -55,6 +61,19 @@ for (const route of routes) {
   const latin = text.replace(IGNORE, "").match(/\b[A-Za-z][A-Za-z'’]{3,}(?:\s+[A-Za-z][A-Za-z'’]{2,}){0,6}\b/g);
   const latinPhrases = [...new Set((latin ?? []).filter((s) => s.length > 6))];
   if (latinPhrases.length) issues.push(`LATIN:${latinPhrases.slice(0, 5).join(" | ")}`);
+
+  // The check above skips short words, which is exactly where column headers
+  // ("Qty", "Due", "Ref") and dropdown prompts hide — and a dropdown's options
+  // are not in innerText at all. So headers and prompt options are checked
+  // one by one, with no length threshold.
+  const labels = await page
+    .evaluate(() => [
+      ...[...document.querySelectorAll("th")].map((e) => e.innerText),
+      ...[...document.querySelectorAll('option[value=""], option[disabled]')].map((e) => e.textContent ?? ""),
+    ])
+    .catch(() => []);
+  const latinLabels = [...new Set(labels.map((l) => l.replace(IGNORE, "").trim()).filter((l) => /[A-Za-z]{2,}/.test(l)))];
+  if (latinLabels.length) issues.push(`LATIN_LABEL:${latinLabels.slice(0, 5).join(" | ")}`);
 
   const newErrs = consoleErrors.length - before;
   if (newErrs > 0) issues.push(`CONSOLE_ERRORS:${newErrs}`);

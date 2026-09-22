@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 interface Opt { id: string; label: string; }
 
@@ -32,7 +33,7 @@ export function AssetMovementForm({
     defaultValues: {
       movement_no: "",
       purpose: "transfer",
-      transaction_date: new Date().toISOString().slice(0, 10),
+      transaction_date: localDate(),
       notes: "",
       items: [{ device_id: "", target_lab_id: "", target_warehouse_id: "", to_custodian: "" }],
     },

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 export interface InstallLineInput {
   device_id: string;
@@ -29,7 +30,7 @@ export async function saveInstallationNote(input: InstallationNoteInput) {
     .insert({
       inst_no: input.inst_no || null,
       lab_id: input.lab_id || null,
-      inst_date: input.inst_date || new Date().toISOString().slice(0, 10),
+      inst_date: input.inst_date || localDate(),
       inst_time: input.inst_time || null,
       remarks: input.remarks || null,
     })

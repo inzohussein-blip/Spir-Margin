@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useLocale } from "@/components/LocaleProvider";
 import { fmtNum } from "@/lib/format";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 interface Opt { id: string; label: string; }
 interface ProductOpt extends Opt { sell: number; }
@@ -46,7 +47,7 @@ export function SaleRequestForm({
       lab_id: "",
       customer_name: "",
       customer_phone: "",
-      request_date: new Date().toISOString().slice(0, 10),
+      request_date: localDate(),
       currency: "USD",
       discount: 0,
       notes: "",

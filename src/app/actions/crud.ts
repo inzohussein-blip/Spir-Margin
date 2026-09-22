@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { assertFeature } from "@/lib/features";
+import { localDate } from "@/lib/dates";
 
 // -------------------------------------------------------------------------
 // Small helpers for reading typed values out of a <form> FormData payload.
@@ -123,7 +124,7 @@ export async function recordMaintenance(fd: FormData) {
 
   const { error } = await supabase.from("maintenance_logs").insert({
     device_id: deviceId,
-    performed_on: str(fd, "performed_on") ?? new Date().toISOString().slice(0, 10),
+    performed_on: str(fd, "performed_on") ?? localDate(),
     performed_by: str(fd, "performed_by"),
     description: str(fd, "description"),
     cost: num(fd, "cost"),

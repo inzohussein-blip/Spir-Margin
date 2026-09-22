@@ -34,10 +34,12 @@ when no hosted database is configured) and **Hosted database** (the connection
 string, tested before it is saved). `DATABASE_URL` still wins when set, so a
 deployed server behaves exactly as deployed.
 
-Settings also installs the app — its own window and icon instead of a browser
-tab. That needs the server running, so `docs/INSTALL.md` covers starting it
-with the computer (a systemd unit on Linux, a logon task on Windows) as the
-other half of what "installed" should mean.
+Installing on a company computer is one double-click on Windows
+(`install-windows.cmd`): it checks Node.js, builds, starts the server hidden
+at sign-in, and adds a desktop / Start-menu icon that starts it if needed and
+opens it in its own window. Linux gets a systemd unit and an applications-menu
+entry. Both listen on this computer only unless told otherwise — the built-in
+account makes the office network an explicit choice. See `docs/INSTALL.md`.
 
 Losing the network degrades sync, never the app. Sign-in is the same story:
 the built-in account in `src/lib/auth/demo-credentials.ts` is checked in code

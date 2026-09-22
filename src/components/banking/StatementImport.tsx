@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 interface Account { id: string; account_name: string; currency: string; }
 
@@ -69,7 +70,7 @@ function detectAndParseDate(cell: string, preferDMY: boolean): string {
     return `${y}-${mon.padStart(2, "0")}-${day.padStart(2, "0")}`;
   }
   const d = new Date(s);
-  return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+  return isNaN(d.getTime()) ? "" : localDate(d);
 }
 
 export function StatementImport({ accounts }: { accounts: Account[] }) {
@@ -250,9 +251,9 @@ export function StatementImport({ accounts }: { accounts: Account[] }) {
               </div>
               <div className="overflow-x-auto rounded-lg border border-outline-gray-2">
                 <table className="w-full text-sm">
-                  <thead><tr className="text-left text-xs uppercase text-ink-gray-5">
+                  <thead><tr className="text-start text-xs uppercase text-ink-gray-5">
                     <th className="px-3 py-2">{t(locale, "Date")}</th><th className="px-3 py-2">{t(locale, "Description")}</th>
-                    <th className="px-3 py-2">{t(locale, "Deposit")}</th><th className="px-3 py-2">{t(locale, "Withdrawal")}</th><th className="px-3 py-2">Ref</th>
+                    <th className="px-3 py-2">{t(locale, "Deposit")}</th><th className="px-3 py-2">{t(locale, "Withdrawal")}</th><th className="px-3 py-2">{t(locale, "Ref")}</th>
                   </tr></thead>
                   <tbody className="divide-y divide-outline-gray-1">
                     {rows.slice(0, 6).map((r, i) => (

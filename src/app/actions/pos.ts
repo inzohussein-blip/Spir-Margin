@@ -1,7 +1,6 @@
 "use server";
 
 import { randomUUID } from "crypto";
-import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { assertFeature } from "@/lib/features";
 
@@ -48,7 +47,10 @@ export async function createPosSale(labId: string, lines: PosLine[], requestId?:
   if (error) return { ok: false as const, error: error.message };
 
   const row = (data as { n_lines: number; total_amount: number }[] | null)?.[0];
-  revalidatePath("/");
-  revalidatePath("/reports/sales-by-product");
+  // No revalidatePath: the dashboard and the reports are force-dynamic, so they
+  // are rebuilt on every visit anyway. Revalidating re-rendered the POS screen
+  // under the cashier and wiped its "Sale recorded" confirmation the instant
+  // it appeared — the cart just emptied, and a sale that looks unrecorded is a
+  // sale that gets rung up twice.
   return { ok: true as const, count: Number(row?.n_lines ?? 0), total: Number(row?.total_amount ?? 0) };
 }

@@ -3,6 +3,7 @@
 import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 export interface ReceiptLineInput {
   product_id: string;
@@ -31,7 +32,7 @@ export async function savePurchaseReceipt(input: PurchaseReceiptInput) {
     .insert({
       receipt_no: receiptNo,
       supplier_id: input.supplier_id || null,
-      posting_date: input.posting_date || new Date().toISOString().slice(0, 10),
+      posting_date: input.posting_date || localDate(),
       notes: input.notes || null,
     })
     .select("id")

@@ -78,7 +78,7 @@ export default async function SalesReturnDetailPage({ params }: { params: { id: 
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">{t(locale, "Product")}</th>
                   <th className="px-4 py-2">{t(locale, "Qty")}</th>
                   <th className="px-4 py-2">{t(locale, "Rate")}</th>

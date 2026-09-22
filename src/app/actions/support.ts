@@ -4,6 +4,7 @@ import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 function str(fd: FormData, k: string): string | null {
   const v = fd.get(k);
@@ -17,7 +18,7 @@ export async function createWarrantyClaim(fd: FormData) {
   const supabase = createClient();
   const { error } = await supabase.from("warranty_claims").insert({
     status: str(fd, "status") ?? "open",
-    complaint_date: str(fd, "complaint_date") ?? new Date().toISOString().slice(0, 10),
+    complaint_date: str(fd, "complaint_date") ?? localDate(),
     serial_number_id: str(fd, "serial_number_id"),
     device_id: str(fd, "device_id"),
     product_id: str(fd, "product_id"),
@@ -67,7 +68,7 @@ export async function createIssue(fd: FormData) {
     priority: str(fd, "priority"),
     issue_type: str(fd, "issue_type"),
     description: str(fd, "description"),
-    opening_date: str(fd, "opening_date") ?? new Date().toISOString().slice(0, 10),
+    opening_date: str(fd, "opening_date") ?? localDate(),
   });
   if (error) return formError(error);
   revalidatePath("/issues");

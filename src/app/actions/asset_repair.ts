@@ -4,6 +4,7 @@ import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 function s(fd: FormData, k: string): string | null {
   const v = fd.get(k);
@@ -19,7 +20,7 @@ export async function createAssetRepair(fd: FormData) {
   const { error } = await supabase.from("asset_repairs").insert({
     repair_no: s(fd, "repair_no"),
     device_id,
-    failure_date: s(fd, "failure_date") ?? new Date().toISOString().slice(0, 10),
+    failure_date: s(fd, "failure_date") ?? localDate(),
     description: s(fd, "description"),
     actions_performed: s(fd, "actions_performed"),
     downtime: s(fd, "downtime"),

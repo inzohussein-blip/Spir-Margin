@@ -5,6 +5,7 @@ import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { assertFeature } from "@/lib/features";
+import { localDate } from "@/lib/dates";
 
 export interface SOLineInput {
   product_id: string;
@@ -32,7 +33,7 @@ export async function saveSalesOrder(input: SalesOrderInput, requestId?: string)
   const { data, error } = await supabase.rpc("fn_save_sales_order", {
     p_request_id: requestId || randomUUID(),
     p_lab_id: input.lab_id,
-    p_transaction_date: input.transaction_date || new Date().toISOString().slice(0, 10),
+    p_transaction_date: input.transaction_date || localDate(),
     p_delivery_date: input.delivery_date || "",
     p_notes: input.notes || "",
     p_lines: JSON.stringify(
@@ -74,7 +75,7 @@ export async function updateSalesOrder(id: string, input: SalesOrderInput) {
     .from("sales_orders")
     .update({
       lab_id: input.lab_id,
-      transaction_date: input.transaction_date || new Date().toISOString().slice(0, 10),
+      transaction_date: input.transaction_date || localDate(),
       delivery_date: input.delivery_date || null,
       notes: input.notes || null,
       updated_at: new Date().toISOString(),

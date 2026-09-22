@@ -52,12 +52,12 @@ test("a different request id books a separate sale; bad input is rejected", asyn
   // Negative sell price is rejected (money integrity).
   await assert.rejects(
     () => db.query(`select fn_pos_checkout($1,$2,$3)`, [randomUUID(), labId, JSON.stringify([{ product_id: productId, qty: 1, sell_price: -5 }])]),
-    /negative/i,
+    /سالباً/,
   );
   // Unknown customer is rejected.
   await assert.rejects(
     () => db.query(`select fn_pos_checkout($1,$2,$3)`, [randomUUID(), "00000000-0000-0000-0000-0000000000ff", lines(productId)]),
-    /customer/i,
+    /الزبون غير موجود/,
   );
   await db.close();
 });

@@ -63,7 +63,7 @@ export default async function WorkOrdersPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">{t(locale, "WO no.")}</th>
                   <th className="px-4 py-2">{t(locale, "Product")}</th>
                   <th className="px-4 py-2">{t(locale, "BOM")}</th>

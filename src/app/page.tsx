@@ -13,6 +13,7 @@ import type {
   MaintenanceAlert,
   ExpiringKit,
 } from "@/lib/types";
+import { localDate } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -53,8 +54,8 @@ export default async function DashboardPage() {
   const locale = getLocale();
   const supabase = createClient();
 
-  const today = new Date().toISOString().slice(0, 10);
-  const horizon = new Date(Date.now() + 60 * 86400_000).toISOString().slice(0, 10);
+  const today = localDate();
+  const horizon = localDate(new Date(Date.now() + 60 * 86400_000));
 
   const [
     profitRes,
@@ -305,7 +306,7 @@ export default async function DashboardPage() {
                       {a.product_name}
                     </div>
                     <div className="text-xs text-ink-gray-4">
-                      {a.asset_code} · {a.lab_name ?? "unassigned"}
+                      {a.asset_code} · {a.lab_name ?? t(locale, "Unassigned")}
                     </div>
                   </div>
                   <span
@@ -316,10 +317,10 @@ export default async function DashboardPage() {
                     }`}
                   >
                     {a.status === "out_of_order"
-                      ? "Out of order"
+                      ? statusLabel(locale, "out_of_order")
                       : a.days_until_due != null
-                      ? `${a.days_until_due}d`
-                      : a.status}
+                      ? `${a.days_until_due} ${t(locale, "day(s)")}`
+                      : statusLabel(locale, a.status)}
                   </span>
                 </li>
               ))}
@@ -336,12 +337,12 @@ export default async function DashboardPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Due</th>
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
+                  <th className="px-4 py-2">{t(locale, "Due")}</th>
                   <th className="px-4 py-2">{t(locale, "Device")}</th>
-                  <th className="px-4 py-2">Lab</th>
+                  <th className="px-4 py-2">{t(locale, "Lab")}</th>
                   <th className="px-4 py-2">{t(locale, "Schedule")}</th>
-                  <th className="px-4 py-2">In</th>
+                  <th className="px-4 py-2">{t(locale, "Due in")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">
@@ -365,7 +366,7 @@ export default async function DashboardPage() {
                             d <= 7 ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
                           }`}
                         >
-                          {d}d
+                          {d} {t(locale, "day(s)")}
                         </span>
                       </td>
                     </tr>
@@ -385,12 +386,12 @@ export default async function DashboardPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">{t(locale, "Contract")}</th>
-                  <th className="px-4 py-2">Lab</th>
+                  <th className="px-4 py-2">{t(locale, "Lab")}</th>
                   <th className="px-4 py-2">{t(locale, "Device")}</th>
                   <th className="px-4 py-2">{t(locale, "Ends")}</th>
-                  <th className="px-4 py-2">In</th>
+                  <th className="px-4 py-2">{t(locale, "Due in")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">
@@ -408,7 +409,7 @@ export default async function DashboardPage() {
                           Number(c.days_left) <= 14 ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
                         }`}
                       >
-                        {Number(c.days_left)}d
+                        {Number(c.days_left)} {t(locale, "day(s)")}
                       </span>
                     </td>
                   </tr>
@@ -470,11 +471,11 @@ export default async function DashboardPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">{t(locale, "Batch")}</th>
                   <th className="px-4 py-2">{t(locale, "Product")}</th>
                   <th className="px-4 py-2">{t(locale, "Warehouse")}</th>
-                  <th className="px-4 py-2">Qty</th>
+                  <th className="px-4 py-2">{t(locale, "Quantity")}</th>
                   <th className="px-4 py-2">{t(locale, "Expiry")}</th>
                   <th className="px-4 py-2">{t(locale, "Days left")}</th>
                 </tr>
@@ -497,7 +498,7 @@ export default async function DashboardPage() {
                             : "bg-amber-100 text-amber-700"
                         }`}
                       >
-                        {k.days_until_expiry}d
+                        {k.days_until_expiry} {t(locale, "day(s)")}
                       </span>
                     </td>
                   </tr>

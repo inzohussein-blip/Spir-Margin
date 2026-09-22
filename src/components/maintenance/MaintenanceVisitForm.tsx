@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 interface Opt { id: string; label: string; }
 interface DeviceOpt extends Opt { lab_id: string | null; }
@@ -31,7 +32,7 @@ export function MaintenanceVisitForm({
     defaultValues: {
       visit_no: "",
       lab_id: "",
-      visit_date: new Date().toISOString().slice(0, 10),
+      visit_date: localDate(),
       maintenance_type: "scheduled",
       completion_status: "full",
       service_person: "",

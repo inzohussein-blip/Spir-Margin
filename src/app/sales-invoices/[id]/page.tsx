@@ -86,7 +86,7 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">{t(locale, "Product")}</th>
                   <th className="px-4 py-2">{t(locale, "Qty")}</th>
                   <th className="px-4 py-2">{t(locale, "Rate")}</th>
@@ -124,7 +124,7 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">{t(locale, "Date")}</th>
                   <th className="px-4 py-2">{t(locale, "Amount")}</th>
                   <th className="px-4 py-2">{t(locale, "Note")}</th>

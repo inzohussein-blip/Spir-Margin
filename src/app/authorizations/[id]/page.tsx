@@ -8,6 +8,7 @@ import { cancelAuthorization, reissueAuthorization } from "@/app/actions/authori
 import { getLocale } from "@/lib/i18n-server";
 import { fmtDate, fmtNum } from "@/lib/format";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +40,7 @@ export default async function AuthorizationPage({ params }: { params: { id: stri
     .order("line_no");
   const items = (itemRows as unknown as Item[]) ?? [];
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDate();
   const expired = doc.status === "issued" && doc.valid_to < today;
   const label = doc.status === "cancelled" ? "cancelled" : expired ? "expired" : "issued";
 

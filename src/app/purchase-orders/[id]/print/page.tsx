@@ -27,7 +27,7 @@ export default async function PurchaseOrderPrintPage({ params }: { params: { id:
 
   const locale = getLocale();
   const lines: DocLine[] = (po.purchase_order_items ?? []).map((it) => ({
-    label: it.products?.name ?? "Item",
+    label: it.products?.name ?? t(locale, "Item"),
     sub: it.products?.item_code ?? null,
     qty: Number(it.qty),
     rate: Number(it.rate),

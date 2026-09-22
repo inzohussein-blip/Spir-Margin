@@ -1,0 +1,6 @@
+# Windows installer files must reach Windows with CRLF line endings, and the
+# VBScript that shows Arabic is UTF-16 (the only Unicode encoding WSH reads) —
+# git must never "fix" either.
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+*.vbs  binary

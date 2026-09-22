@@ -1,4 +1,4 @@
--- Spir-Margin — combined schema (all 97 migrations). Run ONCE on an EMPTY DB.
+-- Spir-Margin — combined schema (all 101 migrations). Run ONCE on an EMPTY DB.
 --
 -- GENERATED FILE — do not edit by hand. Rebuild with:
 --     npm run schema
@@ -7879,6 +7879,520 @@ begin
     return concat_ws('-', v_prefix, upper(p_kind), v_year::text, lpad(v_seq::text, 4, '0'));
 end $$;
 
+-- ===== migration: 0099_bank_action_log.sql =====
+-- =====================================================================
+-- Migration 0099 : A real reconciliation action log
+--
+-- The "Action Log" tab of the reconciliation workbench used to live in the
+-- browser's localStorage: it was per-browser, per-machine, lost on a cache
+-- clear, and invisible to anyone else in the company. Bank allocations are
+-- money movements, so the log belongs in the database next to the rest of
+-- the audit trail (migration 0065).
+--
+-- bank_transaction_payments is the allocation link: one row per
+-- (transaction, payment). An INSERT is a match, a DELETE is an unmatch, so
+-- auditing that one table captures the whole story with no extra writes
+-- from the application.
+-- =====================================================================
+
+do $$
+declare t text;
+begin
+    foreach t in array array['bank_transaction_payments','payment_entries']
+    loop
+        if to_regclass('public.'||t) is not null then
+            execute format('drop trigger if exists trg_audit on %I', t);
+            execute format(
+                'create trigger trg_audit after insert or update or delete on %I '
+                'for each row execute function fn_audit()', t);
+        end if;
+    end loop;
+end $$;
+
+-- Reading the log back per bank account. audit_log keeps the whole row
+-- snapshot, so the account is reachable without joining a possibly deleted
+-- transaction; the join is still attempted for a human-readable label.
+create or replace function fn_bank_action_log(p_account uuid, p_limit int default 100)
+returns table (
+    at        timestamptz,
+    action    text,
+    detail    text,
+    actor     text
+)
+language sql stable as $$
+    select
+        a.changed_at as at,
+        case a.action when 'INSERT' then 'match' else 'unmatch' end as action,
+        coalesce(
+            nullif(concat_ws(' · ',
+                nullif(coalesce(pe.party_name, ''), ''),
+                nullif(coalesce(bt.description, bt.reference_number, ''), ''),
+                to_char(coalesce(
+                    (a.new_data->>'allocated_amount')::numeric,
+                    (a.old_data->>'allocated_amount')::numeric, 0), 'FM999999999990.00')
+            ), ''),
+            'حركة مصرفية'
+        ) as detail,
+        a.actor
+    from audit_log a
+    left join bank_transactions bt
+           on bt.id = coalesce((a.new_data->>'bank_transaction_id')::uuid,
+                               (a.old_data->>'bank_transaction_id')::uuid)
+    left join payment_entries pe
+           on pe.id = coalesce((a.new_data->>'payment_entry_id')::uuid,
+                               (a.old_data->>'payment_entry_id')::uuid)
+    where a.table_name = 'bank_transaction_payments'
+      and a.action in ('INSERT','DELETE')
+      and (p_account is null or bt.bank_account_id = p_account)
+    order by a.changed_at desc
+    limit greatest(coalesce(p_limit, 100), 1);
+$$;
+
+
+-- ---------------------------------------------------------------------
+-- Recording WHO matched or unmatched.
+--
+-- The audit trigger reads the `app.actor` setting. Setting it from the
+-- application in a separate round trip would mean two statements that must
+-- not be interleaved by another request — the embedded database is a single
+-- connection, so that ordering cannot be guaranteed cheaply. These thin
+-- wrappers take the actor as an argument and set it INSIDE the same
+-- statement, transaction-locally (`set_config(..., true)`), so the value is
+-- always the right one and can never leak onto a later request sharing a
+-- pooled connection.
+-- ---------------------------------------------------------------------
+create or replace function fn_reconcile_transaction_as(
+    p_txn_id     uuid,
+    p_payment_id uuid,
+    p_amount     numeric default null,
+    p_actor      text    default null
+)
+returns bank_txn_status
+language plpgsql
+as $$
+begin
+    perform set_config('app.actor', coalesce(p_actor, ''), true);
+    return fn_reconcile_transaction(p_txn_id, p_payment_id, p_amount);
+end $$;
+
+create or replace function fn_unreconcile_transaction_as(
+    p_txn_id uuid,
+    p_actor  text default null
+)
+returns void
+language plpgsql
+as $$
+begin
+    perform set_config('app.actor', coalesce(p_actor, ''), true);
+    perform fn_unreconcile_transaction(p_txn_id);
+end $$;
+
+create or replace function fn_apply_rules_as(
+    p_txn_id uuid,
+    p_actor  text default null
+)
+returns uuid
+language plpgsql
+as $$
+begin
+    perform set_config('app.actor', coalesce(p_actor, ''), true);
+    return fn_apply_rules(p_txn_id);
+end $$;
+
+-- ===== migration: 0100_partial_allocation.sql =====
+-- =====================================================================
+-- Migration 0100 : Partial allocation between payments and bank lines
+--
+-- Reality in this business is rarely one payment for one bank line: a lab
+-- pays 1,000 against an invoice of 1,500, or settles two deliveries with a
+-- single transfer. The transaction side already handled this — allocating
+-- less than the full amount leaves `unallocated_amount` behind — but the
+-- payment side did not: one allocation of any size flipped
+-- `payment_entries.is_reconciled` to true, which took the payment out of
+-- the open list and stranded whatever was left of it.
+--
+-- A payment is now reconciled only once it is fully allocated, and
+-- fn_open_payments exposes what remains of each one so the workbench can
+-- offer it against the next bank line.
+-- =====================================================================
+
+create or replace function trg_sync_bank_txn_allocation()
+returns trigger
+language plpgsql
+as $$
+declare
+    v_txn_id uuid := coalesce(new.bank_transaction_id, old.bank_transaction_id);
+    v_pe_id  uuid := coalesce(new.payment_entry_id, old.payment_entry_id);
+    v_amount numeric;
+    v_alloc  numeric;
+    v_pe_amt numeric;
+    v_pe_all numeric;
+begin
+    select (deposit + withdrawal) into v_amount
+      from bank_transactions where id = v_txn_id;
+
+    select coalesce(sum(allocated_amount), 0) into v_alloc
+      from bank_transaction_payments where bank_transaction_id = v_txn_id;
+
+    update bank_transactions
+       set allocated_amount   = v_alloc,
+           unallocated_amount  = greatest(v_amount - v_alloc, 0),
+           status = case
+               when status = 'cancelled' then 'cancelled'::bank_txn_status
+               when v_alloc >= v_amount - 0.005 and v_amount > 0 then 'reconciled'::bank_txn_status
+               else 'unreconciled'::bank_txn_status
+           end,
+           updated_at = now()
+     where id = v_txn_id;
+
+    -- The payment stays open while any of it is still unallocated, so the
+    -- rest of it can be matched against another bank line.
+    if v_pe_id is not null then
+        select coalesce(paid_amount, 0) + coalesce(received_amount, 0)
+          into v_pe_amt
+          from payment_entries where id = v_pe_id;
+
+        select coalesce(sum(allocated_amount), 0) into v_pe_all
+          from bank_transaction_payments where payment_entry_id = v_pe_id;
+
+        update payment_entries
+           set is_reconciled  = (v_pe_amt > 0 and v_pe_all >= v_pe_amt - 0.005),
+               clearance_date = case
+                   when v_pe_all <= 0 then null
+                   else coalesce(clearance_date, new.clearance_date, current_date)
+               end,
+               updated_at = now()
+         where id = v_pe_id;
+    end if;
+
+    return coalesce(new, old);
+end;
+$$;
+
+-- ---------------------------------------------------------------------
+-- Payments with something left to allocate, newest first. `remaining` is
+-- what the workbench offers against a bank line; a payment allocated in
+-- full simply drops out of the list.
+-- ---------------------------------------------------------------------
+create or replace function fn_open_payments()
+returns table (
+    id              uuid,
+    payment_type    payment_type,
+    party_name      text,
+    paid_amount     numeric,
+    received_amount numeric,
+    reference_no    text,
+    posting_date    date,
+    allocated       numeric,
+    remaining       numeric
+)
+language sql stable as $$
+    select pe.id, pe.payment_type, pe.party_name, pe.paid_amount, pe.received_amount,
+           pe.reference_no, pe.posting_date,
+           coalesce(a.allocated, 0) as allocated,
+           (coalesce(pe.paid_amount,0) + coalesce(pe.received_amount,0)) - coalesce(a.allocated, 0) as remaining
+      from payment_entries pe
+      left join lateral (
+          select sum(btp.allocated_amount) as allocated
+            from bank_transaction_payments btp
+           where btp.payment_entry_id = pe.id
+      ) a on true
+     where (coalesce(pe.paid_amount,0) + coalesce(pe.received_amount,0)) - coalesce(a.allocated, 0) > 0.005
+     order by pe.posting_date desc, pe.id;
+$$;
+
+-- ---------------------------------------------------------------------
+-- Unreconciled lines that fall BEFORE the window the user is looking at.
+-- Without this they are simply invisible, and an old unmatched line is
+-- exactly the one that gets forgotten.
+-- ---------------------------------------------------------------------
+create or replace function fn_older_unreconciled(p_account uuid, p_before date)
+returns table (n int, total numeric)
+language sql stable as $$
+    select count(*)::int as n,
+           coalesce(sum(unallocated_amount), 0) as total
+      from bank_transactions
+     where bank_account_id = p_account
+       and status not in ('reconciled','cancelled')
+       and p_before is not null
+       and date < p_before;
+$$;
+
+-- ---------------------------------------------------------------------
+-- Allocating more than the payment has left is a data error, not a
+-- rounding question: refuse it rather than silently over-allocating.
+-- ---------------------------------------------------------------------
+create or replace function fn_reconcile_transaction(
+    p_txn_id     uuid,
+    p_payment_id uuid,
+    p_amount     numeric default null
+)
+returns bank_txn_status
+language plpgsql
+as $$
+declare
+    v_amount   numeric;
+    v_unalloc  numeric;
+    v_pe_left  numeric;
+    v_status   bank_txn_status;
+begin
+    select unallocated_amount into v_unalloc
+      from bank_transactions where id = p_txn_id;
+
+    select (coalesce(pe.paid_amount,0) + coalesce(pe.received_amount,0))
+           - coalesce((select sum(allocated_amount) from bank_transaction_payments
+                        where payment_entry_id = p_payment_id), 0)
+      into v_pe_left
+      from payment_entries pe where pe.id = p_payment_id;
+
+    -- default: as much as both sides can still take
+    v_amount := coalesce(p_amount, least(v_unalloc, coalesce(v_pe_left, v_unalloc)));
+    if v_amount <= 0 then
+        raise exception 'Nothing left to allocate on this transaction';
+    end if;
+    if v_pe_left is not null and v_amount > v_pe_left + 0.005 then
+        raise exception 'This payment has only % left to allocate', v_pe_left;
+    end if;
+    if v_amount > v_unalloc + 0.005 then
+        raise exception 'This bank line has only % left to allocate', v_unalloc;
+    end if;
+
+    insert into bank_transaction_payments
+        (bank_transaction_id, payment_entry_id, allocated_amount, reconciliation_type)
+    values (p_txn_id, p_payment_id, v_amount, 'matched')
+    on conflict (bank_transaction_id, payment_entry_id)
+    do update set allocated_amount = bank_transaction_payments.allocated_amount + excluded.allocated_amount;
+
+    select status into v_status from bank_transactions where id = p_txn_id;
+    return v_status;
+end;
+$$;
+
+-- ===== migration: 0101_undo_a_match.sql =====
+-- =====================================================================
+-- Migration 0101 : Undoing a match
+--
+-- The workbench could create allocations but never remove one. The
+-- `unreconcile` action existed in the code and no screen called it, and the
+-- workbench lists only UNRECONCILED lines — so a line matched to the wrong
+-- payment disappeared from view and stayed wrong. With partial allocation
+-- (migration 0100) a line can also carry several allocations, and undoing
+-- all of them to correct one is not what the user means.
+--
+-- fn_allocations lists what is currently matched, and fn_unallocate_as
+-- removes ONE allocation. The existing trigger recomputes both sides, so
+-- the bank line and the payment both reopen for exactly the amount freed.
+-- =====================================================================
+
+create or replace function fn_allocations(
+    p_account uuid,
+    p_from    date default null,
+    p_to      date default null
+)
+returns table (
+    alloc_id        uuid,
+    txn_id          uuid,
+    txn_date        date,
+    txn_description text,
+    txn_reference   text,
+    txn_total       numeric,
+    txn_unallocated numeric,
+    txn_status      bank_txn_status,
+    payment_id      uuid,
+    party_name      text,
+    payment_type    payment_type,
+    payment_reference text,
+    allocated       numeric,
+    allocated_at    timestamptz
+)
+language sql stable as $$
+    select btp.id, bt.id, bt.date, bt.description, bt.reference_number,
+           (bt.deposit + bt.withdrawal), bt.unallocated_amount, bt.status,
+           pe.id, pe.party_name, pe.payment_type, pe.reference_no,
+           btp.allocated_amount, btp.created_at
+      from bank_transaction_payments btp
+      join bank_transactions bt on bt.id = btp.bank_transaction_id
+      left join payment_entries pe on pe.id = btp.payment_entry_id
+     where bt.bank_account_id = p_account
+       and (p_from is null or bt.date >= p_from)
+       and (p_to   is null or bt.date <= p_to)
+     order by btp.created_at desc, btp.id;
+$$;
+
+-- Removing one allocation. The actor travels in the same statement, for the
+-- same reason the reconcile wrappers take it (migration 0099).
+create or replace function fn_unallocate_as(
+    p_alloc_id uuid,
+    p_actor    text default null
+)
+returns void
+language plpgsql
+as $$
+begin
+    perform set_config('app.actor', coalesce(p_actor, ''), true);
+    delete from bank_transaction_payments where id = p_alloc_id;
+end $$;
+
+-- ===== migration: 0102_arabic_errors.sql =====
+-- =====================================================================
+-- Migration 0102 : Arabic for every error the database raises
+--
+-- 108 `raise exception` messages in the live functions were English — "Cart
+-- is empty.", "Insufficient stock for %: % available, % needed", "Payment
+-- exceeds outstanding (% remaining)". Many actions hand error.message to the
+-- screen as it is (the POS, for one), so a cashier met them word for word;
+-- the others passed through a generic translation that kept the Arabic but
+-- dropped the numbers that made the message useful. Translating at the
+-- source fixes both, everywhere, including the sync-refusal log.
+--
+-- Same mechanism as 0091: each function is rewritten from its own current
+-- definition, so nothing here restates (or can drift from) the function
+-- bodies. Every `%` placeholder keeps its position and order — PL/pgSQL
+-- refuses a RAISE whose placeholders do not match its arguments, so a slip
+-- would stop this migration rather than ship. Re-runnable: once the English
+-- literals are gone the replacements no-op.
+--
+-- tests/arabic-errors.test.mjs fails if an English message ever comes back.
+-- =====================================================================
+
+do $$
+declare
+    pairs text[][] := array[
+        -- sync and audit internals (shown to admins in Monitoring)
+        ['unknown table %', 'جدول غير معروف: %'],
+        ['table % has no primary key', 'الجدول % بلا مفتاح أساسي'],
+        ['audit_log is append-only; % is not permitted', 'سجلّ التدقيق للإضافة فقط؛ لا يُسمح بـ %'],
+        -- landed cost
+        ['Landed cost voucher % not found', 'قسيمة تكلفة الوصول % غير موجودة'],
+        ['Voucher % is already applied', 'القسيمة % مُطبَّقة مسبقاً'],
+        ['Receipt % must be received before landed costs can be applied', 'يجب استلام الإيصال % قبل تطبيق تكاليف الوصول'],
+        ['Voucher % has no extra cost to allocate', 'القسيمة % بلا تكاليف إضافية لتوزيعها'],
+        ['Receipt % has no stockable items to allocate onto', 'الإيصال % لا يحوي أصنافاً مخزنية لتوزيع التكلفة عليها'],
+        -- blanket orders
+        ['Blanket order line % not found', 'سطر الاتفاقية الإطارية % غير موجود'],
+        ['Draw-down qty must be positive', 'كمية السحب يجب أن تكون أكبر من صفر'],
+        ['Draw-down exceeds agreed qty (remaining %)', 'كمية السحب تتجاوز الكمية المتّفق عليها (المتبقّي %)'],
+        ['Blanket order % not found', 'الاتفاقية الإطارية % غير موجودة'],
+        ['Blanket order % is not a draft', 'الاتفاقية الإطارية % ليست مسودّة'],
+        ['Blanket order % has no items', 'الاتفاقية الإطارية % بلا أصناف'],
+        -- selling
+        ['Pick a lab', 'اختر مختبراً'],
+        ['Add at least one line', 'أضف سطراً واحداً على الأقل'],
+        ['Cannot return more than sold for %: sold %, already returned %, tried to return %',
+         'لا يمكن إرجاع أكثر ممّا بيع من %: المُباع %، والمُرجَع سابقاً %، والمطلوب إرجاعه %'],
+        ['Sales order not found', 'أمر البيع غير موجود'],
+        ['Sales order already delivered', 'أمر البيع مُسلَّم مسبقاً'],
+        ['Sales order is cancelled', 'أمر البيع ملغى'],
+        ['Sales order % not found', 'أمر البيع % غير موجود'],
+        ['Quotation not found', 'عرض السعر غير موجود'],
+        ['Quotation already ordered', 'صدر بعرض السعر أمر بيع مسبقاً'],
+        ['Lead not found', 'العميل المحتمل غير موجود'],
+        ['Lead already converted', 'العميل المحتمل مُحوَّل مسبقاً'],
+        ['Delivery note not found', 'مذكّرة التسليم غير موجودة'],
+        ['Already delivered', 'مُسلَّمة مسبقاً'],
+        ['Delivery note is cancelled', 'مذكّرة التسليم ملغاة'],
+        -- point of sale and stock
+        ['Missing request id', 'معرّف الطلب مفقود'],
+        ['Select a customer (lab).', 'اختر الزبون (المختبر).'],
+        ['Customer not found.', 'الزبون غير موجود.'],
+        ['A product in the cart is invalid.', 'أحد أصناف السلة غير صالح.'],
+        ['Quantity must be greater than zero.', 'يجب أن تكون الكمية أكبر من صفر.'],
+        ['Sell price cannot be negative.', 'لا يمكن أن يكون سعر البيع سالباً.'],
+        ['A product in the cart no longer exists.', 'أحد أصناف السلة لم يعد موجوداً.'],
+        ['A product in the cart is disabled.', 'أحد أصناف السلة معطَّل.'],
+        ['Cart is empty.', 'السلة فارغة.'],
+        ['Insufficient stock for %: % available, % needed', 'الكمية غير كافية من %: المتوفّر % والمطلوب %'],
+        ['Stock entry % not found', 'حركة المخزون % غير موجودة'],
+        ['Stock entry % already submitted', 'حركة المخزون % مُعتمَدة مسبقاً'],
+        ['Stock entry % is cancelled', 'حركة المخزون % ملغاة'],
+        ['Batch % has only % available, cannot issue %', 'الدفعة % لا يتوفّر منها سوى %، فلا يمكن صرف %'],
+        ['Reconciliation not found', 'جرد المخزون غير موجود'],
+        ['Already posted', 'مُرحَّل مسبقاً'],
+        ['Pick list % not found', 'قائمة الانتقاء % غير موجودة'],
+        ['Pick list % already completed', 'قائمة الانتقاء % مُكتملة مسبقاً'],
+        ['Pick list % is cancelled', 'قائمة الانتقاء % ملغاة'],
+        ['Pick list % is not a draft', 'قائمة الانتقاء % ليست مسودّة'],
+        ['Pick list % has no items', 'قائمة الانتقاء % بلا أصناف'],
+        ['Delivery trip % not found', 'رحلة التوصيل % غير موجودة'],
+        ['Delivery trip % already completed', 'رحلة التوصيل % مُكتملة مسبقاً'],
+        ['Delivery trip % is cancelled', 'رحلة التوصيل % ملغاة'],
+        ['Delivery trip % cannot start from %', 'لا يمكن بدء رحلة التوصيل % من الحالة %'],
+        ['Delivery trip % has no stops', 'رحلة التوصيل % بلا محطّات'],
+        -- buying
+        ['Purchase order % not found', 'أمر الشراء % غير موجود'],
+        ['Purchase order % is cancelled', 'أمر الشراء % ملغى'],
+        ['Purchase order % is already billed', 'أمر الشراء % مُفوتَر مسبقاً'],
+        ['Purchase not found', 'الشراء غير موجود'],
+        ['Purchase already received', 'الشراء مُستلَم مسبقاً'],
+        ['Purchase is cancelled', 'الشراء ملغى'],
+        ['Receipt % not found', 'إيصال الاستلام % غير موجود'],
+        ['Receipt % already received', 'إيصال الاستلام % مُستلَم مسبقاً'],
+        ['Receipt % is cancelled', 'إيصال الاستلام % ملغى'],
+        ['Material request not found', 'طلب المواد غير موجود'],
+        ['Material request already ordered', 'صدر بطلب المواد أمر شراء مسبقاً'],
+        ['RFQ supplier % not found', 'مورّد طلب عرض السعر % غير موجود'],
+        ['This supplier already has a quotation', 'لهذا المورّد عرض سعر مسبقاً'],
+        ['Supplier quotation not found', 'عرض سعر المورّد غير موجود'],
+        ['Supplier quotation already ordered', 'صدر بعرض سعر المورّد أمر شراء مسبقاً'],
+        -- accounting and banking
+        ['Journal entry not found', 'القيد المحاسبي غير موجود'],
+        ['Journal entry has no amounts', 'القيد المحاسبي بلا مبالغ'],
+        ['Journal entry is not balanced (debit % != credit %)', 'القيد غير متوازن (المدين % ≠ الدائن %)'],
+        ['Invoice % not found', 'الفاتورة % غير موجودة'],
+        ['Invoice % is not open for payment', 'الفاتورة % غير مفتوحة للدفع'],
+        ['Payment amount must be positive', 'مبلغ الدفعة يجب أن يكون أكبر من صفر'],
+        ['Payment exceeds outstanding (% remaining)', 'الدفعة تتجاوز المبلغ المستحق (المتبقّي %)'],
+        ['Payment request % not found', 'طلب الدفع % غير موجود'],
+        ['Payment request % already paid', 'طلب الدفع % مدفوع مسبقاً'],
+        ['Payment request % is cancelled', 'طلب الدفع % ملغى'],
+        ['Payment request % is not a draft', 'طلب الدفع % ليس مسودّة'],
+        ['Rate must be positive', 'سعر الصرف يجب أن يكون أكبر من صفر'],
+        ['Nothing left to allocate on this transaction', 'لم يبقَ شيء لتخصيصه في هذه الحركة'],
+        ['This payment has only % left to allocate', 'بقي من هذه الدفعة % فقط للتخصيص'],
+        ['This bank line has only % left to allocate', 'بقي من هذا السطر المصرفي % فقط للتخصيص'],
+        -- assets, maintenance, manufacturing
+        ['Asset repair % not found', 'إصلاح الأصل % غير موجود'],
+        ['Repair % already completed', 'الإصلاح % مُكتمل مسبقاً'],
+        ['Repair % is cancelled', 'الإصلاح % ملغى'],
+        ['Asset movement % not found', 'حركة الأصل % غير موجودة'],
+        ['Asset movement % already submitted', 'حركة الأصل % مُعتمَدة مسبقاً'],
+        ['Asset movement % is cancelled', 'حركة الأصل % ملغاة'],
+        ['Maintenance schedule % not found', 'جدول الصيانة % غير موجود'],
+        ['Schedule % is cancelled', 'الجدول % ملغى'],
+        ['Maintenance visit % not found', 'زيارة الصيانة % غير موجودة'],
+        ['Visit % already submitted', 'الزيارة % مُعتمَدة مسبقاً'],
+        ['Visit % is cancelled', 'الزيارة % ملغاة'],
+        ['Installation note % not found', 'مذكّرة التركيب % غير موجودة'],
+        ['Installation note % already submitted', 'مذكّرة التركيب % مُعتمَدة مسبقاً'],
+        ['Installation note % is cancelled', 'مذكّرة التركيب % ملغاة'],
+        ['Work order % not found', 'أمر العمل % غير موجود'],
+        ['Work order % already completed', 'أمر العمل % مُكتمل مسبقاً'],
+        ['Work order % is cancelled', 'أمر العمل % ملغى']
+    ];
+    fn record;
+    d text;
+    i int;
+begin
+    for fn in
+        select p.oid, pg_get_functiondef(p.oid) as def
+          from pg_proc p
+          join pg_namespace n on n.oid = p.pronamespace
+         where n.nspname = 'public'
+           and p.prokind = 'f'
+           and p.prosrc ~* 'raise\s+exception'
+    loop
+        d := fn.def;
+        for i in 1 .. array_length(pairs, 1) loop
+            -- The quoted form only: a message is replaced where it is a whole
+            -- string literal, never inside a longer one.
+            d := replace(d, quote_literal(pairs[i][1]), quote_literal(pairs[i][2]));
+        end loop;
+        if d is distinct from fn.def then
+            execute d;
+        end if;
+    end loop;
+end $$;
+
 select _spir_attach_change_log();
 
 create table if not exists _spir_migrations (
@@ -7982,7 +8496,11 @@ insert into _spir_migrations(filename) values
   ('0095_branding.sql'),
   ('0096_shortcuts_documents.sql'),
   ('0097_search_shortcuts.sql'),
-  ('0098_doc_prefix_fallback.sql')
+  ('0098_doc_prefix_fallback.sql'),
+  ('0099_bank_action_log.sql'),
+  ('0100_partial_allocation.sql'),
+  ('0101_undo_a_match.sql'),
+  ('0102_arabic_errors.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;

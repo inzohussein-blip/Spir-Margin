@@ -4,6 +4,7 @@ import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 function str(fd: FormData, k: string): string | null {
   const v = fd.get(k);
@@ -40,7 +41,7 @@ export async function setContractStatusForm(fd: FormData) {
   const supabase = createClient();
   const status = String(fd.get("status"));
   const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
-  if (status === "active") patch.signed_on = new Date().toISOString().slice(0, 10);
+  if (status === "active") patch.signed_on = localDate();
   const { error } = await supabase.from("contracts").update(patch).eq("id", String(fd.get("id")));
   if (error) return formError(error);
   revalidatePath("/contracts");

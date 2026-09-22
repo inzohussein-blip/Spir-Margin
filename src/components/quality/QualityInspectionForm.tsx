@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 interface Opt { id: string; label: string; }
 
@@ -29,7 +30,7 @@ export function QualityInspectionForm({
   const { register, control, handleSubmit } = useForm<QualityInspectionInput>({
     defaultValues: {
       qi_no: "",
-      report_date: new Date().toISOString().slice(0, 10),
+      report_date: localDate(),
       inspection_type: "incoming",
       product_id: "",
       batch_id: "",

@@ -47,7 +47,7 @@ test("a voucher cannot be applied twice", async () => {
   const { r } = await receiptWithTwoKits(db);
   const v = (await db.query(`insert into landed_cost_vouchers (voucher_no,receipt_id,freight) values ('LC3',$1,100) returning id`, [r])).rows[0].id;
   await db.query(`select fn_apply_landed_cost($1)`, [v]);
-  await assert.rejects(db.query(`select fn_apply_landed_cost($1)`, [v]), /already applied/i);
+  await assert.rejects(db.query(`select fn_apply_landed_cost($1)`, [v]), /مُطبَّقة مسبقاً/);
   await db.close();
 });
 
@@ -56,6 +56,6 @@ test("a voucher on a not-yet-received receipt is rejected", async () => {
   const sup = (await db.query(`insert into companies (name,role) values ('S','supplier') returning id`)).rows[0].id;
   const r = (await db.query(`insert into purchase_receipts (receipt_no,supplier_id,status) values ('PR-D',$1,'draft') returning id`, [sup])).rows[0].id;
   const v = (await db.query(`insert into landed_cost_vouchers (voucher_no,receipt_id,freight) values ('LC4',$1,50) returning id`, [r])).rows[0].id;
-  await assert.rejects(db.query(`select fn_apply_landed_cost($1)`, [v]), /must be received/i);
+  await assert.rejects(db.query(`select fn_apply_landed_cost($1)`, [v]), /يجب استلام الإيصال/);
   await db.close();
 });

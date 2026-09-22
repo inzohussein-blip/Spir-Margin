@@ -112,7 +112,7 @@ export function ReconcilePanel({
               <li key={t.id}>
                 <button
                   onClick={() => setSelected(t)}
-                  className={`flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-surface-gray-1 ${
+                  className={`flex w-full items-center justify-between px-4 py-3 text-start text-sm hover:bg-surface-gray-1 ${
                     selected?.id === t.id ? "bg-blue-50 ring-1 ring-inset ring-brand" : ""
                   }`}
                 >
@@ -121,7 +121,7 @@ export function ReconcilePanel({
                       {t.description ?? "—"}
                     </div>
                     <div className="text-xs text-ink-gray-4">
-                      {t.date} · {t.reference_number ?? "no ref"}
+                      {t.date} · {t.reference_number ?? tr(locale, "no ref")}
                     </div>
                   </div>
                   <span
@@ -163,7 +163,7 @@ export function ReconcilePanel({
                       <span className="text-xs text-ink-gray-4">({p.payment_type})</span>
                     </div>
                     <div className="text-xs text-ink-gray-4">
-                      {p.posting_date} · {p.reference_no ?? "no ref"}
+                      {p.posting_date} · {p.reference_no ?? tr(locale, "no ref")}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">

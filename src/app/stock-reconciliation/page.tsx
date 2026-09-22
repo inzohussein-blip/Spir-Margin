@@ -49,7 +49,7 @@ export default async function StockReconPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">{t(locale, "Date")}</th>
                   <th className="px-4 py-2">{t(locale, "Batches")}</th>
                   <th className="px-4 py-2">{t(locale, "Notes")}</th>

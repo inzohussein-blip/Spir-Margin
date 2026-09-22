@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { localDate } from "@/lib/dates";
 
 export async function setUsdIqdRateAction(_prev: unknown, formData: FormData) {
   const user = await getCurrentUser();
@@ -34,7 +35,7 @@ export async function getUsdIqdRate(): Promise<number> {
 export async function createExchangeRate(fd: FormData) {
   const supabase = createClient();
   const { error } = await supabase.from("currency_exchanges").insert({
-    date: String(fd.get("date") || new Date().toISOString().slice(0, 10)),
+    date: String(fd.get("date") || localDate()),
     from_currency: String(fd.get("from_currency") || "").trim().toUpperCase(),
     to_currency: String(fd.get("to_currency") || "").trim().toUpperCase(),
     exchange_rate: Number(fd.get("exchange_rate") || 0),

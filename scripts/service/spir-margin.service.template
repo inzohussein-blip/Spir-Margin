@@ -19,7 +19,9 @@ WorkingDirectory=__APP_DIR__
 Environment=NODE_ENV=production
 Environment=PORT=__PORT__
 __EXTRA_ENV__
-ExecStart=__NODE_BIN__ __APP_DIR__/node_modules/next/dist/bin/next start -p __PORT__
+# Listens on this computer only unless the installer was told otherwise: the
+# app ships a fixed administrator account, so the office network is opt-in.
+ExecStart=__NODE_BIN__ __APP_DIR__/node_modules/next/dist/bin/next start -p __PORT__ -H __HOST__
 
 # The embedded database lives in the working directory, so a crash must not
 # be the end of the day: come back and keep the data where it is.

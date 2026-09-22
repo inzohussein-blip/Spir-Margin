@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 export interface VisitPurposeInput {
   device_id: string;
@@ -34,7 +35,7 @@ export async function saveMaintenanceVisit(input: MaintenanceVisitInput) {
     .insert({
       visit_no: input.visit_no || null,
       lab_id: input.lab_id || null,
-      visit_date: input.visit_date || new Date().toISOString().slice(0, 10),
+      visit_date: input.visit_date || localDate(),
       visit_time: input.visit_time || null,
       maintenance_type: input.maintenance_type,
       completion_status: input.completion_status,

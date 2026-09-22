@@ -1,5 +1,6 @@
 import "server-only";
-import { createClient } from "@/lib/supabase/server";
+// Runs during sign-in, before there is a session to check.
+import { createPublicClient as createClient } from "@/lib/supabase/server";
 
 /**
  * Login throttle backed by the `login_attempts` table (migration 0083): after

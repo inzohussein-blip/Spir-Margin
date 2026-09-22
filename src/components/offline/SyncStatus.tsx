@@ -41,7 +41,7 @@ export function SyncStatus({ compact = false }: { compact?: boolean }) {
         <button
           type="button"
           onClick={() => flush()}
-          disabled={syncing || !online}
+          disabled={syncing}
           title={t(locale, "Sync now")}
           className="inline-flex items-center gap-1.5 rounded-full border border-brand/30 bg-brand-light px-2.5 py-1 text-xs font-semibold text-brand transition-all hover:bg-brand hover:text-white active:scale-95 disabled:opacity-60"
         >

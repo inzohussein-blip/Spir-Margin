@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createPublicClient, createUserClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 
 /** Only admins and managers may view or act on monitoring data. */
@@ -25,7 +25,9 @@ export async function logError(input: {
 }) {
   try {
     const user = await getCurrentUser();
-    const supabase = createClient();
+    // The sign-in page can fail too, so this accepts reports without a
+    // session. It only ever inserts one length-capped row.
+    const supabase = createPublicClient();
     await supabase.from("app_errors").insert({
       message: String(input.message ?? "").slice(0, 2000) || "Unknown error",
       detail: input.detail ? String(input.detail).slice(0, 8000) : null,
@@ -47,7 +49,8 @@ export async function logConnectivityEvent(input: {
 }) {
   try {
     const user = await getCurrentUser();
-    const supabase = createClient();
+    // Same reasoning as logError: write-only, one bounded row.
+    const supabase = createPublicClient();
     await supabase.from("connectivity_events").insert({
       user_email: user?.email ?? null,
       went_offline_at: input.wentOfflineAt,
@@ -63,7 +66,7 @@ export async function logConnectivityEvent(input: {
 export async function logSyncEvent(input: { itemCount: number; ok: boolean; detail?: string | null }) {
   try {
     const user = await getCurrentUser();
-    const supabase = createClient();
+    const supabase = createUserClient();
     await supabase.from("sync_events").insert({
       user_email: user?.email ?? null,
       item_count: Math.max(0, Math.round(Number(input.itemCount) || 0)),
