@@ -1,3 +1,5 @@
+import { t } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n-server";
 import { createClient } from "@/lib/supabase/server";
 
 /** Server-side lookups for the banking module. */
@@ -81,8 +83,17 @@ export async function getPartyOptions() {
     supabase.from("companies").select("id, name").order("name"),
     supabase.from("labs").select("id, name").order("name"),
   ]);
+  // The suffix tells the two kinds apart in one flat list, so it is shown to
+  // the reader and has to be in their language.
+  const locale = getLocale();
   return [
-    ...(companies ?? []).map((c) => ({ value: `company:${c.id}`, label: `${c.name} (company)` })),
-    ...(labs ?? []).map((l) => ({ value: `lab:${l.id}`, label: `${l.name} (lab)` })),
+    ...(companies ?? []).map((c) => ({
+      value: `company:${c.id}`,
+      label: `${c.name} (${t(locale, "company")})`,
+    })),
+    ...(labs ?? []).map((l) => ({
+      value: `lab:${l.id}`,
+      label: `${l.name} (${t(locale, "lab")})`,
+    })),
   ];
 }

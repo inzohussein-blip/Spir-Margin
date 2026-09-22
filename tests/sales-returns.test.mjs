@@ -59,9 +59,15 @@ test("a return posts a balanced reversing journal entry", async () => {
   await db.query(`select fn_book_sales_return($1,$2,$3,$4,$5,$6)`,
     [randomUUID(), labId, "", "", "", lines(k, 2, 50)]); // return 2 -> rev 100, cost 20
 
+  // Find the entry by the return's id, which fn_post_return_gl puts in the
+  // remark. Matching the remark's WORDS would tie this test to the language
+  // the remark happens to be written in — it is display text, and migration
+  // 0091 translated it.
+  const retId = (await db.query(
+    `select id from sales_returns where lab_id=$1 order by created_at desc limit 1`, [labId])).rows[0].id;
   const je = (await db.query(
     `select id, status, total_debit, total_credit from journal_entries
-      where user_remark like '%sales return%' order by created_at desc limit 1`)).rows[0];
+      where user_remark like '%' || $1 || '%' order by created_at desc limit 1`, [retId])).rows[0];
   assert.ok(je, "a journal entry was posted for the return");
   assert.equal(je.status, "posted");
   assert.equal(Number(je.total_debit), Number(je.total_credit), "balanced");

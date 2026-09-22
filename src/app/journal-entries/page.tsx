@@ -75,7 +75,7 @@ export default async function JournalEntriesPage({
                 {rows.map((j) => (
                   <tr key={j.id}>
                     <td className="px-4 py-2 text-ink-gray-5"><Link href={`/journal-entries/${j.id}`} className="text-brand hover:underline">{j.posting_date}</Link></td>
-                    <td className="px-4 py-2">{j.voucher_type}</td>
+                    <td className="px-4 py-2">{t(locale, j.voucher_type)}</td>
                     <td className="px-4 py-2 text-ink-gray-5 max-w-xs truncate">{j.user_remark ?? "—"}</td>
                     <td className="px-4 py-2">{Number(j.total_debit).toLocaleString("en-US")}</td>
                     <td className="px-4 py-2">{Number(j.total_credit).toLocaleString("en-US")}</td>

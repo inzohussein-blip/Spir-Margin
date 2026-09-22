@@ -71,7 +71,7 @@ export default async function CompaniesPage() {
                       </span>
                     </td>
                     <td className="px-4 py-2 text-ink-gray-5">
-                      {c.supplier_type ?? "—"}
+                      {c.supplier_type ? t(locale, c.supplier_type) : "—"}
                     </td>
                     <td className="px-4 py-2 text-ink-gray-5">
                       {c.tax_id ?? "—"}
