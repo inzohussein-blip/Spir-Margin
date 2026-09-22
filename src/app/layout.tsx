@@ -59,6 +59,32 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} dir={dir}>
+      <head>
+        {/*
+          The browser offers to install the app through `beforeinstallprompt`,
+          and fires it once, early — usually before React has hydrated. If
+          nothing takes it at that moment the offer is gone, and the install
+          button in Settings would have nothing to open. So it is caught here,
+          inline, before any component exists, and parked on `window` for the
+          panel to pick up whenever the person opens Settings.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){
+              window.__spirInstall = null;
+              window.addEventListener('beforeinstallprompt', function (e) {
+                e.preventDefault();
+                window.__spirInstall = e;
+                window.dispatchEvent(new Event('spir-installable'));
+              });
+              window.addEventListener('appinstalled', function () {
+                window.__spirInstall = null;
+                window.dispatchEvent(new Event('spir-installed'));
+              });
+            })();`,
+          }}
+        />
+      </head>
       <body className="min-h-screen bg-surface-gray-1 text-ink-gray-8 antialiased">
         <LocaleProvider locale={locale}>
         <OfflineProvider>

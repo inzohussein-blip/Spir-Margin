@@ -1,0 +1,42 @@
+# Spir-Margin as a service that starts with the computer.
+#
+# Installing the app from Settings gives it a window and an icon; this is what
+# makes that icon open something. Without it, the icon points at a program
+# nobody started.
+#
+# Placeholders are filled in by install-linux.sh — do not install this file
+# directly.
+
+[Unit]
+Description=Spir-Margin
+Documentation=file://__APP_DIR__/docs/INSTALL.md
+After=network.target
+
+[Service]
+Type=simple
+User=__RUN_USER__
+WorkingDirectory=__APP_DIR__
+Environment=NODE_ENV=production
+Environment=PORT=__PORT__
+__EXTRA_ENV__
+ExecStart=__NODE_BIN__ __APP_DIR__/node_modules/next/dist/bin/next start -p __PORT__
+
+# The embedded database lives in the working directory, so a crash must not
+# be the end of the day: come back and keep the data where it is.
+Restart=on-failure
+RestartSec=5
+
+# It serves one company on one machine; it has no business writing anywhere
+# else or gaining privileges.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=__APP_DIR__
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=spir-margin
+
+[Install]
+WantedBy=multi-user.target

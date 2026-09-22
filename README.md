@@ -34,6 +34,11 @@ when no hosted database is configured) and **Hosted database** (the connection
 string, tested before it is saved). `DATABASE_URL` still wins when set, so a
 deployed server behaves exactly as deployed.
 
+Settings also installs the app — its own window and icon instead of a browser
+tab. That needs the server running, so `docs/INSTALL.md` covers starting it
+with the computer (a systemd unit on Linux, a logon task on Windows) as the
+other half of what "installed" should mean.
+
 Losing the network degrades sync, never the app. Sign-in is the same story:
 the built-in account in `src/lib/auth/demo-credentials.ts` is checked in code
 before anything touches a database, so a fresh, offline machine can still get

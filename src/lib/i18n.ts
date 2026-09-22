@@ -1059,6 +1059,13 @@ const ar: Record<string, string> = {
   "One of the values is outside what this field allows": "إحدى القيم خارج ما يسمح به الحقل",
   "One of the values is too long": "إحدى القيم أطول من المسموح",
   // offline-first platform, welcome screen and database sync
+  "Install Spir-Margin so it opens in its own window with its own icon, instead of a browser tab.": "ثبّت Spir-Margin ليفتح في نافذته الخاصة وبأيقونته، بدل تبويب في المتصفّح.",
+  "Install as an app": "التثبيت كتطبيق",
+  "Install the app": "تثبيت التطبيق",
+  "Installed on this computer": "مثبَّت على هذا الحاسوب",
+  "Installing gives the app a window and an icon. Spir-Margin still runs from this computer, so it must be started for the icon to open anything — see the setup guide for starting it automatically.": "التثبيت يمنح التطبيق نافذة وأيقونة. لكن Spir-Margin ما يزال يعمل من هذا الحاسوب، فلا بدّ أن يكون مُشغَّلاً لتفتح الأيقونة شيئاً — راجع دليل الإعداد لتشغيله تلقائياً.",
+  "Spir-Margin is running as its own window. You can open it from the computer like any other program.": "‏Spir-Margin يعمل في نافذته الخاصة. يمكنك فتحه من الحاسوب كأي برنامج آخر.",
+  "This browser does not offer a one-click install. Use its own menu — look for “Install” or “Add to Home screen”.": "هذا المتصفّح لا يوفّر تثبيتاً بنقرة واحدة. استخدم قائمته — ابحث عن «تثبيت» أو «إضافة إلى الشاشة الرئيسية».",
   "Attempts": "المحاولات",
   "Direction": "الاتجاه",
   "Ignore": "تجاهل",

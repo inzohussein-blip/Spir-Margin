@@ -1,10 +1,11 @@
-import { SettingsIcon, ToggleLeftIcon, ShieldIcon, Trash2Icon, LockIcon, HardDriveIcon, CloudIcon } from "lucide-react";
+import { SettingsIcon, ToggleLeftIcon, ShieldIcon, Trash2Icon, LockIcon, HardDriveIcon, CloudIcon, MonitorDownIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { ConfirmSubmit } from "@/components/settings/ConfirmSubmit";
 import { BackupPanel } from "@/components/settings/BackupPanel";
 import { PeerPanel } from "@/components/settings/PeerPanel";
+import { InstallAppPanel } from "@/components/settings/InstallAppPanel";
 import { getPeerInfoAction } from "@/app/actions/peer";
 import { isRemoteConfigured } from "@/lib/db/pglite";
 import { setFeatureStateAction, setUserAccessAction, deleteUserAccountAction } from "@/app/actions/settings";
@@ -59,6 +60,11 @@ export default async function SettingsPage() {
           <p className="text-sm text-ink-gray-5">{t(locale, "Manage which non-essential features are available across the app.")}</p>
         </div>
       </div>
+
+      {/* ---- Install ---- */}
+      <Panel title={<span className="flex items-center gap-2"><MonitorDownIcon size={16} className="text-brand" /> {t(locale, "Install as an app")}</span>}>
+        <InstallAppPanel />
+      </Panel>
 
       {/* ---- Hosted database ---- */}
       <Panel title={<span className="flex items-center gap-2"><CloudIcon size={16} className="text-brand" /> {t(locale, "Hosted database")}</span>}>
