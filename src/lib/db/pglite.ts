@@ -471,13 +471,22 @@ export async function dumpLocalDatabase(): Promise<Blob> {
   // One quiet query confirms the database is actually answering, and a
   // single retry covers the moment in between.
   await db.query("select 1");
-  try {
-    return await local.raw.dumpDataDir();
-  } catch (e) {
-    console.warn("[backup] first dump attempt failed, retrying:", (e as Error).message);
-    await new Promise((r) => setTimeout(r, 750));
-    return local.raw.dumpDataDir();
+  // Dumping while the engine is still busy with an earlier request fails, and
+  // it has been seen to fail twice in a row under load. A backup is the one
+  // thing that must not quietly give up, so try a few times with a widening
+  // pause and surface the real reason if they all fail.
+  let last: unknown;
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    try {
+      return await local.raw.dumpDataDir();
+    } catch (e) {
+      last = e;
+      console.warn(`[backup] dump attempt ${attempt} failed:`, (e as Error).message);
+      await new Promise((r) => setTimeout(r, attempt * 750));
+      await db.query("select 1").catch(() => undefined);
+    }
   }
+  throw last;
 }
 
 /**

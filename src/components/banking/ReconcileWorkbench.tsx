@@ -17,6 +17,8 @@ import {
   applyRulesForAccount,
   createVoucherAndReconcile,
   loadReconcileData,
+  loadReconcileLog,
+  type BankActionLogEntry,
 } from "@/app/actions/banking";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -37,11 +39,6 @@ export interface SelectedBank {
   bank: string;
   currency: string;
 }
-interface ActionLogEntry {
-  at: string;
-  action: "match" | "unmatch" | "rules";
-  detail: string;
-}
 const selectedBankAtom = atomWithStorage<SelectedBank | null>(
   "bank-rec-selected-bank",
   null
@@ -50,7 +47,6 @@ const dateRangeAtom = atomWithStorage<{ from: string; to: string }>(
   "bank-rec-date",
   { from: "", to: "" }
 );
-const actionLogAtom = atomWithStorage<ActionLogEntry[]>("bank-rec-action-log", []);
 const closingBalanceAtom = atom<number>(0);
 
 interface Txn {
@@ -80,9 +76,9 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
   const router = useRouter();
   const [selectedBank, setSelectedBank] = useAtom(selectedBankAtom);
   const [dateRange, setDateRange] = useAtom(dateRangeAtom);
-  const [log, setLog] = useAtom(actionLogAtom);
   const [closing, setClosing] = useAtom(closingBalanceAtom);
 
+  const [log, setLog] = useState<BankActionLogEntry[]>([]);
   const [txns, setTxns] = useState<Txn[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [selectedTxn, setSelectedTxn] = useState<Txn | null>(null);
@@ -96,22 +92,22 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
 
   const load = useCallback(async () => {
     if (!selectedBank) return;
-    const { txns: t, payments: p } = await loadReconcileData({
-      bankAccountId: selectedBank.id,
-      dateFrom: dateRange.from || undefined,
-      dateTo: dateRange.to || undefined,
-    });
+    const [{ txns: t, payments: p }, entries] = await Promise.all([
+      loadReconcileData({
+        bankAccountId: selectedBank.id,
+        dateFrom: dateRange.from || undefined,
+        dateTo: dateRange.to || undefined,
+      }),
+      loadReconcileLog(selectedBank.id),
+    ]);
     setTxns((t as Txn[]) ?? []);
     setPayments((p as Payment[]) ?? []);
+    setLog(entries);
   }, [selectedBank, dateRange]);
 
   useEffect(() => {
     load();
   }, [load]);
-
-  function addLog(action: ActionLogEntry["action"], detail: string) {
-    setLog([{ at: new Date().toISOString(), action, detail }, ...log].slice(0, 100));
-  }
 
   const fits = (t: Txn, p: Payment) =>
     t.deposit > 0
@@ -123,7 +119,6 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
     start(async () => {
       const res = await reconcile(selectedTxn.id, p.id, selectedBank.id);
       if (res.ok) {
-        addLog("match", `${p.party_name ?? "payment"} → ${selectedTxn.reference_number ?? selectedTxn.date}`);
         setSelectedTxn(null);
         await load();
         router.refresh();
@@ -140,7 +135,6 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
         partyName: voucherParty || undefined,
       });
       if (res.ok) {
-        addLog("match", `created payment for ${selectedTxn.reference_number ?? selectedTxn.date}`);
         setSelectedTxn(null);
         setVoucherParty("");
         await load();
@@ -154,7 +148,6 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
     start(async () => {
       const res = await applyRulesForAccount(selectedBank.id);
       if (res.ok) {
-        addLog("rules", `matched ${res.matched} transaction(s)`);
         await load();
       }
     });
@@ -209,7 +202,8 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
         <TabsContent value="match" className="pt-4">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-sm text-ink-gray-5">
-              Select a bank line, then match a payment. Unreconciled:{" "}
+              {tr(locale, "Select a bank line, then match a payment.")}{" "}
+              {tr(locale, "Unreconciled:")}{" "}
               <span className="font-semibold text-amber-600">{money(unreconciledAmount)}</span>
             </p>
             <Button variant="subtle" size="sm" onClick={autoMatch} disabled={pending}>
@@ -261,7 +255,7 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
                       >
                         <div>
                           <div className="font-medium text-ink-gray-8">{t.description ?? "—"}</div>
-                          <div className="text-xs text-ink-gray-5">{t.date} · {t.reference_number ?? "no ref"}</div>
+                          <div className="text-xs text-ink-gray-5">{t.date} · {t.reference_number ?? tr(locale, "no ref")}</div>
                         </div>
                         <span className={t.deposit > 0 ? "font-semibold text-emerald-600" : "font-semibold text-red-600"}>
                           {t.deposit > 0 ? "+" : "-"}{money(t.deposit || t.withdrawal)}
@@ -286,7 +280,7 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
                       <li key={p.id} className={`flex items-center justify-between px-4 py-3 text-sm ${good ? "bg-emerald-50" : ""}`}>
                         <div>
                           <div className="font-medium text-ink-gray-8">{p.party_name ?? "—"} <span className="text-xs text-ink-gray-5">({p.payment_type})</span></div>
-                          <div className="text-xs text-ink-gray-5">{p.posting_date} · {p.reference_no ?? "no ref"}</div>
+                          <div className="text-xs text-ink-gray-5">{p.posting_date} · {p.reference_no ?? tr(locale, "no ref")}</div>
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="font-semibold">{money(p.received_amount || p.paid_amount)}</span>
@@ -331,11 +325,21 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
               <ul className="divide-y divide-outline-gray-1">
                 {log.length === 0 && <li className="px-4 py-6 text-center text-sm text-ink-gray-5">{tr(locale, "No actions yet")}</li>}
                 {log.map((l, i) => (
-                  <li key={i} className="flex items-center justify-between px-4 py-2 text-sm">
-                    <span>{l.detail}</span>
-                    <span className="flex items-center gap-2 text-xs text-ink-gray-5">
-                      <Badge theme={l.action === "unmatch" ? "red" : l.action === "rules" ? "blue" : "green"} variant="subtle">{l.action}</Badge>
-                      {new Date(l.at).toLocaleTimeString("en-US")}
+                  <li key={i} className="flex items-center justify-between gap-3 px-4 py-2 text-sm">
+                    <span className="min-w-0 truncate">
+                      {l.detail}
+                      {l.actor ? (
+                        <span className="ms-2 text-xs text-ink-gray-5">{l.actor}</span>
+                      ) : null}
+                    </span>
+                    <span className="flex shrink-0 items-center gap-2 text-xs text-ink-gray-5">
+                      <Badge theme={l.action === "unmatch" ? "red" : "green"} variant="subtle">
+                        {tr(locale, l.action === "unmatch" ? "unmatched" : "matched")}
+                      </Badge>
+                      {new Date(l.at).toLocaleString("en-US", {
+                        year: "numeric", month: "2-digit", day: "2-digit",
+                        hour: "2-digit", minute: "2-digit", hour12: false,
+                      })}
                     </span>
                   </li>
                 ))}

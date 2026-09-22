@@ -4,6 +4,12 @@ import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth/current-user";
+
+/** Who is acting, for the audit trail behind the reconciliation log. */
+async function actor(): Promise<string | null> {
+  return (await getCurrentUser())?.email ?? null;
+}
 
 // ------- FormData helpers (mirrors crud.ts) -------------------------------
 function str(fd: FormData, k: string): string | null {
@@ -110,10 +116,11 @@ export async function reconcile(
   amount?: number
 ) {
   const supabase = createClient();
-  const { error } = await supabase.rpc("fn_reconcile_transaction", {
+  const { error } = await supabase.rpc("fn_reconcile_transaction_as", {
     p_txn_id: txnId,
     p_payment_id: paymentId,
     p_amount: amount ?? null,
+    p_actor: await actor(),
   });
   if (error) return { ok: false as const, error: error.message };
   revalidatePath(`/banking/${accountId}`);
@@ -123,8 +130,9 @@ export async function reconcile(
 
 export async function unreconcile(txnId: string, accountId: string) {
   const supabase = createClient();
-  const { error } = await supabase.rpc("fn_unreconcile_transaction", {
+  const { error } = await supabase.rpc("fn_unreconcile_transaction_as", {
     p_txn_id: txnId,
+    p_actor: await actor(),
   });
   if (error) return { ok: false as const, error: error.message };
   revalidatePath(`/banking/${accountId}`);
@@ -142,9 +150,13 @@ export async function applyRulesForAccount(accountId: string) {
     .neq("status", "reconciled");
   if (error) return { ok: false as const, error: error.message };
 
+  const who = await actor();
   let matched = 0;
   for (const t of txns ?? []) {
-    const { data } = await supabase.rpc("fn_apply_rules", { p_txn_id: t.id });
+    const { data } = await supabase.rpc("fn_apply_rules_as", {
+      p_txn_id: t.id,
+      p_actor: who,
+    });
     if (data) matched++;
   }
   revalidatePath(`/banking/${accountId}`);
@@ -192,10 +204,11 @@ export async function createVoucherAndReconcile(input: {
     .single();
   if (pErr) return { ok: false as const, error: pErr.message };
 
-  const { error: rErr } = await supabase.rpc("fn_reconcile_transaction", {
+  const { error: rErr } = await supabase.rpc("fn_reconcile_transaction_as", {
     p_txn_id: input.txnId,
     p_payment_id: pe.id,
     p_amount: null,
+    p_actor: await actor(),
   });
   if (rErr) return { ok: false as const, error: rErr.message };
 
@@ -474,3 +487,26 @@ export async function loadReconcileData(input: {
   ]);
   return { txns: (t as unknown[]) ?? [], payments: (p as unknown[]) ?? [] };
 }
+
+/**
+ * Reconciliation history for one bank account, read from the audit trail
+ * (migration 0099) rather than from the browser. Every match and unmatch is
+ * a row in `bank_transaction_payments`, so the log is complete regardless of
+ * which machine or browser performed the action.
+ */
+export async function loadReconcileLog(bankAccountId: string, limit = 100) {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("fn_bank_action_log", {
+    p_account: bankAccountId,
+    p_limit: limit,
+  });
+  if (error) return [] as BankActionLogEntry[];
+  return (data ?? []) as BankActionLogEntry[];
+}
+
+export type BankActionLogEntry = {
+  at: string;
+  action: "match" | "unmatch";
+  detail: string;
+  actor: string | null;
+};
