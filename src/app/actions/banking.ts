@@ -123,21 +123,25 @@ export async function reconcile(
     p_actor: await actor(),
   });
   if (error) return { ok: false as const, error: error.message };
-  revalidatePath(`/banking/${accountId}`);
-  revalidatePath("/banking");
-  return { ok: true as const };
+  // No revalidatePath here: every banking page is force-dynamic, so it
+  // rebuilds on the next visit anyway, and revalidating re-renders the route
+  // the workbench is standing on — which remounts it and throws the user back
+  // to the first tab after each action.
+return { ok: true as const };
 }
 
-export async function unreconcile(txnId: string, accountId: string) {
+export async function unreconcile(txnId: string) {
   const supabase = createClient();
   const { error } = await supabase.rpc("fn_unreconcile_transaction_as", {
     p_txn_id: txnId,
     p_actor: await actor(),
   });
   if (error) return { ok: false as const, error: error.message };
-  revalidatePath(`/banking/${accountId}`);
-  revalidatePath("/banking");
-  return { ok: true as const };
+  // No revalidatePath here: every banking page is force-dynamic, so it
+  // rebuilds on the next visit anyway, and revalidating re-renders the route
+  // the workbench is standing on — which remounts it and throws the user back
+  // to the first tab after each action.
+return { ok: true as const };
 }
 
 /**
@@ -165,8 +169,11 @@ export async function applyRulesForAccount(accountId: string, only?: string[]) {
     });
     if (data) matched++;
   }
-  revalidatePath(`/banking/${accountId}`);
-  return { ok: true as const, matched };
+  // No revalidatePath here: every banking page is force-dynamic, so it
+  // rebuilds on the next visit anyway, and revalidating re-renders the route
+  // the workbench is standing on — which remounts it and throws the user back
+  // to the first tab after each action.
+return { ok: true as const, matched };
 }
 
 /**
@@ -217,10 +224,11 @@ export async function createVoucherAndReconcile(input: {
     p_actor: await actor(),
   });
   if (rErr) return { ok: false as const, error: rErr.message };
-
-  revalidatePath(`/banking/${input.accountId}`);
-  revalidatePath("/banking");
-  return { ok: true as const, paymentId: pe.id };
+  // No revalidatePath here: every banking page is force-dynamic, so it
+  // rebuilds on the next visit anyway, and revalidating re-renders the route
+  // the workbench is standing on — which remounts it and throws the user back
+  // to the first tab after each action.
+return { ok: true as const, paymentId: pe.id };
 }
 
 // ========================================================================
@@ -540,6 +548,58 @@ export async function loadReconcileLog(bankAccountId: string, limit = 100) {
   if (error) return [] as BankActionLogEntry[];
   return (data ?? []) as BankActionLogEntry[];
 }
+
+/**
+ * What is currently matched on an account, so a wrong match can be seen and
+ * undone. The workbench itself lists only unreconciled lines, which is
+ * exactly why a settled one needed a place of its own.
+ */
+export async function loadAllocations(input: {
+  bankAccountId: string;
+  dateFrom?: string;
+  dateTo?: string;
+}) {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("fn_allocations", {
+    p_account: input.bankAccountId,
+    p_from: input.dateFrom ?? null,
+    p_to: input.dateTo ?? null,
+  });
+  if (error) return [] as Allocation[];
+  return (data ?? []) as Allocation[];
+}
+
+/** Remove ONE allocation; both sides reopen for exactly the amount freed. */
+export async function unallocate(allocId: string) {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("fn_unallocate_as", {
+    p_alloc_id: allocId,
+    p_actor: await actor(),
+  });
+  if (error) return { ok: false as const, error: error.message };
+  // No revalidatePath here: every banking page is force-dynamic, so it
+  // rebuilds on the next visit anyway, and revalidating re-renders the route
+  // the workbench is standing on — which remounts it and throws the user back
+  // to the first tab after each action.
+return { ok: true as const };
+}
+
+export type Allocation = {
+  alloc_id: string;
+  txn_id: string;
+  txn_date: string;
+  txn_description: string | null;
+  txn_reference: string | null;
+  txn_total: number;
+  txn_unallocated: number;
+  txn_status: string;
+  payment_id: string | null;
+  party_name: string | null;
+  payment_type: string | null;
+  payment_reference: string | null;
+  allocated: number;
+  allocated_at: string;
+};
 
 export type BankActionLogEntry = {
   at: string;

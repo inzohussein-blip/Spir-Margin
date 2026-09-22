@@ -40,15 +40,27 @@ export async function launch() {
   });
 }
 
-/** A signed-in page. Sign-in is the same on every suite, so it lives here. */
+/**
+ * A signed-in page. Sign-in is the same on every suite, so it lives here.
+ *
+ * The first sign-in against a freshly started server is also the request that
+ * boots the embedded database and runs every migration, and on a loaded
+ * machine that can outrun the attempt. A second try costs a few seconds and
+ * removes a whole class of phantom suite failures.
+ */
 export async function signIn(ctx) {
   const p = await ctx.newPage();
-  await p.goto(H + "/login", { waitUntil: "domcontentloaded", timeout: 180000 });
-  await p.fill('input[name="email"]', ACCOUNT.email);
-  await p.fill('input[name="password"]', ACCOUNT.password);
-  await p.locator('form:has(input[name="password"]) button[type="submit"]').first().click();
-  await p.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 180000 }).catch(() => {});
-  await p.waitForLoadState("networkidle").catch(() => {});
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    await p.goto(H + "/login", { waitUntil: "domcontentloaded", timeout: 180000 });
+    if (!new URL(p.url()).pathname.startsWith("/login")) break; // already signed in
+    await p.fill('input[name="email"]', ACCOUNT.email);
+    await p.fill('input[name="password"]', ACCOUNT.password);
+    await p.locator('form:has(input[name="password"]) button[type="submit"]').first().click();
+    await p.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 180000 }).catch(() => {});
+    await p.waitForLoadState("networkidle").catch(() => {});
+    if (!new URL(p.url()).pathname.startsWith("/login")) break;
+    await p.waitForTimeout(3000 * attempt);
+  }
   return p;
 }
 

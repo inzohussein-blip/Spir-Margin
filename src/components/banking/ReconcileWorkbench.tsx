@@ -3,7 +3,6 @@
 import { useEffect, useState, useTransition, useCallback, useMemo } from "react";
 import { atom, useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
-import { useRouter } from "next/navigation";
 import {
   LandmarkIcon,
   ShuffleIcon,
@@ -12,14 +11,19 @@ import {
   CheckCircleIcon,
   Loader2Icon,
   ClockAlertIcon,
+  Link2OffIcon,
+  LinkIcon,
 } from "lucide-react";
 import {
   reconcile,
   applyRulesForAccount,
   createVoucherAndReconcile,
   createVouchersForTransactions,
+  loadAllocations,
+  unallocate,
   loadReconcileData,
   loadReconcileLog,
+  type Allocation,
   type BankActionLogEntry,
 } from "@/app/actions/banking";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -104,7 +108,6 @@ function allocatable(t: Txn, p: Payment) {
 
 export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
   const locale = useLocale();
-  const router = useRouter();
   const [selectedBank, setSelectedBank] = useAtom(selectedBankAtom);
   const [dateRange, setDateRange] = useAtom(dateRangeAtom);
   const [closing, setClosing] = useAtom(closingBalanceAtom);
@@ -113,11 +116,16 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
   const [txns, setTxns] = useState<Txn[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [older, setOlder] = useState({ n: 0, total: 0 });
+  const [allocs, setAllocs] = useState<Allocation[]>([]);
   const [selectedTxn, setSelectedTxn] = useState<Txn | null>(null);
   const [voucherParty, setVoucherParty] = useState("");
   const [amounts, setAmounts] = useState<Record<string, string>>({});
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [note, setNote] = useState<string | null>(null);
+  // Controlled, so refreshing after an action does not drop the user back on
+  // the first tab — undoing a match happens on the Matched tab and they will
+  // usually want to undo another.
+  const [tab, setTab] = useState("match");
   const [pending, start] = useTransition();
 
   // default the selected bank once
@@ -127,18 +135,21 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
 
   const load = useCallback(async () => {
     if (!selectedBank) return;
-    const [data, entries] = await Promise.all([
-      loadReconcileData({
-        bankAccountId: selectedBank.id,
-        dateFrom: dateRange.from || undefined,
-        dateTo: dateRange.to || undefined,
-      }),
+    const range = {
+      bankAccountId: selectedBank.id,
+      dateFrom: dateRange.from || undefined,
+      dateTo: dateRange.to || undefined,
+    };
+    const [data, entries, matched] = await Promise.all([
+      loadReconcileData(range),
       loadReconcileLog(selectedBank.id),
+      loadAllocations(range),
     ]);
     setTxns((data.txns as Txn[]) ?? []);
     setPayments((data.payments as Payment[]) ?? []);
     setOlder(data.older);
     setLog(entries);
+    setAllocs(matched);
   }, [selectedBank, dateRange]);
 
   useEffect(() => {
@@ -151,11 +162,14 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
     setPicked((cur) => new Set([...cur].filter((id) => txns.some((t) => t.id === id))));
   }, [txns]);
 
+  // The workbench owns everything it shows and reloads it here, and the
+  // server actions already revalidate the route for the next navigation. A
+  // router.refresh() on top of that only remounts the tree — which threw the
+  // user back to the first tab after every match and every undo.
   const after = async (message: string) => {
     setNote(message);
     setAmounts({});
     await load();
-    router.refresh();
   };
 
   function doMatch(p: Payment) {
@@ -196,6 +210,15 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
     start(async () => {
       const res = await applyRulesForAccount(selectedBank.id, only);
       if (res.ok) await after(`${tr(locale, "Rules matched")} ${res.matched}`);
+    });
+  }
+
+  function undo(a: Allocation) {
+    if (!selectedBank) return;
+    start(async () => {
+      const res = await unallocate(a.alloc_id);
+      if (res.ok) await after(`${tr(locale, "Match undone")} — ${money(a.allocated)}`);
+      else setNote(res.error);
     });
   }
 
@@ -283,9 +306,10 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
         </div>
       )}
 
-      <Tabs defaultValue="match">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="match"><ShuffleIcon size={14} className="mr-1" /> {tr(locale, "Match & Reconcile")}</TabsTrigger>
+          <TabsTrigger value="matched"><LinkIcon size={14} className="mr-1" /> {tr(locale, "Matched")}</TabsTrigger>
           <TabsTrigger value="statement"><ScrollTextIcon size={14} className="mr-1" /> {tr(locale, "Statement")}</TabsTrigger>
           <TabsTrigger value="log"><ListIcon size={14} className="mr-1" /> {tr(locale, "Action Log")}</TabsTrigger>
         </TabsList>
@@ -485,6 +509,51 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* What is already matched — and how to undo it */}
+        <TabsContent value="matched" className="pt-4">
+          <Card>
+            <CardHeader><CardTitle>{tr(locale, "Matched")} ({allocs.length})</CardTitle></CardHeader>
+            <CardContent className="p-0">
+              <ul className="divide-y divide-outline-gray-1">
+                {allocs.length === 0 && (
+                  <li className="px-4 py-6 text-center text-sm text-ink-gray-5">
+                    {tr(locale, "Nothing matched in this period")}
+                  </li>
+                )}
+                {allocs.map((a) => (
+                  <li key={a.alloc_id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate font-medium text-ink-gray-8">
+                          {a.txn_description ?? a.txn_reference ?? a.txn_date}
+                        </span>
+                        <span className="text-ink-gray-4">←</span>
+                        <span className="truncate text-ink-gray-7">{a.party_name ?? "—"}</span>
+                        {Number(a.txn_unallocated) > EPS && (
+                          <Badge theme="orange" variant="subtle">{tr(locale, "partly allocated")}</Badge>
+                        )}
+                      </div>
+                      <div className="text-xs text-ink-gray-5">
+                        {a.txn_date} · {a.payment_reference ?? a.txn_reference ?? tr(locale, "no ref")}
+                        {Number(a.txn_unallocated) > EPS && (
+                          <> · {tr(locale, "left")} {money(a.txn_unallocated)}</>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <span className="font-semibold">{money(a.allocated)}</span>
+                      <Button variant="subtle" size="sm" disabled={pending} onClick={() => undo(a)}>
+                        <Link2OffIcon size={14} className="mr-1" />
+                        {tr(locale, "Undo match")}
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Statement */}
