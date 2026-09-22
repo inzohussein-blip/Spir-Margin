@@ -278,3 +278,45 @@ test("master data renamed by a migration does not collide on sync", async () => 
   const n = await hub.query(`select count(*)::int as n from cost_centers where name = 'رئيسي'`);
   assert.equal(n.rows[0].n, 1, "the peer should still hold exactly one 'رئيسي' cost centre");
 });
+
+test("an interrupted push resumes where it stopped, losing and duplicating nothing", async () => {
+  // The engine claims a failure mid-run leaves the cursor at the work that
+  // actually landed. Prove it: fail the peer partway through a batch, then
+  // let the next pass finish.
+  const a = wrap(await bootWithMigrations());
+  const hubPg = await bootWithMigrations();
+  const hub = wrap(hubPg);
+
+  for (let i = 1; i <= 6; i++) {
+    await a.query(`insert into labs (code, name) values ($1, $2)`, [`L-R${i}`, `مختبر ${i}`]);
+  }
+
+  // A peer that dies after the third write of the run.
+  let writes = 0;
+  const flaky = {
+    query: (sql, params = []) => {
+      if (/insert into _spir_changes|_spir_apply_change/.test(sql) && ++writes > 6) {
+        throw new Error("connection lost");
+      }
+      return hubPg.query(sql, params);
+    },
+  };
+
+  await assert.rejects(() => sync(a, flaky), /connection lost/);
+
+  const landed = Number((await hub.query(`select count(*)::int n from labs where code like 'L-R%'`)).rows[0].n);
+  assert.ok(landed > 0 && landed < 6, `expected a partial push, got ${landed}`);
+
+  // The peer recovers. The cursor sits before the batch that died, so the
+  // next pass replays it — deliberately, since a cursor write per row would
+  // cost a round trip per change and replaying costs nothing.
+  const res = await sync(a, hub);
+  assert.ok(res.sent >= 6 - landed, `the remainder must go, got ${res.sent}`);
+
+  const rows = await hub.query(`select code, count(*)::int n from labs where code like 'L-R%' group by code order by code`);
+  assert.equal(rows.rows.length, 6, "all six should be there");
+  assert.ok(rows.rows.every((r) => r.n === 1), "and none duplicated");
+
+  // And a further pass moves nothing at all.
+  assert.deepEqual(await sync(a, hub), { sent: 0, got: 0 });
+});

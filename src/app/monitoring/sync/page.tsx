@@ -5,6 +5,8 @@ import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { MonitoringUnauthorized } from "@/components/monitoring/Unauthorized";
 import { SyncHealthLive } from "@/components/monitoring/SyncHealthLive";
+import { DatabaseSyncPanel } from "@/components/monitoring/DatabaseSyncPanel";
+import { fmtDateTime, fmtNum } from "@/lib/format";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
 
@@ -37,7 +39,7 @@ export default async function SyncHealthPage() {
   const syncs = (syncRes.data as unknown as Sync[]) ?? [];
 
   const totalDowntime = outages.reduce((s, o) => s + Number(o.duration_seconds), 0);
-  const lastSync = syncs[0]?.synced_at ? new Date(syncs[0].synced_at).toLocaleString("en-US") : "—";
+  const lastSync = syncs[0]?.synced_at ? fmtDateTime(syncs[0].synced_at) : "—";
   const failedSyncs = syncs.filter((s) => !s.ok).length;
 
   return (
@@ -45,15 +47,24 @@ export default async function SyncHealthPage() {
       <div>
         <div className="text-sm text-ink-gray-5">{t(locale, "Monitoring")}</div>
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Sync Health")}</h1>
-        <p className="text-sm text-ink-gray-5">{t(locale, "Confirm the offline queue synced correctly after the connection returned, and see how long the network was down.")}</p>
+        <p className="text-sm text-ink-gray-5">{t(locale, "Two different things can fall behind: this machine's database reaching the hosted one, and sales queued in the browser. Both are reported below.")}</p>
       </div>
 
-      <SyncHealthLive />
+      {/* The database axis: has this machine's data reached the hosted one? */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold text-ink-gray-7">{t(locale, "Database sync")}</h2>
+        <DatabaseSyncPanel locale={locale} />
+      </section>
+
+      {/* The browser axis: sales submitted while the page was offline. */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold text-ink-gray-7">{t(locale, "Browser queue and connectivity")}</h2>
+        <SyncHealthLive />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <StatCard label={t(locale, "Outages recorded")} value={String(outages.length)} accent={outages.length ? "amber" : "green"} />
+        <StatCard label={t(locale, "Outages recorded")} value={fmtNum(outages.length)} accent={outages.length ? "amber" : "green"} />
         <StatCard label={t(locale, "Total downtime")} value={human(totalDowntime)} accent="amber" />
-        <StatCard label={t(locale, "Failed syncs")} value={String(failedSyncs)} accent={failedSyncs ? "red" : "green"} />
+        <StatCard label={t(locale, "Failed syncs")} value={fmtNum(failedSyncs)} accent={failedSyncs ? "red" : "green"} />
         <StatCard label={t(locale, "Last sync")} value={lastSync} accent="brand" />
       </div>
 
@@ -74,8 +85,8 @@ export default async function SyncHealthPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {outages.map((o) => (
                   <tr key={o.id} className="hover:bg-surface-gray-1">
-                    <td className="whitespace-nowrap px-4 py-2 text-ink-gray-5">{new Date(o.went_offline_at).toLocaleString("en-US")}</td>
-                    <td className="whitespace-nowrap px-4 py-2 text-ink-gray-5">{new Date(o.came_online_at).toLocaleString("en-US")}</td>
+                    <td className="whitespace-nowrap px-4 py-2 text-ink-gray-5">{fmtDateTime(o.went_offline_at)}</td>
+                    <td className="whitespace-nowrap px-4 py-2 text-ink-gray-5">{fmtDateTime(o.came_online_at)}</td>
                     <td className="px-4 py-2 font-medium tabular-nums text-amber-700">{human(Number(o.duration_seconds))}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{o.user_email ?? "—"}</td>
                   </tr>
@@ -104,13 +115,13 @@ export default async function SyncHealthPage() {
               <tbody className="divide-y divide-outline-gray-1">
                 {syncs.map((s) => (
                   <tr key={s.id} className="hover:bg-surface-gray-1">
-                    <td className="whitespace-nowrap px-4 py-2 text-ink-gray-5">{new Date(s.synced_at).toLocaleString("en-US")}</td>
+                    <td className="whitespace-nowrap px-4 py-2 text-ink-gray-5">{fmtDateTime(s.synced_at)}</td>
                     <td className="px-4 py-2">
                       {s.ok
                         ? <span className="inline-flex items-center gap-1 text-emerald-600"><CheckCircle2Icon size={14} /> {t(locale, "OK")}</span>
                         : <span className="inline-flex items-center gap-1 text-red-600"><XCircleIcon size={14} /> {t(locale, "Failed")}</span>}
                     </td>
-                    <td className="px-4 py-2 tabular-nums text-ink-gray-6">{s.item_count}</td>
+                    <td className="px-4 py-2 tabular-nums text-ink-gray-6">{fmtNum(s.item_count)}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{s.detail ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{s.user_email ?? "—"}</td>
                   </tr>
@@ -120,6 +131,7 @@ export default async function SyncHealthPage() {
           </div>
         )}
       </Panel>
+      </section>
     </div>
   );
 }

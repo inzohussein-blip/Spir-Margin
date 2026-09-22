@@ -16,7 +16,15 @@ import { getDb, getRemoteDb, isRemoteConfigured, resetRemoteDb, type Db } from "
  *
  * Nothing here is on the request path. If the peer is missing, unreachable or
  * half-broken, the company keeps working on the local database and the next
- * run picks up where this one stopped.
+ * run carries on.
+ *
+ * Resumption is per BATCH, not per row: a run that dies halfway through a
+ * batch leaves the cursor before it, so the next run replays that batch. That
+ * is deliberate — a cursor write per row would cost a round trip per change,
+ * and replaying is free of consequence because applying a change is
+ * idempotent (the row-version register drops what it has already seen, and
+ * the peer's log is unique on origin + origin_seq). Nothing is lost and
+ * nothing lands twice; at worst a few hundred rows are re-sent.
  *
  * Conflicts resolve last-writer-wins per row, which is the honest rule for a
  * single company where two people rarely edit the same record at once.
@@ -96,6 +104,43 @@ export async function syncStatus(): Promise<SyncStatus> {
     pending: Number(p.rows[0]?.n ?? 0),
     lastSyncAt: s.rows[0]?.last_sync_at ?? null,
     lastError: s.rows[0]?.last_error ?? null,
+  };
+}
+
+/** Everything `/monitoring/sync` needs about database sync, in one read. */
+export interface SyncDetail extends SyncStatus {
+  /** Changes this machine has recorded since it was set up. */
+  logged: number;
+  /** When the oldest not-yet-sent change was made. */
+  oldestPending: string | null;
+  /** What is still only on this machine, oldest first. */
+  waiting: { table: string; op: "I" | "U" | "D"; at: string }[];
+}
+
+export async function syncDetail(limit = 25): Promise<SyncDetail> {
+  const base = await syncStatus();
+  const { db } = await getDb();
+  const me = await nodeId(db);
+  const { pushed } = await cursors(db);
+
+  const total = await db.query<{ n: string }>(
+    `select count(*)::text as n from _spir_changes where origin = $1`,
+    [me],
+  );
+  const rows = await db.query<{ table_name: string; op: "I" | "U" | "D"; changed_at: string }>(
+    `select table_name, op, changed_at
+       from _spir_changes
+      where origin = $1 and seq > $2
+      order by seq
+      limit ${Math.max(1, Math.min(limit, 200))}`,
+    [me, pushed],
+  );
+
+  return {
+    ...base,
+    logged: Number(total.rows[0]?.n ?? 0),
+    oldestPending: rows.rows[0]?.changed_at ?? null,
+    waiting: rows.rows.map((r) => ({ table: r.table_name, op: r.op, at: r.changed_at })),
   };
 }
 
@@ -227,8 +272,8 @@ async function pull(
 
 /**
  * Run one sync pass. Safe to call at any time: with no peer configured it
- * reports that and does nothing, and a failure mid-run leaves the cursors
- * where the work actually got to.
+ * reports that and does nothing, and a failure part-way leaves the cursors at
+ * the last completed batch, which the next run simply replays.
  */
 export async function runSync(): Promise<SyncResult> {
   if (!isRemoteConfigured()) {
