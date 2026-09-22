@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { PrintButton } from "./PrintButton";
 import { getLocale } from "@/lib/i18n-server";
+import { getBranding, brandingLines } from "@/lib/branding";
 import { t } from "@/lib/i18n";
 
 export interface PartyBlock {
@@ -25,7 +26,7 @@ const money = (n: number, currency = "USD") =>
  * Clean, printable A4-style document (invoice / quotation / order / delivery note).
  * The app shell is hidden on print via the `.no-print` / print:hidden classes.
  */
-export function DocumentSheet({
+export async function DocumentSheet({
   docType,
   docNo,
   date,
@@ -51,6 +52,11 @@ export function DocumentSheet({
   footer?: ReactNode;
 }) {
   const locale = getLocale();
+  const brand = await getBranding();
+  const name = brand.companyName ?? "Spir-Margin";
+  const contact = brandingLines(brand);
+  const watermark = brand.watermarkOn ? (brand.watermarkText ?? brand.companyName) : null;
+
   return (
     <div className="mx-auto max-w-3xl">
       <div className="no-print mb-4 flex items-center justify-between">
@@ -58,17 +64,47 @@ export function DocumentSheet({
         <PrintButton />
       </div>
 
-      <div className="rounded-lg border border-outline-gray-2 bg-white p-8 text-ink-gray-8 print:rounded-none print:border-0 print:p-0">
-        {/* Header */}
-        <div className="flex items-start justify-between border-b border-outline-gray-2 pb-6">
-          <div>
-            <div className="flex items-center gap-2 text-xl font-bold">
-              <span className="grid size-8 place-items-center rounded-md bg-brand text-white print:bg-brand">S</span>
-              Spir-Margin
-            </div>
-            <p className="mt-1 text-xs text-ink-gray-5">{t(locale, "Medical devices · lab supplies · reagent kits")}</p>
+      <div className="relative overflow-hidden rounded-lg border border-outline-gray-2 bg-white p-8 text-ink-gray-8 print:rounded-none print:border-0 print:p-0">
+        {/* Watermark. Behind everything and non-interactive, so it never
+            covers a figure someone has to read. */}
+        {watermark ? (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-0 grid place-items-center overflow-hidden"
+          >
+            <span className="-rotate-45 whitespace-nowrap text-6xl font-black uppercase tracking-widest text-ink-gray-8/[0.06] print:text-ink-gray-8/[0.08]">
+              {watermark}
+            </span>
           </div>
-          <div className="text-end">
+        ) : null}
+
+        <div className="relative z-10">
+        {/* Letterhead */}
+        <div className="flex items-start justify-between gap-6 border-b border-outline-gray-2 pb-6">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 text-xl font-bold">
+              {brand.logo ? (
+                // A data URI held on this machine, so a plain <img> is right
+                // here — next/image would try to optimise something local.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={brand.logo} alt="" className="max-h-12 max-w-[7rem] object-contain" />
+              ) : (
+                <span className="grid size-8 shrink-0 place-items-center rounded-md bg-brand text-white print:bg-brand">
+                  {name.trim().charAt(0) || "S"}
+                </span>
+              )}
+              <span className="truncate">{name}</span>
+            </div>
+            {brand.tagline ? (
+              <p className="mt-1 text-xs text-ink-gray-5">{brand.tagline}</p>
+            ) : brand.companyName ? null : (
+              <p className="mt-1 text-xs text-ink-gray-5">{t(locale, "Medical devices · lab supplies · reagent kits")}</p>
+            )}
+            {contact.map((line, i) => (
+              <p key={i} className="text-xs text-ink-gray-5">{line}</p>
+            ))}
+          </div>
+          <div className="shrink-0 text-end">
             <h1 className="text-2xl font-bold uppercase tracking-wide text-ink-gray-9">{docType}</h1>
             <p className="mt-1 text-sm font-medium">{docNo}</p>
             <p className="text-xs text-ink-gray-5">{date}</p>
@@ -146,7 +182,8 @@ export function DocumentSheet({
         ) : null}
 
         <div className="mt-8 border-t border-outline-gray-2 pt-4 text-center text-xs text-ink-gray-4">
-          {footer ?? t(locale, "Thank you for your business — Spir-Margin")}
+          {footer ?? brand.footerNote ?? `${t(locale, "Thank you for your business")} — ${name}`}
+        </div>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
--- Spir-Margin — combined schema (all 93 migrations). Run ONCE on an EMPTY DB.
+-- Spir-Margin — combined schema (all 95 migrations). Run ONCE on an EMPTY DB.
 --
 -- GENERATED FILE — do not edit by hand. Rebuild with:
 --     npm run schema
@@ -7585,6 +7585,212 @@ create or replace function fn_spir_clear_reject(
        and resolved_at is null;
 $$;
 
+-- ===== migration: 0095_branding.sql =====
+-- =====================================================================
+-- Migration 0095 : Company identity, and document numbering
+--
+-- The app is installed at one company, and every document it prints was
+-- going out under the name "Spir-Margin" with a placeholder mark. The
+-- company's own name, logo, watermark and contact details belong on those
+-- pages instead.
+--
+-- This is deliberately LOCAL. The table is `_spir`-prefixed, which the change
+-- log excludes, so a company's identity never syncs onto another machine and
+-- a second branch can carry its own letterhead. It is also why the logo is
+-- stored here as a data URI rather than in `attachments`: attachments sync,
+-- and this must not.
+--
+-- The counter is local for the same reason, and that is what makes document
+-- numbers safe: two machines each numbering REQ-0001 would collide the moment
+-- they synced, so the number carries a per-machine prefix from the branding
+-- and the sequence is kept per machine.
+-- =====================================================================
+
+create table if not exists _spir_branding (
+    only_row      boolean primary key default true check (only_row),
+    company_name  text,
+    tagline       text,
+    logo          text,          -- data: URI, shown on screen and in print
+    watermark_text text,         -- printed faintly across the page
+    watermark_on  boolean not null default false,
+    address       text,
+    city          text,
+    phone         text,
+    email         text,
+    website       text,
+    tax_id        text,
+    doc_prefix    text,          -- per machine, so numbers cannot collide
+    footer_note   text,          -- a line along the bottom of every document
+    updated_at    timestamptz not null default now()
+);
+insert into _spir_branding (only_row) values (true) on conflict do nothing;
+
+create table if not exists _spir_doc_counter (
+    kind text not null,
+    year int  not null,
+    seq  int  not null default 0,
+    primary key (kind, year)
+);
+
+/**
+ * The next number for a kind of document, as PREFIX-KIND-YYYY-NNNN.
+ *
+ * Sequential per year so a run of documents reads as a run, and prefixed per
+ * machine so two machines never mint the same number. Taking the number and
+ * advancing the counter happen in one statement, so two requests at once
+ * cannot be handed the same one.
+ */
+create or replace function fn_next_doc_no(p_kind text) returns text
+language plpgsql as $$
+declare
+    v_year int := extract(year from current_date)::int;
+    v_seq  int;
+    v_prefix text;
+begin
+    insert into _spir_doc_counter (kind, year, seq) values (p_kind, v_year, 1)
+    on conflict (kind, year) do update set seq = _spir_doc_counter.seq + 1
+    returning seq into v_seq;
+
+    select nullif(trim(doc_prefix), '') into v_prefix from _spir_branding;
+
+    return concat_ws('-', v_prefix, upper(p_kind), v_year::text, lpad(v_seq::text, 4, '0'));
+end $$;
+
+-- ===== migration: 0096_shortcuts_documents.sql =====
+-- =====================================================================
+-- Migration 0096 : Sales requests and transport authorisations
+--
+-- Two documents the company issues by hand today.
+--
+-- A SALES REQUEST is what a customer asks for before anything is invoiced:
+-- lines, a total, and a receipt to hand over. It is deliberately looser than
+-- a sales order — a line may name a product from the catalogue or just
+-- describe one, because the person writing it is often on the phone.
+--
+-- A TRANSPORT AUTHORISATION is a formal letter: it names who is authorised
+-- to move which equipment between which governorates, in which vehicle, and
+-- until when. It is carried and shown, so what matters is that it prints as
+-- a proper letter on the company's letterhead.
+--
+-- Both are business records, so unlike the branding they are NOT `_spir`
+-- prefixed and they sync like everything else.
+-- =====================================================================
+
+-- ── Sales requests ──────────────────────────────────────────────────
+create table if not exists sale_requests (
+    id            uuid primary key default gen_random_uuid(),
+    request_no    text not null unique,
+    request_date  date not null default current_date,
+    lab_id        uuid references labs(id) on delete set null,
+    customer_name text,                      -- when the buyer is not a lab
+    customer_phone text,
+    status        text not null default 'draft'
+                  check (status in ('draft', 'confirmed', 'delivered', 'cancelled')),
+    currency      text not null default 'USD',
+    discount      numeric(14, 2) not null default 0 check (discount >= 0),
+    notes         text,
+    created_by    text,
+    created_at    timestamptz not null default now(),
+    updated_at    timestamptz not null default now()
+);
+create index if not exists idx_sale_requests_lab on sale_requests(lab_id);
+create index if not exists idx_sale_requests_date on sale_requests(request_date desc);
+
+create table if not exists sale_request_items (
+    id          uuid primary key default gen_random_uuid(),
+    request_id  uuid not null references sale_requests(id) on delete cascade,
+    product_id  uuid references products(id) on delete set null,
+    description text not null,               -- always set, even for a catalogue line
+    qty         numeric(14, 3) not null default 1 check (qty > 0),
+    rate        numeric(14, 2) not null default 0 check (rate >= 0),
+    line_no     int not null default 1,
+    amount      numeric(14, 2) generated always as (round(qty * rate, 2)) stored
+);
+create index if not exists idx_sale_request_items_request on sale_request_items(request_id);
+create index if not exists idx_sale_request_items_product on sale_request_items(product_id);
+
+/** What the request comes to, after its discount. */
+create or replace function fn_sale_request_total(p_request uuid) returns numeric
+language sql stable as $$
+    select greatest(
+        coalesce((select sum(amount) from sale_request_items where request_id = p_request), 0)
+        - coalesce((select discount from sale_requests where id = p_request), 0),
+        0)
+$$;
+
+create or replace view v_sale_request_totals as
+    select r.id,
+           coalesce(sum(i.amount), 0)                        as subtotal,
+           r.discount,
+           greatest(coalesce(sum(i.amount), 0) - r.discount, 0) as total,
+           count(i.id)                                       as line_count
+      from sale_requests r
+      left join sale_request_items i on i.request_id = r.id
+     group by r.id, r.discount;
+
+-- ── Transport authorisations ────────────────────────────────────────
+create table if not exists transport_authorizations (
+    id             uuid primary key default gen_random_uuid(),
+    auth_no        text not null unique,
+    issue_date     date not null default current_date,
+    valid_from     date not null default current_date,
+    valid_to       date not null,
+    addressed_to   text,                      -- the checkpoint or authority
+    bearer_name    text not null,             -- the person carrying this
+    bearer_id_no   text,
+    bearer_phone   text,
+    driver_name    text,
+    vehicle_type   text,
+    vehicle_plate  text,
+    from_governorate text not null,
+    to_governorate   text not null,
+    destination    text,                      -- the lab or hospital
+    purpose        text,
+    notes          text,
+    status         text not null default 'issued'
+                   check (status in ('issued', 'expired', 'cancelled')),
+    created_by     text,
+    created_at     timestamptz not null default now(),
+    updated_at     timestamptz not null default now(),
+    constraint transport_auth_dates check (valid_to >= valid_from)
+);
+create index if not exists idx_transport_auth_date on transport_authorizations(issue_date desc);
+
+create table if not exists transport_authorization_items (
+    id          uuid primary key default gen_random_uuid(),
+    auth_id     uuid not null references transport_authorizations(id) on delete cascade,
+    device_id   uuid references devices(id) on delete set null,
+    description text not null,
+    qty         numeric(14, 3) not null default 1 check (qty > 0),
+    unit        text,
+    serial_no   text,
+    notes       text,
+    line_no     int not null default 1
+);
+create index if not exists idx_transport_auth_items_auth on transport_authorization_items(auth_id);
+create index if not exists idx_transport_auth_items_device on transport_authorization_items(device_id);
+
+-- Same access rule as the rest of the app's tables.
+do $$
+declare tbl text;
+begin
+    foreach tbl in array array['sale_requests', 'sale_request_items',
+                               'transport_authorizations', 'transport_authorization_items']
+    loop
+        execute format('alter table %I enable row level security', tbl);
+        execute format('drop policy if exists "authenticated_all" on %I', tbl);
+        execute format('create policy "authenticated_all" on %I for all to authenticated using (true) with check (true)', tbl);
+    end loop;
+end $$;
+
+-- These tables were created after 0089, which is what attaches the change-log
+-- triggers, so they need it applied again. Any migration that adds a table
+-- ends this way — the app re-attaches on boot, but a database stood up with
+-- `psql -f schema.sql` never calls that, and would sync nothing from these.
+select _spir_attach_change_log();
+
+select _spir_attach_change_log();
+
 create table if not exists _spir_migrations (
   filename text primary key,
   applied_at timestamptz not null default now()
@@ -7682,7 +7888,9 @@ insert into _spir_migrations(filename) values
   ('0091_arabic_generated_text.sql'),
   ('0092_prune_change_log.sql'),
   ('0093_peer_setting.sql'),
-  ('0094_sync_rejects.sql')
+  ('0094_sync_rejects.sql'),
+  ('0095_branding.sql'),
+  ('0096_shortcuts_documents.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;

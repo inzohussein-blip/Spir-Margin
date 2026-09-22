@@ -52,6 +52,13 @@ for (const f of files) {
   parts.push("");
 }
 
+// Cover every table with the change log. Migrations that add tables call
+// this themselves, but saying it once more at the end costs nothing and means
+// a database built from this file is never left with a table that silently
+// does not sync.
+parts.push(`select _spir_attach_change_log();`);
+parts.push("");
+
 // Record the ledger so the app's own migrator treats this database as
 // already migrated and does not replay any file on first boot.
 parts.push(`create table if not exists _spir_migrations (`);

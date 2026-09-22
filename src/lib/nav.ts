@@ -7,7 +7,7 @@ import {
   PackagePlusIcon, PlugIcon, CalendarClockIcon, LifeBuoyIcon, FileSignatureIcon,
   CalendarDaysIcon, UsersIcon, CreditCardIcon, PercentIcon, ListChecksIcon,
   BarChart3Icon, TrendingUpIcon, CalculatorIcon, RepeatIcon, SettingsIcon,
-  AlertTriangleIcon, HistoryIcon, RefreshCwIcon,
+  AlertTriangleIcon, HistoryIcon, RefreshCwIcon, ReceiptTextIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -17,6 +17,12 @@ export interface NavGroup { label: string; items: NavItem[]; }
 /** Sidebar workspaces (module groups), also used by the awesomebar + workspace pages. */
 export const navGroups: NavGroup[] = [
   { label: "Home", items: [{ href: "/", label: "Dashboard", icon: LayoutDashboardIcon }] },
+  // The two documents the company writes most often, kept one click away
+  // rather than buried in Selling and Stock.
+  { label: "Shortcuts", items: [
+    { href: "/sale-requests", label: "Sales requests", icon: ReceiptTextIcon },
+    { href: "/authorizations", label: "Transport authorisations", icon: ScrollTextIcon },
+  ]},
   { label: "CRM", items: [
     { href: "/leads", label: "Leads", icon: UserPlusIcon },
     { href: "/opportunities", label: "Opportunities", icon: TargetIcon },

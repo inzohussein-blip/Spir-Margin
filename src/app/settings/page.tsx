@@ -1,4 +1,4 @@
-import { SettingsIcon, ToggleLeftIcon, ShieldIcon, Trash2Icon, LockIcon, HardDriveIcon, CloudIcon, MonitorDownIcon } from "lucide-react";
+import { SettingsIcon, ToggleLeftIcon, ShieldIcon, Trash2Icon, LockIcon, HardDriveIcon, CloudIcon, MonitorDownIcon, BuildingIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
@@ -6,6 +6,8 @@ import { ConfirmSubmit } from "@/components/settings/ConfirmSubmit";
 import { BackupPanel } from "@/components/settings/BackupPanel";
 import { PeerPanel } from "@/components/settings/PeerPanel";
 import { InstallAppPanel } from "@/components/settings/InstallAppPanel";
+import { BrandingPanel } from "@/components/settings/BrandingPanel";
+import { getBranding } from "@/lib/branding";
 import { getPeerInfoAction } from "@/app/actions/peer";
 import { isRemoteConfigured } from "@/lib/db/pglite";
 import { setFeatureStateAction, setUserAccessAction, deleteUserAccountAction } from "@/app/actions/settings";
@@ -60,6 +62,12 @@ export default async function SettingsPage() {
           <p className="text-sm text-ink-gray-5">{t(locale, "Manage which non-essential features are available across the app.")}</p>
         </div>
       </div>
+
+      {/* ---- Company identity ----
+           First, because it is what every printed document carries. */}
+      <Panel title={<span className="flex items-center gap-2"><BuildingIcon size={16} className="text-brand" /> {t(locale, "Company identity")}</span>}>
+        <BrandingPanel branding={await getBranding()} />
+      </Panel>
 
       {/* ---- Install ---- */}
       <Panel title={<span className="flex items-center gap-2"><MonitorDownIcon size={16} className="text-brand" /> {t(locale, "Install as an app")}</span>}>
