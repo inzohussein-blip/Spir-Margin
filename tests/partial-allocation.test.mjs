@@ -60,7 +60,7 @@ test("allocating more than either side has left is refused", async () => {
   const small = await line(db, acct, 100, "صغير");
   await assert.rejects(
     () => db.query(`select fn_reconcile_transaction($1,$2,500)`, [small, pe]),
-    /only/i
+    /فقط للتخصيص/
   );
   await db.close();
 });

@@ -42,7 +42,7 @@ test("fn_save_sales_order rejects an order with no valid lines", async () => {
   const { labId } = await ensureLabAndProduct(db);
   await assert.rejects(
     () => db.query(`select fn_save_sales_order($1,$2,$3,$4,$5,$6)`, [randomUUID(), labId, "", "", "", "[]"]),
-    /at least one line/i,
+    /سطراً واحداً على الأقل/,
   );
   await db.close();
 });

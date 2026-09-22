@@ -42,7 +42,7 @@ export default async function UsersPage() {
         {rows.length === 0 ? <EmptyRow text={t(locale, "No users yet")} /> : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs uppercase text-ink-gray-4">
+              <tr className="text-start text-xs uppercase text-ink-gray-4">
                 <th className="px-4 py-2">{t(locale, "Name")}</th><th className="px-4 py-2">{t(locale, "Email")}</th>
                 <th className="px-4 py-2">{t(locale, "Role")}</th><th className="px-4 py-2">{t(locale, "Status")}</th><th className="px-4 py-2">{t(locale, "Action")}</th>
               </tr>
@@ -56,7 +56,7 @@ export default async function UsersPage() {
                   <td className="px-4 py-2"><Indicator status={u.is_active ? "active" : "inactive"} label={u.is_active ? t(locale, "Active") : t(locale, "Disabled")} /></td>
                   <td className="px-4 py-2">
                     {u.id === me.id ? (
-                      <span className="text-xs text-ink-gray-4">(you)</span>
+                      <span className="text-xs text-ink-gray-4">{t(locale, "(you)")}</span>
                     ) : (
                       <form action={setUserActiveAction}>
                         <input type="hidden" name="id" value={u.id} />

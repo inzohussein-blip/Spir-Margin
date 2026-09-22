@@ -62,6 +62,19 @@ for (const route of routes) {
   const latinPhrases = [...new Set((latin ?? []).filter((s) => s.length > 6))];
   if (latinPhrases.length) issues.push(`LATIN:${latinPhrases.slice(0, 5).join(" | ")}`);
 
+  // The check above skips short words, which is exactly where column headers
+  // ("Qty", "Due", "Ref") and dropdown prompts hide — and a dropdown's options
+  // are not in innerText at all. So headers and prompt options are checked
+  // one by one, with no length threshold.
+  const labels = await page
+    .evaluate(() => [
+      ...[...document.querySelectorAll("th")].map((e) => e.innerText),
+      ...[...document.querySelectorAll('option[value=""], option[disabled]')].map((e) => e.textContent ?? ""),
+    ])
+    .catch(() => []);
+  const latinLabels = [...new Set(labels.map((l) => l.replace(IGNORE, "").trim()).filter((l) => /[A-Za-z]{2,}/.test(l)))];
+  if (latinLabels.length) issues.push(`LATIN_LABEL:${latinLabels.slice(0, 5).join(" | ")}`);
+
   const newErrs = consoleErrors.length - before;
   if (newErrs > 0) issues.push(`CONSOLE_ERRORS:${newErrs}`);
 

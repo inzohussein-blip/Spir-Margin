@@ -56,7 +56,7 @@ export default async function BlanketOrdersPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">{t(locale, "Order no.")}</th>
                   <th className="px-4 py-2">{t(locale, "Type")}</th>
                   <th className="px-4 py-2">{t(locale, "Party")}</th>

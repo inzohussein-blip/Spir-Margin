@@ -54,7 +54,7 @@ export default async function PortalTicketsPage() {
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">{t(locale, "Issue no.")}</th>
                   <th className="px-4 py-2">{t(locale, "Subject")}</th>
                   <th className="px-4 py-2">{t(locale, "Date")}</th>

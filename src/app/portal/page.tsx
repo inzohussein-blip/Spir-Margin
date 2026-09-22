@@ -40,7 +40,7 @@ export default async function PortalHomePage() {
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">{t(locale, "Asset code")}</th>
                   <th className="px-4 py-2">{t(locale, "Product")}</th>
                   <th className="px-4 py-2">{t(locale, "Serial no")}</th>
@@ -69,7 +69,7 @@ export default async function PortalHomePage() {
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">{t(locale, "Visit no")}</th>
                   <th className="px-4 py-2">{t(locale, "Date")}</th>
                   <th className="px-4 py-2">{t(locale, "Type")}</th>

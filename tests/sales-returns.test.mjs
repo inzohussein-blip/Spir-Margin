@@ -150,7 +150,7 @@ test("a return cannot exceed what was sold (0082)", async () => {
   // Returning 3 is rejected and books nothing.
   await assert.rejects(
     () => db.query(`select fn_book_sales_return($1,$2,$3,$4,$5,$6)`, [randomUUID(), labId, "", "", "", lines(k, 3)]),
-    /more than sold/i,
+    /أكثر ممّا بيع/,
   );
   const nRet = (await db.query(`select count(*)::int n from sales_returns where lab_id=$1`, [labId])).rows[0].n;
   assert.equal(nRet, 0, "no return booked");
@@ -170,7 +170,7 @@ test("cumulative returns cannot exceed what was sold (0082)", async () => {
   // A further return of 1 exceeds the 2 sold (2 already returned).
   await assert.rejects(
     () => db.query(`select fn_book_sales_return($1,$2,$3,$4,$5,$6)`, [randomUUID(), labId, "", "", "", lines(k, 1)]),
-    /more than sold/i,
+    /أكثر ممّا بيع/,
   );
   await db.close();
 });
@@ -180,7 +180,7 @@ test("a return with no valid lines is rejected", async () => {
   const { labId } = await ensureLabAndProduct(db);
   await assert.rejects(
     () => db.query(`select fn_book_sales_return($1,$2,$3,$4,$5,$6)`, [randomUUID(), labId, "", "", "", "[]"]),
-    /at least one line/i,
+    /سطراً واحداً على الأقل/,
   );
   await db.close();
 });

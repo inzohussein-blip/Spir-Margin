@@ -1,9 +1,11 @@
 ﻿# Spir-Margin - install, update or remove on a Windows computer.
 #
 #   Double-click install-windows.cmd in the app folder, or:
-#   powershell -ExecutionPolicy Bypass -File scripts\windows\install.ps1 [-Port 3000] [-Lan]
+#   powershell -ExecutionPolicy Bypass -File scripts\windows\install.ps1 [-Port 3000] [-Lan] [-Demo]
 #   ... -Update       fetch dependencies, rebuild, restart (after copying in a new version)
 #   ... -Uninstall    remove the shortcuts and the start-up entry; the data stays
+#   ... -Demo         start a NEW database with the demo records (for training);
+#                     by default a new database starts empty, ready for real data
 #
 # What it does, and why:
 #   - checks Node.js, installs dependencies and builds, so nobody has to know
@@ -24,6 +26,7 @@
 param(
     [int]$Port = 3000,
     [switch]$Lan,
+    [switch]$Demo,
     [switch]$Update,
     [switch]$Uninstall
 )
@@ -96,6 +99,25 @@ function New-Link([string]$dir, [string]$target, [string]$arguments, [string]$de
     $lnk.Save()
 }
 
+function Set-EnvDefault([string]$name, [string]$value) {
+    # .env.local is read by the app at start-up. A value already there was
+    # chosen deliberately, so it is never overwritten.
+    $file = Join-Path $AppDir ".env.local"
+    if (Test-Path $file) {
+        foreach ($line in (Get-Content $file)) {
+            if ($line -match ("^" + [regex]::Escape($name) + "=")) { return }
+        }
+    }
+    # Never glue onto a last line that lacks its newline — that line holds
+    # the session key.
+    $sep = ""
+    if (Test-Path $file) {
+        $text = [System.IO.File]::ReadAllText($file)
+        if ($text.Length -gt 0 -and -not $text.EndsWith("`n")) { $sep = "`r`n" }
+    }
+    [System.IO.File]::AppendAllText($file, "$sep$name=$value`r`n", [System.Text.Encoding]::ASCII)
+}
+
 function Invoke-Npm([string]$npmArgs) {
     # Through cmd.exe, so npm's own PowerShell shim and its execution policy
     # never come into it.
@@ -134,6 +156,9 @@ Say "  listen : $HostAddr"
 Say ""
 
 # ---------------------------------------------------------------- build
+# Is there a database already? Then it is kept exactly as it is, whatever the
+# options below say — they only decide how a NEW one starts.
+$hadData = Test-Path (Join-Path $AppDir ".pglite-data\PG_VERSION")
 if ($Update) { Stop-Server }
 
 $haveModules = Test-Path (Join-Path $AppDir "node_modules\next\dist\bin\next")
@@ -148,6 +173,14 @@ if ($Update -or -not $haveBuild) {
     Invoke-Npm "run build"
 }
 
+# How a brand-new database starts: empty for real work, unless -Demo.
+if ($Demo) { Set-EnvDefault "SPIR_SEED" "demo" } else { Set-EnvDefault "SPIR_SEED" "none" }
+# What is actually in effect — an earlier, deliberate choice wins over the switch.
+$seed = "none"
+foreach ($line in (Get-Content (Join-Path $AppDir ".env.local"))) {
+    if ($line -match "^SPIR_SEED=(.*)$") { $seed = $Matches[1].Trim() }
+}
+
 # ---------------------------------------------------------------- start-up and shortcuts
 Remove-Links
 $serveArgs = "`"$RunHidden`" $Port $HostAddr"
@@ -159,12 +192,16 @@ New-Link $StartMenu $Wscript $openArgs  "Spir-Margin"
 # Start it now, then open it, exactly as the icon will.
 Start-Process -FilePath $Wscript -ArgumentList $openArgs
 
+$dataNote = "`n• قاعدة البيانات تبدأ فارغة — أدخل بيانات شركتك، وابدأ من الإعدادات (اسم الشركة وشعارها)."
+if ($seed -ne "none") { $dataNote = "`n• قاعدة البيانات تبدأ ببيانات تجريبية للتدريب — لا تُدخل عليها بيانات حقيقية." }
+if ($hadData) { $dataNote = "`n• وُجدت بيانات سابقة على هذا الحاسوب وبقيت كما هي." }
+
 $lanNote = ""
 if ($Lan) {
     $lanNote = "`n`nتنبيه: البرنامج مفتوح لشبكة المكتب. الحساب المدمج admin@spir.local يعمل من أي جهاز على الشبكة — لا تستخدم هذا الخيار إلا على شبكة موثوقة."
 }
 Tell ("تمّ تثبيت Spir-Margin.`n`n" +
       "• افتحه من أيقونة «Spir-Margin» على سطح المكتب أو في قائمة ابدأ.`n" +
-      "• يبدأ تلقائياً عند تسجيل الدخول إلى ويندوز، ويعمل بلا إنترنت.`n" +
+      "• يبدأ تلقائياً عند تسجيل الدخول إلى ويندوز، ويعمل بلا إنترنت." + $dataNote + "`n" +
       "• البيانات محفوظة على هذا الحاسوب في:`n  $AppDir\.pglite-data`n" +
       "  خذ منها نسخة احتياطية من الإعدادات بانتظام." + $lanNote) "info"

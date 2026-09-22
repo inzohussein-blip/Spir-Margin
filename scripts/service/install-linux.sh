@@ -4,6 +4,10 @@
 #   sudo ./scripts/service/install-linux.sh              # port 3000, this computer only
 #   sudo PORT=8080 ./scripts/service/install-linux.sh    # a different port
 #   sudo HOST=0.0.0.0 ./scripts/service/install-linux.sh # also the office network (see docs/INSTALL.md)
+#   sudo SPIR_SEED=demo ./scripts/service/install-linux.sh # a NEW database starts with demo records
+#
+# A new database starts EMPTY, ready for the company's own data. An existing
+# database is always kept exactly as it is.
 #
 # Uninstall (the data in .pglite-data stays):
 #   sudo systemctl disable --now spir-margin && sudo rm /etc/systemd/system/spir-margin.service
@@ -40,10 +44,21 @@ if [[ ! -f "$APP_DIR/.next/BUILD_ID" ]]; then
   as_user "npm run build"
 fi
 
+# How a brand-new database starts, recorded in .env.local beside the session
+# secret. A value already there was chosen deliberately and is left alone.
+ENV_LOCAL="$APP_DIR/.env.local"
+if ! grep -q '^SPIR_SEED=' "$ENV_LOCAL" 2>/dev/null; then
+  if [[ -s "$ENV_LOCAL" && -n "$(tail -c1 "$ENV_LOCAL")" ]]; then echo >> "$ENV_LOCAL"; fi
+  echo "SPIR_SEED=${SPIR_SEED:-none}" >> "$ENV_LOCAL"
+  chown "$RUN_USER" "$ENV_LOCAL" 2>/dev/null || true
+fi
+
 # Anything the operator already relies on — a hosted database, a signing
 # secret — has to survive into the service, which does not inherit a shell.
 EXTRA_ENV=""
-for var in AUTH_SECRET DATABASE_URL PGSSL PGPOOL_MAX SPIR_SEED PGLITE_DATA_DIR; do
+# (SPIR_SEED is not among them: it lives in .env.local, written below, so the
+# service and the file can never disagree about how a new database starts.)
+for var in AUTH_SECRET DATABASE_URL PGSSL PGPOOL_MAX PGLITE_DATA_DIR; do
   if [[ -n "${!var:-}" ]]; then
     EXTRA_ENV+="Environment=${var}=${!var}"$'\n'
   fi

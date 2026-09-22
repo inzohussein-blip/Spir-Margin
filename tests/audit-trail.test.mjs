@@ -50,7 +50,7 @@ test("the audit log is append-only — updates and deletes are rejected", async 
   const db = await bootWithMigrations();
   const { lab, prod } = await seed(db);
   await db.query(`insert into sales (lab_id,product_id,qty,buy_price,sell_price) values ($1,$2,1,100,150)`, [lab, prod]);
-  await assert.rejects(db.query(`update audit_log set actor='forged' where id=1`), /append-only/i);
-  await assert.rejects(db.query(`delete from audit_log where id=1`), /append-only/i);
+  await assert.rejects(db.query(`update audit_log set actor='forged' where id=1`), /للإضافة فقط/);
+  await assert.rejects(db.query(`delete from audit_log where id=1`), /للإضافة فقط/);
   await db.close();
 });

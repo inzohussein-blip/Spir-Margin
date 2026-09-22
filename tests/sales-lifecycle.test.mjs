@@ -59,7 +59,7 @@ test("a delivered or cancelled sales order cannot be delivered again", async () 
   await db.query(`select fn_deliver_sales_order($1)`, [so]);
 
   // Re-delivering is rejected — so stock is never double-consumed.
-  await assert.rejects(() => db.query(`select fn_deliver_sales_order($1)`, [so]), /already delivered/i);
+  await assert.rejects(() => db.query(`select fn_deliver_sales_order($1)`, [so]), /مُسلَّم مسبقاً/);
   const avail = (await db.query(`select coalesce(sum(qty_available),0)::numeric n from kit_batches where product_id=$1`, [kit])).rows[0].n;
   assert.equal(Number(avail), 8, "stock consumed exactly once (10 - 2)");
   await db.close();
@@ -105,17 +105,17 @@ test("invoice payments cannot overpay, and a draft or cancelled invoice takes no
   const inv = await draftInvoice(db, labId, productId, 1, 100); // total 100
 
   // Draft invoice rejects payment.
-  await assert.rejects(() => db.query(`select fn_record_invoice_payment($1,$2)`, [inv, 10]), /not open for payment/i);
+  await assert.rejects(() => db.query(`select fn_record_invoice_payment($1,$2)`, [inv, 10]), /غير مفتوحة للدفع/);
 
   await db.query(`select fn_submit_sales_invoice($1)`, [inv]);
   // Overpayment rejected.
-  await assert.rejects(() => db.query(`select fn_record_invoice_payment($1,$2)`, [inv, 150]), /exceeds/i);
+  await assert.rejects(() => db.query(`select fn_record_invoice_payment($1,$2)`, [inv, 150]), /تتجاوز المبلغ المستحق/);
   // Non-positive rejected.
-  await assert.rejects(() => db.query(`select fn_record_invoice_payment($1,$2)`, [inv, 0]), /positive/i);
+  await assert.rejects(() => db.query(`select fn_record_invoice_payment($1,$2)`, [inv, 0]), /أكبر من صفر/);
 
   // Cancelled invoice rejects payment, and nothing was recorded by the failed tries.
   await db.query(`update sales_invoices set status='cancelled' where id=$1`, [inv]);
-  await assert.rejects(() => db.query(`select fn_record_invoice_payment($1,$2)`, [inv, 10]), /not open for payment/i);
+  await assert.rejects(() => db.query(`select fn_record_invoice_payment($1,$2)`, [inv, 10]), /غير مفتوحة للدفع/);
   const paid = (await db.query(`select paid_amount from sales_invoices where id=$1`, [inv])).rows[0].paid_amount;
   assert.equal(Number(paid), 0, "no partial money leaked from rejected payments");
   await db.close();

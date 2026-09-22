@@ -411,7 +411,7 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
                         />
                         <button
                           onClick={() => setSelectedTxn(t)}
-                          className={`flex w-full items-center justify-between px-2 py-3 text-left text-sm hover:bg-surface-gray-1 ${
+                          className={`flex w-full items-center justify-between px-2 py-3 text-start text-sm hover:bg-surface-gray-1 ${
                             selectedTxn?.id === t.id ? "bg-blue-50 ring-1 ring-inset ring-brand" : ""
                           }`}
                         >

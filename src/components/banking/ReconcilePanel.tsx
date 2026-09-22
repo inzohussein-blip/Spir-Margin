@@ -112,7 +112,7 @@ export function ReconcilePanel({
               <li key={t.id}>
                 <button
                   onClick={() => setSelected(t)}
-                  className={`flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-surface-gray-1 ${
+                  className={`flex w-full items-center justify-between px-4 py-3 text-start text-sm hover:bg-surface-gray-1 ${
                     selected?.id === t.id ? "bg-blue-50 ring-1 ring-inset ring-brand" : ""
                   }`}
                 >

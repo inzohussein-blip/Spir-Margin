@@ -93,7 +93,7 @@ export default async function ContractsPage({
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase text-ink-gray-4">
+                <tr className="text-start text-xs uppercase text-ink-gray-4">
                   <th className="px-4 py-2">{t(locale, "No.")}</th>
                   <th className="px-4 py-2">{t(locale, "Lab")}</th>
                   <th className="px-4 py-2">{t(locale, "Device")}</th>
@@ -113,7 +113,7 @@ export default async function ContractsPage({
                       <td className="px-4 py-2 text-ink-gray-5">{c.devices?.asset_code ?? "—"}</td>
                       <td className="px-4 py-2 text-ink-gray-5">
                         {c.end_date ?? "—"}
-                        {soon ? <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">{d}d</span> : null}
+                        {soon ? <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">{d} {t(locale, "day(s)")}</span> : null}
                       </td>
                       <td className="px-4 py-2">{money(Number(c.contract_value))}</td>
                       <td className="px-4 py-2">

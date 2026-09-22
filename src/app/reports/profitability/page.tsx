@@ -36,7 +36,7 @@ export default async function ProfitabilityReport() {
         {rows.length === 0 ? <EmptyRow text={t(locale, "No sales recorded yet")} /> : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs uppercase text-ink-gray-4">
+              <tr className="text-start text-xs uppercase text-ink-gray-4">
                 <th className="px-4 py-2">{t(locale, "Product")}</th><th className="px-4 py-2 text-right">{t(locale, "Qty")}</th>
                 <th className="px-4 py-2 text-right">{t(locale, "Revenue")}</th><th className="px-4 py-2 text-right">{t(locale, "Cost")}</th>
                 <th className="px-4 py-2 text-right">{t(locale, "Profit")}</th><th className="px-4 py-2 text-right">{t(locale, "Margin")}</th>
