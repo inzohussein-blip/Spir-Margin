@@ -1613,6 +1613,10 @@ const ar: Record<string, string> = {
     "غير متصل — تُحفَظ المبيعات على هذا الجهاز وتُرفَع تلقائياً عند عودة الاتصال.",
   "waiting to sync": "بانتظار المزامنة",
   "Save sale offline": "حفظ البيع دون اتصال",
+  "No internet — the order is still saved on this computer as usual.": "لا يوجد إنترنت — الأمر يُحفظ على هذا الحاسوب كالمعتاد.",
+  "The program did not answer — the order is held here and will be sent automatically.": "لم يستجب البرنامج — حُفظ الأمر هنا مؤقتاً وسيُرسَل تلقائياً.",
+  "No internet — sales are still saved on this computer as usual.": "لا يوجد إنترنت — البيع يُحفظ على هذا الحاسوب كالمعتاد.",
+  "The program did not answer — the sale is held here and will be sent automatically.": "لم يستجب البرنامج — حُفظ البيع هنا مؤقتاً وسيُرسَل تلقائياً.",
   "Save order offline": "حفظ الأمر دون اتصال",
   "Offline — the order is saved on this device and uploads automatically when the connection returns.":
     "غير متصل — يُحفَظ الأمر على هذا الجهاز ويُرفَع تلقائيًا عند عودة الاتصال.",

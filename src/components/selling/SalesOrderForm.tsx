@@ -240,24 +240,24 @@ export function SalesOrderForm({
       )}
       {queued && (
         <p className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700">
-          <CloudOffIcon size={16} /> {t(locale, "Saved offline — it will sync automatically when you’re back online.")}
+          <CloudOffIcon size={16} /> {t(locale, "The program did not answer — the order is held here and will be sent automatically.")}
         </p>
       )}
       {!online && !orderId && (
-        <p className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-          <CloudOffIcon size={14} /> {t(locale, "Offline — the order is saved on this device and uploads automatically when the connection returns.")}
+        <p className="flex items-center gap-2 rounded-lg bg-surface-gray-1 px-3 py-2 text-xs text-ink-gray-6">
+          <CloudOffIcon size={14} /> {t(locale, "No internet — the order is still saved on this computer as usual.")}
         </p>
       )}
 
       <button
         type="submit"
         disabled={pending}
-        className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-px hover:shadow-lg active:translate-y-0 disabled:opacity-60 ${
-          !online && !orderId ? "bg-amber-600 hover:bg-amber-700" : "bg-brand hover:bg-brand-dark"
-        }`}
+        className="inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-px hover:bg-brand-dark hover:shadow-lg active:translate-y-0 disabled:opacity-60"
       >
-        {pending ? <Loader2Icon size={15} className="animate-spin" /> : !online && !orderId ? <CloudOffIcon size={15} /> : <ShoppingCartIcon size={15} />}
-        {t(locale, orderId ? "Save changes" : !online ? "Save order offline" : "Create order (draft)")}
+        {/* Same button with or without internet: the order is saved on this
+            computer either way. */}
+        {pending ? <Loader2Icon size={15} className="animate-spin" /> : <ShoppingCartIcon size={15} />}
+        {t(locale, orderId ? "Save changes" : "Create order (draft)")}
       </button>
     </form>
   );

@@ -22,10 +22,18 @@ import { getAccessContext, blockReason, navFeatureState } from "@/lib/features";
 import { getLocale } from "@/lib/i18n-server";
 import "./globals.css";
 
+// The title is what the installed app's window and taskbar button show.
 export const metadata: Metadata = {
-  title: "Spir-Margin — Medical Device & Lab Management",
+  title: "Spir-Margin — إدارة الأجهزة الطبية والمختبرات",
   description:
-    "Lightweight system for medical-device sales, lab tracking, spare parts, reagent kits and bank reconciliation.",
+    "نظام لمبيعات الأجهزة الطبية، ومتابعة المختبرات، وقطع الغيار، وكِتّات الكواشف، والتسوية المصرفية.",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default async function RootLayout({

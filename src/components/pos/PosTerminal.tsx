@@ -175,7 +175,7 @@ export function PosTerminal({
                 {queued && (
                   <div className="mt-4 flex flex-col items-center gap-1 rounded-lg bg-amber-50 px-4 py-3 text-amber-700">
                     <CloudOffIcon size={22} />
-                    <p className="text-sm font-medium">{t(locale, "Saved offline — it will sync automatically when you’re back online.")}</p>
+                    <p className="text-sm font-medium">{t(locale, "The program did not answer — the sale is held here and will be sent automatically.")}</p>
                   </div>
                 )}
               </div>
@@ -220,16 +220,19 @@ export function PosTerminal({
               </div>
             </dl>
             {error && <p className="mb-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+            {/* No internet changes nothing here: the sale is booked in this
+                computer's database exactly as usual. Saying otherwise used to
+                alarm people for no reason. */}
             {!online && (
-              <p className="mb-2 flex items-center gap-1.5 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
+              <p className="mb-2 flex items-center gap-1.5 rounded-md bg-surface-gray-1 px-3 py-2 text-xs text-ink-gray-6">
                 <CloudOffIcon size={14} className="shrink-0" />
-                {t(locale, "Offline — sales are saved on this device and upload automatically when the connection returns.")}
+                {t(locale, "No internet — sales are still saved on this computer as usual.")}
               </p>
             )}
             <button onClick={checkout} disabled={pending || cart.length === 0}
-              className={`flex w-full items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white disabled:opacity-50 ${online ? "bg-brand hover:bg-brand-dark" : "bg-amber-600 hover:bg-amber-700"}`}>
-              {pending ? <Loader2Icon size={16} className="animate-spin" /> : online ? <CheckCircle2Icon size={16} /> : <CloudOffIcon size={16} />}
-              {online ? t(locale, "Complete sale") : t(locale, "Save sale offline")}
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-brand px-4 py-3 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50">
+              {pending ? <Loader2Icon size={16} className="animate-spin" /> : <CheckCircle2Icon size={16} />}
+              {t(locale, "Complete sale")}
             </button>
           </div>
         </aside>

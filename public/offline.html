@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spir-Margin — بانتظار البرنامج</title>
+  <meta name="color-scheme" content="light dark">
+  <style>
+    :root {
+      --bg: #f4f5f8; --card: #ffffff; --ink: #1f2330; --muted: #626979;
+      --line: #e3e5ec; --brand: #4f46e5; --brand-dark: #4338ca; --ok: #059669;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #14161c; --card: #1d2029; --ink: #eceef4; --muted: #a3a9b8; --line: #2c303b; }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font-family: "Segoe UI", Tahoma, "Noto Sans Arabic", system-ui, sans-serif;
+      display: grid; place-items: center; padding: 16px;
+    }
+    main {
+      width: 100%; max-width: 460px; background: var(--card);
+      border: 1px solid var(--line); border-radius: 16px; padding: 32px 28px;
+      text-align: center; box-shadow: 0 10px 30px rgba(20, 22, 40, .06);
+    }
+    .logo { width: 64px; height: 64px; margin: 0 auto 18px; }
+    h1 { font-size: 20px; margin: 0 0 10px; }
+    p { margin: 0 0 12px; line-height: 1.8; color: var(--muted); font-size: 15px; }
+    .status {
+      display: inline-flex; align-items: center; gap: 8px; margin: 8px 0 20px;
+      font-size: 14px; color: var(--muted);
+    }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--brand); animation: pulse 1.2s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: .25; } }
+    @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+    button {
+      font: inherit; font-size: 15px; font-weight: 600; color: #fff; background: var(--brand);
+      border: 0; border-radius: 10px; padding: 11px 22px; cursor: pointer;
+    }
+    button:hover { background: var(--brand-dark); }
+    button:focus-visible { outline: 3px solid color-mix(in srgb, var(--brand) 40%, transparent); outline-offset: 2px; }
+    details { margin-top: 22px; text-align: start; font-size: 14px; color: var(--muted); }
+    summary { cursor: pointer; color: var(--ink); font-weight: 600; }
+    ol { margin: 10px 0 0; padding-inline-start: 20px; line-height: 1.9; }
+    .ok .dot { background: var(--ok); animation: none; }
+  </style>
+</head>
+<body>
+  <main>
+    <svg class="logo" viewBox="0 0 512 512" aria-hidden="true">
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4f46e5"/><stop offset="1" stop-color="#4338ca"/></linearGradient></defs>
+      <rect width="512" height="512" rx="96" fill="url(#g)"/>
+      <text x="50%" y="50%" dy="0.35em" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="300" font-weight="800" fill="#fff">S</text>
+    </svg>
+    <h1>البرنامج لا يستجيب بعد</h1>
+    <p>يعمل Spir-Margin من برنامج على هذا الحاسوب، ويبدو أنه لم يبدأ بعد أو توقّف. بياناتك محفوظة على هذا الحاسوب ولم يضع منها شيء.</p>
+    <div class="status" id="status" role="status" aria-live="polite"><span class="dot"></span><span id="msg">نحاول الاتصال به تلقائياً…</span></div>
+    <div><button type="button" id="retry">أعد المحاولة الآن</button></div>
+    <details>
+      <summary>لم يُفتح بعد دقيقة؟</summary>
+      <ol>
+        <li>بعد تشغيل الحاسوب يحتاج البرنامج أحياناً إلى دقيقة ليبدأ — انتظر قليلاً.</li>
+        <li>افتح «Spir-Margin» من سطح المكتب أو من قائمة «ابدأ»، فهو يشغّل البرنامج إن كان متوقّفاً.</li>
+        <li>إن استمرّت المشكلة، أعد تشغيل الحاسوب.</li>
+      </ol>
+    </details>
+  </main>
+  <script>
+    (function () {
+      var msg = document.getElementById("msg");
+      var box = document.getElementById("status");
+      var busy = false;
+      function check() {
+        if (busy) return;
+        busy = true;
+        // /welcome is public and cheap: any answer from it means the program is up.
+        fetch("/welcome", { cache: "no-store", redirect: "manual" })
+          .then(function (r) {
+            if (r.status > 0 && r.status < 500 || r.type === "opaqueredirect") {
+              box.className = "status ok";
+              msg.textContent = "عاد البرنامج — جارٍ الفتح…";
+              location.reload();
+            }
+          })
+          .catch(function () { /* still down; try again shortly */ })
+          .then(function () { busy = false; });
+      }
+      document.getElementById("retry").addEventListener("click", check);
+      setInterval(check, 3000);
+    })();
+  </script>
+</body>
+</html>

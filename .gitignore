@@ -6,3 +6,6 @@ node_modules
 next-env.d.ts
 .pglite-data/
 tests/browser/artifacts/
+
+# Server log written by scripts/windows/run-server.cmd
+logs/
