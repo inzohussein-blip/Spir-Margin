@@ -140,14 +140,20 @@ export async function unreconcile(txnId: string, accountId: string) {
   return { ok: true as const };
 }
 
-/** Run the rule engine over every unreconciled transaction of an account. */
-export async function applyRulesForAccount(accountId: string) {
+/**
+ * Run the rule engine over the unreconciled transactions of an account, or
+ * over just the ones named — a whole statement is often not what the user
+ * means when they have ticked a handful of lines.
+ */
+export async function applyRulesForAccount(accountId: string, only?: string[]) {
   const supabase = createClient();
-  const { data: txns, error } = await supabase
+  let q = supabase
     .from("bank_transactions")
     .select("id")
     .eq("bank_account_id", accountId)
     .neq("status", "reconciled");
+  if (only && only.length) q = q.in("id", only);
+  const { data: txns, error } = await q;
   if (error) return { ok: false as const, error: error.message };
 
   const who = await actor();
@@ -475,17 +481,48 @@ export async function loadReconcileData(input: {
     .order("date", { ascending: false });
   if (input.dateFrom) tq = tq.gte("date", input.dateFrom);
   if (input.dateTo) tq = tq.lte("date", input.dateTo);
-  const [{ data: t }, { data: p }] = await Promise.all([
+
+  // Payments come from fn_open_payments (migration 0100): a payment that is
+  // only partly allocated is still open for the rest of it, and `remaining`
+  // is what can still be matched.
+  const [{ data: t }, { data: p }, older] = await Promise.all([
     tq,
-    supabase
-      .from("payment_entries")
-      .select(
-        "id, payment_type, party_name, paid_amount, received_amount, reference_no, posting_date, is_reconciled"
-      )
-      .eq("is_reconciled", false)
-      .order("posting_date", { ascending: false }),
+    supabase.rpc("fn_open_payments", {}),
+    input.dateFrom
+      ? supabase
+          .rpc("fn_older_unreconciled", {
+            p_account: input.bankAccountId,
+            p_before: input.dateFrom,
+          })
+          .single()
+      : Promise.resolve({ data: null }),
   ]);
-  return { txns: (t as unknown[]) ?? [], payments: (p as unknown[]) ?? [] };
+
+  const o = (older as { data: { n: number; total: number } | null }).data;
+  return {
+    txns: (t as unknown[]) ?? [],
+    payments: (p as unknown[]) ?? [],
+    older: { n: Number(o?.n ?? 0), total: Number(o?.total ?? 0) },
+  };
+}
+
+/**
+ * Create a payment for each of several bank lines and reconcile them, for the
+ * end-of-month case where a batch of lines has no voucher at all. Stops at
+ * nothing: a line that fails is reported and the rest still go through.
+ */
+export async function createVouchersForTransactions(
+  txnIds: string[],
+  accountId: string
+) {
+  let done = 0;
+  const failed: string[] = [];
+  for (const id of txnIds) {
+    const res = await createVoucherAndReconcile({ txnId: id, accountId });
+    if (res.ok) done++;
+    else failed.push(res.error);
+  }
+  return { ok: true as const, done, failed };
 }
 
 /**
