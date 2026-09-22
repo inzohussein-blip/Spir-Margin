@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 interface Opt { id: string; label: string; }
 
@@ -21,7 +22,7 @@ export function MaterialRequestForm({ products, warehouses }: { products: Opt[];
   const [pending, start] = useTransition();
   const { register, control, handleSubmit } = useForm<MaterialRequestInput>({
     defaultValues: {
-      transaction_date: new Date().toISOString().slice(0, 10),
+      transaction_date: localDate(),
       required_by: "",
       notes: "",
       items: [{ product_id: "", qty: 1 }],

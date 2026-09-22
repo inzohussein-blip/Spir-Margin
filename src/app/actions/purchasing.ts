@@ -4,6 +4,7 @@ import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 export interface PurchaseLineInput {
   product_id: string;
@@ -33,7 +34,7 @@ export async function savePurchase(input: PurchaseInput) {
     .from("purchase_invoices")
     .insert({
       supplier_id: input.supplier_id || null,
-      posting_date: input.posting_date || new Date().toISOString().slice(0, 10),
+      posting_date: input.posting_date || localDate(),
       reference_no: input.reference_no || null,
       payment_term_id: input.payment_term_id || null,
       notes: input.notes || null,

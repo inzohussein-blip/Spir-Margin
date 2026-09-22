@@ -28,7 +28,7 @@ export default async function QuotationPrintPage({ params }: { params: { id: str
   const locale = getLocale();
   const currency = q.currency || "USD";
   const lines: DocLine[] = (q.quotation_items ?? []).map((it) => ({
-    label: it.products?.name ?? "Item",
+    label: it.products?.name ?? t(locale, "Item"),
     sub: it.products?.item_code ?? null,
     qty: Number(it.qty),
     rate: Number(it.rate),

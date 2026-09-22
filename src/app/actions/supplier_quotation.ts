@@ -3,6 +3,7 @@
 import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 export interface SQLineInput { product_id: string; qty: number; rate: number; }
 export interface SupplierQuotationInput { supplier_id: string | null; transaction_date: string; valid_till?: string | null; notes?: string; items: SQLineInput[]; }
@@ -14,7 +15,7 @@ export async function saveSupplierQuotation(input: SupplierQuotationInput) {
 
   const { data: header, error: hErr } = await supabase
     .from("supplier_quotations")
-    .insert({ supplier_id: input.supplier_id || null, transaction_date: input.transaction_date || new Date().toISOString().slice(0, 10), valid_till: input.valid_till || null, status: "submitted", notes: input.notes || null })
+    .insert({ supplier_id: input.supplier_id || null, transaction_date: input.transaction_date || localDate(), valid_till: input.valid_till || null, status: "submitted", notes: input.notes || null })
     .select("id")
     .single();
   if (hErr) return { ok: false as const, error: hErr.message };

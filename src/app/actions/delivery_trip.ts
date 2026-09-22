@@ -3,6 +3,7 @@
 import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 export interface TripStopInput {
   lab_id?: string;
@@ -31,7 +32,7 @@ export async function saveDeliveryTrip(input: DeliveryTripInput) {
       trip_no: tripNo,
       driver_name: input.driver_name || null,
       vehicle: input.vehicle || null,
-      departure_date: input.departure_date || new Date().toISOString().slice(0, 10),
+      departure_date: input.departure_date || localDate(),
       notes: input.notes || null,
     })
     .select("id")

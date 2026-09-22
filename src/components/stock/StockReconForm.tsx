@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 interface BatchOpt { id: string; label: string; available: number; }
 
@@ -21,7 +22,7 @@ export function StockReconForm({ batches }: { batches: BatchOpt[] }) {
   const [pending, start] = useTransition();
   const { register, control, handleSubmit } = useForm<StockReconInput>({
     defaultValues: {
-      posting_date: new Date().toISOString().slice(0, 10),
+      posting_date: localDate(),
       notes: "",
       items: [{ kit_batch_id: "", counted_qty: 0 }],
     },

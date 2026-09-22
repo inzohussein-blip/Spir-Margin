@@ -9,14 +9,15 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useLocale } from "@/components/LocaleProvider";
 import { GOVERNORATES } from "@/lib/governorates";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 interface DeviceOpt { id: string; label: string; serial: string | null; }
 
 const cls =
   "mt-1 w-full rounded-md border border-outline-gray-2 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
 
-const today = () => new Date().toISOString().slice(0, 10);
-const inDays = (n: number) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
+const today = () => localDate();
+const inDays = (n: number) => localDate(new Date(Date.now() + n * 86400000));
 
 /**
  * A transport authorisation.

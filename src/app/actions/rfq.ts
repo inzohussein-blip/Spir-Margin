@@ -3,6 +3,7 @@
 import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 export interface RfqLineInput { product_id: string; qty: number; }
 export interface RfqInput {
@@ -26,7 +27,7 @@ export async function saveRfq(input: RfqInput) {
     .from("rfqs")
     .insert({
       rfq_no: input.rfq_no || null,
-      transaction_date: input.transaction_date || new Date().toISOString().slice(0, 10),
+      transaction_date: input.transaction_date || localDate(),
       schedule_date: input.schedule_date || null,
       message: input.message || null,
     })

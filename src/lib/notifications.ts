@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { t, type Locale } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 export interface Notif {
   title: string;
@@ -17,7 +18,7 @@ interface InvRow { invoice_no: string; outstanding: number; due_date: string | n
 /** Urgent operational alerts for the navbar bell (reuses existing views). */
 export async function getNotifications(locale: Locale): Promise<Notif[]> {
   const supabase = createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDate();
   const [kitsRes, maintRes, contractsRes, invRes] = await Promise.all([
     supabase.from("v_expiring_kits").select("product_name, days_until_expiry").lte("days_until_expiry", 30),
     supabase.from("v_maintenance_alerts").select("asset_code, lab_name, days_until_due").lte("days_until_due", 7),

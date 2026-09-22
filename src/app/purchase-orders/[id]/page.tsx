@@ -119,7 +119,7 @@ export default async function PoDetailPage({ params }: { params: { id: string } 
         <Panel title={t(locale, "Billed to purchase invoice")}>
           <div className="px-4 py-3 text-sm">
             <Link href="/purchases" className="font-medium text-brand hover:underline">
-              {po.purchase_invoices.reference_no ?? "Purchase invoice"}
+              {po.purchase_invoices.reference_no ?? t(locale, "Purchase invoice")}
             </Link>
             <span className="text-ink-gray-5"> · {po.purchase_invoices.status} · {money(Number(po.purchase_invoices.total_amount))}</span>
           </div>

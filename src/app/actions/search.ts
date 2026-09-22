@@ -16,7 +16,7 @@ const ENTITY: Record<string, { label: string; href: (id: string) => string }> = 
   lab: { label: "Lab", href: () => "/labs" },
   product: { label: "Product", href: () => "/products" },
   company: { label: "Supplier", href: () => "/companies" },
-  device: { label: "Device", href: () => "/devices" },
+  device: { label: "Device", href: (id) => `/devices/${id}` },
   sales_invoice: { label: "Invoice", href: (id) => `/sales-invoices/${id}` },
   purchase_order: { label: "Purchase Order", href: (id) => `/purchase-orders/${id}` },
   issue: { label: "Issue", href: (id) => `/issues/${id}` },

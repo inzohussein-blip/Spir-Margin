@@ -32,7 +32,7 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
   const currency = inv.currency || "USD";
   const rate = await getUsdIqdRate();
   const lines: DocLine[] = (inv.sales_invoice_items ?? []).map((it) => ({
-    label: it.products?.name ?? "Item",
+    label: it.products?.name ?? t(locale, "Item"),
     sub: it.products?.item_code ?? null,
     qty: Number(it.qty),
     rate: Number(it.rate),

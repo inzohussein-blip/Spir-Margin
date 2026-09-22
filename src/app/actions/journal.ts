@@ -3,6 +3,7 @@
 import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 export interface JournalLineInput { account: string; debit: number; credit: number; user_remark?: string; }
 export interface JournalInput {
@@ -20,7 +21,7 @@ export async function saveJournalEntry(input: JournalInput) {
   const { data: header, error: hErr } = await supabase
     .from("journal_entries")
     .insert({
-      posting_date: input.posting_date || new Date().toISOString().slice(0, 10),
+      posting_date: input.posting_date || localDate(),
       voucher_type: input.voucher_type || "Journal Entry",
       user_remark: input.user_remark || null,
     })

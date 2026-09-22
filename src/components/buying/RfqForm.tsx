@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 interface Opt { id: string; label: string; }
 
@@ -24,7 +25,7 @@ export function RfqForm({ products, suppliers }: { products: Opt[]; suppliers: O
   const { register, control, handleSubmit } = useForm<RfqInput>({
     defaultValues: {
       rfq_no: "",
-      transaction_date: new Date().toISOString().slice(0, 10),
+      transaction_date: localDate(),
       schedule_date: "",
       message: "",
       items: [{ product_id: "", qty: 1 }],

@@ -182,6 +182,8 @@ const ar: Record<string, string> = {
   "Matched": "المطابقات",
   "Nothing matched in this period": "لا مطابقات في هذه المدّة",
   "Undo match": "إلغاء المطابقة",
+  "Unassigned": "غير مُسنَد",
+  "Purchase invoice": "فاتورة شراء",
   "Match undone": "أُلغيت المطابقة",
   "Item": "الصنف",
   "Medical devices · lab supplies · reagent kits": "أجهزة طبية · مستلزمات مختبرية · كِتّات كواشف",

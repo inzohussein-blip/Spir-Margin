@@ -2,7 +2,7 @@
 
 import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createPortalClient as createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 
 /**

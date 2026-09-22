@@ -3,6 +3,7 @@
 import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 export interface DNLineInput { kit_batch_id: string; qty: number; }
 export interface DeliveryNoteInput { lab_id: string; posting_date: string; notes?: string; items: DNLineInput[]; }
@@ -15,7 +16,7 @@ export async function saveDeliveryNote(input: DeliveryNoteInput) {
 
   const { data: header, error: hErr } = await supabase
     .from("delivery_notes")
-    .insert({ lab_id: input.lab_id, posting_date: input.posting_date || new Date().toISOString().slice(0, 10), notes: input.notes || null })
+    .insert({ lab_id: input.lab_id, posting_date: input.posting_date || localDate(), notes: input.notes || null })
     .select("id")
     .single();
   if (hErr) return { ok: false as const, error: hErr.message };

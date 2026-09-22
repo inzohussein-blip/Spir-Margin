@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 interface Account { id: string; account_name: string; currency: string; }
 
@@ -69,7 +70,7 @@ function detectAndParseDate(cell: string, preferDMY: boolean): string {
     return `${y}-${mon.padStart(2, "0")}-${day.padStart(2, "0")}`;
   }
   const d = new Date(s);
-  return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+  return isNaN(d.getTime()) ? "" : localDate(d);
 }
 
 export function StatementImport({ accounts }: { accounts: Account[] }) {

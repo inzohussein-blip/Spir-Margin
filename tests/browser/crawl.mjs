@@ -15,8 +15,14 @@ const page = await ctx.newPage();
 const findings = [];
 const consoleErrors = [];
 page.on("pageerror", (e) => consoleErrors.push({ url: page.url(), msg: String(e).slice(0, 220) }));
+// Moving to the next route cancels the previous page's link prefetches, and
+// Next reports each cancelled one as a console error. That is the crawler's
+// own doing, not the app's — counting it once hid a real 404 among five of
+// these on the dashboard.
+const PREFETCH_CANCELLED = /Failed to fetch RSC payload .* Falling back to browser navigation/;
 page.on("console", (m) => {
-  if (m.type() === "error") consoleErrors.push({ url: page.url(), msg: m.text().slice(0, 220) });
+  if (m.type() === "error" && !PREFETCH_CANCELLED.test(m.text()))
+    consoleErrors.push({ url: page.url(), msg: m.text().slice(0, 220) });
 });
 
 // Sign in once with the built-in account.

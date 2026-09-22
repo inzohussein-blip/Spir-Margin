@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { localDate } from "@/lib/dates";
 
 /** Who is acting, for the audit trail behind the reconciliation log. */
 async function actor(): Promise<string | null> {
@@ -71,7 +72,7 @@ export async function createPaymentEntry(fd: FormData) {
   const amount = num(fd, "amount");
   const { error } = await supabase.from("payment_entries").insert({
     payment_type: type,
-    posting_date: str(fd, "posting_date") ?? new Date().toISOString().slice(0, 10),
+    posting_date: str(fd, "posting_date") ?? localDate(),
     ...party(fd, "party"),
     party_name: str(fd, "party_name"),
     mode_of_payment: str(fd, "mode_of_payment"),
@@ -94,7 +95,7 @@ export async function createBankTransaction(fd: FormData) {
   const supabase = createClient();
   const { error } = await supabase.from("bank_transactions").insert({
     bank_account_id: req(fd, "bank_account_id"),
-    date: str(fd, "date") ?? new Date().toISOString().slice(0, 10),
+    date: str(fd, "date") ?? localDate(),
     deposit: num(fd, "deposit"),
     withdrawal: num(fd, "withdrawal"),
     description: str(fd, "description"),
@@ -277,7 +278,7 @@ export async function createInternalTransfer(fd: FormData) {
   if (fromId === toId) throw new Error("Source and destination must differ");
   const amount = num(fd, "amount");
   if (amount <= 0) throw new Error("Amount must be positive");
-  const date = str(fd, "date") ?? new Date().toISOString().slice(0, 10);
+  const date = str(fd, "date") ?? localDate();
   const ref = str(fd, "reference_no") ?? `XFER-${Date.now()}`;
 
   const { error: peErr } = await supabase.from("payment_entries").insert({

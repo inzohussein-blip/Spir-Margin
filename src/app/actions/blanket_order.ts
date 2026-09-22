@@ -3,6 +3,7 @@
 import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 export interface BlanketLineInput {
   product_id: string;
@@ -33,7 +34,7 @@ export async function saveBlanketOrder(input: BlanketOrderInput) {
       order_type: input.order_type,
       lab_id: input.order_type === "selling" ? input.lab_id || null : null,
       supplier_id: input.order_type === "purchasing" ? input.supplier_id || null : null,
-      from_date: input.from_date || new Date().toISOString().slice(0, 10),
+      from_date: input.from_date || localDate(),
       to_date: input.to_date,
       notes: input.notes || null,
     })

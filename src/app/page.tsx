@@ -13,6 +13,7 @@ import type {
   MaintenanceAlert,
   ExpiringKit,
 } from "@/lib/types";
+import { localDate } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -53,8 +54,8 @@ export default async function DashboardPage() {
   const locale = getLocale();
   const supabase = createClient();
 
-  const today = new Date().toISOString().slice(0, 10);
-  const horizon = new Date(Date.now() + 60 * 86400_000).toISOString().slice(0, 10);
+  const today = localDate();
+  const horizon = localDate(new Date(Date.now() + 60 * 86400_000));
 
   const [
     profitRes,
@@ -305,7 +306,7 @@ export default async function DashboardPage() {
                       {a.product_name}
                     </div>
                     <div className="text-xs text-ink-gray-4">
-                      {a.asset_code} · {a.lab_name ?? "unassigned"}
+                      {a.asset_code} · {a.lab_name ?? t(locale, "Unassigned")}
                     </div>
                   </div>
                   <span

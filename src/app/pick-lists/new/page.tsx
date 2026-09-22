@@ -36,7 +36,7 @@ export default async function NewPickListPage() {
   const warehouseOpts = warehouses.map((w) => ({ id: w.id as string, label: w.name as string }));
   const soOpts = ((soData as unknown as SoRow[]) ?? []).map((s) => ({
     id: s.id,
-    label: `${s.labs?.name ?? "Order"} — ${s.transaction_date}`,
+    label: `${s.labs?.name ?? t(locale, "Order")} — ${s.transaction_date}`,
   }));
 
   return (

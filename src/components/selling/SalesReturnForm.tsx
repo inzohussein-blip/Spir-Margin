@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 interface Opt { id: string; label: string; }
 interface ProductOpt extends Opt { sell: number; }
@@ -25,7 +26,7 @@ export function SalesReturnForm({ labs, products }: { labs: Opt[]; products: Pro
   const { register, control, handleSubmit, setValue } = useForm<SalesReturnInput>({
     defaultValues: {
       lab_id: "",
-      posting_date: new Date().toISOString().slice(0, 10),
+      posting_date: localDate(),
       reason: "",
       notes: "",
       items: [{ product_id: "", qty: 1, sell_price: 0 }],

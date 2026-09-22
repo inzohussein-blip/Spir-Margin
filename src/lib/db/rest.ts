@@ -197,7 +197,7 @@ class Query implements PromiseLike<Result> {
   private wantCount = false;
   private rpcSpec?: { fn: string; params: Record<string, unknown> };
 
-  constructor(private table: string) {}
+  constructor(private table: string, private guard?: () => Promise<void>) {}
 
   _asRpc(fn: string, params: Record<string, unknown>) {
     this.rpcSpec = { fn, params };
@@ -292,6 +292,16 @@ class Query implements PromiseLike<Result> {
   }
 
   private async exec(): Promise<Result> {
+    // Every query checks who is asking before it touches the database. A
+    // refusal is an ordinary error result, so callers written for supabase-js
+    // (which check `error`) fail closed without any change of their own.
+    if (this.guard) {
+      try {
+        await this.guard();
+      } catch (e) {
+        return { data: null, error: { message: e instanceof Error ? e.message : String(e), code: "42501" } };
+      }
+    }
     const { db, meta } = await getDb();
     const params: unknown[] = [];
     let sql = "";
@@ -450,18 +460,23 @@ class Query implements PromiseLike<Result> {
 }
 
 export class PgRestClient {
+  constructor(private guard?: () => Promise<void>) {}
+
   from(table: string) {
-    return new Query(table);
+    return new Query(table, this.guard);
   }
 
   /** Call a Postgres function. Returns a chainable/awaitable builder so
    *  `.single()`, filters, etc. work like supabase-js. */
   rpc(fn: string, params: Record<string, unknown> = {}) {
-    return new Query(fn)._asRpc(fn, params);
+    return new Query(fn, this.guard)._asRpc(fn, params);
   }
 }
 
-/** Build a data client over the working store. */
-export function createPgRestClient() {
-  return new PgRestClient();
+/**
+ * Build a data client over the working store. `guard` runs before every query
+ * and throws to refuse it — see `@/lib/supabase/server` for who may ask what.
+ */
+export function createPgRestClient(guard?: () => Promise<void>) {
+  return new PgRestClient(guard);
 }

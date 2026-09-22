@@ -3,6 +3,7 @@
 import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 export interface PickLineInput {
   product_id: string;
@@ -33,7 +34,7 @@ export async function savePickList(input: PickListInput) {
       lab_id: input.lab_id || null,
       sales_order_id: input.sales_order_id || null,
       purpose: input.purpose,
-      posting_date: input.posting_date || new Date().toISOString().slice(0, 10),
+      posting_date: input.posting_date || localDate(),
       notes: input.notes || null,
     })
     .select("id")

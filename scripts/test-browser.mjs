@@ -34,11 +34,26 @@ if (process.env.SPIR_TEST_SKIP_BUILD !== "1") {
   if (built.status !== 0) process.exit(built.status ?? 1);
 }
 
+// Something already answering on the port would be tested INSTEAD of the
+// server started below — with its own build and its own data — and every
+// result would be about the wrong program. Refuse rather than guess.
+try {
+  await fetch(`${URL_}/welcome`, { signal: AbortSignal.timeout(2000) });
+  console.error(`Port ${PORT} is already in use. Stop whatever is serving ${URL_} (or set SPIR_TEST_PORT) and run again.`);
+  process.exit(1);
+} catch {
+  /* free — good */
+}
+
 // A data directory of its own, so a test run cannot disturb real data.
 const dataDir = mkdtempSync(join(tmpdir(), "spir-browser-test-"));
+// Its own process group: `npm start` runs next-server as a CHILD, and killing
+// only npm used to leave that child alive, still holding the port, to be
+// silently tested by the next run.
 const server = spawn("npm", ["start"], {
   env: { ...process.env, PORT: String(PORT), PGLITE_DATA_DIR: dataDir },
   stdio: ["ignore", "pipe", "pipe"],
+  detached: true,
 });
 // Keep the server's output. A suite that fails for a server-side reason —
 // a 500 from a route — leaves nothing to look at otherwise, which is exactly
@@ -52,7 +67,11 @@ server.stdout.on("data", keep);
 server.stderr.on("data", keep);
 
 const stop = () => {
-  server.kill("SIGKILL");
+  try {
+    process.kill(-server.pid, "SIGKILL"); // the whole group: npm and next-server
+  } catch {
+    server.kill("SIGKILL");
+  }
   rmSync(dataDir, { recursive: true, force: true });
 };
 process.on("exit", stop);

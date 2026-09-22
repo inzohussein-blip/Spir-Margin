@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 interface Opt { id: string; label: string; }
 interface BatchOpt extends Opt { available: number; }
@@ -23,7 +24,7 @@ export function DeliveryNoteForm({ labs, batches }: { labs: Opt[]; batches: Batc
   const { register, control, handleSubmit } = useForm<DeliveryNoteInput>({
     defaultValues: {
       lab_id: "",
-      posting_date: new Date().toISOString().slice(0, 10),
+      posting_date: localDate(),
       notes: "",
       items: [{ kit_batch_id: "", qty: 1 }],
     },

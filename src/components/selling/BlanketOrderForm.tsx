@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 interface Opt { id: string; label: string; }
 interface ProductOpt extends Opt { buy: number; sell: number; }
@@ -29,8 +30,8 @@ export function BlanketOrderForm({
   const router = useRouter();
   const [pending, start] = useTransition();
 
-  const today = new Date().toISOString().slice(0, 10);
-  const nextYear = new Date(Date.now() + 365 * 864e5).toISOString().slice(0, 10);
+  const today = localDate();
+  const nextYear = localDate(new Date(Date.now() + 365 * 864e5));
 
   const { register, control, handleSubmit, setValue } = useForm<BlanketOrderInput>({
     defaultValues: {

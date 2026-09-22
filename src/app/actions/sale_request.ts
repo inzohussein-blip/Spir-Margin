@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { getStaffUser } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/pglite";
 import { formError } from "@/lib/db/form-error";
 
@@ -33,7 +33,7 @@ function usable(items: SaleRequestLine[]): SaleRequestLine[] {
 }
 
 export async function saveSaleRequest(input: SaleRequestInput) {
-  const user = await getCurrentUser();
+  const user = await getStaffUser();
   if (!user) return { error: "Not signed in" };
 
   const lines = usable(input.items);
@@ -94,7 +94,7 @@ export async function saveSaleRequest(input: SaleRequestInput) {
  * anyone refers to, so matching them up would be work in service of nothing.
  */
 export async function updateSaleRequest(id: string, input: SaleRequestInput) {
-  const user = await getCurrentUser();
+  const user = await getStaffUser();
   if (!user) return { error: "Not signed in" };
 
   const lines = usable(input.items);
@@ -143,7 +143,7 @@ export async function updateSaleRequest(id: string, input: SaleRequestInput) {
 }
 
 export async function setSaleRequestStatus(formData: FormData) {
-  const user = await getCurrentUser();
+  const user = await getStaffUser();
   if (!user) return;
   const id = String(formData.get("id") ?? "");
   const status = String(formData.get("status") ?? "");

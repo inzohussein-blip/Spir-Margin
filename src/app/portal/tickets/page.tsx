@@ -1,6 +1,6 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createPortalClient as createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";

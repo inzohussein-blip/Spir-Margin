@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 export interface StockEntryLineInput {
   batch_id: string;
@@ -30,7 +31,7 @@ export async function saveStockEntry(input: StockEntryInput) {
     .insert({
       entry_no: input.entry_no || null,
       purpose: input.purpose,
-      posting_date: input.posting_date || new Date().toISOString().slice(0, 10),
+      posting_date: input.posting_date || localDate(),
       from_warehouse: input.from_warehouse || null,
       to_warehouse: input.to_warehouse || null,
       notes: input.notes || null,

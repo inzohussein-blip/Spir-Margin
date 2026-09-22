@@ -4,6 +4,7 @@ import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { localDate } from "@/lib/dates";
 
 function s(fd: FormData, k: string): string | null {
   const v = fd.get(k);
@@ -21,7 +22,7 @@ export async function createMaintenanceSchedule(fd: FormData) {
     lab_id: s(fd, "lab_id"),
     device_id,
     periodicity: s(fd, "periodicity") ?? "quarterly",
-    start_date: s(fd, "start_date") ?? new Date().toISOString().slice(0, 10),
+    start_date: s(fd, "start_date") ?? localDate(),
     no_of_visits: Number(s(fd, "no_of_visits") ?? "4"),
     notes: s(fd, "notes"),
   });

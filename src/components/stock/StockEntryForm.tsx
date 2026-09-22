@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 interface Opt { id: string; label: string; }
 interface BatchOpt extends Opt { avail: number; }
@@ -31,7 +32,7 @@ export function StockEntryForm({
     defaultValues: {
       entry_no: "",
       purpose: "transfer",
-      posting_date: new Date().toISOString().slice(0, 10),
+      posting_date: localDate(),
       from_warehouse: "",
       to_warehouse: "",
       notes: "",

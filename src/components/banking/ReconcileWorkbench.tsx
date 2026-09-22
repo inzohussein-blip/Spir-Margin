@@ -162,9 +162,9 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
     setPicked((cur) => new Set([...cur].filter((id) => txns.some((t) => t.id === id))));
   }, [txns]);
 
-  // The workbench owns everything it shows and reloads it here, and the
-  // server actions already revalidate the route for the next navigation. A
-  // router.refresh() on top of that only remounts the tree — which threw the
+  // The workbench owns everything it shows and reloads it here. Neither a
+  // router.refresh() nor a revalidatePath() in the actions is needed — every
+  // banking page is force-dynamic — and both remount the tree, which threw the
   // user back to the first tab after every match and every undo.
   const after = async (message: string) => {
     setNote(message);

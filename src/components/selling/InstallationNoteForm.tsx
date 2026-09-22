@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 interface Opt { id: string; label: string; }
 
@@ -30,7 +31,7 @@ export function InstallationNoteForm({
     defaultValues: {
       inst_no: "",
       lab_id: "",
-      inst_date: new Date().toISOString().slice(0, 10),
+      inst_date: localDate(),
       inst_time: "",
       remarks: "",
       items: [{ device_id: "", serial_no: "", qty: 1 }],

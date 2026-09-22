@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { localDate } from "@/lib/dates";
 
 interface Opt { id: string; label: string; }
 interface ProductOpt extends Opt { type: string; buy: number; }
@@ -34,7 +35,7 @@ export function PurchaseForm({
   const { register, control, handleSubmit, setValue } = useForm<PurchaseInput>({
     defaultValues: {
       supplier_id: "",
-      posting_date: new Date().toISOString().slice(0, 10),
+      posting_date: localDate(),
       reference_no: "",
       payment_term_id: "",
       notes: "",
