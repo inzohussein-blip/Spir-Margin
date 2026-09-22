@@ -11,6 +11,7 @@ import { LocaleProvider } from "@/components/LocaleProvider";
 import { NavProgress } from "@/components/NavProgress";
 import { OfflineProvider } from "@/components/offline/OfflineProvider";
 import { SyncStatus } from "@/components/offline/SyncStatus";
+import { DbSyncStatus } from "@/components/offline/DbSyncStatus";
 import { ServiceWorkerRegistrar } from "@/components/offline/ServiceWorkerRegistrar";
 import { ErrorReporter } from "@/components/monitoring/ErrorReporter";
 import { Toasts } from "@/components/desk/Toasts";
@@ -92,8 +93,9 @@ export default async function RootLayout({
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="hidden sm:block">
+                  <div className="hidden items-center gap-2 sm:flex">
                     <SyncStatus />
+                    <DbSyncStatus />
                   </div>
                   <NotificationBell items={notifications} locale={locale} />
                   <UserMenu user={user} locale={locale} />

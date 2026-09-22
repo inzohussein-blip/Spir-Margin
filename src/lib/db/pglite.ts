@@ -3,18 +3,22 @@ import fs from "node:fs";
 import path from "node:path";
 
 /**
- * Data-source layer. Two interchangeable backends behind one `Db` interface:
+ * Data-source layer — local-first, with the hosted database as a peer.
  *
- *   • Embedded Postgres (PGlite/WASM) — the LOCAL build. Runs this project's
- *     own SQL migrations + plpgsql functions in-process, persisted to a local
- *     data directory. Zero setup; ideal for the free trial installer.
+ * The app is installed at one company, on machines that may have no hosted
+ * database and no internet, so the EMBEDDED Postgres (PGlite/WASM) is the
+ * working store. Every read and every write in the app goes there: `getDb()`
+ * never needs configuration, never needs a network, and never fails because
+ * something is unreachable.
  *
- *   • Hosted Postgres (node-postgres) — the CLOUD build. Talks to a hosted
- *     Postgres/Supabase over `DATABASE_URL`. Migrations are auto-applied on
- *     boot the first time.
+ * `DATABASE_URL`, when set, is not the store — it is a sync PEER. The sync
+ * engine (`src/lib/sync/`) pushes local changes to it and pulls its changes
+ * back, so a second computer, or a rebuilt one, converges with it. Losing the
+ * connection degrades sync, never the app.
  *
- * `SPIR_PLATFORM` selects which backend is COMPILED IN. Both PGlite and pg
- * are dynamic imports so the unused backend never lands in the other bundle.
+ * Both backends are dynamic imports, and both run this project's own
+ * migrations, so the two ends always share one schema — which is what lets
+ * the change log on either side be replayed onto the other.
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -29,21 +33,23 @@ export interface FkMeta {
   tables: Set<string>;
 }
 
-/**
- * Which datastore a request is talking to. The two are completely separate —
- * different engines, different data, no shared connection or ledger:
- *
- *   "trial" — the free trial platform. Embedded PGlite, seeded from
- *             `seed-trial.sql` (a small demo dataset). Never reads
- *             DATABASE_URL.
- *   "full"  — the paid/full platform. Hosted Postgres over DATABASE_URL.
- *             Never falls back to PGlite; without the variable it refuses.
- */
-export type DbTarget = "trial" | "full";
-
 const MIGRATIONS_DIR = path.join(process.cwd(), "supabase", "migrations");
-const SEED_FILE = path.join(process.cwd(), "supabase", "seed.sql");
-const TRIAL_SEED_FILE = path.join(process.cwd(), "supabase", "seed-trial.sql");
+const FULL_SEED_FILE = path.join(process.cwd(), "supabase", "seed.sql");
+const DEMO_SEED_FILE = path.join(process.cwd(), "supabase", "seed-demo.sql");
+
+/**
+ * What a brand-new database starts with. `demo` (the default) is the small
+ * Arabic starter dataset — enough to show a working system on first run, and
+ * small enough to delete. `full` is the large ERP fixture, `none` an empty
+ * database for a company importing its own data.
+ */
+function seedFile(): string | null {
+  const choice = process.env.SPIR_SEED ?? "demo";
+  if (choice === "none") return null;
+  if (choice === "full") return fs.existsSync(FULL_SEED_FILE) ? FULL_SEED_FILE : null;
+  if (fs.existsSync(DEMO_SEED_FILE)) return DEMO_SEED_FILE;
+  return fs.existsSync(FULL_SEED_FILE) ? FULL_SEED_FILE : null;
+}
 
 // date, time, timestamp, timestamptz, timetz -> keep as text (not JS Date)
 const DATE_OIDS = [1082, 1083, 1114, 1184, 1266];
@@ -78,18 +84,17 @@ function pgliteDataDir(): string | null {
 // plus dev HMR), and a per-module `let` would then open a SECOND PGlite
 // instance against the same data dir — so a write on one instance would be
 // invisible to a read on the other. A global handle guarantees every code path
-// shares exactly one connection PER TARGET.
+// shares exactly one connection to the local store, and at most one pool to
+// the remote peer.
 interface DbSingleton {
   fkMeta: FkMeta | null;
   dbRef: Db | null;
   bootPromise: Promise<{ db: Db; meta: FkMeta }> | null;
 }
 const fresh = (): DbSingleton => ({ fkMeta: null, dbRef: null, bootPromise: null });
-const g = globalThis as unknown as { __spirDbByTarget?: Record<DbTarget, DbSingleton> };
-const singletons: Record<DbTarget, DbSingleton> = (g.__spirDbByTarget ??= {
-  trial: fresh(),
-  full: fresh(),
-});
+const g = globalThis as unknown as { __spirLocal?: DbSingleton; __spirRemote?: DbSingleton };
+const local: DbSingleton = (g.__spirLocal ??= fresh());
+const remote: DbSingleton = (g.__spirRemote ??= fresh());
 
 async function introspect(db: Db): Promise<FkMeta> {
   const cols = await db.query<{ table_name: string; column_name: string }>(
@@ -118,7 +123,6 @@ async function introspect(db: Db): Promise<FkMeta> {
 // ---- embedded PGlite backend ----------------------------------------------
 
 async function bootPglite(): Promise<Db> {
-  // Dynamic imports so a `SPIR_PLATFORM=cloud` build tree-shakes PGlite away.
   const { PGlite } = await import("@electric-sql/pglite");
   const { pgcrypto } = await import("@electric-sql/pglite/contrib/pgcrypto");
   const dataDir = pgliteDataDir();
@@ -136,7 +140,7 @@ async function bootPglite(): Promise<Db> {
       exec: (sql) => pg.exec(sql).then(() => undefined),
       query: (sql, params) => pg.query(sql, params) as Promise<{ rows: any[] }>,
     },
-    "trial",
+    { seed: true },
   );
   return pg as unknown as Db;
 }
@@ -224,14 +228,17 @@ async function applyPendingMigrations(run: Runner): Promise<void> {
 }
 
 /**
- * Ensure the `authenticated` role, apply pending migrations, then seed once.
+ * Ensure the `authenticated` role, apply pending migrations, and — for the
+ * local store only — seed once.
  *
- * The trial platform seeds from `seed-trial.sql` — a deliberately small demo
- * dataset — so the free trial shows a comprehensible system rather than the
- * full ERP fixture. The full platform uses `seed.sql` (and in practice only
- * on a genuinely empty database; a real deployment arrives already populated).
+ * Both ends run the migrations: the change log can only be replayed across if
+ * both sides carry the same schema. Only the local store is SEEDED. Seeding
+ * the peer as well would give each end its own rows for the same starter
+ * data, with different generated ids, and the first push would then collide
+ * on a secondary unique key (two `devices` rows sharing an `asset_code`). The
+ * peer starts empty and receives everything through sync.
  */
-async function initSchema(run: Runner, target: DbTarget): Promise<void> {
+async function initSchema(run: Runner, opts: { seed: boolean }): Promise<void> {
   // RLS policies reference the "authenticated" role — it must exist. On a hosted
   // Supabase database it already does, so the guard simply no-ops.
   await run.exec(`do $$ begin
@@ -240,15 +247,28 @@ async function initSchema(run: Runner, target: DbTarget): Promise<void> {
 
   await applyPendingMigrations(run);
 
+  // Re-attach the change-log triggers after every migration run, so a table
+  // added by a later migration is covered without anyone having to remember.
+  // Guarded because a database that predates migration 0089 has not defined
+  // the function yet at this point on its very first upgrade pass.
+  await run
+    .exec(`do $$ begin
+      if to_regprocedure('_spir_attach_change_log()') is not null then
+        perform _spir_attach_change_log();
+      end if;
+    end $$;`)
+    .catch(() => undefined);
+
   // Seed runs exactly once, on a genuinely fresh database, gated by the
   // `_spir_meta` marker — so redeploys and migration top-ups never re-seed.
   const seeded = await run.query<{ n: number }>(
     `select count(*)::int as n from information_schema.tables where table_schema='public' and table_name='_spir_meta'`
   );
   if ((seeded.rows[0]?.n ?? 0) === 0) {
-    const seedFile =
-      target === "trial" && fs.existsSync(TRIAL_SEED_FILE) ? TRIAL_SEED_FILE : SEED_FILE;
-    if (fs.existsSync(seedFile)) await run.exec(fs.readFileSync(seedFile, "utf8"));
+    if (opts.seed) {
+      const file = seedFile();
+      if (file) await run.exec(fs.readFileSync(file, "utf8"));
+    }
     await run.exec(`create table if not exists _spir_meta (k text primary key);
       insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;`);
   }
@@ -288,7 +308,7 @@ async function bootPostgres(url: string): Promise<Db> {
           exec: (sql) => client.query(sql).then(() => undefined),
           query: (sql, params) => client.query(sql, params as any[]).then((r) => ({ rows: r.rows })),
         },
-        "full",
+        { seed: false },
       );
     } finally {
       await client.query("select pg_advisory_unlock($1)", [MIGRATION_LOCK_KEY]).catch(() => undefined);
@@ -307,49 +327,66 @@ async function bootPostgres(url: string): Promise<Db> {
 // Arbitrary fixed key identifying the schema-migration advisory lock.
 const MIGRATION_LOCK_KEY = 5_713_002;
 
-/** True when the full platform has somewhere to store data. */
-export function isFullPlatformConfigured(): boolean {
+/** True when a hosted database is configured to sync with. */
+export function isRemoteConfigured(): boolean {
   return !!process.env.DATABASE_URL;
 }
 
-/** Thrown when the full platform is selected but DATABASE_URL is unset. */
-export class FullPlatformNotConfiguredError extends Error {
-  constructor() {
-    super(
-      "The full platform needs DATABASE_URL (a hosted Postgres connection string). " +
-        "It never falls back to the trial's embedded database.",
-    );
-    this.name = "FullPlatformNotConfiguredError";
+async function bootLocal(): Promise<{ db: Db; meta: FkMeta }> {
+  const db = await bootPglite();
+  return { db, meta: await introspect(db) };
+}
+
+/**
+ * The working store. Always the embedded database, so this resolves with no
+ * configuration, no network, and no hosted database in existence.
+ */
+export async function getDb(): Promise<{ db: Db; meta: FkMeta }> {
+  if (local.dbRef && local.fkMeta) return { db: local.dbRef, meta: local.fkMeta };
+  // On failure clear the promise so the next request retries rather than
+  // caching a rejected boot forever.
+  local.bootPromise ??= bootLocal().catch((e) => {
+    local.bootPromise = null;
+    throw e;
+  });
+  const res = await local.bootPromise;
+  local.dbRef = res.db;
+  local.fkMeta = res.meta;
+  return res;
+}
+
+/**
+ * The hosted peer, or null when none is configured or it cannot be reached.
+ *
+ * Only the sync engine calls this. It returns null instead of throwing
+ * because an unreachable peer is an ordinary state for this app, not an
+ * error: the company keeps working and syncs when the link comes back.
+ */
+export async function getRemoteDb(): Promise<Db | null> {
+  const url = process.env.DATABASE_URL;
+  if (!url) return null;
+  if (remote.dbRef) return remote.dbRef;
+  remote.bootPromise ??= (async () => {
+    const db = await bootPostgres(url);
+    return { db, meta: await introspect(db) };
+  })().catch((e) => {
+    remote.bootPromise = null;
+    throw e;
+  });
+  try {
+    const res = await remote.bootPromise;
+    remote.dbRef = res.db;
+    remote.fkMeta = res.meta;
+    return res.db;
+  } catch (e) {
+    console.warn("[sync] hosted database unreachable:", (e as Error).message);
+    return null;
   }
 }
 
-async function bootstrap(target: DbTarget): Promise<{ db: Db; meta: FkMeta }> {
-  // The two platforms are fully separate stores. The trial is always the
-  // embedded PGlite and ignores DATABASE_URL even when it is set; the full
-  // platform is always hosted Postgres and never borrows the trial's data.
-  const db =
-    target === "trial"
-      ? await bootPglite()
-      : await (async () => {
-          const url = process.env.DATABASE_URL;
-          if (!url) throw new FullPlatformNotConfiguredError();
-          return bootPostgres(url);
-        })();
-  const meta = await introspect(db);
-  return { db, meta };
-}
-
-export async function getDb(target: DbTarget): Promise<{ db: Db; meta: FkMeta }> {
-  const s = singletons[target];
-  if (s.dbRef && s.fkMeta) return { db: s.dbRef, meta: s.fkMeta };
-  // On failure clear the promise so the next request retries rather than
-  // caching a rejected boot forever.
-  s.bootPromise ??= bootstrap(target).catch((e) => {
-    s.bootPromise = null;
-    throw e;
-  });
-  const res = await s.bootPromise;
-  s.dbRef = res.db;
-  s.fkMeta = res.meta;
-  return res;
+/** Drop the cached peer so the next sync re-dials (used after a failure). */
+export function resetRemoteDb(): void {
+  remote.dbRef = null;
+  remote.fkMeta = null;
+  remote.bootPromise = null;
 }

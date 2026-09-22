@@ -41,7 +41,8 @@ migration, and `npm test` fails if it drifts.
 | Variable | When | Purpose |
 | --- | --- | --- |
 | `AUTH_SECRET` | **Required** on any hosted deploy | Signs session cookies. Without it the app refuses to start on a hosted deploy (it would otherwise use a public built-in key that lets anyone forge a session). Generate with `openssl rand -base64 48`. |
-| `DATABASE_URL` | Hosted Postgres | Connection string; unset = embedded PGlite. |
+| `DATABASE_URL` | Optional | A hosted Postgres to SYNC with. The app always stores its data in its own embedded database; this adds a peer it pushes to and pulls from. Unset means this machine runs standalone. |
+| `SPIR_SEED` | Optional | What a brand-new database starts with: `demo` (default), `full`, or `none`. |
 
 The first user is seeded as `admin@spir.local` / `admin1234`, plus a demo
 account `demo@spir.local` / `demo1234` (migration `0084_demo_user.sql`) —

@@ -1,14 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { SESSION_COOKIE, LOCAL_TRIAL_USER, verifySessionToken } from "@/lib/auth/session";
-import { PLATFORM_MODE_COOKIE, resolvePlatform } from "@/lib/auth/platform-mode";
-import { isHybridBuild } from "@/lib/runtime/platform";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/session";
 
 // Paths reachable without a session. The PWA manifest must be fetchable by the
-// browser before login so the app is installable (add to home screen). The
-// `/welcome` picker gates first-time visitors on the HYBRID build only.
-// `/sw.js` no longer exists, but browsers that installed the old service
-// worker still request it. Letting it 404 cleanly is what makes them drop the
-// registration; redirecting it into the app would keep a dead worker alive.
+// browser before login so the app is installable (add to home screen).
+// `/welcome` is the public landing screen. `/sw.js` no longer exists, but
+// browsers that installed the old service worker still request it — letting it
+// 404 cleanly is what makes them drop the registration; redirecting it into the
+// app would keep a dead worker alive.
 const PUBLIC_PATHS = ["/login", "/welcome", "/manifest.webmanifest", "/sw.js"];
 
 export async function middleware(req: NextRequest) {
@@ -17,30 +15,11 @@ export async function middleware(req: NextRequest) {
   const isWelcome = pathname === "/welcome" || pathname.startsWith("/welcome/");
   const isPortal = pathname === "/portal" || pathname.startsWith("/portal/");
 
-  // Which platform applies: the build flag, else the visitor's picker choice.
-  // null means "hybrid build, nothing picked yet" → send them to the picker.
-  const platform = resolvePlatform(req.cookies.get(PLATFORM_MODE_COOKIE)?.value);
+  const user = await verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
 
-  // The local platform has no sign-in: every request is the local admin.
-  const user =
-    platform === "local"
-      ? LOCAL_TRIAL_USER
-      : await verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
-
-  // Signed-in users have no reason to see the picker or the login page.
+  // Signed-in users have no reason to see the landing screen or the login page.
   if (user && (pathname === "/login" || isWelcome)) {
     return NextResponse.redirect(new URL(user.role === "customer" ? "/portal" : "/", req.url));
-  }
-
-  // A specialised build is a single platform, so the picker has nothing to
-  // offer — reroute it to sign-in.
-  if (!isHybridBuild && isWelcome) {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
-
-  // Hybrid build, no choice made yet: pick a platform first.
-  if (platform === null && !isWelcome && !isPublic) {
-    return NextResponse.redirect(new URL("/welcome", req.url));
   }
 
   // Everything else requires a session.

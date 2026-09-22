@@ -4,19 +4,15 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { SESSION_COOKIE, SESSION_MAX_AGE, createSessionToken, type SessionUser } from "@/lib/auth/session";
-import { lockoutRemaining, recordFailure, recordSuccess } from "@/lib/auth/rate-limit";
 import {
-  PLATFORM_MODE_COOKIE,
-  PLATFORM_MODE_MAX_AGE,
-  parsePlatformMode,
-  resolvePlatform,
-  type PlatformMode,
-} from "@/lib/auth/platform-mode";
-import { LOCAL_ADMIN_EMAIL, LOCAL_ADMIN_PASSWORD, LOCAL_ADMIN_ID } from "@/lib/auth/local-credentials";
-import { CLOUD_ADMIN_EMAIL, CLOUD_ADMIN_PASSWORD, CLOUD_ADMIN_ID } from "@/lib/auth/cloud-credentials";
-import { isCloudBuild, isLocalBuild } from "@/lib/runtime/platform";
-import { isFullPlatformConfigured } from "@/lib/db/pglite";
+  SESSION_COOKIE,
+  SESSION_MAX_AGE,
+  BUILT_IN_USER,
+  createSessionToken,
+  type SessionUser,
+} from "@/lib/auth/session";
+import { lockoutRemaining, recordFailure, recordSuccess } from "@/lib/auth/rate-limit";
+import { DEMO_EMAIL, DEMO_PASSWORD } from "@/lib/auth/demo-credentials";
 import type { LoginState } from "@/lib/auth/login-state";
 
 const cookieOptions = {
@@ -54,22 +50,6 @@ async function trySetSession(user: SessionUser): Promise<LoginState> {
   }
 }
 
-const LOCAL_ADMIN_USER: SessionUser = {
-  id: LOCAL_ADMIN_ID,
-  email: LOCAL_ADMIN_EMAIL,
-  full_name: "المسؤول (نسخة تجريبية)",
-  role: "admin",
-  lab_id: null,
-};
-
-const CLOUD_ADMIN_USER: SessionUser = {
-  id: CLOUD_ADMIN_ID,
-  email: CLOUD_ADMIN_EMAIL,
-  full_name: "المسؤول",
-  role: "admin",
-  lab_id: null,
-};
-
 export async function loginAction(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
@@ -77,46 +57,17 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
 
   if (!email || !password) return { error: "Enter your email and password" };
 
-  // Which platform applies: the build flag, else the visitor's picker choice.
-  const platform = resolvePlatform(cookies().get(PLATFORM_MODE_COOKIE)?.value);
-
-  // --- LOCAL platform (trial) ----------------------------------------------
-  // One fixed credential in code, no DB, no rate-limit, no bcrypt. Reaching
-  // this at all is unusual: the local platform has no sign-in step, so
-  // middleware normally redirects /login straight to `/`.
-  if (platform === "local") {
-    if (email !== LOCAL_ADMIN_EMAIL || password !== LOCAL_ADMIN_PASSWORD) {
-      return { error: "Invalid email or password" };
-    }
-    const bad = await trySetSession(LOCAL_ADMIN_USER);
+  // The built-in account is checked first, in code, before anything touches a
+  // database. That is what makes sign-in work on a fresh install, with no
+  // hosted database, and with no internet.
+  if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
+    const bad = await trySetSession(BUILT_IN_USER);
     if (bad) return bad;
     redirect(next);
   }
 
-  // The full platform lives in a hosted Postgres. Without DATABASE_URL there
-  // is no database to sign in to, and it must never borrow the trial's — so
-  // stop here rather than handing out a session that every page then fails on.
-  if (!isFullPlatformConfigured()) {
-    return { error: "The full platform is not configured on this server yet." };
-  }
-
-  // --- NETWORKED platform (full, admin-only) -------------------------------
-  // The fixed cloud admin in cloud-credentials.ts is the only accepted login.
-  // It is checked before anything touches the database, so sign-in works even
-  // when the hosted DB is unreachable.
-  if (email === CLOUD_ADMIN_EMAIL && password === CLOUD_ADMIN_PASSWORD) {
-    const bad = await trySetSession(CLOUD_ADMIN_USER);
-    if (bad) return bad;
-    redirect(next);
-  }
-
-  // The dedicated cloud build is admin-only and stops here. The hybrid build
-  // additionally accepts DB-backed accounts so existing users can still be
-  // exercised in development.
-  if (isCloudBuild) {
-    return { error: "Invalid email or password" };
-  }
-
+  // Any other email is a database-backed account in the local store. It has
+  // its own rows, so this still works offline.
   const locked = await lockoutRemaining(email).catch(() => 0);
   if (locked > 0) {
     return { error: "Too many attempts. Try again later.", lockedFor: locked };
@@ -149,37 +100,8 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
 }
 
 export async function logoutAction() {
-  const jar = cookies();
-  jar.delete(SESSION_COOKIE);
-
-  if (resolvePlatform(jar.get(PLATFORM_MODE_COOKIE)?.value) === "local") {
-    // The local platform has no session to end. On the dedicated local build
-    // there is nowhere else to go, so stay home. On the hybrid build, drop the
-    // platform choice too — "sign out" is the way back to the picker.
-    if (isLocalBuild) redirect("/");
-    jar.delete(PLATFORM_MODE_COOKIE);
-    redirect("/welcome");
-  }
-
+  cookies().delete(SESSION_COOKIE);
   redirect("/login");
-}
-
-/** Hybrid-build only: persist the visitor's platform choice before sign-in. */
-export async function setPlatformModeAction(formData: FormData) {
-  const mode: PlatformMode | null = parsePlatformMode(String(formData.get("mode") ?? ""));
-  if (!mode) redirect("/welcome");
-  // Selecting the full platform without a hosted database would strand the
-  // visitor on a broken app; the picker disables that card, this enforces it.
-  if (mode === "networked" && !isFullPlatformConfigured()) redirect("/welcome");
-  cookies().set(PLATFORM_MODE_COOKIE, mode!, {
-    httpOnly: false,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: PLATFORM_MODE_MAX_AGE,
-  });
-  // The local platform needs no sign-in, so go straight in.
-  redirect(mode === "local" ? "/" : "/login");
 }
 
 export async function changePasswordAction(_prev: unknown, formData: FormData) {

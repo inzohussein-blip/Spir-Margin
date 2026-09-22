@@ -1,30 +1,26 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { GlobeIcon, ShieldCheckIcon } from "lucide-react";
+import { KeyRoundIcon, HardDriveIcon } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { getLocale } from "@/lib/i18n-server";
-import { PLATFORM_MODE_COOKIE, resolvePlatform } from "@/lib/auth/platform-mode";
-import { CLOUD_ADMIN_EMAIL } from "@/lib/auth/cloud-credentials";
-import { isHybridBuild } from "@/lib/runtime/platform";
+import { DEMO_EMAIL, DEMO_PASSWORD } from "@/lib/auth/demo-credentials";
 import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Sign-in for the NETWORKED platform only. The local platform needs no
- * sign-in, so this page never renders for it — both the middleware and the
- * guard below send those visitors straight to `/`.
+ * Sign-in. One platform, one built-in account.
+ *
+ * The credentials below are the ones in `demo-credentials.ts`, shown on the
+ * form on purpose: this is a single-company install and the account is fixed
+ * in the source, so there is nothing to discover and nothing to reset. It is
+ * checked before any database call, so this page works on a machine with no
+ * hosted database and no internet.
  */
 export default function LoginPage({
   searchParams,
 }: {
   searchParams?: { next?: string };
 }) {
-  const platform = resolvePlatform(cookies().get(PLATFORM_MODE_COOKIE)?.value);
-  if (platform === "local") redirect("/");
-  if (platform === null) redirect("/welcome");
-
   const locale = getLocale();
   const next = typeof searchParams?.next === "string" ? searchParams.next : "";
 
@@ -42,9 +38,9 @@ export default function LoginPage({
             </span>
             Spir-Margin
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-medium text-sky-700">
-            <GlobeIcon size={12} />
-            {t(locale, "Networked platform")}
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700">
+            <HardDriveIcon size={12} />
+            {t(locale, "Works offline")}
           </span>
         </header>
 
@@ -53,25 +49,29 @@ export default function LoginPage({
           {t(locale, "Medical-device sales, lab tracking & banking.")}
         </p>
 
-        <LoginForm defaultEmail={CLOUD_ADMIN_EMAIL} next={next} />
+        <LoginForm defaultEmail={DEMO_EMAIL} next={next} />
 
-        <div className="mt-5 flex items-start gap-2 rounded-lg border border-outline-gray-2 bg-surface-gray-1 p-3 text-xs leading-relaxed text-ink-gray-6">
-          <ShieldCheckIcon size={14} className="mt-0.5 shrink-0 text-brand" />
-          <span>
-            {t(
-              locale,
-              "Note: this account belongs to the shared online platform and works from any authorized computer.",
-            )}
-          </span>
+        <div className="mt-5 rounded-lg border border-outline-gray-2 bg-surface-gray-1 p-3 text-xs leading-relaxed text-ink-gray-6">
+          <div className="mb-1.5 flex items-center gap-2 font-semibold text-ink-gray-7">
+            <KeyRoundIcon size={14} className="shrink-0 text-brand" />
+            {t(locale, "Built-in account")}
+          </div>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+            <dt>{t(locale, "Email")}</dt>
+            <dd className="font-mono text-ink-gray-8" dir="ltr">{DEMO_EMAIL}</dd>
+            <dt>{t(locale, "Password")}</dt>
+            <dd className="font-mono text-ink-gray-8" dir="ltr">{DEMO_PASSWORD}</dd>
+          </dl>
+          <p className="mt-2">
+            {t(locale, "This account is fixed in the app and always works, with or without a database connection.")}
+          </p>
         </div>
 
-        {isHybridBuild ? (
-          <div className="mt-4 flex items-center justify-center gap-3 text-xs text-ink-gray-5">
-            <Link href="/welcome" className="hover:text-brand hover:underline">
-              {t(locale, "Change platform")}
-            </Link>
-          </div>
-        ) : null}
+        <div className="mt-4 flex items-center justify-center text-xs text-ink-gray-5">
+          <Link href="/welcome" className="hover:text-brand hover:underline">
+            {t(locale, "About Spir-Margin")}
+          </Link>
+        </div>
       </main>
     </div>
   );

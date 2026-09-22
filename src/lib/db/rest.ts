@@ -1,5 +1,5 @@
 import "server-only";
-import { getDb, type DbTarget, type FkMeta } from "./pglite";
+import { getDb, type FkMeta } from "./pglite";
 import { withAuditActor } from "@/lib/audit/actor";
 
 /**
@@ -178,7 +178,7 @@ class Query implements PromiseLike<Result> {
   private wantCount = false;
   private rpcSpec?: { fn: string; params: Record<string, unknown> };
 
-  constructor(private table: string, private target: DbTarget) {}
+  constructor(private table: string) {}
 
   _asRpc(fn: string, params: Record<string, unknown>) {
     this.rpcSpec = { fn, params };
@@ -273,7 +273,7 @@ class Query implements PromiseLike<Result> {
   }
 
   private async exec(): Promise<Result> {
-    const { db, meta } = await getDb(this.target);
+    const { db, meta } = await getDb();
     const params: unknown[] = [];
     let sql = "";
 
@@ -432,20 +432,18 @@ class Query implements PromiseLike<Result> {
 }
 
 export class PgRestClient {
-  constructor(private target: DbTarget) {}
-
   from(table: string) {
-    return new Query(table, this.target);
+    return new Query(table);
   }
 
   /** Call a Postgres function. Returns a chainable/awaitable builder so
    *  `.single()`, filters, etc. work like supabase-js. */
   rpc(fn: string, params: Record<string, unknown> = {}) {
-    return new Query(fn, this.target)._asRpc(fn, params);
+    return new Query(fn)._asRpc(fn, params);
   }
 }
 
-/** Build a data client bound to one platform's datastore. */
-export function createPgRestClient(target: DbTarget) {
-  return new PgRestClient(target);
+/** Build a data client over the working store. */
+export function createPgRestClient() {
+  return new PgRestClient();
 }

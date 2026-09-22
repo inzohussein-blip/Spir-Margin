@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
-import { LOCAL_ADMIN_EMAIL, LOCAL_ADMIN_ID } from "@/lib/auth/local-credentials";
+import { DEMO_EMAIL, DEMO_FULL_NAME, DEMO_USER_ID } from "@/lib/auth/demo-credentials";
 
 /**
  * Signed-cookie sessions for the app's built-in auth. Uses `jose` (Web Crypto),
@@ -9,10 +9,8 @@ import { LOCAL_ADMIN_EMAIL, LOCAL_ADMIN_ID } from "@/lib/auth/local-credentials"
  * Supabase service-role key (already a high-entropy server secret) so no extra
  * env var is strictly required. Set AUTH_SECRET in production for clarity.
  *
- * `verifySessionToken` is a pure token check. The "local platform needs no
- * sign-in" rule depends on the platform-mode cookie as well as the build flag,
- * so it lives in the callers that can see cookies — `middleware.ts` and
- * `getCurrentUser()` — which both fall back to LOCAL_TRIAL_USER.
+ * `verifySessionToken` is a pure token check, so it works unchanged in the
+ * Edge middleware and in Node server code.
  */
 
 export const SESSION_COOKIE = "spir_session";
@@ -27,11 +25,11 @@ export interface SessionUser {
   lab_id: string | null;
 }
 
-/** The implicit "you are signed in" user on the local platform (no sign-in). */
-export const LOCAL_TRIAL_USER: SessionUser = {
-  id: LOCAL_ADMIN_ID,
-  email: LOCAL_ADMIN_EMAIL,
-  full_name: "المسؤول (نسخة تجريبية)",
+/** The session for the built-in account in `demo-credentials.ts`. */
+export const BUILT_IN_USER: SessionUser = {
+  id: DEMO_USER_ID,
+  email: DEMO_EMAIL,
+  full_name: DEMO_FULL_NAME,
   role: "admin",
   lab_id: null,
 };

@@ -19,11 +19,12 @@ schema lives here — `../schema.sql` is generated from these files and
 
 | Where | How |
 | --- | --- |
-| Embedded PGlite (local / trial build) | `src/lib/db/pglite.ts` replays every file once at first boot |
-| Hosted Postgres | the same migrator at startup, or `psql -f ../schema.sql` by hand |
+| The embedded database on each machine | `src/lib/db/pglite.ts` replays every file once at first boot |
+| A hosted Postgres peer | the same migrator on first contact, or `psql -f ../schema.sql` by hand |
 
-Both record each filename in the `_spir_migrations` ledger, so a file is never
-applied twice. `../schema.sql` writes the whole ledger up front, which is why a
+Both ends run the same files — that is what lets either side's change log be
+replayed onto the other. Both record each filename in the `_spir_migrations`
+ledger, so a file is never applied twice. `../schema.sql` writes the whole ledger up front, which is why a
 database stood up from it does not then replay anything.
 
 ## Conventions
@@ -43,6 +44,12 @@ database stood up from it does not then replay anything.
 - **Master data is Arabic.** The UI is Arabic-only; `0087` translates the names
   seeded by `0012`–`0052`. Brand names and unit symbols (L, mL, kg) stay as they
   are.
+- **New tables join the change log automatically.** `0089` attaches an
+  `after insert or update or delete` trigger to every table that has a primary
+  key, and `_spir_attach_change_log()` runs again after each migration pass, so
+  a table added later is covered without anyone wiring it up. A table that
+  should NOT sync — telemetry describing one machine — goes in the exclusion
+  list inside that function.
 
 ## Two known irregularities
 

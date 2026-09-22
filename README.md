@@ -5,9 +5,30 @@ labs, and managing spare parts and reagent kits** — re-imagined from
 [ERPNext](https://github.com/frappe/erpnext) without the weight of a full ERP.
 
 - **Framework:** Next.js 14 (App Router) + Tailwind CSS
-- **Database:** embedded Postgres (PGlite) out of the box — no external service
-  needed; swappable for hosted Supabase (PostgreSQL)
+- **Database:** embedded Postgres (PGlite) — the app carries its own store and
+  needs no external service
+- **Offline-first:** works with no hosted database and no internet; a hosted
+  Postgres, when configured, is a sync peer rather than the store
 - **Hosting:** local / any Node server (Vercel with a hosted DB)
+
+## How it runs
+
+There is one build and one platform. The embedded database on each machine is
+the working store, so the app starts and runs with nothing configured.
+
+Set `DATABASE_URL` and that hosted Postgres becomes a **peer**, not the store.
+Every database keeps a log of its own row changes (migration `0089`), and sync
+is symmetric: push the log rows the peer has not seen, pull the ones it has
+that you do not, and apply them. Conflicts resolve last-writer-wins per row,
+which every machine agrees on because each row carries the time and origin of
+the change that last set it — so the result does not depend on who syncs
+first. Sync runs automatically in the background and on demand from the header.
+
+Losing the network degrades sync, never the app. Sign-in is the same story:
+the built-in account in `src/lib/auth/demo-credentials.ts` is checked in code
+before anything touches a database, so a fresh, offline machine can still get
+in. `SPIR_SEED` picks what a brand-new database starts with — `demo` (the
+default Arabic starter set), `full`, or `none`.
 
 ---
 
