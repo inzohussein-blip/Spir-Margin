@@ -76,8 +76,8 @@ export default async function NewItemPricePage() {
             <TextInput name="valid_upto" type="date" />
           </Field>
           <div className="flex items-end gap-4">
-            <Checkbox name="selling" label="Selling" defaultChecked />
-            <Checkbox name="buying" label="Buying" />
+            <Checkbox name="selling" label={t(locale, "Selling")} defaultChecked />
+            <Checkbox name="buying" label={t(locale, "Buying")} />
           </div>
           <div className="sm:col-span-2">
             <Field label={t(locale, "Note")}>

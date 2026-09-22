@@ -56,7 +56,7 @@ export default async function NewPaymentPage() {
             <TextInput name="amount" type="number" step="0.01" required />
           </Field>
           <Field label={t(locale, "Mode of payment")}>
-            <TextInput name="mode_of_payment" list="modes" placeholder="Wire / Cash / Cheque" />
+            <TextInput name="mode_of_payment" list="modes" placeholder={t(locale, "Wire / Cash / Cheque")} />
             <datalist id="modes">
               {modes.map((m) => <option key={m} value={m} />)}
             </datalist>

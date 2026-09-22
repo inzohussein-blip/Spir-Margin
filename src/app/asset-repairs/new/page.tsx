@@ -44,7 +44,7 @@ export default async function NewAssetRepairPage() {
             <TextInput name="repair_cost" type="number" step="0.01" defaultValue="0" />
           </Field>
           <Field label={t(locale, "Downtime")}>
-            <TextInput name="downtime" placeholder="e.g. 3 days" />
+            <TextInput name="downtime" placeholder={t(locale, "e.g. 3 days")} />
           </Field>
           <div className="sm:col-span-2">
             <Field label={t(locale, "Problem description")}>

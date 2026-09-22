@@ -102,8 +102,7 @@ export function InstallationNoteForm({
             </div>
           ))}
           <Button type="button" variant="subtle" size="sm" onClick={() => append({ device_id: "", serial_no: "", qty: 1 })}>
-            <PlusIcon size={14} className="mr-1" /> Add device
-          </Button>
+            <PlusIcon size={14} className="mr-1" />{t(locale, "Add device")}</Button>
         </CardContent>
       </Card>
 

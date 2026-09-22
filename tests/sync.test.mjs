@@ -255,3 +255,26 @@ test("the order machines sync in does not change the result", async () => {
   assert.deepEqual(first, second, "syncing in the other order must reach the same value");
   assert.equal(first.hub, "من باء", "the later edit should win");
 });
+
+test("migrations do not enter the change log", async () => {
+  // Every node applies the same migration files itself, so a migration that
+  // edits data — 0087 and 0090 rename master data — must not be logged and
+  // pushed. It would land on a peer that already made the same change to its
+  // own copy, and collide on the unique name because the two ends generated
+  // different ids for those seeded rows. This caught exactly that.
+  const db = wrap(await bootWithMigrations());
+  const { rows } = await db.query(`select count(*)::int as n from _spir_changes`);
+  assert.equal(rows[0].n, 0, "a freshly migrated database should have an empty change log");
+});
+
+test("master data renamed by a migration does not collide on sync", async () => {
+  const a = wrap(await bootWithMigrations());
+  const hub = wrap(await bootWithMigrations());
+  // Both ends already ran 0090, so both hold the Arabic cost centres under
+  // their own ids. Syncing real work must not drag those along.
+  await a.query(`insert into labs (code, name) values ('L-MIG','مختبر')`);
+  const res = await sync(a, hub);
+  assert.ok(res.sent >= 1);
+  const n = await hub.query(`select count(*)::int as n from cost_centers where name = 'رئيسي'`);
+  assert.equal(n.rows[0].n, 1, "the peer should still hold exactly one 'رئيسي' cost centre");
+});

@@ -47,7 +47,7 @@ export default async function NewProductPage() {
           <Field label={t(locale, "Type")} required>
             <Select name="product_type" required defaultValue="">
               <option value="" disabled>
-                Select type…
+                {t(locale, "Select type…")}
               </option>
               <option value="device">{t(locale, "device")}</option>
               <option value="kit">{t(locale, "kit")}</option>
@@ -55,7 +55,7 @@ export default async function NewProductPage() {
             </Select>
           </Field>
           <Field label={t(locale, "Item group")}>
-            <TextInput name="item_group" list="item-groups" placeholder="Reagents" />
+            <TextInput name="item_group" list="item-groups" placeholder={t(locale, "Reagents")} />
             <datalist id="item-groups">
               {itemGroups.map((g) => <option key={g} value={g} />)}
             </datalist>

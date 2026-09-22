@@ -1,5 +1,11 @@
-// Verify (and optionally repair) an application login against the REAL hosted
-// database referenced by DATABASE_URL — the same variable the deployed app uses.
+// Verify (and optionally repair) a DATABASE-BACKED login against the hosted
+// Postgres referenced by DATABASE_URL.
+//
+// Note what this cannot tell you: the app's built-in account
+// (src/lib/auth/demo-credentials.ts) is checked in code before any database
+// call and has no row anywhere, which is what lets it sign in on a machine
+// with no database and no internet. Asking this script about it would report
+// a failure for an account that works, so it refuses that email instead.
 //
 // It never prints passwords or password hashes. Run it from CI (see
 // .github/workflows/verify-admin.yml) so the connection string stays in a
@@ -7,15 +13,26 @@
 //
 // Env:
 //   DATABASE_URL         (required) hosted Postgres connection string
-//   CHECK_EMAIL          account to check           (default admin@spir.local)
-//   CHECK_PASSWORD       password to test           (default admin123)
+//   CHECK_EMAIL          account to check           (default demo@spir.local)
+//   CHECK_PASSWORD       password to test           (default demo1234)
 //   RESET                "1" to repair on failure   (default off)
 //   ADMIN_NEW_PASSWORD   new password used when RESET=1 (from a secret, never an input)
 //
 // Exit codes: 0 = login works (or was repaired), 1 = login failed,
 //             2 = misconfiguration, 3 = schema/migrations missing.
 
+import fs from "node:fs";
 import pg from "pg";
+
+/** Read the built-in address from the source, so the two cannot drift apart. */
+function builtInEmail() {
+  try {
+    const src = fs.readFileSync("src/lib/auth/demo-credentials.ts", "utf8");
+    return /DEMO_EMAIL\s*=\s*"([^"]+)"/.exec(src)?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -23,8 +40,20 @@ if (!url) {
   process.exit(2);
 }
 
-const email = (process.env.CHECK_EMAIL || "admin@spir.local").trim();
-const password = process.env.CHECK_PASSWORD ?? "admin123";
+const email = (process.env.CHECK_EMAIL || "demo@spir.local").trim();
+const password = process.env.CHECK_PASSWORD ?? "demo1234";
+
+const builtIn = builtInEmail();
+if (builtIn && email.toLowerCase() === builtIn.toLowerCase()) {
+  console.error(
+    `${email} is the app's built-in account. It is checked in code, not in the\n` +
+      "database, so there is nothing here to verify or repair — and it keeps\n" +
+      "working even when this database is unreachable. To change it, edit\n" +
+      "src/lib/auth/demo-credentials.ts and redeploy.\n\n" +
+      "Pass CHECK_EMAIL for a database-backed account instead.",
+  );
+  process.exit(2);
+}
 const doReset = process.env.RESET === "1";
 const newPassword = process.env.ADMIN_NEW_PASSWORD || "";
 

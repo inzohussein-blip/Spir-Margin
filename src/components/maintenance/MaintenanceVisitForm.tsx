@@ -86,7 +86,7 @@ export function MaintenanceVisitForm({
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Completion")}</span>
             <select {...register("completion_status")} className={cls}>
-              <option value="pending">pending</option>
+              <option value="pending">{t(locale, "pending")}</option>
               <option value="partial">{t(locale, "partial")}</option>
               <option value="full">{t(locale, "full")}</option>
             </select>
@@ -136,8 +136,7 @@ export function MaintenanceVisitForm({
             </div>
           ))}
           <Button type="button" variant="subtle" size="sm" onClick={() => append({ device_id: "", work_done: "", next_due_date: "" })}>
-            <PlusIcon size={14} className="mr-1" /> Add device
-          </Button>
+            <PlusIcon size={14} className="mr-1" />{t(locale, "Add device")}</Button>
         </CardContent>
       </Card>
 

@@ -35,7 +35,7 @@ export default async function NewWarehousePage() {
           className="grid grid-cols-1 gap-4 sm:grid-cols-2"
         >
           <Field label={t(locale, "Name")} required>
-            <TextInput name="name" required placeholder="Cold Store - Erbil" />
+            <TextInput name="name" required placeholder={t(locale, "Cold Store - Erbil")} />
           </Field>
           <Field label={t(locale, "Type")}>
             <Select name="warehouse_type" defaultValue="">

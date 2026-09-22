@@ -22,7 +22,7 @@ export default async function NewPricingRulePage() {
       <FormCard title={t(locale, "Rule")}>
         <ValidatedForm action={createPricingRule} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Title")} required>
-            <TextInput name="title" required placeholder="Bulk kit discount" />
+            <TextInput name="title" required placeholder={t(locale, "Bulk kit discount")} />
           </Field>
           <Field label={t(locale, "Discount %")} required>
             <TextInput name="discount_percentage" type="number" step="0.01" defaultValue="0" required />

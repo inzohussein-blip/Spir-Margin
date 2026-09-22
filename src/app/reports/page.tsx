@@ -31,9 +31,9 @@ export default function ReportsPage() {
               <span className="grid size-9 place-items-center rounded-md bg-surface-gray-2 text-ink-gray-6 group-hover:bg-brand group-hover:text-white">
                 <r.icon size={18} />
               </span>
-              <span className="font-semibold">{r.label}</span>
+              <span className="font-semibold">{t(locale, r.label)}</span>
             </div>
-            <p className="mt-2 text-sm text-ink-gray-5">{r.desc}</p>
+            <p className="mt-2 text-sm text-ink-gray-5">{t(locale, r.desc)}</p>
           </Link>
         ))}
       </div>

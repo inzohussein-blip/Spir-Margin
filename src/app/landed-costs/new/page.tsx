@@ -30,7 +30,7 @@ export default async function NewLandedCostPage() {
       <FormCard title={t(locale, "Import costs")}>
         <ValidatedForm action={createLandedCost} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Voucher no.")}>
-            <TextInput name="voucher_no" placeholder="auto if blank" />
+            <TextInput name="voucher_no" placeholder={t(locale, "auto if blank")} />
           </Field>
           <Field label={t(locale, "Purchase receipt")} required>
             <Select name="receipt_id" required defaultValue="">

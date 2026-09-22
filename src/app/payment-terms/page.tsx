@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { getLocale } from "@/lib/i18n-server";
-import { t } from "@/lib/i18n";
+import { t, t as t2 } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -45,14 +45,14 @@ export default async function PaymentTermsPage() {
           <EmptyRow text={t(locale, "No payment terms yet")} />
         ) : (
           <ul className="divide-y divide-outline-gray-1">
-            {rows.map((t) => (
-              <li key={t.id} className="flex items-center justify-between px-4 py-3 text-sm">
-                <span className="font-medium text-ink-gray-8">{t.name}</span>
+            {rows.map((tm) => (
+              <li key={tm.id} className="flex items-center justify-between px-4 py-3 text-sm">
+                <span className="font-medium text-ink-gray-8">{tm.name}</span>
                 <span className="text-ink-gray-5">
-                  {t.due_date_based_on === "month_after_month_end"
-                    ? `${t.credit_months} ${basisLabel[t.due_date_based_on]}`
-                    : `${t.credit_days} ${basisLabel[t.due_date_based_on]}`}
-                  {" · "}{t.invoice_portion}%
+                  {tm.due_date_based_on === "month_after_month_end"
+                    ? `${tm.credit_months} ${t2(locale, basisLabel[tm.due_date_based_on])}`
+                    : `${tm.credit_days} ${t2(locale, basisLabel[tm.due_date_based_on])}`}
+                  {" · "}{tm.invoice_portion}%
                 </span>
               </li>
             ))}

@@ -79,7 +79,7 @@ export function AssetMovementForm({
         <CardHeader><CardTitle>{t(locale, "Devices")}</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-ink-gray-5">
-            Set the destination — a device sent to a lab is marked <em>{t(locale, "installed")}</em>; one returned to a warehouse is marked <em>{t(locale, "in stock")}</em>.
+            {t(locale, "Set the destination — a device sent to a lab is marked")} <em>{t(locale, "installed")}</em>{t(locale, "; one returned to a warehouse is marked")} <em>{t(locale, "in stock")}</em>.
           </p>
           {fields.map((f, i) => (
             <div key={f.id} className="rounded-lg border border-outline-gray-1 p-3">
@@ -122,8 +122,7 @@ export function AssetMovementForm({
             </div>
           ))}
           <Button type="button" variant="subtle" size="sm" onClick={() => append({ device_id: "", target_lab_id: "", target_warehouse_id: "", to_custodian: "" })}>
-            <PlusIcon size={14} className="mr-1" /> Add device
-          </Button>
+            <PlusIcon size={14} className="mr-1" />{t(locale, "Add device")}</Button>
         </CardContent>
       </Card>
 

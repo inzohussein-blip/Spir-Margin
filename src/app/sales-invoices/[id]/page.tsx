@@ -66,9 +66,7 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Link href={`/sales-invoices/${inv.id}/print`} className="inline-flex items-center gap-1.5 rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">
-            Print / PDF
-          </Link>
+          <Link href={`/sales-invoices/${inv.id}/print`} className="inline-flex items-center gap-1.5 rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Print / PDF")}</Link>
           <span className={`rounded-full px-3 py-1 text-sm font-medium ${statusBadge[inv.status] ?? "bg-surface-gray-2"}`}>
             {statusLabel(locale, inv.status)}
           </span>

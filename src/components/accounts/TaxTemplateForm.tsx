@@ -36,13 +36,13 @@ export function TaxTemplateForm() {
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-3 text-sm">
           <label className="block sm:col-span-1">
             <span className="font-medium text-ink-gray-8">{t(locale, "Title *")}</span>
-            <input {...register("title", { required: true })} className={cls} placeholder="VAT 15%" />
+            <input {...register("title", { required: true })} className={cls} placeholder={t(locale, "VAT 15%")} />
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Applies to")}</span>
             <select {...register("applies_to")} className={cls}>
-              <option value="selling">selling</option>
-              <option value="buying">buying</option>
+              <option value="selling">{t(locale, "selling")}</option>
+              <option value="buying">{t(locale, "buying")}</option>
             </select>
           </label>
           <label className="block">
@@ -78,7 +78,7 @@ export function TaxTemplateForm() {
       </Card>
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}
-        Create template
+        {t(locale, "Create template")}
       </Button>
     </form>
   );

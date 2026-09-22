@@ -64,7 +64,7 @@ export default async function BomsPage() {
                     <td className="px-4 py-2">{Number(b.raw_material_cost).toLocaleString("en-US")}</td>
                     <td className="px-4 py-2">
                       <div className="flex gap-1">
-                        {b.is_default && <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">default</span>}
+                        {b.is_default && <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">{t(locale, "default")}</span>}
                         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${b.is_active ? "bg-emerald-100 text-emerald-700" : "bg-surface-gray-2 text-ink-gray-6"}`}>
                           {b.is_active ? "active" : "inactive"}
                         </span>

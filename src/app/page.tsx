@@ -1,3 +1,4 @@
+import { fmtNum } from "@/lib/format";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -262,8 +263,8 @@ export default async function DashboardPage() {
                     </div>
                   </div>
                   <div className="text-right text-xs text-ink-gray-5">
-                    <div>{l.device_count} devices</div>
-                    <div>{Number(l.total_withdrawn)} withdrawn</div>
+                    <div>{fmtNum(l.device_count)} {t(locale, "devices")}</div>
+                    <div>{fmtNum(Number(l.total_withdrawn))} {t(locale, "withdrawn")}</div>
                   </div>
                 </li>
               ))}
@@ -368,10 +369,10 @@ export default async function DashboardPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Contract</th>
+                  <th className="px-4 py-2">{t(locale, "Contract")}</th>
                   <th className="px-4 py-2">Lab</th>
                   <th className="px-4 py-2">{t(locale, "Device")}</th>
-                  <th className="px-4 py-2">Ends</th>
+                  <th className="px-4 py-2">{t(locale, "Ends")}</th>
                   <th className="px-4 py-2">In</th>
                 </tr>
               </thead>
@@ -410,12 +411,12 @@ export default async function DashboardPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase text-ink-gray-4">
-                  <th className="px-4 py-2">Batch</th>
+                  <th className="px-4 py-2">{t(locale, "Batch")}</th>
                   <th className="px-4 py-2">{t(locale, "Product")}</th>
                   <th className="px-4 py-2">{t(locale, "Warehouse")}</th>
                   <th className="px-4 py-2">Qty</th>
-                  <th className="px-4 py-2">Expiry</th>
-                  <th className="px-4 py-2">Days left</th>
+                  <th className="px-4 py-2">{t(locale, "Expiry")}</th>
+                  <th className="px-4 py-2">{t(locale, "Days left")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-gray-1">

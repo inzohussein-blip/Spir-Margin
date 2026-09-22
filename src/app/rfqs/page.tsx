@@ -82,7 +82,7 @@ export default async function RfqsPage() {
                             <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Submit")}</button>
                           </form>
                         ) : (
-                          <Link href={`/rfqs/${r.id}`} className="text-xs text-brand hover:underline">open</Link>
+                          <Link href={`/rfqs/${r.id}`} className="text-xs text-brand hover:underline">{t(locale, "open")}</Link>
                         )}
                       </td>
                     </tr>

@@ -1,3 +1,5 @@
+import { t } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n-server";
 import { PaperclipIcon, Trash2Icon, DownloadIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Panel } from "@/components/dashboard/Panel";
@@ -10,6 +12,7 @@ const kb = (n: number) => (n < 1024 ? `${n} B` : n < 1024 * 1024 ? `${Math.round
 
 /** ERPNext-style attachments panel for any record. Renders under a detail page. */
 export async function Attachments({ entity, recordId, path }: { entity: string; recordId: string; path: string }) {
+  const locale = getLocale();
   const supabase = createClient();
   const { data } = await supabase
     .from("attachments")
@@ -20,11 +23,11 @@ export async function Attachments({ entity, recordId, path }: { entity: string; 
   const rows = (data as unknown as Row[]) ?? [];
 
   return (
-    <Panel title={`Attachments (${rows.length})`}>
+    <Panel title={`${t(locale, "Attachments")} (${rows.length})`}>
       <div className="space-y-3 p-4">
         <AttachmentUpload entity={entity} recordId={recordId} path={path} />
         {rows.length === 0 ? (
-          <p className="flex items-center gap-2 text-sm text-ink-gray-4"><PaperclipIcon size={14} /> No files attached yet.</p>
+          <p className="flex items-center gap-2 text-sm text-ink-gray-4"><PaperclipIcon size={14} />{t(locale, "No files attached yet.")}</p>
         ) : (
           <ul className="divide-y divide-outline-gray-1">
             {rows.map((a) => (
@@ -40,7 +43,7 @@ export async function Attachments({ entity, recordId, path }: { entity: string; 
                   <form action={deleteAttachmentAction}>
                     <input type="hidden" name="id" value={a.id} />
                     <input type="hidden" name="path" value={path} />
-                    <button className="text-ink-gray-4 hover:text-red-600" title="Delete"><Trash2Icon size={14} /></button>
+                    <button className="text-ink-gray-4 hover:text-red-600" title={t(locale, "Delete")}><Trash2Icon size={14} /></button>
                   </form>
                 </div>
               </li>

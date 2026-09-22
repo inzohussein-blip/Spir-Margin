@@ -1,5 +1,7 @@
 "use client";
 
+import { t } from "@/lib/i18n";
+import { useLocale } from "@/components/LocaleProvider";
 import { useState, type ReactNode } from "react";
 import { MenuIcon, XIcon } from "lucide-react";
 
@@ -9,13 +11,14 @@ import { MenuIcon, XIcon } from "lucide-react";
  * it renders nothing on desktop and does not touch the desktop shell.
  */
 export function MobileSidebar({ children }: { children: ReactNode }) {
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   return (
     <div className="md:hidden">
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Menu"
+        aria-label={t(locale, "Menu")}
         className="rounded-md border border-outline-gray-2 p-2 text-ink-gray-6 hover:bg-surface-gray-1"
       >
         <MenuIcon size={18} />
@@ -29,7 +32,7 @@ export function MobileSidebar({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                aria-label="Close"
+                aria-label={t(locale, "Close")}
                 className="rounded-md p-2 text-ink-gray-6 hover:bg-surface-gray-1"
               >
                 <XIcon size={18} />

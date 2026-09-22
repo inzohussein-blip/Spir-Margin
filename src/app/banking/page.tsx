@@ -43,7 +43,7 @@ export default async function BankingPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label={t(locale, "Unreconciled amount")} value={totalUnrec.toLocaleString("en-US")} hint="across all accounts" accent="amber" />
+        <StatCard label={t(locale, "Unreconciled amount")} value={totalUnrec.toLocaleString("en-US")} hint={t(locale, "across all accounts")} accent="amber" />
         <StatCard label={t(locale, "Unreconciled lines")} value={String(totalUnrecCount)} accent="red" />
         <StatCard label={t(locale, "Reconciled lines")} value={String(totalRecCount)} accent="green" />
       </div>

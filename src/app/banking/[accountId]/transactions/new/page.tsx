@@ -38,7 +38,7 @@ export default function NewTransactionPage({
             </Field>
           </div>
           <Field label={t(locale, "Bank transaction id")}>
-            <TextInput name="transaction_id" placeholder="unique per account" />
+            <TextInput name="transaction_id" placeholder={t(locale, "unique per account")} />
           </Field>
           <div className="sm:col-span-2">
             <SubmitButton>{t(locale, "Add transaction")}</SubmitButton>

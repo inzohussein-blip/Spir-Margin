@@ -68,8 +68,8 @@ export function PickListForm({
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Purpose")}</span>
             <select {...register("purpose")} className={cls}>
-              <option value="delivery">Delivery</option>
-              <option value="material_transfer">Material transfer</option>
+              <option value="delivery">{t(locale, "Delivery")}</option>
+              <option value="material_transfer">{t(locale, "Material transfer")}</option>
             </select>
           </label>
           <label className="block">

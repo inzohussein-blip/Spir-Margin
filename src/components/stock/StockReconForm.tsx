@@ -75,8 +75,7 @@ export function StockReconForm({ batches }: { batches: BatchOpt[] }) {
             </div>
           ))}
           <Button type="button" variant="subtle" size="sm" onClick={() => append({ kit_batch_id: "", counted_qty: 0 })}>
-            <PlusIcon size={14} className="mr-1" /> Add batch
-          </Button>
+            <PlusIcon size={14} className="mr-1" />{t(locale, "Add batch")}</Button>
         </CardContent>
       </Card>
 

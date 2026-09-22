@@ -1,5 +1,6 @@
 "use client";
 
+import { fmtNum } from "@/lib/format";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -133,9 +134,8 @@ export function BomForm({
           ))}
           <div className="flex items-center justify-between">
             <Button type="button" variant="subtle" size="sm" onClick={() => append({ component_id: "", qty: 1, rate: 0 })}>
-              <PlusIcon size={14} className="mr-1" /> Add component
-            </Button>
-            <div className="text-sm font-semibold">Material cost: {total.toLocaleString("en-US")}</div>
+              <PlusIcon size={14} className="mr-1" />{t(locale, "Add component")}</Button>
+            <div className="text-sm font-semibold">{t(locale, "Material cost")}: {fmtNum(total)}</div>
           </div>
         </CardContent>
       </Card>

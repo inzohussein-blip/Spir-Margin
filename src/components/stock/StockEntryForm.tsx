@@ -128,8 +128,7 @@ export function StockEntryForm({
             </div>
           ))}
           <Button type="button" variant="subtle" size="sm" onClick={() => append({ batch_id: "", qty: 1 })}>
-            <PlusIcon size={14} className="mr-1" /> Add batch
-          </Button>
+            <PlusIcon size={14} className="mr-1" />{t(locale, "Add batch")}</Button>
         </CardContent>
       </Card>
 

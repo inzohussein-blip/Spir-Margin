@@ -169,7 +169,7 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
         <div className="flex items-center gap-2 text-sm text-ink-gray-5">
           <LandmarkIcon size={16} />
           <span className="font-medium text-ink-gray-8">{tr(locale, "Bank Reconciliation")}</span>
-          <Badge theme="violet" variant="subtle">Beta</Badge>
+          <Badge theme="violet" variant="subtle">{tr(locale, "Beta")}</Badge>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <select

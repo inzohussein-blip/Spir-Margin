@@ -245,19 +245,33 @@ async function initSchema(run: Runner, opts: { seed: boolean }): Promise<void> {
     if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if;
   end $$;`);
 
-  await applyPendingMigrations(run);
+  // Migrations must not enter the change log. Every node applies the same
+  // migration files itself, so their effects are already present on both
+  // ends — logging them would push a rename of shared master data onto a
+  // peer that already renamed its own copy, and collide on the unique name
+  // because the two ends generated different ids for those seeded rows.
+  // The seed is different and IS logged: only this node has it, and the peer
+  // gets it by sync.
+  await run.exec(`select set_config('spir.syncing', 'on', false)`).catch(() => undefined);
+  try {
+    await applyPendingMigrations(run);
 
-  // Re-attach the change-log triggers after every migration run, so a table
-  // added by a later migration is covered without anyone having to remember.
-  // Guarded because a database that predates migration 0089 has not defined
-  // the function yet at this point on its very first upgrade pass.
-  await run
-    .exec(`do $$ begin
-      if to_regprocedure('_spir_attach_change_log()') is not null then
-        perform _spir_attach_change_log();
-      end if;
-    end $$;`)
-    .catch(() => undefined);
+    // Re-attach the change-log triggers after every migration run, so a table
+    // added by a later migration is covered without anyone having to remember.
+    // Guarded because a database that predates migration 0089 has not defined
+    // the function yet at this point on its very first upgrade pass.
+    await run
+      .exec(`do $$ begin
+        if to_regprocedure('_spir_attach_change_log()') is not null then
+          perform _spir_attach_change_log();
+        end if;
+      end $$;`)
+      .catch(() => undefined);
+  } finally {
+    // This connection goes on to serve the app, so the flag must come back
+    // off whatever happened above — otherwise no write would ever be logged.
+    await run.exec(`select set_config('spir.syncing', 'off', false)`).catch(() => undefined);
+  }
 
   // Seed runs exactly once, on a genuinely fresh database, gated by the
   // `_spir_meta` marker — so redeploys and migration top-ups never re-seed.

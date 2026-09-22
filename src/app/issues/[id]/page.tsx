@@ -80,9 +80,7 @@ export default async function IssueDetailPage({ params }: { params: { id: string
                 className="w-full rounded-md border border-outline-gray-2 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
                 defaultValue={it.resolution_details ?? ""}
               />
-              <button className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">
-                Mark resolved
-              </button>
+              <button className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">{t(locale, "Mark resolved")}</button>
             </form>
           )}
         </Panel>

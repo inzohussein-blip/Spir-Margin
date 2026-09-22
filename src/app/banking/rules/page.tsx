@@ -51,9 +51,7 @@ export default async function RulesPage() {
                     <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
                       {r.classify_as.replace(/_/g, " ")}
                     </span>
-                    <Link href={`/banking/rules/${r.id}/edit`} className="text-xs font-medium text-brand hover:underline">
-                      Edit
-                    </Link>
+                    <Link href={`/banking/rules/${r.id}/edit`} className="text-xs font-medium text-brand hover:underline">{t(locale, "Edit")}</Link>
                   </div>
                 </div>
                 <div className="mt-1 text-xs text-ink-gray-4">

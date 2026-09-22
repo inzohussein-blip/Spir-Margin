@@ -61,7 +61,7 @@ export function RuleForm({
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Rule name *")}</span>
-            <input {...register("rule_name", { required: true })} className={inputCls} placeholder="Al-Kindy inflows" />
+            <input {...register("rule_name", { required: true })} className={inputCls} placeholder={t(locale, "Al-Kindy inflows")} />
             {errors.rule_name && <span className="text-xs text-red-500">{t(locale, "Required")}</span>}
           </label>
           <label className="block">
@@ -132,14 +132,13 @@ export function RuleForm({
             </div>
           ))}
           <Button type="button" variant="subtle" size="sm" onClick={() => append({ field: "description", operator: "contains", value: "" })}>
-            <PlusIcon size={14} className="mr-1" /> Add condition
-          </Button>
+            <PlusIcon size={14} className="mr-1" />{t(locale, "Add condition")}</Button>
         </CardContent>
       </Card>
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}
-        {initial?.id ? "Save changes" : "Create rule"}
+        {initial?.id ? t(locale, "Save changes") : t(locale, "Create rule")}
       </Button>
     </form>
   );

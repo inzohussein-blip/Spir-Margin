@@ -29,15 +29,15 @@ export default async function TaxesPage() {
       <Panel title={`${t(locale, "Templates")} (${rows.length})`}>
         {rows.length === 0 ? <EmptyRow text={t(locale, "No tax templates")} /> : (
           <ul className="divide-y divide-outline-gray-1">
-            {rows.map((t) => (
-              <li key={t.id} className="px-4 py-3 text-sm">
+            {rows.map((tpl) => (
+              <li key={tpl.id} className="px-4 py-3 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-ink-gray-8">{t.title} {t.is_default && <span className="ml-1 rounded bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-700">default</span>}</span>
-                  <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">{t.applies_to}</span>
+                  <span className="font-medium text-ink-gray-8">{tpl.title} {tpl.is_default && <span className="ml-1 rounded bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-700">{t(locale, "default")}</span>}</span>
+                  <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">{t(locale, tpl.applies_to)}</span>
                 </div>
                 <div className="mt-1 text-xs text-ink-gray-4">
-                  {t.tax_category ? `${t.tax_category} · ` : ""}
-                  {t.tax_template_rows?.map((r, i) => <span key={i}>{i > 0 ? " · " : ""}{r.description} {Number(r.rate)}%</span>)}
+                  {tpl.tax_category ? `${tpl.tax_category} · ` : ""}
+                  {tpl.tax_template_rows?.map((r, i) => <span key={i}>{i > 0 ? " · " : ""}{r.description} {Number(r.rate)}%</span>)}
                 </div>
               </li>
             ))}

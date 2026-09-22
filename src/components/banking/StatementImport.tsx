@@ -189,7 +189,7 @@ export function StatementImport({ accounts }: { accounts: Account[] }) {
         <UploadCloudIcon className="text-ink-gray-4" />
         {fileName
           ? <span className="flex items-center gap-2 font-medium text-ink-gray-8"><FileTextIcon size={14} /> {fileName}</span>
-          : <span className="text-ink-gray-5">Drop a CSV statement here, or click to choose</span>}
+          : <span className="text-ink-gray-5">{t(locale, "Drop a CSV statement here, or click to choose")}</span>}
       </div>
 
       {header.length > 0 && (
@@ -251,8 +251,8 @@ export function StatementImport({ accounts }: { accounts: Account[] }) {
               <div className="overflow-x-auto rounded-lg border border-outline-gray-2">
                 <table className="w-full text-sm">
                   <thead><tr className="text-left text-xs uppercase text-ink-gray-5">
-                    <th className="px-3 py-2">Date</th><th className="px-3 py-2">Description</th>
-                    <th className="px-3 py-2">Deposit</th><th className="px-3 py-2">Withdrawal</th><th className="px-3 py-2">Ref</th>
+                    <th className="px-3 py-2">{t(locale, "Date")}</th><th className="px-3 py-2">{t(locale, "Description")}</th>
+                    <th className="px-3 py-2">{t(locale, "Deposit")}</th><th className="px-3 py-2">{t(locale, "Withdrawal")}</th><th className="px-3 py-2">Ref</th>
                   </tr></thead>
                   <tbody className="divide-y divide-outline-gray-1">
                     {rows.slice(0, 6).map((r, i) => (

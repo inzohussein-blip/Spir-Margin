@@ -23,17 +23,17 @@ export default function NewBankAccountPage() {
       <FormCard title={t(locale, "Account details")}>
         <ValidatedForm action={createBankAccount} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Account name")} required>
-            <TextInput name="account_name" required placeholder="Main Operating" />
+            <TextInput name="account_name" required placeholder={t(locale, "Main Operating")} />
           </Field>
           <Field label={t(locale, "Bank")} required>
-            <TextInput name="bank" required placeholder="Trade Bank of Iraq" />
+            <TextInput name="bank" required placeholder={t(locale, "Trade Bank of Iraq")} />
           </Field>
           <Field label={t(locale, "Account type")}>
             <Select name="account_type" defaultValue="">
               <option value="">{t(locale, "— none —")}</option>
-              <option value="Current">Current</option>
+              <option value="Current">{t(locale, "Current")}</option>
               <option value="Savings">{t(locale, "Savings")}</option>
-              <option value="Credit Card">Credit Card</option>
+              <option value="Credit Card">{t(locale, "Credit Card")}</option>
             </Select>
           </Field>
           <Field label={t(locale, "Account no.")}>
@@ -46,8 +46,8 @@ export default function NewBankAccountPage() {
             <TextInput name="currency" defaultValue="USD" />
           </Field>
           <div className="flex items-end gap-4">
-            <Checkbox name="is_company_account" label="Company account" defaultChecked />
-            <Checkbox name="is_default" label="Default" />
+            <Checkbox name="is_company_account" label={t(locale, "Company account")} defaultChecked />
+            <Checkbox name="is_default" label={t(locale, "Default")} />
           </div>
           <div className="sm:col-span-2">
             <SubmitButton>{t(locale, "Create account")}</SubmitButton>

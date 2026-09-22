@@ -1,5 +1,6 @@
 "use client";
 
+import { fmtNum } from "@/lib/format";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -104,16 +105,15 @@ export function ProductBundleForm({
           ))}
           <div className="flex items-center justify-between">
             <Button type="button" variant="subtle" size="sm" onClick={() => append({ component_id: "", qty: 1, rate: 0 })}>
-              <PlusIcon size={14} className="mr-1" /> Add component
-            </Button>
-            <div className="text-sm font-semibold">Bundle value: {total.toLocaleString("en-US")}</div>
+              <PlusIcon size={14} className="mr-1" />{t(locale, "Add component")}</Button>
+            <div className="text-sm font-semibold">{t(locale, "Bundle value")}: {fmtNum(total)}</div>
           </div>
         </CardContent>
       </Card>
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}
-        Create bundle
+        {t(locale, "Create bundle")}
       </Button>
     </form>
   );

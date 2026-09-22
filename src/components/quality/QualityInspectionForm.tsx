@@ -105,7 +105,7 @@ export function QualityInspectionForm({
       <Card>
         <CardHeader><CardTitle>{t(locale, "Readings")}</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-xs text-ink-gray-5">A numeric reading is graded against its min/max on evaluation. Leave min/max blank for a pass-by-default check.</p>
+          <p className="text-xs text-ink-gray-5">{t(locale, "A numeric reading is graded against its min/max on evaluation. Leave min/max blank for a pass-by-default check.")}</p>
           {fields.map((f, i) => (
             <div key={f.id} className="rounded-lg border border-outline-gray-1 p-3">
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
@@ -134,14 +134,13 @@ export function QualityInspectionForm({
             </div>
           ))}
           <Button type="button" variant="subtle" size="sm" onClick={() => append({ parameter: "", reading_value: "", min_value: "", max_value: "" })}>
-            <PlusIcon size={14} className="mr-1" /> Add reading
-          </Button>
+            <PlusIcon size={14} className="mr-1" />{t(locale, "Add reading")}</Button>
         </CardContent>
       </Card>
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}
-        Create inspection
+        {t(locale, "Create inspection")}
       </Button>
     </form>
   );

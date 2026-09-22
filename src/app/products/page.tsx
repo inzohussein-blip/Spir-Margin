@@ -73,7 +73,7 @@ export default async function ProductsPage() {
                           typeBadge[p.product_type] ?? "bg-surface-gray-2"
                         }`}
                       >
-                        {p.product_type.replace(/_/g, " ")}
+                        {t(locale, p.product_type.replace(/_/g, " "))}
                       </span>
                     </td>
                     <td className="px-4 py-2 text-ink-gray-5">

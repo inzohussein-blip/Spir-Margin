@@ -110,7 +110,7 @@ export function SupplierQuotationForm({ suppliers, products }: { suppliers: Opt[
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}
-        Create supplier quotation
+        {t(locale, "Create supplier quotation")}
       </Button>
     </form>
   );

@@ -27,7 +27,7 @@ export default async function NewLeadPage() {
       <FormCard title={t(locale, "Lead details")}>
         <ValidatedForm action={createLead} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Lead name")} required>
-            <TextInput name="lead_name" required placeholder="Dr. Ahmed" />
+            <TextInput name="lead_name" required placeholder={t(locale, "Dr. Ahmed")} />
           </Field>
           <Field label={t(locale, "Company / lab name")}>
             <TextInput name="company_name" />
@@ -42,7 +42,7 @@ export default async function NewLeadPage() {
             </Select>
           </Field>
           <Field label={t(locale, "Source")}>
-            <TextInput name="source" placeholder="Referral / Exhibition / Web" />
+            <TextInput name="source" placeholder={t(locale, "Referral / Exhibition / Web")} />
           </Field>
           <Field label={t(locale, "Email")}>
             <TextInput name="email" type="email" />
@@ -60,7 +60,7 @@ export default async function NewLeadPage() {
             </datalist>
           </Field>
           <Field label={t(locale, "Industry")}>
-            <TextInput name="industry" placeholder="Diagnostics / Hospital" />
+            <TextInput name="industry" placeholder={t(locale, "Diagnostics / Hospital")} />
           </Field>
           <Field label={t(locale, "Country")}>
             <TextInput name="country" />

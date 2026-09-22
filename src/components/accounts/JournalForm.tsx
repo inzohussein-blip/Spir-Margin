@@ -88,7 +88,7 @@ export function JournalForm({ accounts }: { accounts: string[] }) {
               <PlusIcon size={14} className="mr-1" /> {t(locale, "Add line")}
             </Button>
             <div className={`text-sm font-semibold ${balanced ? "text-ink-green-3" : "text-ink-red-3"}`}>
-              Debit {totalD.toLocaleString("en-US")} · Credit {totalC.toLocaleString("en-US")} {balanced ? "· balanced" : "· unbalanced"}
+              Debit {totalD.toLocaleString("en-US")} · Credit {totalC.toLocaleString("en-US")} {balanced ? `· ${t(locale, "balanced")}` : `· ${t(locale, "unbalanced")}`}
             </div>
           </div>
         </CardContent>

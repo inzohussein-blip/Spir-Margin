@@ -60,8 +60,8 @@ export default async function PricesPage() {
                     <td className="px-4 py-2 text-ink-gray-5">{r.lab_name ?? "— all —"}</td>
                     <td className="px-4 py-2 font-medium">{Number(r.rate).toLocaleString("en-US")} {r.currency}</td>
                     <td className="px-4 py-2">
-                      {r.selling && <span className="mr-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">selling</span>}
-                      {r.buying && <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">buying</span>}
+                      {r.selling && <span className="mr-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">{t(locale, "selling")}</span>}
+                      {r.buying && <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">{t(locale, "buying")}</span>}
                     </td>
                     <td className="px-4 py-2 text-ink-gray-5">
                       {r.valid_from ?? "—"}{r.valid_upto ? ` → ${r.valid_upto}` : ""}

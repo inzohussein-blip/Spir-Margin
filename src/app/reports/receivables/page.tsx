@@ -29,7 +29,7 @@ export default async function ReceivablesReport() {
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         {BUCKETS.map((b) => (
-          <StatCard key={b} label={b === "current" ? "Current" : `${b} days`} value={money(byBucket[b])} accent={b === "90+" ? "red" : b === "current" ? "green" : "amber"} />
+          <StatCard key={b} label={b === "current" ? t(locale, "Current") : `${b} ${t(locale, "days")}`} value={money(byBucket[b])} accent={b === "90+" ? "red" : b === "current" ? "green" : "amber"} />
         ))}
       </div>
 

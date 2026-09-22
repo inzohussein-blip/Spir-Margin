@@ -27,7 +27,7 @@ export default async function NewOpportunityPage() {
       <FormCard title={t(locale, "Opportunity details")}>
         <ValidatedForm action={createOpportunity} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Title")} required>
-            <TextInput name="title" required placeholder="Cobas analyzer for Al-Kindy" />
+            <TextInput name="title" required placeholder={t(locale, "Cobas analyzer for Al-Kindy")} />
           </Field>
           <Field label={t(locale, "Lab")}>
             <Select name="lab_id" defaultValue="">
@@ -36,7 +36,7 @@ export default async function NewOpportunityPage() {
             </Select>
           </Field>
           <Field label={t(locale, "Opportunity type")}>
-            <TextInput name="opportunity_type" placeholder="Sales / Support" />
+            <TextInput name="opportunity_type" placeholder={t(locale, "Sales / Support")} />
           </Field>
           <Field label={t(locale, "Sales stage")}>
             <Select name="sales_stage" defaultValue="Prospecting">

@@ -66,7 +66,7 @@ export default async function NewContractPage() {
           <div className="sm:col-span-2 mt-2 border-t border-outline-gray-1 pt-3">
             <p className="mb-1 text-xs font-semibold uppercase text-ink-gray-4">{t(locale, "Recurring billing (AMC)")}</p>
             <p className="text-xs text-ink-gray-5">
-              Set an interval, the service item to charge, and the first billing date to auto-generate invoices from the AMC Billing page.
+              {t(locale, "Set an interval, the service item to charge, and the first billing date to auto-generate invoices from the AMC Billing page.")}
             </p>
           </div>
           <Field label={t(locale, "Billing interval")}>

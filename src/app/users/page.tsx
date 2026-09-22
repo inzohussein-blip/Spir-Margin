@@ -52,8 +52,8 @@ export default async function UsersPage() {
                 <tr key={u.id} className="hover:bg-surface-gray-1">
                   <td className="px-4 py-2 font-medium">{u.full_name || "—"}</td>
                   <td className="px-4 py-2 text-ink-gray-6">{u.email}</td>
-                  <td className="px-4 py-2 capitalize">{u.role}</td>
-                  <td className="px-4 py-2"><Indicator status={u.is_active ? "active" : "inactive"} label={u.is_active ? "Active" : "Disabled"} /></td>
+                  <td className="px-4 py-2">{t(locale, u.role)}</td>
+                  <td className="px-4 py-2"><Indicator status={u.is_active ? "active" : "inactive"} label={u.is_active ? t(locale, "Active") : t(locale, "Disabled")} /></td>
                   <td className="px-4 py-2">
                     {u.id === me.id ? (
                       <span className="text-xs text-ink-gray-4">(you)</span>
@@ -62,7 +62,7 @@ export default async function UsersPage() {
                         <input type="hidden" name="id" value={u.id} />
                         <input type="hidden" name="active" value={String(!u.is_active)} />
                         <button className={`rounded-md border px-2.5 py-1 text-xs font-medium ${u.is_active ? "border-outline-gray-2 text-ink-gray-6 hover:bg-surface-gray-1" : "border-brand bg-brand text-white hover:bg-brand-dark"}`}>
-                          {u.is_active ? "Disable" : "Enable"}
+                          {u.is_active ? t(locale, "Disable") : t(locale, "Enable")}
                         </button>
                       </form>
                     )}

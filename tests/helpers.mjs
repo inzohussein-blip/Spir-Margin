@@ -23,9 +23,13 @@ async function prelude(db) {
 export async function bootWithMigrations() {
   const db = new PGlite({ extensions: { pgcrypto } });
   await prelude(db);
+  // Same rule as src/lib/db/pglite.ts: migrations do not enter the change
+  // log, because every node applies them itself.
+  await db.exec(`select set_config('spir.syncing', 'on', false)`);
   for (const f of readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith(".sql")).sort()) {
     await db.exec(readFileSync(join(MIGRATIONS_DIR, f), "utf8"));
   }
+  await db.exec(`select set_config('spir.syncing', 'off', false)`);
   return db;
 }
 

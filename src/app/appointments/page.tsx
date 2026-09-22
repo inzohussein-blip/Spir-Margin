@@ -83,10 +83,10 @@ export default async function AppointmentsPage() {
                       <ValidatedForm action={setAppointmentStatusForm} className="flex items-center gap-2">
                         <input type="hidden" name="id" value={a.id} />
                         <select name="status" defaultValue={a.status} className="rounded-md border border-outline-gray-2 px-2 py-1 text-xs">
-                          <option value="open">open</option>
-                          <option value="confirmed">confirmed</option>
-                          <option value="completed">completed</option>
-                          <option value="cancelled">cancelled</option>
+                          <option value="open">{t(locale, "open")}</option>
+                          <option value="confirmed">{t(locale, "confirmed")}</option>
+                          <option value="completed">{t(locale, "completed")}</option>
+                          <option value="cancelled">{t(locale, "cancelled")}</option>
                         </select>
                         <button className="rounded-md bg-brand px-2 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Set")}</button>
                         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[a.status] ?? "bg-surface-gray-2"}`}>{statusLabel(locale, a.status)}</span>

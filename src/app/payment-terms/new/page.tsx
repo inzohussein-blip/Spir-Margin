@@ -27,7 +27,7 @@ export default async function NewPaymentTermPage() {
       <FormCard title={t(locale, "Term")}>
         <ValidatedForm action={createPaymentTerm} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t(locale, "Name")} required>
-            <TextInput name="name" required placeholder="Net 45" />
+            <TextInput name="name" required placeholder={t(locale, "Net 45")} />
           </Field>
           <Field label={t(locale, "Invoice portion (%)")}>
             <TextInput name="invoice_portion" type="number" step="0.01" defaultValue="100" />
@@ -40,7 +40,7 @@ export default async function NewPaymentTermPage() {
             </Select>
           </Field>
           <Field label={t(locale, "Mode of payment")}>
-            <TextInput name="mode_of_payment" list="pt-modes" placeholder="Wire / Cheque" />
+            <TextInput name="mode_of_payment" list="pt-modes" placeholder={t(locale, "Wire / Cheque")} />
             <datalist id="pt-modes">
               {modes.map((m) => <option key={m} value={m} />)}
             </datalist>

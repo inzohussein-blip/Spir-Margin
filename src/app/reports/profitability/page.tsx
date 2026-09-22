@@ -54,7 +54,7 @@ export default async function ProfitabilityReport() {
                 </tr>
               ))}
             </tbody>
-            <tfoot><tr className="border-t border-outline-gray-2 font-semibold"><td className="px-4 py-2">Total</td><td /><td className="px-4 py-2 text-right">{money(tot.rev)}</td><td className="px-4 py-2 text-right">{money(tot.cost)}</td><td className="px-4 py-2 text-right">{money(tot.profit)}</td><td className="px-4 py-2 text-right">{pct(tot.profit, tot.rev)}</td></tr></tfoot>
+            <tfoot><tr className="border-t border-outline-gray-2 font-semibold"><td className="px-4 py-2">{t(locale, "Total")}</td><td /><td className="px-4 py-2 text-right">{money(tot.rev)}</td><td className="px-4 py-2 text-right">{money(tot.cost)}</td><td className="px-4 py-2 text-right">{money(tot.profit)}</td><td className="px-4 py-2 text-right">{pct(tot.profit, tot.rev)}</td></tr></tfoot>
           </table>
         )}
       </ListShell>

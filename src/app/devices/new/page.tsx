@@ -93,7 +93,7 @@ export default async function NewDevicePage() {
             <TextInput name="next_maintenance_date" type="date" />
           </Field>
           <div className="flex items-end">
-            <Checkbox name="maintenance_required" label="Maintenance required" />
+            <Checkbox name="maintenance_required" label={t(locale, "Maintenance required")} />
           </div>
           <div className="sm:col-span-2">
             <SubmitButton>{t(locale, "Create device")}</SubmitButton>

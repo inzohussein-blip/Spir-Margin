@@ -20,8 +20,8 @@ export default function NewRatePage() {
           <Field label={t(locale, "From currency")} required><TextInput name="from_currency" required placeholder="USD" /></Field>
           <Field label={t(locale, "To currency")} required><TextInput name="to_currency" required placeholder="IQD" /></Field>
           <div className="flex items-end gap-4">
-            <Checkbox name="for_buying" label="For buying" defaultChecked />
-            <Checkbox name="for_selling" label="For selling" defaultChecked />
+            <Checkbox name="for_buying" label={t(locale, "For buying")} defaultChecked />
+            <Checkbox name="for_selling" label={t(locale, "For selling")} defaultChecked />
           </div>
           <div className="sm:col-span-2"><SubmitButton>{t(locale, "Create rate")}</SubmitButton></div>
         </ValidatedForm>

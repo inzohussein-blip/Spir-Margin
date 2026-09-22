@@ -1,14 +1,19 @@
 "use client";
 
-import { WifiIcon, WifiOffIcon, RefreshCwIcon, CloudUploadIcon, CheckIcon } from "lucide-react";
+import { WifiIcon, WifiOffIcon, RefreshCwIcon, CloudUploadIcon } from "lucide-react";
 import { useOffline } from "./OfflineProvider";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
 
 /**
- * Compact connectivity + sync control for the header. Shows online/offline,
- * how many sales are waiting to upload, and a "Sync now" button that flushes
- * the outbox on demand (in case the automatic sync on reconnect hasn't run).
+ * Connectivity, plus the sales queued in the browser.
+ *
+ * This is the BROWSER's outbox: a POS sale or sales order submitted while the
+ * page could not reach the server, held in localStorage until it can be sent.
+ * It is not the same thing as database sync — that is `DbSyncStatus`, which
+ * owns whether this machine's data has reached the hosted database. So this
+ * control stays quiet when its queue is empty rather than announcing
+ * "all synced", which would be claiming something it does not know.
  */
 export function SyncStatus({ compact = false }: { compact?: boolean }) {
   const locale = useLocale();
@@ -44,10 +49,6 @@ export function SyncStatus({ compact = false }: { compact?: boolean }) {
           <span>{syncing ? t(locale, "Syncing…") : t(locale, "Sync now")}</span>
           <span className="rounded-full bg-white/80 px-1.5 text-brand tabular-nums">{count}</span>
         </button>
-      ) : !compact && online ? (
-        <span className="hidden items-center gap-1 text-xs text-ink-gray-4 sm:inline-flex">
-          <CheckIcon size={13} className="text-emerald-500" /> {t(locale, "All synced")}
-        </span>
       ) : null}
     </div>
   );

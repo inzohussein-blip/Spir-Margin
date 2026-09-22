@@ -67,7 +67,7 @@ export default async function CompaniesPage() {
                           roleBadge[c.role] ?? "bg-surface-gray-2"
                         }`}
                       >
-                        {c.role}
+                        {t(locale, c.role)}
                       </span>
                     </td>
                     <td className="px-4 py-2 text-ink-gray-5">

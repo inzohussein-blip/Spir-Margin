@@ -32,7 +32,7 @@ export default async function NewIssuePage() {
             <TextInput name="issue_no" required placeholder="ISS-0001" />
           </Field>
           <Field label={t(locale, "Subject")} required>
-            <TextInput name="subject" required placeholder="Analyzer error on startup" />
+            <TextInput name="subject" required placeholder={t(locale, "Analyzer error on startup")} />
           </Field>
           <Field label={t(locale, "Lab")}>
             <Select name="lab_id" defaultValue="">
@@ -61,7 +61,7 @@ export default async function NewIssuePage() {
             </Select>
           </Field>
           <Field label={t(locale, "Raised by")}>
-            <TextInput name="raised_by" placeholder="name / email" />
+            <TextInput name="raised_by" placeholder={t(locale, "name / email")} />
           </Field>
           <Field label={t(locale, "Opening date")}>
             <TextInput name="opening_date" type="date" />

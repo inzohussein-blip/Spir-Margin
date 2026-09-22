@@ -59,9 +59,7 @@ export default async function PoDetailPage({ params }: { params: { id: string } 
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Link href={`/purchase-orders/${po.id}/print`} className="inline-flex items-center gap-1.5 rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">
-            Print / PDF
-          </Link>
+          <Link href={`/purchase-orders/${po.id}/print`} className="inline-flex items-center gap-1.5 rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Print / PDF")}</Link>
           <span className={`rounded-full px-3 py-1 text-sm font-medium ${statusBadge[po.status] ?? "bg-surface-gray-2"}`}>
             {statusLabel(locale, po.status)}
           </span>

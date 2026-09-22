@@ -9,9 +9,16 @@ import { useLocale } from "@/components/LocaleProvider";
 import { fmtNum } from "@/lib/format";
 import { t } from "@/lib/i18n";
 
-/** How often to re-read the local status, and to try an automatic sync. */
-const STATUS_MS = 20_000;
-const AUTO_SYNC_MS = 60_000;
+/**
+ * How often to re-read the local status, and to try an automatic sync.
+ *
+ * Both pause while the tab is hidden: this is a back-office app people leave
+ * open all day, and a background tab polling forever is load nobody asked
+ * for. A hidden tab has no one watching the number anyway, and the sync it
+ * would have run happens the moment it is looked at again.
+ */
+const STATUS_MS = 60_000;
+const AUTO_SYNC_MS = 120_000;
 
 /**
  * Database sync for the header.
@@ -56,8 +63,15 @@ export function DbSyncStatus() {
 
   useEffect(() => {
     void refresh();
-    const s = setInterval(refresh, STATUS_MS);
-    return () => clearInterval(s);
+    const tick = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    const id = setInterval(tick, STATUS_MS);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", tick);
+    };
   }, [refresh]);
 
   // Automatic sync while a hosted database is configured and the browser
@@ -65,6 +79,7 @@ export function DbSyncStatus() {
   useEffect(() => {
     if (!status?.configured) return;
     const tick = () => {
+      if (document.visibilityState !== "visible") return;
       if (typeof navigator !== "undefined" && navigator.onLine === false) return;
       void sync(false);
     };

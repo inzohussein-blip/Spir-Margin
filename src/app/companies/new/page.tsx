@@ -32,7 +32,7 @@ export default async function NewCompanyPage() {
           className="grid grid-cols-1 gap-4 sm:grid-cols-2"
         >
           <Field label={t(locale, "Name")} required>
-            <TextInput name="name" required placeholder="Roche Diagnostics" />
+            <TextInput name="name" required placeholder={t(locale, "Roche Diagnostics")} />
           </Field>
           <Field label={t(locale, "Role")}>
             <Select name="role" defaultValue="supplier">

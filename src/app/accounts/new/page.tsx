@@ -40,7 +40,7 @@ export default async function NewAccountPage() {
             </Select>
           </Field>
           <Field label={t(locale, "Currency")}><TextInput name="currency" defaultValue="USD" /></Field>
-          <div className="flex items-end"><Checkbox name="is_group" label="Is group" /></div>
+          <div className="flex items-end"><Checkbox name="is_group" label={t(locale, "Is group")} /></div>
           <div className="sm:col-span-2"><SubmitButton>{t(locale, "Create account")}</SubmitButton></div>
         </ValidatedForm>
       </FormCard>

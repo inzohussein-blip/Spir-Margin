@@ -44,6 +44,13 @@ database stood up from it does not then replay anything.
 - **Master data is Arabic.** The UI is Arabic-only; `0087` translates the names
   seeded by `0012`–`0052`. Brand names and unit symbols (L, mL, kg) stay as they
   are.
+- **A migration that edits data is not synced.** Every node applies the same
+  migration files itself, so `src/lib/db/pglite.ts` runs the whole migration
+  pass with the change log suppressed. Logging it would push, say, `0090`'s
+  rename of the cost centres onto a peer that already renamed its own copy,
+  and collide on the unique name — the two ends generated different ids for
+  those seeded rows. The demo seed is the opposite case and IS logged: only
+  the machine that loaded it has those rows, and the peer gets them by sync.
 - **New tables join the change log automatically.** `0089` attaches an
   `after insert or update or delete` trigger to every table that has a primary
   key, and `_spir_attach_change_log()` runs again after each migration pass, so

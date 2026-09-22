@@ -40,7 +40,7 @@ export default async function OpportunitiesPage() {
       {s && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatCard label={t(locale, "Open pipeline")} value={Number(s.open_amount).toLocaleString("en-US")} hint={`${s.open_count} open`} accent="brand" />
-          <StatCard label={t(locale, "Weighted value")} value={Number(s.weighted_amount).toLocaleString("en-US")} hint="amount × probability" accent="amber" />
+          <StatCard label={t(locale, "Weighted value")} value={Number(s.weighted_amount).toLocaleString("en-US")} hint={t(locale, "amount × probability")} accent="amber" />
           <StatCard label={t(locale, "Won")} value={String(s.won_count)} accent="green" />
         </div>
       )}
@@ -82,11 +82,11 @@ export default async function OpportunitiesPage() {
                       <ValidatedForm action={setOpportunityStatusForm} className="flex items-center gap-2">
                         <input type="hidden" name="id" value={o.id} />
                         <select name="status" defaultValue={o.status} className="rounded-md border border-outline-gray-2 px-2 py-1 text-xs">
-                          <option value="open">open</option>
-                          <option value="quotation">quotation</option>
-                          <option value="converted">converted</option>
-                          <option value="lost">lost</option>
-                          <option value="closed">closed</option>
+                          <option value="open">{t(locale, "open")}</option>
+                          <option value="quotation">{t(locale, "quotation")}</option>
+                          <option value="converted">{t(locale, "converted")}</option>
+                          <option value="lost">{t(locale, "lost")}</option>
+                          <option value="closed">{t(locale, "closed")}</option>
                         </select>
                         <button className="rounded-md bg-brand px-2 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Set")}</button>
                       </ValidatedForm>

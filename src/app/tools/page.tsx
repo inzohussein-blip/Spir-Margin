@@ -20,15 +20,15 @@ export default function ToolsPage() {
         <p className="text-sm text-ink-gray-5">{t(locale, "Handy calculators and converters.")}</p>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {TOOLS.map((t) => (
-          <Link key={t.href} href={t.href} className="group rounded-lg border border-outline-gray-2 bg-surface-white p-5 hover:border-brand hover:shadow-sm">
+        {TOOLS.map((tool) => (
+          <Link key={tool.href} href={tool.href} className="group rounded-lg border border-outline-gray-2 bg-surface-white p-5 hover:border-brand hover:shadow-sm">
             <div className="flex items-center gap-2 text-ink-gray-8">
               <span className="grid size-9 place-items-center rounded-md bg-surface-gray-2 text-ink-gray-6 group-hover:bg-brand group-hover:text-white">
-                <t.icon size={18} />
+                <tool.icon size={18} />
               </span>
-              <span className="font-semibold">{t.label}</span>
+              <span className="font-semibold">{t(locale, tool.label)}</span>
             </div>
-            <p className="mt-2 text-sm text-ink-gray-5">{t.desc}</p>
+            <p className="mt-2 text-sm text-ink-gray-5">{t(locale, tool.desc)}</p>
           </Link>
         ))}
       </div>

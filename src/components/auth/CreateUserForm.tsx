@@ -31,7 +31,7 @@ export function CreateUserForm() {
       </label>
       <label className="block text-sm">
         <span className="font-medium text-ink-gray-8">{t(locale, "Email")}</span>
-        <input name="email" type="email" required className={cls} placeholder="jane@lab.com" />
+        <input name="email" type="email" required className={cls} placeholder={t(locale, "jane@lab.com")} />
       </label>
       <label className="block text-sm">
         <span className="font-medium text-ink-gray-8">{t(locale, "Role")}</span>

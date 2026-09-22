@@ -1,18 +1,21 @@
 name: Verify admin login
 
-# Manually-run check against the REAL hosted database (DATABASE_URL secret).
-# It reports whether an account can sign in, and — only when you ask — repairs
-# the password to the value held in the ADMIN_NEW_PASSWORD secret.
+# Manually-run check of a DATABASE-BACKED account against the hosted Postgres
+# (DATABASE_URL secret). It reports whether that account can sign in, and —
+# only when you ask — repairs the password to the ADMIN_NEW_PASSWORD secret.
+#
+# The app's built-in account is checked in code and has no database row, so it
+# is not verifiable here; the script says so rather than reporting a failure.
 on:
   workflow_dispatch:
     inputs:
       email:
-        description: Account email to check
-        default: admin@spir.local
+        description: Account email to check (a database-backed one)
+        default: demo@spir.local
         required: true
       password:
-        description: Password to test (leave as default to try admin123)
-        default: admin123
+        description: Password to test (leave as default to try demo1234)
+        default: demo1234
         required: true
       reset:
         description: If the check fails, reset to the ADMIN_NEW_PASSWORD secret

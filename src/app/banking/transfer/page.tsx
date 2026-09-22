@@ -25,9 +25,7 @@ export default async function TransferPage() {
       </div>
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Internal Transfer")}</h1>
       {accounts.length < 2 ? (
-        <div className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          Add at least two bank accounts to record a transfer.
-        </div>
+        <div className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-700">{t(locale, "Add at least two bank accounts to record a transfer.")}</div>
       ) : (
         <FormCard title={t(locale, "Move funds between company accounts")}>
           <form action={createInternalTransfer} className="grid grid-cols-1 gap-4 sm:grid-cols-2">

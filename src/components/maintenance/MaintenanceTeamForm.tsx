@@ -78,8 +78,7 @@ export function MaintenanceTeamForm() {
             </div>
           ))}
           <Button type="button" variant="subtle" size="sm" onClick={() => members.append({ member_name: "", role: "" })}>
-            <PlusIcon size={14} className="mr-1" /> Add member
-          </Button>
+            <PlusIcon size={14} className="mr-1" />{t(locale, "Add member")}</Button>
         </CardContent>
       </Card>
 
@@ -111,14 +110,13 @@ export function MaintenanceTeamForm() {
             </div>
           ))}
           <Button type="button" variant="subtle" size="sm" onClick={() => tasks.append({ task_name: "", maintenance_type: "preventive", periodicity: "" })}>
-            <PlusIcon size={14} className="mr-1" /> Add task
-          </Button>
+            <PlusIcon size={14} className="mr-1" />{t(locale, "Add task")}</Button>
         </CardContent>
       </Card>
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}
-        Create team
+        {t(locale, "Create team")}
       </Button>
     </form>
   );

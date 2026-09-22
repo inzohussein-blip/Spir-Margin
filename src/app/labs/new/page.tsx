@@ -36,7 +36,7 @@ export default async function NewLabPage() {
             <TextInput name="code" required placeholder="LAB-004" />
           </Field>
           <Field label={t(locale, "Name")} required>
-            <TextInput name="name" required placeholder="City Central Lab" />
+            <TextInput name="name" required placeholder={t(locale, "City Central Lab")} />
           </Field>
           <Field label={t(locale, "Status")}>
             <Select name="status" defaultValue="active">
