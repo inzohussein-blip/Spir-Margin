@@ -6,7 +6,7 @@ const routes = fs.readFileSync(`${HERE}/routes.txt`, "utf8").trim().split("\n");
 const ARABIC_INDIC = /[٠-٩۰-۹]/;
 // Latin words that leak into an Arabic-only UI. Ignore brand/product/code-ish
 // tokens which are legitimately Latin (Spir-Margin, LAB-001, USD, IQD, CSV…).
-const IGNORE = /Spir-Margin|Administrator|ADMIN|USD|IQD|CSV|PDF|API|URL|ID|QR|SKU|UOM|BOM|RFQ|POS|AMC|LAB-|DEMO|DEV-|KIT-|SPR-|PO-|SI-|PICK-|TRIP-|Demo |Dr\.|Baghdad|Basra|Germany|Nos|Box|⌘K|EN/g;
+const IGNORE = /Spir-Margin|Administrator|USD|IQD|CSV|PDF|API|URL|ID|QR|SKU|UOM|BOM|RFQ|POS|AMC|LAB-|DEMO|DEV-|KIT-|SPR-|PO-|SI-|PICK-|TRIP-|Demo |Dr\.|Baghdad|Basra|Germany|Nos|Box|⌘K|EN/g;
 
 const browser = await launch();
 const ctx = await browser.newContext({ locale: "ar-EG", viewport: { width: 1440, height: 900 } });
@@ -48,7 +48,18 @@ for (const route of routes) {
     continue;
   }
 
-  const text = await page.evaluate(() => document.body.innerText).catch(() => "");
+  // File names, commands and keys are shown in <code>/<kbd> — Latin by
+  // nature, and not untranslated UI. They are left out of the text checked.
+  const text = await page
+    .evaluate(() => {
+      let s = document.body.innerText;
+      for (const e of document.querySelectorAll("code, kbd")) {
+        const inner = e.innerText;
+        if (inner) s = s.split(inner).join(" ");
+      }
+      return s;
+    })
+    .catch(() => "");
   const issues = [];
 
   if (status >= 400) issues.push(`HTTP ${status}`);

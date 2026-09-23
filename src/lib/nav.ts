@@ -7,7 +7,7 @@ import {
   PackagePlusIcon, PlugIcon, CalendarClockIcon, LifeBuoyIcon, FileSignatureIcon,
   CalendarDaysIcon, UsersIcon, CreditCardIcon, PercentIcon, ListChecksIcon,
   BarChart3Icon, TrendingUpIcon, CalculatorIcon, RepeatIcon, SettingsIcon,
-  AlertTriangleIcon, HistoryIcon, RefreshCwIcon, ReceiptTextIcon,
+  AlertTriangleIcon, HistoryIcon, RefreshCwIcon, ReceiptTextIcon, BookOpenTextIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -111,6 +111,7 @@ export const navGroups: NavGroup[] = [
     { href: "/users", label: "Users", icon: UsersIcon },
     { href: "/settings", label: "Settings", icon: SettingsIcon },
     { href: "/audit-log", label: "Audit Log", icon: ScrollTextIcon },
+    { href: "/help", label: "Instructions", icon: BookOpenTextIcon },
   ]},
 ];
 

@@ -13,7 +13,7 @@ export function UserMenu({ user, locale = "ar" }: { user: SessionUser; locale?: 
         </span>
         <span className="hidden sm:block">
           <span className="font-medium text-ink-gray-8">{user.full_name || user.email}</span>
-          <span className="ml-1 rounded bg-surface-gray-2 px-1.5 py-0.5 text-[10px] uppercase text-ink-gray-5">{user.role}</span>
+          <span className="ms-1 rounded bg-surface-gray-2 px-1.5 py-0.5 text-[10px] text-ink-gray-5">{t(locale, user.role)}</span>
         </span>
       </Link>
       <form action={logoutAction}>

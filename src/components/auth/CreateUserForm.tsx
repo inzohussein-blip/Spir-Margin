@@ -36,9 +36,9 @@ export function CreateUserForm() {
       <label className="block text-sm">
         <span className="font-medium text-ink-gray-8">{t(locale, "Role")}</span>
         <select name="role" className={cls} defaultValue="staff">
-          <option value="admin">{t(locale, "Admin")}</option>
-          <option value="manager">{t(locale, "Manager")}</option>
-          <option value="staff">{t(locale, "Staff")}</option>
+          <option value="admin">{t(locale, "admin")}</option>
+          <option value="manager">{t(locale, "manager")}</option>
+          <option value="staff">{t(locale, "staff")}</option>
         </select>
       </label>
       <label className="block text-sm">

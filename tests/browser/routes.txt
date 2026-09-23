@@ -39,6 +39,14 @@
 /delivery-trips/new
 /devices
 /devices/new
+/help
+/help?tab=backup
+/help?tab=install
+/help?tab=offline
+/help?tab=settings
+/help?tab=start
+/help?tab=troubleshooting
+/help?tab=users
 /installation-notes
 /installation-notes/new
 /issues
