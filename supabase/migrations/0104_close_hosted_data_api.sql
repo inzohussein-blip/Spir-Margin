@@ -32,4 +32,7 @@ begin
     alter default privileges in schema public revoke all on tables    from anon, authenticated;
     alter default privileges in schema public revoke all on sequences from anon, authenticated;
     alter default privileges in schema public revoke all on functions from anon, authenticated, public;
+    -- Execute for PUBLIC on new functions is a GLOBAL default, which a
+    -- per-schema revoke cannot take away; only a global one can.
+    alter default privileges revoke execute on functions from public;
 end $$;

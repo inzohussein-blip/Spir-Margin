@@ -15,8 +15,7 @@ const text = await p.locator("body").innerText();
 
 check("settings offers a backup", text.includes("النسخ الاحتياطي والاستعادة"));
 check("it warns this is the only other copy", text.includes("النسخة الأخرى الوحيدة"));
-check("settings offers a hosted database", text.includes("القاعدة المستضافة"));
-check("it says nothing is configured", text.includes("لا شيء مضبوط"));
+check("settings points to Sync for linking computers", text.includes("المزامنة") && text.includes("افتح المزامنة"));
 check("no Arabic-Indic digits", !/[٠-٩]/.test(text));
 
 // The backup must actually download, and be a real gzip.
@@ -34,6 +33,7 @@ check(
 // The hosted database is set on the Sync page now; Settings points there.
 check("Settings points to the Sync page", (await p.locator('a[href="/sync"]').count()) > 0);
 await p.goto(H + "/sync", { waitUntil: "networkidle" });
+check("the Sync page says nothing is configured", (await p.locator("body").innerText()).includes("لا شيء مضبوط"));
 
 // A bad connection string must be refused rather than saved.
 await p.fill('input[name="database_url"]', "postgresql://nobody@127.0.0.1:1/none");

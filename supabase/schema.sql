@@ -1,4 +1,4 @@
--- Spir-Margin — combined schema (all 104 migrations). Run ONCE on an EMPTY DB.
+-- Spir-Margin — combined schema (all 105 migrations). Run ONCE on an EMPTY DB.
 --
 -- GENERATED FILE — do not edit by hand. Rebuild with:
 --     npm run schema
@@ -8457,6 +8457,9 @@ begin
     alter default privileges in schema public revoke all on tables    from anon, authenticated;
     alter default privileges in schema public revoke all on sequences from anon, authenticated;
     alter default privileges in schema public revoke all on functions from anon, authenticated, public;
+    -- Execute for PUBLIC on new functions is a GLOBAL default, which a
+    -- per-schema revoke cannot take away; only a global one can.
+    alter default privileges revoke execute on functions from public;
 end $$;
 
 -- ===== migration: 0105_sync_links.sql =====
@@ -8519,6 +8522,75 @@ returns boolean language sql stable as $$
         (select max(pulled_through) from _spir_sync_state) < p_peer_oldest_seq - 1,
         false)
 $$;
+
+-- ===== migration: 0106_sync_mirrors.sql =====
+-- =====================================================================
+-- Migration 0106 : A synced change is a copy, not a new event
+--
+-- Applying a change that came from another computer used to fire this
+-- database's own triggers. The ones that derive rows then derived them a
+-- second time: a synced sale posted a second journal entry here, while the
+-- first one — posted where the sale was made — arrived through the log as
+-- well. Every computer ended up with its own extra copy, and the books no
+-- longer agreed between them.
+--
+-- The rows a trigger derives are logged where they are made, so they
+-- already travel. A computer receiving a change should mirror it, not
+-- recompute it. Postgres has a switch for exactly that
+-- (session_replication_role), but a hosted database does not let its users
+-- set it. So each trigger gets the condition itself:
+--
+--     WHEN (current_setting('spir.syncing', true) IS DISTINCT FROM 'on')
+--
+-- and _spir_apply_change already sets spir.syncing for the duration of one
+-- applied change. Two kinds are left alone: the change log's own trigger
+-- (it checks the flag itself), and the audit trigger, so the Change &
+-- Deletion Log on the main computer still shows what the office did.
+-- Foreign keys are Postgres's internal triggers and keep working.
+--
+-- _spir_guard_triggers() adds the condition to any trigger that lacks it,
+-- and the app runs it after every migration pass, as it does for the change
+-- log — a trigger added later is covered without anyone remembering.
+-- =====================================================================
+
+create or replace function _spir_guard_triggers() returns integer
+language plpgsql as $$
+declare
+    r   record;
+    def text;
+    n   integer := 0;
+begin
+    for r in
+        select t.tgname, c.relname, pg_get_triggerdef(t.oid) as def
+          from pg_trigger t
+          join pg_class c      on c.oid = t.tgrelid
+          join pg_namespace ns on ns.oid = c.relnamespace
+          join pg_proc p       on p.oid = t.tgfoid
+         where ns.nspname = 'public'
+           and not t.tgisinternal
+           and t.tgenabled = 'O'
+           and t.tgname <> 'zz_spir_change_log'
+           and p.proname <> 'fn_audit'
+           and pg_get_triggerdef(t.oid) not like '%spir.syncing%'
+    loop
+        def := r.def;
+        if def ~ ' WHEN \(' then
+            def := regexp_replace(
+                def, ' WHEN \((.*)\) EXECUTE ',
+                ' WHEN ((current_setting(''spir.syncing'', true) IS DISTINCT FROM ''on'') AND (\1)) EXECUTE ');
+        else
+            def := regexp_replace(
+                def, ' EXECUTE (FUNCTION|PROCEDURE) ',
+                ' WHEN (current_setting(''spir.syncing'', true) IS DISTINCT FROM ''on'') EXECUTE \1 ');
+        end if;
+        execute format('drop trigger %I on public.%I', r.tgname, r.relname);
+        execute def;
+        n := n + 1;
+    end loop;
+    return n;
+end $$;
+
+select _spir_guard_triggers();
 
 select _spir_attach_change_log();
 
@@ -8630,7 +8702,8 @@ insert into _spir_migrations(filename) values
   ('0102_arabic_errors.sql'),
   ('0103_end_sessions.sql'),
   ('0104_close_hosted_data_api.sql'),
-  ('0105_sync_links.sql')
+  ('0105_sync_links.sql'),
+  ('0106_sync_mirrors.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;

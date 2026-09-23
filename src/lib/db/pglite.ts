@@ -309,6 +309,15 @@ async function initSchema(run: Runner, opts: { seed: boolean }): Promise<void> {
         end if;
       end $$;`)
       .catch(() => undefined);
+    // Likewise, a trigger added by a later migration must not fire again on
+    // a change that arrives by sync (migration 0106).
+    await run
+      .exec(`do $$ begin
+        if to_regprocedure('_spir_guard_triggers()') is not null then
+          perform _spir_guard_triggers();
+        end if;
+      end $$;`)
+      .catch(() => undefined);
   } finally {
     // This connection goes on to serve the app, so the flag must come back
     // off whatever happened above — otherwise no write would ever be logged.
