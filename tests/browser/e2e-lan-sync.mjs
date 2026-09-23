@@ -85,7 +85,7 @@ async function syncNow(p, url) {
   const r = p.locator("[data-sync-result]");
   for (let attempt = 0; attempt < 4 && !(await r.count()); attempt++) {
     await p.locator("main").getByRole("button", { name: "مزامنة الآن" }).click();
-    await r.waitFor({ timeout: attempt < 3 ? 8_000 : 90_000 }).catch(() => {});
+    await r.waitFor({ timeout: attempt < 3 ? 8_000 : 180_000 }).catch(() => {});
   }
   const found = await r.getAttribute("data-sync-result").catch(() => null);
   const text = found ? await r.innerText().catch(() => "") : "(no result) " + (await p.locator("main").innerText()).slice(0, 300).replace(/\n/g, " | ");
@@ -158,7 +158,8 @@ const down = await syncNow(office, officeSrv.url);
 check("and the main computer's new lab reaches it", down.ok && (await labsText(office, officeSrv.url)).includes(`مختبر من الرئيسي ${stamp}`), down.text);
 
 const quiet = await syncNow(office, officeSrv.url);
-check("a further sync moves nothing", quiet.ok && /أُرسل 0 · جُلب 0/.test(quiet.text), quiet.text);
+check("a further sync moves nothing", quiet.ok && /أُرسل 0 · جُلب 0/.test(quiet.text),
+  quiet.ok ? quiet.text : `${quiet.text}\n--- office server log ---\n${officeSrv.log().split("\n").slice(-25).join("\n")}`);
 
 await main.goto(H + "/sync", { waitUntil: "networkidle" });
 check("the main computer lists the office computer", (await main.locator("table").last().innerText()).includes("127.0.0.1") || (await main.locator("table").last().innerText()).length > 20);

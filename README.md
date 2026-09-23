@@ -44,8 +44,9 @@ account makes the office network an explicit choice. See `docs/INSTALL.md`.
 Losing the network degrades sync, never the app. Sign-in is the same story:
 the built-in account in `src/lib/auth/demo-credentials.ts` is checked in code
 before anything touches a database, so a fresh, offline machine can still get
-in. `SPIR_SEED` picks what a brand-new database starts with — `demo` (the
-default Arabic starter set), `full`, or `none`.
+in. `SPIR_SEED` picks what a brand-new database starts with — `none` (the
+default: empty, for real records), `demo` (the Arabic starter set, for
+training and the public demo) or `full`.
 
 ---
 

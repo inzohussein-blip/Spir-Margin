@@ -9,3 +9,7 @@ tests/browser/artifacts/
 
 # Server log written by scripts/windows/run-server.cmd
 logs/
+
+# automatic backups (Settings → Automatic backups)
+/backups/
+RESET-ADMIN-PASSWORD*

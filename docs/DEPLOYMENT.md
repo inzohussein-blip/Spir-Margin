@@ -42,14 +42,15 @@ migration, and `npm test` fails if it drifts.
 | --- | --- | --- |
 | `AUTH_SECRET` | **Required** on any hosted deploy | Signs session cookies. Without it the app refuses to start on a hosted deploy (it would otherwise use a public built-in key that lets anyone forge a session). Generate with `openssl rand -base64 48`. |
 | `DATABASE_URL` | Optional | A hosted Postgres to SYNC with. The app always stores its data in its own embedded database; this adds a peer it pushes to and pulls from. Unset means this machine runs standalone. |
-| `SPIR_SEED` | Optional | What a brand-new database starts with: `demo` (default), `full`, or `none`. |
+| `SPIR_SEED` | Optional | What a brand-new database starts with: `none` (default, empty for real data), `demo`, or `full`. |
 
-The first user is seeded as `admin@spir.local` / `admin1234`, plus a demo
-account `demo@spir.local` / `demo1234` (migration `0084_demo_user.sql`) —
-**change or disable these immediately** (Setup → Users) after the first sign-in.
+No database account is created (migration `0107` removed the old
+`admin1234` / `demo1234` ones). Sign in with the built-in account
+`admin@spir.local` / `123`, then change its password in Settings → Built-in
+account password, and create an account for each person under Setup → Users.
 
-> For the hosted Supabase + Vercel wiring (connection string, `AUTH_SECRET`, the
-> demo login, and manual SQL), see [`HOSTED-SETUP.md`](./HOSTED-SETUP.md).
+> For the hosted database (Supabase) and the public demo on Vercel, see
+> [`HOSTED-SETUP.md`](./HOSTED-SETUP.md).
 
 ## 3. Backups
 

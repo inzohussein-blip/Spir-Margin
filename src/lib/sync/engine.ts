@@ -59,6 +59,10 @@ export interface SyncStatus {
 
 /** The upstream this computer syncs with, if any. Never throws. */
 export async function upstream(): Promise<Upstream | null> {
+  // The public demo on Vercel runs on demo records in memory. Syncing it
+  // with a real database would pour those records into the company's, and
+  // expose the company's to anyone with the demo's published password.
+  if (process.env.VERCEL && (process.env.SPIR_SEED === "demo" || process.env.SPIR_SEED === "full")) return null;
   const fromEnv = process.env.DATABASE_URL;
   if (fromEnv) return { kind: "hosted", key: "remote", label: hostLabel(fromEnv) };
   try {
@@ -152,7 +156,11 @@ export async function syncDetail(limit = 25): Promise<SyncDetail> {
 }
 
 async function peerFor(up: Upstream): Promise<SyncPeer | null> {
-  if (up.kind === "lan") return up.lan ? lanPeer(up.lan) : null;
+  if (up.kind === "lan") {
+    if (!up.lan) return null;
+    const { db } = await getDb();
+    return lanPeer(up.lan, await nodeId(db));
+  }
   const db = await getRemoteDb();
   return db ? dbPeer(db, "remote") : null;
 }
@@ -160,7 +168,11 @@ async function peerFor(up: Upstream): Promise<SyncPeer | null> {
 // One pass at a time: the page's timer, the background timer and the "Sync
 // now" button can all ask at once, and two passes would send the same batch
 // twice. The later callers get the running pass's result.
-const G = globalThis as unknown as { __spirSyncRun?: Promise<SyncResult> | null };
+const G = globalThis as unknown as { __spirSyncRun?: { run: Promise<SyncResult>; since: number } | null };
+
+// A pass that has not finished in this long is taken to be stuck (a link
+// that died without saying so), and no longer holds everyone else back.
+const STUCK_MS = 10 * 60_000;
 
 /**
  * Run one sync pass. Safe to call at any time: with no upstream it reports
@@ -168,12 +180,18 @@ const G = globalThis as unknown as { __spirSyncRun?: Promise<SyncResult> | null 
  * last completed batch, which the next run simply replays.
  */
 export function runSync(): Promise<SyncResult> {
-  if (G.__spirSyncRun) return G.__spirSyncRun;
-  const run = runOnce().finally(() => {
-    G.__spirSyncRun = null;
+  const current = G.__spirSyncRun;
+  if (current && Date.now() - current.since < STUCK_MS) return current.run;
+  if (current) {
+    console.warn("[sync] the previous pass has not finished in 10 minutes; starting a new one");
+    resetRemoteDb();
+  }
+  const entry = { run: Promise.resolve() as unknown as Promise<SyncResult>, since: Date.now() };
+  entry.run = runOnce().finally(() => {
+    if (G.__spirSyncRun === entry) G.__spirSyncRun = null;
   });
-  G.__spirSyncRun = run;
-  return run;
+  G.__spirSyncRun = entry;
+  return entry.run;
 }
 
 async function runOnce(): Promise<SyncResult> {
@@ -277,4 +295,37 @@ export async function dismissReject(id: string): Promise<void> {
   await db
     .query(`update _spir_sync_rejects set resolved_at = now() where id = $1::bigint`, [id])
     .catch(() => undefined);
+}
+
+/**
+ * With nothing to sync with, nobody is waiting for this computer's log, so
+ * changes older than the retention window can go (migration 0108). Without
+ * this a standalone computer kept every change it ever made.
+ */
+export async function pruneStandalone(): Promise<void> {
+  if (await upstream()) return;
+  const { db } = await getDb();
+  await db
+    .query(`select fn_spir_prune_changes((select coalesce(max(seq), 0) from _spir_changes))`)
+    .catch(() => undefined);
+}
+
+export interface SyncRename {
+  table: string;
+  column: string;
+  oldValue: string;
+  newValue: string;
+  at: string;
+}
+
+/** Codes this computer renamed to settle a clash with another computer (migration 0111). */
+export async function listRenames(limit = 50): Promise<SyncRename[]> {
+  const { db } = await getDb();
+  const r = await db
+    .query<{ table_name: string; column_name: string; old_value: string; new_value: string; at: string }>(
+      `select table_name, column_name, old_value, new_value, at from _spir_sync_renames
+        order by at desc limit ${Math.max(1, Math.min(limit, 200))}`,
+    )
+    .catch(() => ({ rows: [] }));
+  return r.rows.map((x) => ({ table: x.table_name, column: x.column_name, oldValue: x.old_value, newValue: x.new_value, at: x.at }));
 }

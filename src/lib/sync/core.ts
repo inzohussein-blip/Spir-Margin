@@ -56,6 +56,29 @@ export interface SyncPeer {
   pull(after: string, me: string): Promise<PullPage>;
   /** Apply these on the peer; one entry per row: null, or why it was refused. */
   push(rows: ChangeRow[], me: string): Promise<(string | null)[]>;
+  /** For a full copy: the synced tables, and where the peer's log ends now. */
+  meta?(): Promise<SnapshotMeta>;
+  /** For a full copy: one page of a table's current rows, with their versions. */
+  snapshot?(table: string, after: string | null): Promise<SnapshotPage>;
+}
+
+export interface SnapshotMeta {
+  tables: string[];
+  maxSeq: string;
+}
+
+export interface SnapshotRow {
+  pk_text: string;
+  pk: unknown;
+  row: unknown;
+  changed_at: string;
+  origin: string;
+}
+
+export interface SnapshotPage {
+  rows: SnapshotRow[];
+  /** Where the next page starts, or null at the end of the table. */
+  next: string | null;
 }
 
 export interface SyncResult {
@@ -180,6 +203,54 @@ export async function serveAccept(db: Db, rows: ChangeRow[], callerTag: string |
   return out;
 }
 
+/** The tables that sync (the ones the change log watches), and the log's end. */
+export async function serveMeta(db: Db): Promise<SnapshotMeta> {
+  const t = await db.query<{ t: string }>(
+    `select c.relname as t from pg_trigger g
+       join pg_class c on c.oid = g.tgrelid
+       join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'public' and g.tgname = 'zz_spir_change_log'
+      order by 1`,
+  );
+  const m = await db.query<{ s: string }>(`select coalesce(max(seq), 0)::text as s from _spir_changes`);
+  return { tables: t.rows.map((r) => r.t), maxSeq: m.rows[0]?.s ?? "0" };
+}
+
+const ident = (name: string) => `"${name.replace(/"/g, '""')}"`;
+const SNAPSHOT_PAGE = 300;
+
+/**
+ * One page of a table as it stands now, each row with the version the
+ * row-version register holds for it. Rows with no version were made by a
+ * migration, identically everywhere, and are not sent.
+ */
+export async function serveSnapshot(db: Db, table: string, after: string | null): Promise<SnapshotPage> {
+  const meta = await serveMeta(db);
+  if (!meta.tables.includes(table)) throw new Error(`not a synced table: ${table}`);
+  const pk = await db.query<{ a: string }>(
+    `select a.attname as a
+       from pg_index i
+       join lateral unnest(i.indkey) with ordinality k(attnum, ord) on true
+       join pg_attribute a on a.attrelid = i.indrelid and a.attnum = k.attnum
+      where i.indrelid = $1::regclass and i.indisprimary
+      order by k.ord`,
+    [`public.${ident(table)}`],
+  );
+  const cols = pk.rows.map((r) => r.a);
+  const r = await db.query<SnapshotRow>(
+    `select v.pk_text, x.pk, x.row, v.changed_at, v.origin::text as origin
+       from (select to_jsonb(t) as row,
+                    (select jsonb_object_agg(k, to_jsonb(t) -> k) from unnest($2::text[]) k) as pk
+               from public.${ident(table)} t) x
+       join _spir_row_version v on v.table_name = $1 and v.pk_text = x.pk::text
+      where $3::text is null or v.pk_text > $3::text
+      order by v.pk_text
+      limit ${SNAPSHOT_PAGE}`,
+    [table, cols, after],
+  );
+  return { rows: r.rows, next: r.rows.length === SNAPSHOT_PAGE ? r.rows[r.rows.length - 1].pk_text : null };
+}
+
 /**
  * A Postgres database reached directly — the hosted database. It is passive:
  * it never syncs on its own, so the calling computer does both moves on it.
@@ -189,6 +260,8 @@ export function dbPeer(peer: Db, key: string): SyncPeer {
     key,
     pull: (after, me) => servePull(peer, after, me, `n:${me}`),
     push: (rows, me) => serveAccept(peer, rows, `n:${me}`),
+    meta: () => serveMeta(peer),
+    snapshot: (table, after) => serveSnapshot(peer, table, after),
   };
 }
 
@@ -218,6 +291,98 @@ export async function noteError(db: Db, key: string, message: string | null): Pr
     .catch(() => undefined);
 }
 
+// ------------------------------------------------------------------ conflicts
+
+/**
+ * A change was refused because its code is already taken by another record
+ * (two computers created the same code apart). Rename OUR record's value —
+ * the one not yet delivered — by adding a short tag of this computer's, as
+ * an ordinary logged change that then travels like any other. Returns the
+ * new value, or null when this is not a conflict it may settle: only
+ * single-column unique text values, never an email, never a value other
+ * records refer to.
+ *
+ * `ourPk` is the primary key of our record: the one being sent (push), or
+ * the local one standing in the way of an incoming change (pull; null asks
+ * this function to find it from `incoming`).
+ */
+export async function renameOnConflict(
+  local: Db,
+  table: string,
+  error: string,
+  ourPk: unknown | null,
+  incoming?: unknown,
+): Promise<string | null> {
+  const m = /unique constraint "([^"]+)"/.exec(error);
+  if (!m) return null;
+  const idx = await local.query<{ col: string; typ: string; referenced: boolean }>(
+    `select a.attname as col, format_type(a.atttypid, a.atttypmod) as typ,
+            exists (select 1 from pg_constraint f
+                     where f.contype = 'f' and f.confrelid = i.indrelid and a.attnum = any (f.confkey)) as referenced
+       from pg_class ic
+       join pg_index i on i.indexrelid = ic.oid
+       join pg_attribute a on a.attrelid = i.indrelid and a.attnum = i.indkey[0]
+      where ic.relname = $1 and i.indrelid = ('public.' || quote_ident($2))::regclass
+        and i.indisunique and not i.indisprimary and i.indnatts = 1`,
+    [m[1], table],
+  );
+  const u = idx.rows[0];
+  if (!u || u.referenced || table === "app_users" || /email/i.test(u.col)) return null;
+  if (!/^(text|character varying)/.test(u.typ)) return null;
+
+  const pkCols = (
+    await local.query<{ a: string }>(
+      `select a.attname as a from pg_index i
+         join lateral unnest(i.indkey) k(attnum) on true
+         join pg_attribute a on a.attrelid = i.indrelid and a.attnum = k.attnum
+        where i.indrelid = ('public.' || quote_ident($1))::regclass and i.indisprimary`,
+      [table],
+    )
+  ).rows.map((r) => r.a);
+  if (!pkCols.length) return null;
+  const where = pkCols.map((c) => `t.${ident(c)}::text = ($1::jsonb ->> ${`'${c.replace(/'/g, "''")}'`})`).join(" and ");
+
+  let pk = ourPk;
+  if (pk === null) {
+    // Pull: find our record holding the value the incoming one wants.
+    const value = (incoming as Record<string, unknown> | null)?.[u.col];
+    if (typeof value !== "string") return null;
+    const r = await local.query<{ pk: unknown }>(
+      `select jsonb_object_agg(k, to_jsonb(t) -> k) as pk
+         from public.${ident(table)} t, unnest($2::text[]) k
+        where t.${ident(u.col)} = $1
+        group by t.ctid limit 1`,
+      [value, pkCols],
+    );
+    pk = r.rows[0]?.pk ?? null;
+    if (pk === null) return null;
+  }
+
+  const cur = await local.query<{ v: string | null }>(
+    `select t.${ident(u.col)}::text as v from public.${ident(table)} t where ${where}`,
+    [asJson(pk)],
+  );
+  const old = cur.rows[0]?.v;
+  if (!old) return null;
+  const tag = (await nodeId(local)).replace(/-/g, "").toUpperCase();
+  for (const len of [4, 6, 8, 12]) {
+    const next = `${old}-${tag.slice(0, len)}`;
+    const taken = await local.query(
+      `select 1 from public.${ident(table)} where ${ident(u.col)} = $1 limit 1`,
+      [next],
+    );
+    if (taken.rows.length) continue;
+    await local.query(`update public.${ident(table)} t set ${ident(u.col)} = $2 where ${where}`, [asJson(pk), next]);
+    await local.query(
+      `insert into _spir_sync_renames (table_name, pk, column_name, old_value, new_value)
+       values ($1, $2::jsonb, $3, $4, $5)`,
+      [table, asJson(pk), u.col, old, next],
+    );
+    return next;
+  }
+  return null;
+}
+
 /**
  * Send what the peer has not seen. A row it refuses is recorded and stepped
  * over: stopping on it would strand every later change behind one bad row.
@@ -228,22 +393,30 @@ export async function pushTo(local: Db, peer: SyncPeer, me: string, rejected: st
     const batch = await pendingRows(local, peer.key, BATCH);
     if (batch.length === 0) break;
     const results = await peer.push(batch, me);
-    batch.forEach((c, i) => {
-      const err = results[i];
-      if (err) rejected.push(`${c.table_name}: ${err}`);
-    });
+    let renamedAny = false;
     for (let i = 0; i < batch.length; i++) {
-      if (results[i]) await noteRejected(local, "push", batch[i], results[i]!);
-      else {
+      const err = results[i];
+      if (!err) {
         total++;
         await noteResolved(local, "push", batch[i]);
+        continue;
       }
+      // A code the peer already has for another record: rename ours; the
+      // rename is a new change, sent on the next round of this loop.
+      const renamed = await renameOnConflict(local, batch[i].table_name, err, batch[i].pk).catch(() => null);
+      if (renamed) {
+        renamedAny = true;
+        continue;
+      }
+      await noteRejected(local, "push", batch[i], err);
+      rejected.push(`${batch[i].table_name}: ${err}`);
     }
     await local.query(`update _spir_sync_state set pushed_through = $2 where peer = $1`, [
       peer.key,
       batch[batch.length - 1].seq,
     ]);
-    if (batch.length < BATCH) break;
+    // A rename is a new change waiting right behind this batch: send it now.
+    if (batch.length < BATCH && !renamedAny) break;
   }
   return total;
 }
@@ -262,7 +435,15 @@ export async function pullFrom(
     const page = await peer.pull(cursor, me);
     for (const c of page.rows) {
       try {
-        await applyOne(local, c);
+        try {
+          await applyOne(local, c);
+        } catch (e) {
+          // Our own record holds the code this one wants: ours has not
+          // reached the peer yet, so ours takes the new name.
+          const renamed = await renameOnConflict(local, c.table_name, (e as Error).message, null, c.row).catch(() => null);
+          if (!renamed) throw e;
+          await applyOne(local, c);
+        }
         await record(local, c, peer.key);
         await noteResolved(local, "pull", c);
         total++;
@@ -285,20 +466,30 @@ export async function pullFrom(
  */
 export async function syncOnce(local: Db, peer: SyncPeer): Promise<SyncResult> {
   const me = await nodeId(local);
-  const { pulled } = await cursors(local, peer.key);
+  let { pulled } = await cursors(local, peer.key);
+  const rejected: string[] = [];
+  let copied = 0;
 
-  // Has the peer pruned past where this computer stopped reading? Then a
-  // pull would skip changes without saying so. Asking for an empty page
-  // after the cursor costs one round trip and answers it.
+  // Has the peer pruned past where this computer stopped reading — a long
+  // absence, or a first contact with a peer whose log no longer starts at
+  // the beginning? Then the log alone would leave records out: take the
+  // peer's current rows first, then read the log from where it stood.
+  // (With a complete log the log is read as usual, and every row lands in
+  // this computer's log too, to pass on.)
   const probe = await peer.pull(pulled, me);
-  if (probe.oldest !== null && Number(pulled) < Number(probe.oldest) - 1) {
+  const gap = probe.oldest !== null && Number(pulled) < Number(probe.oldest) - 1;
+  if (gap && peer.meta && peer.snapshot) {
+    const res = await snapshotFrom(local, peer, rejected);
+    copied = res.applied;
+    pulled = res.mark;
+    await local.query(`update _spir_sync_state set pulled_through = $2 where peer = $1`, [peer.key, pulled]);
+  } else if (gap) {
     await noteError(local, peer.key, GAP_MESSAGE);
     return { ok: false, pushed: 0, pulled: 0, error: GAP_MESSAGE };
   }
 
-  const rejected: string[] = [];
   const pushed = await pushTo(local, peer, me, rejected);
-  const pulledCount = await pullFrom(local, peer, me, pulled, rejected);
+  const pulledCount = copied + (await pullFrom(local, peer, me, pulled, rejected));
 
   await local.query(`select fn_spir_prune_changes()`).catch(() => undefined);
 
@@ -308,6 +499,116 @@ export async function syncOnce(local: Db, peer: SyncPeer): Promise<SyncResult> {
     note,
   ]);
   return { ok: !note, pushed, pulled: pulledCount, error: note ?? undefined };
+}
+
+/** Order tables so that a table comes after the ones its foreign keys point at. */
+async function parentsFirst(local: Db, tables: string[]): Promise<string[]> {
+  const fk = await local.query<{ child: string; parent: string }>(
+    `select c.relname as child, p.relname as parent
+       from pg_constraint k
+       join pg_class c on c.oid = k.conrelid
+       join pg_class p on p.oid = k.confrelid
+       join pg_namespace n on n.oid = c.relnamespace
+      where k.contype = 'f' and n.nspname = 'public' and c.oid <> p.oid`,
+  );
+  const want = new Set(tables);
+  const deps = new Map(tables.map((t) => [t, new Set<string>()]));
+  for (const { child, parent } of fk.rows) {
+    if (want.has(child) && want.has(parent)) deps.get(child)!.add(parent);
+  }
+  const out: string[] = [];
+  const done = new Set<string>();
+  while (out.length < tables.length) {
+    const ready = tables.filter((t) => !done.has(t) && [...deps.get(t)!].every((d) => done.has(d)));
+    // A cycle: take the rest as they come; the retry passes below sort it out.
+    const next = ready.length ? ready : tables.filter((t) => !done.has(t));
+    for (const t of next) {
+      out.push(t);
+      done.add(t);
+    }
+  }
+  return out;
+}
+
+/**
+ * Take a full copy of the peer's current rows. Each row goes through the
+ * same last-writer-wins apply as a logged change, so a newer row here is
+ * kept and nothing is duplicated; this works on an empty computer and on
+ * one with work of its own. Rows whose parent has not arrived yet (a cycle,
+ * or a parent in the same table) are retried until nothing more lands.
+ */
+export async function snapshotFrom(
+  local: Db,
+  peer: SyncPeer,
+  rejected: string[],
+): Promise<{ applied: number; mark: string }> {
+  const meta = await peer.meta!();
+  const order = await parentsFirst(local, meta.tables);
+  let applied = 0;
+  let waiting: ChangeRow[] = [];
+
+  // Each copied row is also kept in this computer's log, so it reaches the
+  // computers that sync through this one. It has no log entry of its own to
+  // copy, so it gets a stand-in number from its version — negative, never
+  // clashing with a real one — under its maker's id.
+  const tryApply = async (c: ChangeRow): Promise<boolean> => {
+    try {
+      await applyOne(local, c);
+      await local.query(
+        `insert into _spir_changes (origin, origin_seq, table_name, op, pk, row, changed_at, received_from)
+         values ($1, -(('x' || substr(md5($2 || ($3::jsonb)::text || $5::text), 1, 15))::bit(60)::bigint),
+                 $2, 'I', $3::jsonb, $4::jsonb, $5, $6)
+         on conflict (origin, origin_seq) do nothing`,
+        [c.origin, c.table_name, asJson(c.pk), asJson(c.row), c.changed_at, peer.key],
+      );
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  for (const table of order) {
+    let after: string | null = null;
+    for (;;) {
+      const page = await peer.snapshot!(table, after);
+      for (const r of page.rows) {
+        const c: ChangeRow = {
+          seq: "0", origin: r.origin, origin_seq: "0", table_name: table, op: "I",
+          pk: r.pk, row: r.row, changed_at: r.changed_at,
+        };
+        if (await tryApply(c)) applied++;
+        else waiting.push(c);
+      }
+      if (!page.next) break;
+      after = page.next;
+    }
+  }
+
+  for (let pass = 0; pass < 5 && waiting.length; pass++) {
+    const again: ChangeRow[] = [];
+    for (const c of waiting) {
+      if (await tryApply(c)) applied++;
+      else again.push(c);
+    }
+    if (again.length === waiting.length) break;
+    waiting = again;
+  }
+  for (const c of waiting) {
+    try {
+      try {
+        await applyOne(local, c);
+      } catch (e) {
+        const renamed = await renameOnConflict(local, c.table_name, (e as Error).message, null, c.row).catch(() => null);
+        if (!renamed) throw e;
+        await applyOne(local, c);
+      }
+      applied++;
+    } catch (e) {
+      await noteRejected(local, "pull", c, (e as Error).message);
+      rejected.push(`${c.table_name}: ${(e as Error).message}`);
+    }
+  }
+  return { applied, mark: meta.maxSeq };
 }
 
 // ------------------------------------------------------------------ joining

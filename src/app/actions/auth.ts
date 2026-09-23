@@ -12,9 +12,10 @@ import {
   type SessionUser,
 } from "@/lib/auth/session";
 import { lockoutRemaining, recordFailure, recordSuccess } from "@/lib/auth/rate-limit";
-import { DEMO_EMAIL, DEMO_PASSWORD } from "@/lib/auth/demo-credentials";
+import { DEMO_EMAIL } from "@/lib/auth/demo-credentials";
 import type { LoginState } from "@/lib/auth/login-state";
 import { forgetSessions, settleFutureCutoff } from "@/lib/auth/revocation";
+import { builtinPasswordMatches, setBuiltinPassword } from "@/lib/auth/builtin";
 
 const cookieOptions = {
   httpOnly: true,
@@ -58,22 +59,33 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
 
   if (!email || !password) return { error: "Enter your email and password" };
 
-  // The built-in account is checked first, in code, before anything touches a
-  // database. That is what makes sign-in work on a fresh install, with no
-  // hosted database, and with no internet.
-  if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
-    const bad = await trySetSession(BUILT_IN_USER);
-    if (bad) return bad;
-    redirect(next);
-  }
-
-  // Any other email is a database-backed account in the local store. It has
-  // its own rows, so this still works offline.
+  // Throttle first, for every account: the built-in one's password can be
+  // changed now, and a changed password is worth guessing.
   const locked = await lockoutRemaining(email).catch(() => 0);
   if (locked > 0) {
     return { error: "Too many attempts. Try again later.", lockedFor: locked };
   }
 
+  // The built-in account is checked before any account table. Its password
+  // is 123 until an administrator changes it (kept on this computer only).
+  if (email === DEMO_EMAIL) {
+    let ok = false;
+    try {
+      ok = await builtinPasswordMatches(password);
+    } catch (e) {
+      console.error("[auth] built-in check failed:", e);
+      return { error: "Sign-in is unavailable right now" };
+    }
+    if (ok) {
+      await recordSuccess(email).catch(() => undefined);
+      const bad = await trySetSession(BUILT_IN_USER);
+      if (bad) return bad;
+      redirect(next);
+    }
+  }
+
+  // Any other email is a database-backed account in the local store. It has
+  // its own rows, so this still works offline.
   let data: SessionUser[] | null = null;
   try {
     // Signing in is the one thing a visitor without a session must be able to do.
@@ -110,13 +122,20 @@ export async function logoutAction() {
 export async function changePasswordAction(_prev: unknown, formData: FormData) {
   const user = await getCurrentUser();
   if (!user) return { error: "Not signed in" };
-  // The built-in account has no row to change; the database's own
-  // admin@spir.local row is a different account with the same email.
-  if (user.id === BUILT_IN_USER.id) return { error: "The built-in account's password cannot be changed" };
-
   const current = String(formData.get("current_password") ?? "");
   const next = String(formData.get("new_password") ?? "");
   if (next.length < 8) return { error: "New password must be at least 8 characters" };
+
+  // The built-in account has no row in app_users: its password is kept on
+  // this computer (migration 0109).
+  if (user.id === BUILT_IN_USER.id) {
+    if (!(await builtinPasswordMatches(current))) return { error: "Current password is incorrect" };
+    await setBuiltinPassword(next);
+    forgetSessions();
+    const bad = await trySetSession(user);
+    if (bad) return { error: "Password updated. Sign in again with the new password." };
+    redirect("/account?changed=1");
+  }
 
   const supabase = createUserClient();
   const { data } = await supabase.rpc("fn_verify_login", { p_email: user.email, p_password: current });

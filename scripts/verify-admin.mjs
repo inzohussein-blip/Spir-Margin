@@ -13,8 +13,8 @@
 //
 // Env:
 //   DATABASE_URL         (required) hosted Postgres connection string
-//   CHECK_EMAIL          account to check           (default demo@spir.local)
-//   CHECK_PASSWORD       password to test           (default demo1234)
+//   CHECK_EMAIL          account to check           (required)
+//   CHECK_PASSWORD       password to test           (required)
 //   RESET                "1" to repair on failure   (default off)
 //   ADMIN_NEW_PASSWORD   new password used when RESET=1 (from a secret, never an input)
 //
@@ -40,8 +40,12 @@ if (!url) {
   process.exit(2);
 }
 
-const email = (process.env.CHECK_EMAIL || "demo@spir.local").trim();
-const password = process.env.CHECK_PASSWORD ?? "demo1234";
+const email = (process.env.CHECK_EMAIL || "").trim();
+const password = process.env.CHECK_PASSWORD ?? "";
+if (!email || !password) {
+  console.error("Set CHECK_EMAIL and CHECK_PASSWORD (a database-backed account).");
+  process.exit(2);
+}
 
 const builtIn = builtInEmail();
 if (builtIn && email.toLowerCase() === builtIn.toLowerCase()) {

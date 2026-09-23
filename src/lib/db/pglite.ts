@@ -38,13 +38,14 @@ const FULL_SEED_FILE = path.join(process.cwd(), "supabase", "seed.sql");
 const DEMO_SEED_FILE = path.join(process.cwd(), "supabase", "seed-demo.sql");
 
 /**
- * What a brand-new database starts with. `demo` (the default) is the small
- * Arabic starter dataset — enough to show a working system on first run, and
- * small enough to delete. `full` is the large ERP fixture, `none` an empty
- * database for a company importing its own data.
+ * What a brand-new database starts with. `none` (the default) is empty, for
+ * the company's real records: demo rows mixed in with them would travel to
+ * every linked computer and sit in every report. `demo` is the small Arabic
+ * starter dataset, for training and the public demo; `full` the large ERP
+ * fixture, for testing. Either must be asked for.
  */
 function seedFile(): string | null {
-  const choice = process.env.SPIR_SEED ?? "demo";
+  const choice = process.env.SPIR_SEED ?? "none";
   if (choice === "none") return null;
   if (choice === "full") return fs.existsSync(FULL_SEED_FILE) ? FULL_SEED_FILE : null;
   if (fs.existsSync(DEMO_SEED_FILE)) return DEMO_SEED_FILE;
@@ -372,7 +373,15 @@ async function bootPostgres(url: string): Promise<Db> {
     connectionString: url,
     ssl: process.env.PGSSL === "disable" ? undefined : { rejectUnauthorized: false },
     max: Number(process.env.PGPOOL_MAX ?? 5),
+    // A link that drops mid-query can otherwise wait forever, and with it
+    // every later sync (they queue behind the one running). Fail instead;
+    // the next pass re-dials.
+    connectionTimeoutMillis: 15_000,
+    query_timeout: 300_000,
+    keepAlive: true,
+    idleTimeoutMillis: 60_000,
   });
+  pool.on("error", (e) => console.warn("[sync] hosted connection dropped:", e.message));
 
   // Auto-apply this project's migrations to the hosted database (e.g. Supabase),
   // so a Vercel deploy "just works" once DATABASE_URL is set. It is idempotent
@@ -572,6 +581,20 @@ export async function restoreLocalDatabase(dump: Blob): Promise<void> {
   const { pgcrypto } = await import("@electric-sql/pglite/contrib/pgcrypto");
   const dataDir = pgliteDataDir();
 
+  // Open the file on its own first, in memory. A truncated file, or one that
+  // is not a Spir-Margin database at all, fails HERE — while the company's
+  // data is still untouched. (It used to fail after the data was deleted.)
+  try {
+    const probe = await PGlite.create({ loadDataDir: dump, extensions: { pgcrypto } });
+    try {
+      await probe.query(`select 1 from _spir_migrations limit 1`);
+    } finally {
+      await probe.close().catch(() => undefined);
+    }
+  } catch (e) {
+    throw new Error(`not a Spir-Margin backup: ${(e as Error).message}`);
+  }
+
   // Close the live instance first: it holds the data directory open.
   if (local.raw) await local.raw.close().catch(() => undefined);
   local.dbRef = null;
@@ -599,6 +622,16 @@ export async function restoreLocalDatabase(dump: Blob): Promise<void> {
     },
     { seed: false },
   );
+
+  // A backup carries the identity of the computer it was taken on. Restored
+  // on a second computer while the first is still in use, the two would
+  // share a node id and each skip the other's changes as its own. A new id
+  // costs nothing when it is the same computer coming back (its old changes
+  // are recognised by content and not applied twice). Serving the office
+  // network is switched off too: the main computer's copy must not answer
+  // for it. It is one click on the Sync page, with the same code.
+  await pg.query(`update _spir_node set node_id = gen_random_uuid(), created_at = now()`);
+  await pg.query(`update _spir_lan_server set enabled = false`).catch(() => undefined);
 
   const db = pg as unknown as Db;
   local.raw = pg as unknown as PgliteHandle;

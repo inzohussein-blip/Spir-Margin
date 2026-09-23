@@ -11,11 +11,9 @@ on:
     inputs:
       email:
         description: Account email to check (a database-backed one)
-        default: demo@spir.local
         required: true
       password:
-        description: Password to test (leave as default to try demo1234)
-        default: demo1234
+        description: Password to test
         required: true
       reset:
         description: If the check fails, reset to the ADMIN_NEW_PASSWORD secret

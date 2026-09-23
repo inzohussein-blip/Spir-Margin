@@ -4,6 +4,7 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { getLocale } from "@/lib/i18n-server";
 import { DEMO_EMAIL, DEMO_PASSWORD } from "@/lib/auth/demo-credentials";
 import { t } from "@/lib/i18n";
+import { builtinPasswordChanged } from "@/lib/auth/builtin";
 
 export const dynamic = "force-dynamic";
 
@@ -16,12 +17,14 @@ export const dynamic = "force-dynamic";
  * checked before any database call, so this page works on a machine with no
  * hosted database and no internet.
  */
-export default function LoginPage({
+export default async function LoginPage({
   searchParams,
 }: {
   searchParams?: { next?: string; ended?: string };
 }) {
   const locale = getLocale();
+  // Once an administrator has changed it, the password is theirs to know.
+  const changed = await builtinPasswordChanged();
   const next = typeof searchParams?.next === "string" ? searchParams.next : "";
 
   return (
@@ -66,10 +69,14 @@ export default function LoginPage({
             <dt>{t(locale, "Email")}</dt>
             <dd className="font-mono text-ink-gray-8" dir="ltr">{DEMO_EMAIL}</dd>
             <dt>{t(locale, "Password")}</dt>
-            <dd className="font-mono text-ink-gray-8" dir="ltr">{DEMO_PASSWORD}</dd>
+            <dd className={changed ? "text-ink-gray-6" : "font-mono text-ink-gray-8"} dir={changed ? undefined : "ltr"}>
+              {changed ? t(locale, "Set by the administrator") : DEMO_PASSWORD}
+            </dd>
           </dl>
           <p className="mt-2">
-            {t(locale, "This account is fixed in the app and always works, with or without a database connection.")}
+            {changed
+              ? t(locale, "This account works on this computer with or without a network. Its password was changed in Settings.")
+              : t(locale, "This account always works, with or without a network. Change its password in Settings before real use.")}
           </p>
         </div>
 
