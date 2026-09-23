@@ -168,7 +168,11 @@ async function peerFor(up: Upstream): Promise<SyncPeer | null> {
 // One pass at a time: the page's timer, the background timer and the "Sync
 // now" button can all ask at once, and two passes would send the same batch
 // twice. The later callers get the running pass's result.
-const G = globalThis as unknown as { __spirSyncRun?: Promise<SyncResult> | null };
+const G = globalThis as unknown as { __spirSyncRun?: { run: Promise<SyncResult>; since: number } | null };
+
+// A pass that has not finished in this long is taken to be stuck (a link
+// that died without saying so), and no longer holds everyone else back.
+const STUCK_MS = 10 * 60_000;
 
 /**
  * Run one sync pass. Safe to call at any time: with no upstream it reports
@@ -176,12 +180,18 @@ const G = globalThis as unknown as { __spirSyncRun?: Promise<SyncResult> | null 
  * last completed batch, which the next run simply replays.
  */
 export function runSync(): Promise<SyncResult> {
-  if (G.__spirSyncRun) return G.__spirSyncRun;
-  const run = runOnce().finally(() => {
-    G.__spirSyncRun = null;
+  const current = G.__spirSyncRun;
+  if (current && Date.now() - current.since < STUCK_MS) return current.run;
+  if (current) {
+    console.warn("[sync] the previous pass has not finished in 10 minutes; starting a new one");
+    resetRemoteDb();
+  }
+  const entry = { run: Promise.resolve() as unknown as Promise<SyncResult>, since: Date.now() };
+  entry.run = runOnce().finally(() => {
+    if (G.__spirSyncRun === entry) G.__spirSyncRun = null;
   });
-  G.__spirSyncRun = run;
-  return run;
+  G.__spirSyncRun = entry;
+  return entry.run;
 }
 
 async function runOnce(): Promise<SyncResult> {

@@ -373,7 +373,15 @@ async function bootPostgres(url: string): Promise<Db> {
     connectionString: url,
     ssl: process.env.PGSSL === "disable" ? undefined : { rejectUnauthorized: false },
     max: Number(process.env.PGPOOL_MAX ?? 5),
+    // A link that drops mid-query can otherwise wait forever, and with it
+    // every later sync (they queue behind the one running). Fail instead;
+    // the next pass re-dials.
+    connectionTimeoutMillis: 15_000,
+    query_timeout: 300_000,
+    keepAlive: true,
+    idleTimeoutMillis: 60_000,
   });
+  pool.on("error", (e) => console.warn("[sync] hosted connection dropped:", e.message));
 
   // Auto-apply this project's migrations to the hosted database (e.g. Supabase),
   // so a Vercel deploy "just works" once DATABASE_URL is set. It is idempotent
