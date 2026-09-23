@@ -37,8 +37,9 @@ await p.locator('form:has(input[name="database_url"]) button[type="submit"]').cl
 await p.waitForTimeout(15000);
 const after = await p.locator("body").innerText();
 check("a connection that fails is not saved", after.includes("تعذّر") || after.includes("لا شيء مضبوط"));
+const alerts = await p.locator('[role="alert"]').allInnerTexts();
 check("and says so in Arabic, with the database's own words beside it",
-  (await p.locator('[role="alert"]').innerText().catch(() => "")).includes("تعذّر الاتصال"));
+  alerts.some((a) => a.includes("تعذّر الاتصال")), JSON.stringify(alerts).slice(0, 300));
 
 // Supabase's transaction pooler cannot carry the migrator's lock, so it is
 // refused before any connection is tried, with what to pick instead.
