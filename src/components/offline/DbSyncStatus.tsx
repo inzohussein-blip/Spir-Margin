@@ -98,7 +98,7 @@ export function DbSyncStatus() {
   if (!status.configured) {
     return (
       <span
-        title={t(locale, "No hosted database is configured. Everything is stored on this computer.")}
+        title={t(locale, "Not linked to another computer or to a hosted database. Everything is stored on this computer.")}
         className="inline-flex items-center gap-1.5 rounded-full border border-outline-gray-2 bg-surface-white px-2 py-1 text-xs font-medium text-ink-gray-5"
       >
         <DatabaseIcon size={13} />
@@ -118,7 +118,7 @@ export function DbSyncStatus() {
       disabled={busy}
       title={
         failed
-          ? `${t(locale, "Last sync failed")}: ${status.lastError}`
+          ? `${t(locale, "Last sync failed")}: ${t(locale, status.lastError ?? "")}`
           : waiting
             ? t(locale, "Changes are waiting to be sent")
             : t(locale, "Everything is synced")

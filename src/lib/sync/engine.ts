@@ -1,109 +1,115 @@
 import "server-only";
-import { getDb, getRemoteDb, isRemoteConfigured, resetRemoteDb, type Db } from "@/lib/db/pglite";
+import { getDb, getRemoteDb, resetRemoteDb, type Db } from "@/lib/db/pglite";
+import {
+  cursors,
+  dbPeer,
+  noteError,
+  nodeId,
+  pendingCount,
+  syncOnce,
+  type SyncPeer,
+  type SyncResult,
+} from "./core";
+import { decodeSyncCode, type LanCode } from "./code";
+import { lanPeer, UnreachableError, WrongCodeError } from "./lan";
+
+export type { SyncResult } from "./core";
 
 /**
- * Offline-first sync.
+ * Offline-first sync, for the program.
  *
- * The embedded database on this machine is the store. A hosted Postgres, when
- * `DATABASE_URL` is set, is a peer. Each database logs its own row changes
- * (migration 0089), so syncing is symmetric:
+ * The embedded database on this machine is the store. It may have one
+ * upstream to sync with:
  *
- *   push — send my log rows the peer has not seen, applying each one there
- *          AND recording it in the peer's log under my node id, so a second
- *          machine can pull it later.
- *   pull — read the peer's log rows that did not originate here, and apply
- *          them locally.
+ *   the hosted database   — reached directly (DATABASE_URL, or the address
+ *                           saved on the Sync page); how branches meet.
+ *   the main computer     — another install on the office network, reached
+ *                           with its sync code; it passes the office's work on
+ *                           to the hosted database if it has one.
  *
- * Nothing here is on the request path. If the peer is missing, unreachable or
- * half-broken, the company keeps working on the local database and the next
- * run carries on.
- *
- * Resumption is per BATCH, not per row: a run that dies halfway through a
- * batch leaves the cursor before it, so the next run replays that batch. That
- * is deliberate — a cursor write per row would cost a round trip per change,
- * and replaying is free of consequence because applying a change is
- * idempotent (the row-version register drops what it has already seen, and
- * the peer's log is unique on origin + origin_seq). Nothing is lost and
- * nothing lands twice; at worst a few hundred rows are re-sent.
- *
- * Conflicts resolve last-writer-wins per row, which is the honest rule for a
- * single company where two people rarely edit the same record at once.
+ * The algorithm is in ./core; this file picks the peer and keeps the
+ * bookkeeping. Nothing here is on the request path. If the peer is missing,
+ * unreachable or half-broken, the company keeps working on the local
+ * database and the next run carries on.
  */
 
-const PEER = "remote";
+export type UpstreamKind = "hosted" | "lan";
 
-/** Rows per round trip. Small enough to stay responsive on a poor link. */
-const BATCH = 200;
+export interface Upstream {
+  kind: UpstreamKind;
+  /** The cursor row in _spir_sync_state, and the tag on what arrives from it. */
+  key: "remote" | "lan";
+  /** Something to show: host/database, or the main computer's name. */
+  label: string;
+  lan?: LanCode;
+}
 
 export interface SyncStatus {
-  /** A hosted database is configured (DATABASE_URL is set). */
+  /** An upstream is configured. */
   configured: boolean;
+  kind: UpstreamKind | null;
+  label: string | null;
   /** The peer answered on the last attempt. */
   reachable: boolean;
-  /** Local changes not yet accepted by the peer. */
+  /** Changes here not yet accepted by the peer. */
   pending: number;
   lastSyncAt: string | null;
   lastError: string | null;
 }
 
-export interface SyncResult {
-  ok: boolean;
-  pushed: number;
-  pulled: number;
-  error?: string;
+/** The upstream this computer syncs with, if any. Never throws. */
+export async function upstream(): Promise<Upstream | null> {
+  const fromEnv = process.env.DATABASE_URL;
+  if (fromEnv) return { kind: "hosted", key: "remote", label: hostLabel(fromEnv) };
+  try {
+    const { db } = await getDb();
+    const r = await db.query<{ database_url: string | null; lan_code: string | null }>(
+      `select database_url, lan_code from _spir_peer`,
+    );
+    const row = r.rows[0];
+    if (row?.lan_code) {
+      const code = decodeSyncCode(row.lan_code);
+      if (code?.k === "lan") return { kind: "lan", key: "lan", label: code.c || code.a[0], lan: code };
+    }
+    if (row?.database_url) return { kind: "hosted", key: "remote", label: hostLabel(row.database_url) };
+  } catch {
+    /* a database too old to have the columns, or not open yet */
+  }
+  return null;
 }
 
-interface ChangeRow {
-  seq: string;
-  origin: string;
-  origin_seq: string;
-  table_name: string;
-  op: "I" | "U" | "D";
-  pk: unknown;
-  row: unknown;
-  changed_at: string;
+export function hostLabel(url: string): string {
+  try {
+    const u = new URL(url);
+    const db = u.pathname.replace(/^\//, "");
+    return db ? `${u.host}/${db}` : u.host;
+  } catch {
+    return "…";
+  }
 }
 
-async function nodeId(db: Db): Promise<string> {
-  const r = await db.query<{ n: string }>(`select _spir_node_id() as n`);
-  return r.rows[0].n;
-}
-
-async function cursors(db: Db): Promise<{ pushed: string; pulled: string }> {
-  await db.query(
-    `insert into _spir_sync_state (peer) values ($1) on conflict (peer) do nothing`,
-    [PEER],
+async function state(db: Db, key: string) {
+  const s = await db.query<{ last_sync_at: string | null; last_error: string | null }>(
+    `select last_sync_at, last_error from _spir_sync_state where peer = $1`,
+    [key],
   );
-  const r = await db.query<{ pushed_through: string; pulled_through: string }>(
-    `select pushed_through, pulled_through from _spir_sync_state where peer = $1`,
-    [PEER],
-  );
-  return {
-    pushed: r.rows[0]?.pushed_through ?? "0",
-    pulled: r.rows[0]?.pulled_through ?? "0",
-  };
+  return s.rows[0] ?? { last_sync_at: null, last_error: null };
 }
 
 /** Where sync stands right now, without touching the network. */
 export async function syncStatus(): Promise<SyncStatus> {
-  const configured = await isRemoteConfigured();
+  const up = await upstream();
   const { db } = await getDb();
-  const me = await nodeId(db);
-  const { pushed } = await cursors(db);
-  const p = await db.query<{ n: string }>(
-    `select count(*)::text as n from _spir_changes where origin = $1 and seq > $2`,
-    [me, pushed],
-  );
-  const s = await db.query<{ last_sync_at: string | null; last_error: string | null; }>(
-    `select last_sync_at, last_error from _spir_sync_state where peer = $1`,
-    [PEER],
-  );
+  const key = up?.key ?? "remote";
+  const s = await state(db, key);
   return {
-    configured,
-    reachable: configured && !s.rows[0]?.last_error,
-    pending: Number(p.rows[0]?.n ?? 0),
-    lastSyncAt: s.rows[0]?.last_sync_at ?? null,
-    lastError: s.rows[0]?.last_error ?? null,
+    configured: !!up,
+    kind: up?.kind ?? null,
+    label: up?.label ?? null,
+    reachable: !!up && !s.last_error,
+    pending: await pendingCount(db, key),
+    lastSyncAt: s.last_sync_at,
+    lastError: s.last_error,
   };
 }
 
@@ -121,7 +127,8 @@ export async function syncDetail(limit = 25): Promise<SyncDetail> {
   const base = await syncStatus();
   const { db } = await getDb();
   const me = await nodeId(db);
-  const { pushed } = await cursors(db);
+  const key = (await upstream())?.key ?? "remote";
+  const { pushed } = await cursors(db, key);
 
   const total = await db.query<{ n: string }>(
     `select count(*)::text as n from _spir_changes where origin = $1`,
@@ -130,10 +137,10 @@ export async function syncDetail(limit = 25): Promise<SyncDetail> {
   const rows = await db.query<{ table_name: string; op: "I" | "U" | "D"; changed_at: string }>(
     `select table_name, op, changed_at
        from _spir_changes
-      where origin = $1 and seq > $2
+      where seq > $1 and received_from is distinct from $2
       order by seq
       limit ${Math.max(1, Math.min(limit, 200))}`,
-    [me, pushed],
+    [pushed, key],
   );
 
   return {
@@ -144,252 +151,59 @@ export async function syncDetail(limit = 25): Promise<SyncDetail> {
   };
 }
 
-async function applyOne(target: Db, c: ChangeRow): Promise<void> {
-  await target.query(
-    `select _spir_apply_change($1, $2, $3::jsonb, $4::jsonb, $5::timestamptz, $6::uuid)`,
-    [
-      c.table_name,
-      c.op,
-      JSON.stringify(c.pk),
-      c.row === null ? null : JSON.stringify(c.row),
-      c.changed_at,
-      c.origin,
-    ],
-  );
+async function peerFor(up: Upstream): Promise<SyncPeer | null> {
+  if (up.kind === "lan") return up.lan ? lanPeer(up.lan) : null;
+  const db = await getRemoteDb();
+  return db ? dbPeer(db, "remote") : null;
 }
+
+// One pass at a time: the page's timer, the background timer and the "Sync
+// now" button can all ask at once, and two passes would send the same batch
+// twice. The later callers get the running pass's result.
+const G = globalThis as unknown as { __spirSyncRun?: Promise<SyncResult> | null };
 
 /**
- * Send local changes the peer has not seen. Returns how many landed.
- *
- * A change the peer rejects — most often a row that violates a unique key it
- * already holds — is reported and stepped over rather than retried forever.
- * Stopping on it would wedge sync permanently and strand every later change
- * behind one bad row, which is worse for a company that just wants its work
- * to arrive.
+ * Run one sync pass. Safe to call at any time: with no upstream it reports
+ * that and does nothing, and a failure part-way leaves the cursors at the
+ * last completed batch, which the next run simply replays.
  */
-async function push(
-  local: Db,
-  peer: Db,
-  me: string,
-  from: string,
-  rejected: string[],
-): Promise<number> {
-  let cursor = from;
-  let total = 0;
-
-  for (;;) {
-    const batch = await local.query<ChangeRow>(
-      `select seq, origin, origin_seq, table_name, op, pk, row, changed_at
-         from _spir_changes
-        where origin = $1 and seq > $2
-        order by seq
-        limit ${BATCH}`,
-      [me, cursor],
-    );
-    if (batch.rows.length === 0) break;
-
-    for (const c of batch.rows) {
-      try {
-        await applyOne(peer, c);
-        // Record it in the peer's log under MY origin, so another machine can
-        // pull it and I never pull it back. Unique on (origin, origin_seq), so
-        // re-sending a batch after an interrupted run is a no-op.
-        await peer.query(
-          `insert into _spir_changes (origin, origin_seq, table_name, op, pk, row, changed_at)
-           values ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7)
-           on conflict (origin, origin_seq) do nothing`,
-          [
-            c.origin,
-            c.origin_seq,
-            c.table_name,
-            c.op,
-            JSON.stringify(c.pk),
-            c.row === null ? null : JSON.stringify(c.row),
-            c.changed_at,
-          ],
-        );
-        total++;
-        await noteResolved(local, "push", c);
-      } catch (e) {
-        await noteRejected(local, "push", c, (e as Error).message);
-        rejected.push(`${c.table_name}: ${(e as Error).message}`);
-      }
-      cursor = c.seq;
-    }
-
-    await local.query(
-      `update _spir_sync_state set pushed_through = $2 where peer = $1`,
-      [PEER, cursor],
-    );
-    if (batch.rows.length < BATCH) break;
-  }
-  return total;
+export function runSync(): Promise<SyncResult> {
+  if (G.__spirSyncRun) return G.__spirSyncRun;
+  const run = runOnce().finally(() => {
+    G.__spirSyncRun = null;
+  });
+  G.__spirSyncRun = run;
+  return run;
 }
 
-/** Apply the peer's changes that did not originate here. */
-async function pull(
-  local: Db,
-  peer: Db,
-  me: string,
-  from: string,
-  rejected: string[],
-): Promise<number> {
-  let cursor = from;
-  let total = 0;
-
-  for (;;) {
-    // Read everything past the cursor, not just other nodes' rows: our own
-    // pushed rows are in this log too, and the cursor has to move past them
-    // or every future run would re-read them.
-    const batch = await peer.query<ChangeRow>(
-      `select seq, origin, origin_seq, table_name, op, pk, row, changed_at
-         from _spir_changes
-        where seq > $1
-        order by seq
-        limit ${BATCH}`,
-      [cursor],
-    );
-    if (batch.rows.length === 0) break;
-
-    for (const c of batch.rows) {
-      if (c.origin !== me) {
-        try {
-          await applyOne(local, c);
-          await noteResolved(local, "pull", c);
-          total++;
-        } catch (e) {
-          await noteRejected(local, "pull", c, (e as Error).message);
-          rejected.push(`${c.table_name}: ${(e as Error).message}`);
-        }
-      }
-      cursor = c.seq;
-    }
-
-    await local.query(
-      `update _spir_sync_state set pulled_through = $2 where peer = $1`,
-      [PEER, cursor],
-    );
-    if (batch.rows.length < BATCH) break;
-  }
-  return total;
-}
-
-/**
- * Run one sync pass. Safe to call at any time: with no peer configured it
- * reports that and does nothing, and a failure part-way leaves the cursors at
- * the last completed batch, which the next run simply replays.
- */
-export async function runSync(): Promise<SyncResult> {
-  if (!(await isRemoteConfigured())) {
-    return { ok: false, pushed: 0, pulled: 0, error: "No hosted database is configured" };
-  }
+async function runOnce(): Promise<SyncResult> {
+  const up = await upstream();
+  if (!up) return { ok: false, pushed: 0, pulled: 0, error: "Nothing to sync with is configured" };
 
   const { db: local } = await getDb();
-  const peer = await getRemoteDb();
+  const unreachable =
+    up.kind === "lan" ? "The main computer could not be reached" : "The hosted database could not be reached";
+  const peer = await peerFor(up);
   if (!peer) {
-    await noteError(local, "The hosted database could not be reached");
-    return { ok: false, pushed: 0, pulled: 0, error: "The hosted database could not be reached" };
+    await noteError(local, up.key, unreachable);
+    return { ok: false, pushed: 0, pulled: 0, error: unreachable };
   }
 
   try {
-    const me = await nodeId(local);
-    const { pushed: pushFrom, pulled: pullFrom } = await cursors(local);
-    // Push first so this machine's work is safe on the peer before anything
-    // else is taken in. Order does not affect the outcome — the row-version
-    // register makes the result the same either way — but it does mean an
-    // interrupted run has already banked the local changes.
-    // Has the peer pruned past where we stopped reading? Then a pull would
-    // skip changes without saying so. Better to report it than to converge
-    // on a quietly incomplete copy.
-    const oldest = await peer.query<{ s: string | null }>(
-      `select min(seq)::text as s from _spir_changes`,
-    );
-    if (oldest.rows[0]?.s) {
-      const gap = await local.query<{ g: boolean }>(`select fn_spir_sync_gap($1::bigint) as g`, [
-        oldest.rows[0].s,
-      ]);
-      if (gap.rows[0]?.g) {
-        const msg =
-          "This machine has been away longer than the hosted database keeps its history. " +
-          "Restore it from a recent backup, or take a copy from a machine that is up to date.";
-        await noteError(local, msg);
-        return { ok: false, pushed: 0, pulled: 0, error: msg };
-      }
-    }
-
-    const rejected: string[] = [];
-    const pushedCount = await push(local, peer, me, pushFrom, rejected);
-    const pulled = await pull(local, peer, me, pullFrom, rejected);
-
-    // Now that the peer has accepted our changes, the old ones are safe to
-    // forget. Failing to prune is never worth failing a sync over.
-    await local.query(`select fn_spir_prune_changes()`).catch(() => undefined);
-
-    // Rows the other end refused are surfaced, not swallowed: the header turns
-    // amber and names the first one.
-    const note = rejected.length
-      ? `${rejected.length} change(s) were rejected — ${rejected[0]}`
-      : null;
-    if (note) console.warn("[sync]", note, `(${rejected.length} total)`);
-    await local.query(
-      `update _spir_sync_state set last_sync_at = now(), last_error = $2 where peer = $1`,
-      [PEER, note],
-    );
-    return { ok: !note, pushed: pushedCount, pulled, error: note ?? undefined };
+    const res = await syncOnce(local, peer);
+    if (res.error) console.warn("[sync]", res.error);
+    return res;
   } catch (e) {
-    const msg = (e as Error).message;
-    console.error("[sync] failed:", msg);
+    let msg = (e as Error).message;
+    if (e instanceof UnreachableError) msg = unreachable;
+    if (e instanceof WrongCodeError) msg = "The main computer did not accept this sync code. Link again with its current code.";
+    console.error("[sync] failed:", (e as Error).message);
     // Drop the pooled peer so the next attempt re-dials rather than reusing a
     // connection that may be the reason this failed.
-    resetRemoteDb();
-    await noteError(local, msg);
+    if (up.kind === "hosted") resetRemoteDb();
+    await noteError(local, up.key, msg);
     return { ok: false, pushed: 0, pulled: 0, error: msg };
   }
-}
-
-async function noteError(local: Db, message: string): Promise<void> {
-  await local
-    .query(
-      `insert into _spir_sync_state (peer, last_error) values ($1, $2)
-       on conflict (peer) do update set last_error = excluded.last_error`,
-      [PEER, message],
-    )
-    .catch(() => undefined);
-}
-
-/**
- * Keep what the far end refused, so it can be looked at and retried.
- *
- * Stepping over a rejection is the right call — stopping would strand every
- * later change behind one bad row — but forgetting it is not: the two
- * databases would then differ with nothing to show for it.
- */
-async function noteRejected(
-  local: Db,
-  direction: "push" | "pull",
-  c: ChangeRow,
-  error: string,
-): Promise<void> {
-  await local
-    .query(`select fn_spir_note_reject($1, $2, $3::jsonb, $4, $5)`, [
-      direction,
-      c.table_name,
-      JSON.stringify(c.pk),
-      c.op,
-      error.slice(0, 500),
-    ])
-    .catch(() => undefined);
-}
-
-/** A later pass got this record across, so its rejection is settled. */
-async function noteResolved(local: Db, direction: "push" | "pull", c: ChangeRow): Promise<void> {
-  await local
-    .query(`select fn_spir_clear_reject($1, $2, $3::jsonb)`, [
-      direction,
-      c.table_name,
-      JSON.stringify(c.pk),
-    ])
-    .catch(() => undefined);
 }
 
 export interface SyncReject {
@@ -442,17 +256,16 @@ export async function retryReject(id: string): Promise<SyncResult> {
   const r = row.rows[0];
   if (!r) return { ok: false, pushed: 0, pulled: 0, error: "That change is no longer waiting" };
 
+  const key = (await upstream())?.key ?? "remote";
   if (r.direction === "push") {
-    const me = await nodeId(local);
-    // Move the cursor back to just before this record's oldest unsent change,
-    // so the normal push picks it up again along with anything after it.
     await local.query(
       `update _spir_sync_state
           set pushed_through = coalesce((
               select min(seq) - 1 from _spir_changes
-               where origin = $2 and table_name = $3 and pk = $4::jsonb), pushed_through)
-        where peer = 'remote'`,
-      [null, me, r.table_name, JSON.stringify(r.pk)],
+               where received_from is distinct from $1 and table_name = $2 and pk = $3::jsonb),
+              pushed_through)
+        where peer = $1`,
+      [key, r.table_name, JSON.stringify(r.pk)],
     );
   }
   return runSync();

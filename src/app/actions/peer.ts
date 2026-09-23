@@ -88,7 +88,12 @@ export async function savePeerAction(_prev: PeerState | null, formData: FormData
   if (failure) return { error: "Could not connect. Check the address and the password, and that this computer is online.", detail: failure };
 
   await setRemoteUrl(url);
+  // One upstream at a time: the hosted database replaces the main computer.
+  const { getDb } = await import("@/lib/db/pglite");
+  const { db } = await getDb();
+  await db.query(`update _spir_peer set lan_code = null`);
   revalidatePath("/settings");
+  revalidatePath("/sync");
   return { ok: true, message: "Connected. Syncing will start on the next pass." };
 }
 
@@ -101,5 +106,6 @@ export async function clearPeerAction(): Promise<PeerState> {
   await setRemoteUrl(null);
   resetRemoteDb();
   revalidatePath("/settings");
+  revalidatePath("/sync");
   return { ok: true, message: "Disconnected. Everything stays on this computer." };
 }
