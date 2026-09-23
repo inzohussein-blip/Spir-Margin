@@ -12,7 +12,9 @@ schema lives here — `../schema.sql` is generated from these files and
 2. Write it so it can be applied to a database that already has the previous
    ones — `create table if not exists`, `add column if not exists`,
    `create or replace function`, and a guard around anything that inserts.
-3. If it adds a table, end the file with `select _spir_attach_change_log();`
+3. If it adds a trigger, end the file with `select _spir_guard_triggers();` so
+   the trigger does not fire again on changes that arrive by sync (0106).
+   If it adds a table, end the file with `select _spir_attach_change_log();`
    so the table joins the change log. The app re-attaches on every boot, but a
    database stood up with `psql -f ../schema.sql` does not, and that table
    would then never sync.

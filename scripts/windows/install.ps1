@@ -2,6 +2,7 @@
 #
 #   Double-click install-windows.cmd in the app folder, or:
 #   powershell -ExecutionPolicy Bypass -File scripts\windows\install.ps1 [-Port 3000] [-Lan] [-Demo]
+#   ... -Port 3001    when another program already uses port 3000
 #   ... -Update       fetch dependencies, rebuild, restart (after copying in a new version)
 #   ... -Uninstall    remove the shortcuts and the start-up entry; the data stays
 #   ... -Demo         start a NEW database with the demo records (for training);
@@ -18,7 +19,11 @@
 #     of its own;
 #   - by default listens on THIS computer only (127.0.0.1). The app ships a
 #     fixed administrator account, so opening it to the office network must be
-#     a deliberate choice (-Lan).
+#     a deliberate choice (-Lan);
+#   - refuses a folder where the data could be lost (OneDrive, Downloads, a
+#     USB or network drive), and a port another program already answers on;
+#   - clears Windows' "downloaded from the internet" mark from its own
+#     scripts, which would otherwise raise a security prompt at every sign-in.
 #
 # Written for Windows PowerShell 5.1, which every Windows 10/11 has: no
 # PowerShell 7-only syntax.
@@ -125,6 +130,39 @@ function Invoke-Npm([string]$npmArgs) {
     if ($LASTEXITCODE -ne 0) { Fail "تعذّر تنفيذ: npm $npmArgs`nراجع الرسائل أعلاه، وتأكّد من الاتصال بالإنترنت أثناء التثبيت." }
 }
 
+function Get-RiskyPlace {
+    # The data lives inside this folder, so the folder must stay put and stay
+    # whole: not synced by OneDrive (which can copy a half-written database),
+    # not in Downloads (which clean-ups empty), not on a drive that leaves.
+    $dir = $AppDir.TrimEnd("\") + "\"
+    foreach ($root in @($env:OneDrive, $env:OneDriveCommercial, $env:OneDriveConsumer)) {
+        if ($root -and $dir.StartsWith($root.TrimEnd("\") + "\", [System.StringComparison]::OrdinalIgnoreCase)) {
+            return "مجلّد يزامنه OneDrive"
+        }
+    }
+    if ($dir -like "*\OneDrive*\*") { return "مجلّد يزامنه OneDrive" }
+    $downloads = Join-Path ([Environment]::GetFolderPath("UserProfile")) "Downloads"
+    if ($dir.StartsWith($downloads + "\", [System.StringComparison]::OrdinalIgnoreCase) -or
+        $dir -like "*\Downloads\*") { return "مجلّد التنزيلات" }
+    try {
+        $drive = New-Object System.IO.DriveInfo ([System.IO.Path]::GetPathRoot($AppDir))
+        if ($drive.DriveType -eq [System.IO.DriveType]::Removable -or
+            $drive.DriveType -eq [System.IO.DriveType]::Network) { return "قرص خارجي أو شبكي" }
+    } catch { }
+    if ($AppDir.StartsWith("\\")) { return "قرص خارجي أو شبكي" }
+    return $null
+}
+
+function Test-OursOnPort {
+    # Something answers on the port: is it this program? The manifest names it.
+    try {
+        $r = Invoke-WebRequest -Uri "http://127.0.0.1:$Port/manifest.webmanifest" -UseBasicParsing -TimeoutSec 3
+        return ($r.Content -match "Spir-Margin")
+    } catch {
+        return $false
+    }
+}
+
 # ---------------------------------------------------------------- uninstall
 if ($Uninstall) {
     Stop-Server
@@ -137,6 +175,24 @@ if ($Uninstall) {
 
 # ---------------------------------------------------------------- checks
 Set-Location $AppDir
+
+$risky = Get-RiskyPlace
+if ($risky) {
+    $moveIt = "مجلّد البرنامج في مكان قد تضيع منه البيانات ($risky):`n$AppDir`n`n" +
+              "انقل المجلّد كاملاً إلى مكان دائم، مثل C:\Spir-Margin، ثم شغّل install-windows.cmd من هناك."
+    # An existing install is warned, not stopped: its update must still go through.
+    if ($Update) { Tell $moveIt "error" } else { Fail $moveIt }
+}
+
+# A folder unpacked from a downloaded ZIP carries Windows' "came from the
+# internet" mark on every file. On the scripts that start the program it
+# raises a security prompt at every sign-in, and the program does not start
+# until someone answers it. This is the same as ticking "Unblock" in each
+# file's Properties.
+foreach ($f in @(Get-ChildItem -Path $WinDir -File) + @(Get-Item (Join-Path $AppDir "install-windows.cmd"))) {
+    Unblock-File -Path $f.FullName -ErrorAction SilentlyContinue
+}
+if (Test-Path $Icon) { Unblock-File -Path $Icon -ErrorAction SilentlyContinue }
 $node = Get-Command node -ErrorAction SilentlyContinue
 if (-not $node) {
     Fail "لم يُعثر على Node.js.`nثبّت النسخة LTS من https://nodejs.org ثم شغّل التثبيت من جديد."
@@ -154,6 +210,15 @@ Say "  folder : $AppDir"
 Say "  port   : $Port"
 Say "  listen : $HostAddr"
 Say ""
+
+# Another program on the port would be what the icon opens, and -Update would
+# stop it. Checked before the build, so nobody waits minutes to be told.
+$busy = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+if ($busy -and -not (Test-OursOnPort)) {
+    Fail ("المنفذ $Port يستخدمه برنامج آخر على هذا الحاسوب.`n`n" +
+          "ثبّت Spir-Margin على منفذ آخر: اكتب cmd في شريط العنوان داخل مجلّد البرنامج واضغط Enter، ثم اكتب:`n" +
+          "install-windows.cmd -Port 3001")
+}
 
 # ---------------------------------------------------------------- build
 # Is there a database already? Then it is kept exactly as it is, whatever the

@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { Indicator } from "@/components/desk/Indicator";
 import { CreateUserForm } from "@/components/auth/CreateUserForm";
+import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
 import { setUserActiveAction } from "@/app/actions/users";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -58,13 +59,16 @@ export default async function UsersPage() {
                     {u.id === me.id ? (
                       <span className="text-xs text-ink-gray-4">{t(locale, "(you)")}</span>
                     ) : (
-                      <form action={setUserActiveAction}>
-                        <input type="hidden" name="id" value={u.id} />
-                        <input type="hidden" name="active" value={String(!u.is_active)} />
-                        <button className={`rounded-md border px-2.5 py-1 text-xs font-medium ${u.is_active ? "border-outline-gray-2 text-ink-gray-6 hover:bg-surface-gray-1" : "border-brand bg-brand text-white hover:bg-brand-dark"}`}>
-                          {u.is_active ? t(locale, "Disable") : t(locale, "Enable")}
-                        </button>
-                      </form>
+                      <div className="flex flex-wrap items-start gap-2">
+                        <form action={setUserActiveAction}>
+                          <input type="hidden" name="id" value={u.id} />
+                          <input type="hidden" name="active" value={String(!u.is_active)} />
+                          <button className={`rounded-md border px-2.5 py-1 text-xs font-medium ${u.is_active ? "border-outline-gray-2 text-ink-gray-6 hover:bg-surface-gray-1" : "border-brand bg-brand text-white hover:bg-brand-dark"}`}>
+                            {u.is_active ? t(locale, "Disable") : t(locale, "Enable")}
+                          </button>
+                        </form>
+                        <ResetPasswordForm userId={u.id} userName={u.full_name || u.email} />
+                      </div>
                     )}
                   </td>
                 </tr>

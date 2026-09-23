@@ -5,11 +5,9 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { ConfirmSubmit } from "@/components/settings/ConfirmSubmit";
 import { BackupPanel } from "@/components/settings/BackupPanel";
-import { PeerPanel } from "@/components/settings/PeerPanel";
 import { InstallAppPanel } from "@/components/settings/InstallAppPanel";
 import { BrandingPanel } from "@/components/settings/BrandingPanel";
 import { getBranding } from "@/lib/branding";
-import { getPeerInfoAction } from "@/app/actions/peer";
 import { isRemoteConfigured } from "@/lib/db/pglite";
 import { setFeatureStateAction, setUserAccessAction, deleteUserAccountAction } from "@/app/actions/settings";
 import { TOGGLEABLE_FEATURES, type FeatureState } from "@/lib/features";
@@ -84,9 +82,15 @@ export default async function SettingsPage() {
         <InstallAppPanel />
       </Panel>
 
-      {/* ---- Hosted database ---- */}
-      <Panel title={<span className="flex items-center gap-2"><CloudIcon size={16} className="text-brand" /> {t(locale, "Hosted database")}</span>}>
-        <PeerPanel info={await getPeerInfoAction()} />
+      {/* ---- Sync ----
+           Linking computers has a page of its own now; say where. */}
+      <Panel title={<span className="flex items-center gap-2"><CloudIcon size={16} className="text-brand" /> {t(locale, "Sync")}</span>}>
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <p className="text-sm text-ink-gray-6">{t(locale, "Linking this computer with the office's main computer or with a hosted database is on its own page.")}</p>
+          <Link href="/sync" className="inline-flex items-center gap-1.5 rounded-md bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark">
+            {t(locale, "Open Sync")}
+          </Link>
+        </div>
       </Panel>
 
       {/* ---- Backup ----

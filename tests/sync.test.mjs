@@ -90,6 +90,24 @@ test("every table with a primary key is covered by the change log", async () => 
   assert.deepEqual(rows.map((r) => r.relname), []);
 });
 
+test("no trigger fires again on a change that arrives by sync", async () => {
+  // Migration 0106. The change log's own trigger checks the flag itself, and
+  // the audit trigger keeps recording on purpose; every other one must carry
+  // the condition, or a synced sale would post its journal entry twice.
+  const db = wrap(await bootWithMigrations());
+  const { rows } = await db.query(`
+    select c.relname || '.' || t.tgname as trg
+      from pg_trigger t
+      join pg_class c on c.oid = t.tgrelid
+      join pg_namespace n on n.oid = c.relnamespace
+      join pg_proc p on p.oid = t.tgfoid
+     where n.nspname = 'public' and not t.tgisinternal
+       and t.tgname <> 'zz_spir_change_log' and p.proname <> 'fn_audit'
+       and pg_get_triggerdef(t.oid) not like '%spir.syncing%'
+     order by 1`);
+  assert.deepEqual(rows.map((r) => r.trg), [], "end the migration with select _spir_guard_triggers();");
+});
+
 test("local work reaches the hosted peer", async () => {
   const a = wrap(await bootWithMigrations());
   const hub = wrap(await bootWithMigrations());

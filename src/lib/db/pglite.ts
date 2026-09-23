@@ -309,6 +309,15 @@ async function initSchema(run: Runner, opts: { seed: boolean }): Promise<void> {
         end if;
       end $$;`)
       .catch(() => undefined);
+    // Likewise, a trigger added by a later migration must not fire again on
+    // a change that arrives by sync (migration 0106).
+    await run
+      .exec(`do $$ begin
+        if to_regprocedure('_spir_guard_triggers()') is not null then
+          perform _spir_guard_triggers();
+        end if;
+      end $$;`)
+      .catch(() => undefined);
   } finally {
     // This connection goes on to serve the app, so the flag must come back
     // off whatever happened above — otherwise no write would ever be logged.
@@ -332,7 +341,30 @@ async function initSchema(run: Runner, opts: { seed: boolean }): Promise<void> {
 
 // ---- hosted Postgres backend (node-postgres) ------------------------------
 
+/**
+ * True for an address that goes through a transaction pooler (Supabase's
+ * port 6543, or pgbouncer's `pool_mode=transaction` hint). Such a pooler may
+ * hand each statement to a different server connection, and the migrator
+ * needs one connection throughout: its advisory lock taken on one and
+ * released on another stays held forever, and every later machine's first
+ * contact then waits on it. The session pooler (5432) and a direct
+ * connection keep one connection, and work.
+ */
+export function isTransactionPooler(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return u.port === "6543" || /pool_?mode=transaction/i.test(u.search);
+  } catch {
+    return false;
+  }
+}
+
 async function bootPostgres(url: string): Promise<Db> {
+  if (isTransactionPooler(url)) {
+    throw new Error(
+      "The hosted database address uses a transaction pooler (port 6543). Use the session pooler (port 5432) or the direct connection.",
+    );
+  }
   const pgLib = (await import("pg")).default as typeof import("pg");
   // return date/time types as strings, matching PGlite + PostgREST
   for (const oid of DATE_OIDS) pgLib.types.setTypeParser(oid, asText);

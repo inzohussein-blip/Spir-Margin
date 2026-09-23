@@ -111,6 +111,7 @@ export const navGroups: NavGroup[] = [
     { href: "/users", label: "Users", icon: UsersIcon },
     { href: "/settings", label: "Settings", icon: SettingsIcon },
     { href: "/audit-log", label: "Audit Log", icon: ScrollTextIcon },
+    { href: "/sync", label: "Sync", icon: RefreshCwIcon },
     { href: "/help", label: "Instructions", icon: BookOpenTextIcon },
   ]},
 ];

@@ -15,8 +15,7 @@ const text = await p.locator("body").innerText();
 
 check("settings offers a backup", text.includes("النسخ الاحتياطي والاستعادة"));
 check("it warns this is the only other copy", text.includes("النسخة الأخرى الوحيدة"));
-check("settings offers a hosted database", text.includes("القاعدة المستضافة"));
-check("it says nothing is configured", text.includes("لا شيء مضبوط"));
+check("settings points to Sync for linking computers", text.includes("المزامنة") && text.includes("افتح المزامنة"));
 check("no Arabic-Indic digits", !/[٠-٩]/.test(text));
 
 // The backup must actually download, and be a real gzip.
@@ -31,12 +30,28 @@ check(
   res.headers()["content-disposition"] ?? "(none)",
 );
 
+// The hosted database is set on the Sync page now; Settings points there.
+check("Settings points to the Sync page", (await p.locator('a[href="/sync"]').count()) > 0);
+await p.goto(H + "/sync", { waitUntil: "networkidle" });
+check("the Sync page says nothing is configured", (await p.locator("body").innerText()).includes("لا شيء مضبوط"));
+
 // A bad connection string must be refused rather than saved.
 await p.fill('input[name="database_url"]', "postgresql://nobody@127.0.0.1:1/none");
 await p.locator('form:has(input[name="database_url"]) button[type="submit"]').click();
 await p.waitForTimeout(15000);
 const after = await p.locator("body").innerText();
-check("a connection that fails is not saved", after.includes("تعذّر") || after.includes("Could not connect") || after.includes("لا شيء مضبوط"));
+check("a connection that fails is not saved", after.includes("تعذّر") || after.includes("لا شيء مضبوط"));
+const alerts = await p.locator('[role="alert"]').allInnerTexts();
+check("and says so in Arabic, with the database's own words beside it",
+  alerts.some((a) => a.includes("تعذّر الاتصال")), JSON.stringify(alerts).slice(0, 300));
+
+// Supabase's transaction pooler cannot carry the migrator's lock, so it is
+// refused before any connection is tried, with what to pick instead.
+await p.fill('input[name="database_url"]', "postgresql://postgres.x:pw@aws-0-x.pooler.supabase.com:6543/postgres");
+await p.locator('form:has(input[name="database_url"]) button[type="submit"]').click();
+const pooler = p.locator('[role="alert"]', { hasText: "6543" });
+await pooler.waitFor({ timeout: 20_000 }).catch(() => {});
+check("the transaction pooler is refused, naming what to use", (await pooler.innerText().catch(() => "")).includes("Session pooler"));
 check("no uncaught page errors", errs.length === 0, errs.slice(0, 2).join(" | "));
 
 await p.screenshot({ path: `${SHOT}/settings.png`, fullPage: true });

@@ -16,7 +16,7 @@ import { revalidatePath } from "next/cache";
 /** Where database sync stands. Cheap: reads local tables, no network. */
 export async function getSyncStatusAction(): Promise<SyncStatus> {
   const user = await getCurrentUser();
-  if (!user) return { configured: false, reachable: false, pending: 0, lastSyncAt: null, lastError: null };
+  if (!user) return { configured: false, kind: null, label: null, reachable: false, pending: 0, lastSyncAt: null, lastError: null };
   return syncStatus();
 }
 

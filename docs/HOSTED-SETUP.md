@@ -26,6 +26,21 @@
 
 ---
 
+### من يطبّق الـ migrations
+
+البرنامج وحده، عبر سجلّه `_spir_migrations`. **لا تستخدم `supabase db push`**: سجلّ
+Supabase الخاص (`supabase_migrations.schema_migrations`) متوقّف عند 0058، فيعيد
+تطبيق ملفات طبّقها البرنامج من قبل. ولهذا حُذف سير العمل الذي كان يشغّله عند كل
+دمج في `main`.
+
+### واجهة Supabase العامة مغلقة
+
+البرنامج لا يستخدم واجهة REST في Supabase ولا مفتاح `anon`؛ يتصل مباشرةً. ولذلك
+يسحب الـ migration `0104` كل صلاحية من الدورين `anon` و`authenticated` على الجداول
+والدوال، فلا يقرأ أحد البيانات أو يكتبها بالمفتاح العام.
+
+---
+
 ## 2) متغيّرات البيئة المطلوبة في Vercel
 
 من لوحة Vercel → مشروع `spir-margin` → **Settings → Environment Variables**، أضِف
@@ -40,11 +55,16 @@
 ### الحصول على `DATABASE_URL`
 
 من لوحة Supabase → مشروع `yzvrcshwalgzkniunray` → زر **Connect** → تبويب
-**Connection string** → **Transaction pooler** (الموصى به لبيئة Vercel serverless):
+**Connection string** → **Session pooler** (المنفذ 5432):
 
 ```
-postgresql://postgres.yzvrcshwalgzkniunray:[YOUR-PASSWORD]@aws-0-<region>.pooler.supabase.com:6543/postgres
+postgresql://postgres.yzvrcshwalgzkniunray:[YOUR-PASSWORD]@aws-0-<region>.pooler.supabase.com:5432/postgres
 ```
+
+> **لا تستخدم «Transaction pooler» (المنفذ 6543).** البرنامج يطبّق الـ migrations على
+> اتصال واحد يحمل قفلاً طوال التطبيق، وهذا الـ pooler قد يوزّع الأوامر على اتصالات
+> مختلفة، فيبقى القفل معلّقاً وتنتظره كل الأجهزة التالية إلى الأبد. لذلك يرفض البرنامج
+> هذا العنوان ويطلب «Session pooler» أو «Direct connection».
 
 - استبدل `[YOUR-PASSWORD]` بكلمة مرور قاعدة البيانات (Supabase → Settings → Database).
 - استبدل `<region>` بمنطقة مشروعك كما تظهر في نفس الشاشة.
@@ -124,7 +144,7 @@ psql "$DATABASE_URL" -f supabase/seed.sql
 
 ## 5) قائمة تحقّق سريعة
 
-- [ ] `DATABASE_URL` مضبوط في Vercel ويشير إلى `yzvrcshwalgzkniunray` (Transaction pooler).
+- [ ] `DATABASE_URL` مضبوط ويشير إلى `yzvrcshwalgzkniunray` (Session pooler، المنفذ 5432).
 - [ ] `AUTH_SECRET` مضبوط (قيمة عشوائية طويلة).
 - [ ] إعادة نشر تطبيق Vercel → نجاح البناء والإقلاع.
 - [ ] الدخول بـ `admin@spir.local` / `123` يعمل.

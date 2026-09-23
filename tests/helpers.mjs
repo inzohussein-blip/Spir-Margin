@@ -62,3 +62,21 @@ export async function ensureLabAndProduct(db) {
   }
   return { labId: lab.id, productId: product.id };
 }
+
+/**
+ * Import a TypeScript module from src/ as it is, so a test runs the app's own
+ * code rather than a copy of it. Only for self-contained files (no imports):
+ * it is transpiled on the spot, with no bundler to resolve anything else.
+ */
+export async function importTs(rel) {
+  const ts = (await import("typescript")).default;
+  const { mkdtempSync, writeFileSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const src = readFileSync(join(ROOT, rel), "utf8");
+  const out = ts.transpileModule(src, {
+    compilerOptions: { module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  const file = join(mkdtempSync(join(tmpdir(), "spir-ts-")), rel.replace(/[\\/]/g, "_").replace(/\.ts$/, ".mjs"));
+  writeFileSync(file, out);
+  return import(file);
+}

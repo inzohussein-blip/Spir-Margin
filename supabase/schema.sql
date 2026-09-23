@@ -1,4 +1,4 @@
--- Spir-Margin — combined schema (all 101 migrations). Run ONCE on an EMPTY DB.
+-- Spir-Margin — combined schema (all 105 migrations). Run ONCE on an EMPTY DB.
 --
 -- GENERATED FILE — do not edit by hand. Rebuild with:
 --     npm run schema
@@ -8393,6 +8393,205 @@ begin
     end loop;
 end $$;
 
+-- ===== migration: 0103_end_sessions.sql =====
+-- =====================================================================
+-- Migration 0103 : Ending a user's sessions
+--
+-- A session is a signed cookie that stays valid for 7 days, and nothing
+-- about it was checked against the user afterwards. So an administrator who
+-- reset a leaked password, or disabled someone who had left, changed nothing
+-- for a browser already signed in as them — for up to a week.
+--
+-- sessions_valid_after is the moment before which this user's sessions no
+-- longer count. Setting a password moves it to now; the server compares it
+-- (and is_active) with the session on every request, so a reset or a
+-- disable takes effect on the next click. Changing one's own password
+-- re-issues the session of the browser that did it, so only the others end.
+-- =====================================================================
+
+alter table app_users add column if not exists sessions_valid_after timestamptz;
+
+create or replace function fn_set_password(p_user_id uuid, p_password text)
+returns void language sql
+set search_path = public, extensions, pg_temp
+as $$
+    update app_users
+       set password_hash = crypt(p_password, gen_salt('bf')),
+           sessions_valid_after = now(),
+           updated_at = now()
+     where id = p_user_id;
+$$;
+
+-- ===== migration: 0104_close_hosted_data_api.sql =====
+-- =====================================================================
+-- Migration 0104 : Close the hosted database's public data API
+--
+-- Supabase publishes every table in `public` through its REST API, to two
+-- roles: `anon` (anyone holding the project's public key) and
+-- `authenticated` (anyone who signs up through Supabase Auth). The
+-- policies written for the early supabase-js version of this app let
+-- `authenticated` read and write everything, password hashes included, and
+-- the sync tables from 0089 on have no row security at all, so `anon` could
+-- read the whole change log, or write into it a change that every computer
+-- would then pull in and apply.
+--
+-- The app never uses that API. The server reaches a hosted database only
+-- over a direct Postgres connection (DATABASE_URL, as the database owner),
+-- so the two API roles lose every privilege on `public`: existing tables,
+-- sequences and functions, and anything created later. Functions also lose
+-- their default grant to PUBLIC, which the API roles inherit.
+--
+-- On the embedded database there are no such roles and this does nothing.
+-- =====================================================================
+
+do $$
+begin
+    if not exists (select 1 from pg_roles where rolname = 'anon') then
+        return;
+    end if;
+
+    revoke all on all tables    in schema public from anon, authenticated;
+    revoke all on all sequences in schema public from anon, authenticated;
+    revoke all on all functions in schema public from anon, authenticated, public;
+
+    alter default privileges in schema public revoke all on tables    from anon, authenticated;
+    alter default privileges in schema public revoke all on sequences from anon, authenticated;
+    alter default privileges in schema public revoke all on functions from anon, authenticated, public;
+    -- Execute for PUBLIC on new functions is a GLOBAL default, which a
+    -- per-schema revoke cannot take away; only a global one can.
+    alter default privileges revoke execute on functions from public;
+end $$;
+
+-- ===== migration: 0105_sync_links.sql =====
+-- =====================================================================
+-- Migration 0105 : Linking computers to each other
+--
+-- Until now every computer synced with one hub, a hosted database, and sent
+-- only the changes it made itself. Offices want their computers to sync over
+-- the office network, with one of them (the main computer) passing the whole
+-- office's work on to the hosted database for the other branches. For that a
+-- computer must forward changes it received as well as its own, without
+-- sending anything back where it came from.
+--
+-- _spir_changes.received_from
+--     null for a change made here; otherwise where it came from: 'remote'
+--     (the hosted database), 'lan' (the main computer), or 'n:<node id>'
+--     (an office computer that sent it to this one). A computer sends a
+--     peer everything except what it received from that same peer.
+--
+-- _spir_peer.lan_code
+--     The sync code of the main computer this one is linked to. A computer
+--     has at most one upstream: this, or database_url.
+--
+-- _spir_lan_server, _spir_lan_clients
+--     This computer acting as the main computer: whether it serves the
+--     office network, the secret its sync code carries, and who has synced.
+--
+-- All `_spir` tables stay out of the change log, so none of this travels.
+-- =====================================================================
+
+alter table _spir_changes add column if not exists received_from text;
+
+alter table _spir_peer add column if not exists lan_code text;
+
+create table if not exists _spir_lan_server (
+    only_row    boolean primary key default true check (only_row),
+    enabled     boolean not null default false,
+    secret      text,
+    port        int not null default 3310 check (port between 1024 and 65535),
+    updated_at  timestamptz not null default now()
+);
+insert into _spir_lan_server (only_row) values (true) on conflict do nothing;
+
+create table if not exists _spir_lan_clients (
+    node_id        uuid primary key,
+    name           text,
+    address        text,
+    first_seen     timestamptz not null default now(),
+    last_seen      timestamptz not null default now(),
+    pulled_through bigint not null default 0,
+    received       bigint not null default 0
+);
+
+-- The gap check moves into the engine, which knows which peer it is talking
+-- to; this one only ever looked at 'remote'. Kept so an older build's call
+-- still resolves.
+create or replace function fn_spir_sync_gap(p_peer_oldest_seq bigint)
+returns boolean language sql stable as $$
+    select coalesce(
+        (select max(pulled_through) from _spir_sync_state) < p_peer_oldest_seq - 1,
+        false)
+$$;
+
+-- ===== migration: 0106_sync_mirrors.sql =====
+-- =====================================================================
+-- Migration 0106 : A synced change is a copy, not a new event
+--
+-- Applying a change that came from another computer used to fire this
+-- database's own triggers. The ones that derive rows then derived them a
+-- second time: a synced sale posted a second journal entry here, while the
+-- first one — posted where the sale was made — arrived through the log as
+-- well. Every computer ended up with its own extra copy, and the books no
+-- longer agreed between them.
+--
+-- The rows a trigger derives are logged where they are made, so they
+-- already travel. A computer receiving a change should mirror it, not
+-- recompute it. Postgres has a switch for exactly that
+-- (session_replication_role), but a hosted database does not let its users
+-- set it. So each trigger gets the condition itself:
+--
+--     WHEN (current_setting('spir.syncing', true) IS DISTINCT FROM 'on')
+--
+-- and _spir_apply_change already sets spir.syncing for the duration of one
+-- applied change. Two kinds are left alone: the change log's own trigger
+-- (it checks the flag itself), and the audit trigger, so the Change &
+-- Deletion Log on the main computer still shows what the office did.
+-- Foreign keys are Postgres's internal triggers and keep working.
+--
+-- _spir_guard_triggers() adds the condition to any trigger that lacks it,
+-- and the app runs it after every migration pass, as it does for the change
+-- log — a trigger added later is covered without anyone remembering.
+-- =====================================================================
+
+create or replace function _spir_guard_triggers() returns integer
+language plpgsql as $$
+declare
+    r   record;
+    def text;
+    n   integer := 0;
+begin
+    for r in
+        select t.tgname, c.relname, pg_get_triggerdef(t.oid) as def
+          from pg_trigger t
+          join pg_class c      on c.oid = t.tgrelid
+          join pg_namespace ns on ns.oid = c.relnamespace
+          join pg_proc p       on p.oid = t.tgfoid
+         where ns.nspname = 'public'
+           and not t.tgisinternal
+           and t.tgenabled = 'O'
+           and t.tgname <> 'zz_spir_change_log'
+           and p.proname <> 'fn_audit'
+           and pg_get_triggerdef(t.oid) not like '%spir.syncing%'
+    loop
+        def := r.def;
+        if def ~ ' WHEN \(' then
+            def := regexp_replace(
+                def, ' WHEN \((.*)\) EXECUTE ',
+                ' WHEN ((current_setting(''spir.syncing'', true) IS DISTINCT FROM ''on'') AND (\1)) EXECUTE ');
+        else
+            def := regexp_replace(
+                def, ' EXECUTE (FUNCTION|PROCEDURE) ',
+                ' WHEN (current_setting(''spir.syncing'', true) IS DISTINCT FROM ''on'') EXECUTE \1 ');
+        end if;
+        execute format('drop trigger %I on public.%I', r.tgname, r.relname);
+        execute def;
+        n := n + 1;
+    end loop;
+    return n;
+end $$;
+
+select _spir_guard_triggers();
+
 select _spir_attach_change_log();
 
 create table if not exists _spir_migrations (
@@ -8500,7 +8699,11 @@ insert into _spir_migrations(filename) values
   ('0099_bank_action_log.sql'),
   ('0100_partial_allocation.sql'),
   ('0101_undo_a_match.sql'),
-  ('0102_arabic_errors.sql')
+  ('0102_arabic_errors.sql'),
+  ('0103_end_sessions.sql'),
+  ('0104_close_hosted_data_api.sql'),
+  ('0105_sync_links.sql'),
+  ('0106_sync_mirrors.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;

@@ -2,6 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { createPgRestClient } from "@/lib/db/rest";
 import { SESSION_COOKIE, verifySessionToken, type SessionUser } from "@/lib/auth/session";
+import { isSessionCurrent } from "@/lib/auth/revocation";
 
 /**
  * Data clients for Server Components, Server Actions and route handlers.
@@ -55,7 +56,10 @@ async function requester(): Promise<SessionUser | null | "background"> {
     if (e instanceof Error && /outside a request scope/i.test(e.message)) return "background";
     throw e;
   }
-  return verifySessionToken(token);
+  const user = await verifySessionToken(token);
+  // A genuine cookie for a reset password or a disabled account is refused
+  // here too, so an action posted from a page that is already open fails.
+  return user && (await isSessionCurrent(user)) ? user : null;
 }
 
 function guardFor(audience: Audience) {

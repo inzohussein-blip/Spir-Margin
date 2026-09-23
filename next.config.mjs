@@ -51,6 +51,7 @@ const nextConfig = {
   // so it loads as a normal Node dependency at runtime.
   experimental: {
     serverComponentsExternalPackages: ["@electric-sql/pglite", "pg"],
+    instrumentationHook: true,
   },
   // Defence-in-depth headers. The app never needs to be framed, sniffed, or to
   // tell another site which page someone came from.

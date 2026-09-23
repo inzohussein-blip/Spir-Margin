@@ -28,7 +28,7 @@ export function ChangePasswordForm() {
   const locale = useLocale();
   const [state, formAction] = useFormState(
     changePasswordAction,
-    null as { error?: string; ok?: boolean; message?: string } | null
+    null as { error?: string } | null
   );
   return (
     <form action={formAction} className="max-w-sm space-y-4">
@@ -41,8 +41,7 @@ export function ChangePasswordForm() {
         <input name="new_password" type="password" autoComplete="new-password" required minLength={8} className={cls} />
         <span className="mt-1 block text-xs text-ink-gray-5">{t(locale, "At least 8 characters.")}</span>
       </label>
-      {state?.error ? <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p> : null}
-      {state?.ok ? <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{state.message}</p> : null}
+      {state?.error ? <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{t(locale, state.error)}</p> : null}
       <SubmitButton />
     </form>
   );

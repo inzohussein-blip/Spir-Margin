@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { setRemoteUrl, remoteUrl, remoteUrlIsFromEnvironment, resetRemoteDb } from "@/lib/db/pglite";
+import { setRemoteUrl, remoteUrl, remoteUrlIsFromEnvironment, resetRemoteDb, isTransactionPooler } from "@/lib/db/pglite";
 
 export interface PeerState {
   error?: string;
+  /** The database's own words, shown as they are under the translated error. */
+  detail?: string;
   ok?: boolean;
   message?: string;
 }
@@ -76,13 +78,22 @@ export async function savePeerAction(_prev: PeerState | null, formData: FormData
     return { error: "That does not look like a Postgres connection string" };
   }
 
+  if (isTransactionPooler(url)) {
+    return { error: "This address goes through the transaction pooler (port 6543), which this program cannot use. In Supabase choose the Session pooler (port 5432) or the Direct connection." };
+  }
+
   // Test before saving: a wrong address saved is a sync that silently never
   // works, and the person has walked away by the time anyone notices.
   const failure = await probe(url);
-  if (failure) return { error: `Could not connect: ${failure}` };
+  if (failure) return { error: "Could not connect. Check the address and the password, and that this computer is online.", detail: failure };
 
   await setRemoteUrl(url);
+  // One upstream at a time: the hosted database replaces the main computer.
+  const { getDb } = await import("@/lib/db/pglite");
+  const { db } = await getDb();
+  await db.query(`update _spir_peer set lan_code = null`);
   revalidatePath("/settings");
+  revalidatePath("/sync");
   return { ok: true, message: "Connected. Syncing will start on the next pass." };
 }
 
@@ -95,5 +106,6 @@ export async function clearPeerAction(): Promise<PeerState> {
   await setRemoteUrl(null);
   resetRemoteDb();
   revalidatePath("/settings");
+  revalidatePath("/sync");
   return { ok: true, message: "Disconnected. Everything stays on this computer." };
 }

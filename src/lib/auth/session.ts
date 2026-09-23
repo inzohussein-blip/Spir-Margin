@@ -23,6 +23,8 @@ export interface SessionUser {
   role: "admin" | "manager" | "staff" | "customer";
   /** Set only for portal (customer) users — the lab they may see. */
   lab_id: string | null;
+  /** When the session was signed, in whole seconds. Read from the token; never signed into it. */
+  issued_at?: number;
 }
 
 /** The session for the built-in account in `demo-credentials.ts`. */
@@ -106,6 +108,7 @@ export async function verifySessionToken(token: string | undefined): Promise<Ses
       full_name: (payload.full_name as string | null) ?? null,
       role: (payload.role as SessionUser["role"]) ?? "staff",
       lab_id: (payload.lab_id as string | null) ?? null,
+      issued_at: typeof payload.iat === "number" ? payload.iat : 0,
     };
   } catch {
     return null;

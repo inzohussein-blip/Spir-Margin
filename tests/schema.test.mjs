@@ -4,6 +4,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { PGlite } from "@electric-sql/pglite";
+import { pgcrypto } from "@electric-sql/pglite/contrib/pgcrypto";
 import { bootWithMigrations, bootWithSchemaFile, loadSeed, MIGRATIONS_DIR, SCHEMA_FILE } from "./helpers.mjs";
 
 const migrationFiles = () =>
@@ -150,6 +152,42 @@ test("no table has RLS enabled without a policy", async () => {
          select 1 from pg_policies p where p.schemaname='public' and p.tablename=c.relname)
      order by 1`);
   assert.deepEqual(rows.map((r) => r.relname), []);
+  await db.close();
+});
+
+test("a hosted database's public API roles can reach nothing", async () => {
+  // Supabase's REST API serves `public` to `anon` and `authenticated`. The app
+  // never uses it (it connects directly), so 0104 takes every privilege away
+  // from both. The roles exist only on Supabase, so they are made here first.
+  const db = new PGlite({ extensions: { pgcrypto } });
+  // Set up the way Supabase ships: both roles, granted everything created in
+  // `public` by default.
+  await db.exec(`
+    create extension if not exists pgcrypto;
+    create role anon; create role authenticated;
+    alter default privileges in schema public grant all on tables    to anon, authenticated;
+    alter default privileges in schema public grant all on sequences to anon, authenticated;
+    alter default privileges in schema public grant all on functions to anon, authenticated;`);
+  await db.exec(`select set_config('spir.syncing', 'on', false)`);
+  for (const f of migrationFiles()) {
+    await db.exec(fs.readFileSync(path.join(MIGRATIONS_DIR, f), "utf8"));
+  }
+  const { rows } = await db.query(`
+    select
+      (select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace
+        where n.nspname = 'public' and c.relkind in ('r', 'v', 'S')
+          and (has_table_privilege('anon', c.oid, 'select, insert, update, delete')
+               or has_table_privilege('authenticated', c.oid, 'select, insert, update, delete'))) as tables,
+      (select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public'
+          and (has_function_privilege('anon', p.oid, 'execute')
+               or has_function_privilege('authenticated', p.oid, 'execute'))) as functions`);
+  assert.deepEqual(rows[0], { tables: 0, functions: 0 });
+
+  // And a table added by a later migration is closed too.
+  await db.exec(`create table later_table (id int primary key)`);
+  const later = await db.query(`select has_table_privilege('anon', 'later_table', 'select') as ok`);
+  assert.equal(later.rows[0].ok, false);
   await db.close();
 });
 

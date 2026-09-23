@@ -14,6 +14,7 @@ import {
 import { lockoutRemaining, recordFailure, recordSuccess } from "@/lib/auth/rate-limit";
 import { DEMO_EMAIL, DEMO_PASSWORD } from "@/lib/auth/demo-credentials";
 import type { LoginState } from "@/lib/auth/login-state";
+import { forgetSessions, settleFutureCutoff } from "@/lib/auth/revocation";
 
 const cookieOptions = {
   httpOnly: true,
@@ -95,6 +96,7 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   }
 
   await recordSuccess(email).catch(() => undefined);
+  await settleFutureCutoff(row.id);
   const bad = await trySetSession(row);
   if (bad) return bad;
   redirect(next);
@@ -108,6 +110,9 @@ export async function logoutAction() {
 export async function changePasswordAction(_prev: unknown, formData: FormData) {
   const user = await getCurrentUser();
   if (!user) return { error: "Not signed in" };
+  // The built-in account has no row to change; the database's own
+  // admin@spir.local row is a different account with the same email.
+  if (user.id === BUILT_IN_USER.id) return { error: "The built-in account's password cannot be changed" };
 
   const current = String(formData.get("current_password") ?? "");
   const next = String(formData.get("new_password") ?? "");
@@ -119,5 +124,13 @@ export async function changePasswordAction(_prev: unknown, formData: FormData) {
 
   const { error } = await supabase.rpc("fn_set_password", { p_user_id: user.id, p_password: next });
   if (error) return { error: "Could not update password" };
-  return { ok: true as const, message: "Password updated" };
+  // Setting the password ended every session of this account (migration
+  // 0103). This browser is the one that knew the old password, so it gets a
+  // fresh session; the others stay signed out.
+  forgetSessions();
+  const bad = await trySetSession(user);
+  if (bad) return { error: "Password updated. Sign in again with the new password." };
+  // Setting a cookie makes Next refresh the page, which drops the form's own
+  // result — so the page says it, from the address.
+  redirect("/account?changed=1");
 }
