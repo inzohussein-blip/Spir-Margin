@@ -1,4 +1,5 @@
-import { SettingsIcon, ToggleLeftIcon, ShieldIcon, Trash2Icon, LockIcon, HardDriveIcon, CloudIcon, MonitorDownIcon, BuildingIcon } from "lucide-react";
+import Link from "next/link";
+import { SettingsIcon, ToggleLeftIcon, ShieldIcon, Trash2Icon, LockIcon, HardDriveIcon, CloudIcon, MonitorDownIcon, BuildingIcon, BookOpenTextIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
@@ -55,12 +56,21 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex items-center gap-2.5">
-        <span className="grid size-9 place-items-center rounded-xl bg-brand/10 text-brand"><SettingsIcon size={19} /></span>
-        <div>
-          <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Settings")}</h1>
-          <p className="text-sm text-ink-gray-5">{t(locale, "Manage which non-essential features are available across the app.")}</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <span className="grid size-9 place-items-center rounded-xl bg-brand/10 text-brand"><SettingsIcon size={19} /></span>
+          <div>
+            <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Settings")}</h1>
+            <p className="text-sm text-ink-gray-5">{t(locale, "Company identity, installation, sync, backups, and who can use what.")}</p>
+          </div>
         </div>
+        <Link
+          href="/help?tab=settings"
+          className="inline-flex items-center gap-1.5 rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm text-ink-gray-7 hover:border-brand hover:text-brand"
+        >
+          <BookOpenTextIcon size={15} />
+          {t(locale, "Settings instructions")}
+        </Link>
       </div>
 
       {/* ---- Company identity ----

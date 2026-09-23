@@ -73,7 +73,7 @@ export function Awesomebar({ locale = "ar", blocked = [] }: { locale?: Locale; b
       >
         <SearchIcon size={15} />
         <span className="flex-1 text-start">{t(locale, "Search or jump to…")}</span>
-        <kbd className="rounded border border-outline-gray-2 bg-surface-white px-1.5 text-2xs text-ink-gray-5">⌘K</kbd>
+        <kbd className="rounded border border-outline-gray-2 bg-surface-white px-1.5 text-2xs text-ink-gray-5" dir="ltr">Ctrl K</kbd>
       </button>
 
       <CommandDialog open={open} onOpenChange={setOpen}>
