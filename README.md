@@ -166,8 +166,9 @@ there is nothing to install.
 
 Create a dedicated project, copy its **Project URL** and **anon key** into
 `.env.local`, apply the files in `supabase/migrations/` in order (Supabase SQL
-editor or `supabase db push`), then restore the Supabase client in
-`src/lib/supabase/server.ts`.
+editor or `psql`), then restore the Supabase client in
+`src/lib/supabase/server.ts`. Do not use `supabase db push`: the app keeps its
+own ledger (`_spir_migrations`) and applies pending files itself.
 
 ## Deploy to Vercel (with a hosted database)
 
@@ -179,8 +180,10 @@ Postgres** — the code automatically uses it whenever `DATABASE_URL` is set
 1. **Create a Postgres database** (Supabase, Neon, RDS, …) and grab its
    connection string.
 2. **Apply the schema** — run every file in `supabase/migrations/` in order
-   against that database (Supabase SQL editor, `psql`, or `supabase db push`),
-   or apply the generated single-file equivalent `supabase/schema.sql`.
+   against that database (Supabase SQL editor or `psql` — not `supabase db
+   push`, which keeps a separate ledger), or apply the generated single-file
+   equivalent `supabase/schema.sql`. On Supabase use the **Session pooler**
+   (port 5432) or the direct connection, never the transaction pooler (6543).
    Optionally load `supabase/seed.sql` afterwards for demo data — it is a
    separate step, and not for a production database.
 3. **Import the repo in Vercel.** The Next.js app is at the **repository root**

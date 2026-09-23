@@ -1228,6 +1228,8 @@ const ar: Record<string, string> = {
   "Disconnect": "قطع الاتصال",
   "Disconnected. Everything stays on this computer.": "قُطع الاتصال. كل شيء يبقى على هذا الحاسوب.",
   "Enter a connection string": "أدخل نصّ الاتصال",
+  "This address goes through the transaction pooler (port 6543), which this program cannot use. In Supabase choose the Session pooler (port 5432) or the Direct connection.": "هذا العنوان يمرّ عبر «Transaction pooler» (المنفذ 6543)، ولا يعمل معه البرنامج. اختر في Supabase «Session pooler» (المنفذ 5432) أو «Direct connection».",
+  "Could not connect. Check the address and the password, and that this computer is online.": "تعذّر الاتصال. تحقّق من العنوان وكلمة المرور، ومن أن هذا الحاسوب متّصل بالإنترنت.",
   "Hosted database": "القاعدة المستضافة",
   "It is tested before it is saved, and never shown again afterwards.": "يُختبَر قبل الحفظ، ولا يُعرض بعدها إطلاقاً.",
   "Nothing is configured, so everything stays on this computer. Connect a hosted database to sync with other computers and keep a second copy off this machine.": "لا شيء مضبوط، فكل شيء يبقى على هذا الحاسوب. اربط قاعدة مستضافة لتتزامن مع حواسيب أخرى وتحتفظ بنسخة ثانية خارج هذا الجهاز.",

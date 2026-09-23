@@ -1,4 +1,4 @@
--- Spir-Margin — combined schema (all 102 migrations). Run ONCE on an EMPTY DB.
+-- Spir-Margin — combined schema (all 103 migrations). Run ONCE on an EMPTY DB.
 --
 -- GENERATED FILE — do not edit by hand. Rebuild with:
 --     npm run schema
@@ -8422,6 +8422,43 @@ as $$
      where id = p_user_id;
 $$;
 
+-- ===== migration: 0104_close_hosted_data_api.sql =====
+-- =====================================================================
+-- Migration 0104 : Close the hosted database's public data API
+--
+-- Supabase publishes every table in `public` through its REST API, to two
+-- roles: `anon` (anyone holding the project's public key) and
+-- `authenticated` (anyone who signs up through Supabase Auth). The
+-- policies written for the early supabase-js version of this app let
+-- `authenticated` read and write everything, password hashes included, and
+-- the sync tables from 0089 on have no row security at all, so `anon` could
+-- read the whole change log, or write into it a change that every computer
+-- would then pull in and apply.
+--
+-- The app never uses that API. The server reaches a hosted database only
+-- over a direct Postgres connection (DATABASE_URL, as the database owner),
+-- so the two API roles lose every privilege on `public`: existing tables,
+-- sequences and functions, and anything created later. Functions also lose
+-- their default grant to PUBLIC, which the API roles inherit.
+--
+-- On the embedded database there are no such roles and this does nothing.
+-- =====================================================================
+
+do $$
+begin
+    if not exists (select 1 from pg_roles where rolname = 'anon') then
+        return;
+    end if;
+
+    revoke all on all tables    in schema public from anon, authenticated;
+    revoke all on all sequences in schema public from anon, authenticated;
+    revoke all on all functions in schema public from anon, authenticated, public;
+
+    alter default privileges in schema public revoke all on tables    from anon, authenticated;
+    alter default privileges in schema public revoke all on sequences from anon, authenticated;
+    alter default privileges in schema public revoke all on functions from anon, authenticated, public;
+end $$;
+
 select _spir_attach_change_log();
 
 create table if not exists _spir_migrations (
@@ -8530,7 +8567,8 @@ insert into _spir_migrations(filename) values
   ('0100_partial_allocation.sql'),
   ('0101_undo_a_match.sql'),
   ('0102_arabic_errors.sql'),
-  ('0103_end_sessions.sql')
+  ('0103_end_sessions.sql'),
+  ('0104_close_hosted_data_api.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;

@@ -101,7 +101,10 @@ export function PeerPanel({ info }: { info: PeerInfo }) {
       {result?.error ? (
         <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
           <AlertTriangleIcon size={16} className="mt-0.5 shrink-0" />
-          <span className="break-words">{t(locale, result.error)}</span>
+          <span className="break-words">
+            {t(locale, result.error)}
+            {result.detail ? <span dir="ltr" className="mt-1 block font-mono text-xs text-red-600">{result.detail}</span> : null}
+          </span>
         </div>
       ) : null}
       {result?.ok ? (

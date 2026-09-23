@@ -36,7 +36,17 @@ await p.fill('input[name="database_url"]', "postgresql://nobody@127.0.0.1:1/none
 await p.locator('form:has(input[name="database_url"]) button[type="submit"]').click();
 await p.waitForTimeout(15000);
 const after = await p.locator("body").innerText();
-check("a connection that fails is not saved", after.includes("تعذّر") || after.includes("Could not connect") || after.includes("لا شيء مضبوط"));
+check("a connection that fails is not saved", after.includes("تعذّر") || after.includes("لا شيء مضبوط"));
+check("and says so in Arabic, with the database's own words beside it",
+  (await p.locator('[role="alert"]').innerText().catch(() => "")).includes("تعذّر الاتصال"));
+
+// Supabase's transaction pooler cannot carry the migrator's lock, so it is
+// refused before any connection is tried, with what to pick instead.
+await p.fill('input[name="database_url"]', "postgresql://postgres.x:pw@aws-0-x.pooler.supabase.com:6543/postgres");
+await p.locator('form:has(input[name="database_url"]) button[type="submit"]').click();
+const pooler = p.locator('[role="alert"]', { hasText: "6543" });
+await pooler.waitFor({ timeout: 20_000 }).catch(() => {});
+check("the transaction pooler is refused, naming what to use", (await pooler.innerText().catch(() => "")).includes("Session pooler"));
 check("no uncaught page errors", errs.length === 0, errs.slice(0, 2).join(" | "));
 
 await p.screenshot({ path: `${SHOT}/settings.png`, fullPage: true });
