@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import {
   getDb,
@@ -49,9 +49,18 @@ async function requireAdmin() {
   return user?.role === "admin" ? user : null;
 }
 
-function done(message: string): LinkState {
-  revalidatePath("/sync");
-  return { ok: true, message };
+/**
+ * What a successful change says, keyed for the address bar. Success goes to
+ * /sync?done=<key> and the page says it: re-rendering the page in place (so
+ * that "Syncs with" and the rest are current) can drop a form's own result,
+ * and a message that sometimes vanishes is worse than none.
+ */
+export type Done =
+  | "linked-copy" | "linked-merged" | "linked-partial" | "linked-hosted"
+  | "unlinked" | "main-on" | "main-off" | "new-code";
+
+function done(key: Done): never {
+  redirect(`/sync?done=${key}`);
 }
 
 /** Test a Postgres address before relying on it. */
@@ -83,7 +92,7 @@ async function linkHosted(url: string): Promise<LinkState> {
   const { db } = await getDb();
   await db.query(`update _spir_peer set lan_code = null`);
   void runSync();
-  return done("Linked to the hosted database. Syncing has started.");
+  return done("linked-hosted");
 }
 
 async function linkMain(raw: string, code: LanCode): Promise<LinkState> {
@@ -122,7 +131,7 @@ async function linkMain(raw: string, code: LanCode): Promise<LinkState> {
     await restored.query(`update _spir_peer set lan_code = $1, database_url = null`, [raw]);
     resetRemoteDb();
     void runSync();
-    return done("Linked. This computer now has a full copy of the main computer's records, and keeps in step with it.");
+    return done("linked-copy");
   }
 
   // This computer already has work of its own: merge the two, both ways.
@@ -130,8 +139,8 @@ async function linkMain(raw: string, code: LanCode): Promise<LinkState> {
   await db.query(`delete from _spir_sync_state where peer = 'lan'`);
   resetRemoteDb();
   const res = await runSync();
-  if (!res.ok) return { ok: true, message: "Linked, but the first sync did not finish. It will keep trying.", detail: res.error };
-  return done("Linked. This computer's records and the main computer's have been merged.");
+  if (!res.ok) done("linked-partial");
+  return done("linked-merged");
 }
 
 /** Paste a sync code: link to the main computer, or to the hosted database. */
@@ -157,7 +166,7 @@ export async function unlinkAction(): Promise<LinkState> {
   const { db } = await getDb();
   await db.query(`update _spir_peer set lan_code = null`);
   resetRemoteDb();
-  return done("Unlinked. Everything stays on this computer.");
+  return done("unlinked");
 }
 
 /** Turn serving the office network on or off. */
@@ -171,7 +180,7 @@ export async function setMainComputerAction(_prev: LinkState | null, formData: F
     on ? s.secret ?? newSecret() : s.secret,
   ]);
   await applyServerSetting();
-  return done(on ? "This is now the main computer. Copy its code to the other computers." : "This computer no longer serves the office network.");
+  return done(on ? "main-on" : "main-off");
 }
 
 /** A fresh code: every computer linked with the old one must be linked again. */
@@ -180,7 +189,7 @@ export async function newMainCodeAction(): Promise<LinkState> {
   const { db } = await getDb();
   await db.query(`update _spir_lan_server set secret = $1, updated_at = now()`, [newSecret()]);
   await applyServerSetting();
-  return done("A new code was made. Computers linked with the old one must be linked again.");
+  return done("new-code");
 }
 
 async function label(): Promise<string | undefined> {

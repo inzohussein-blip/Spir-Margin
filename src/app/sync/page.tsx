@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { RefreshCwIcon, MonitorIcon, Link2Icon, NetworkIcon, CloudIcon, BookOpenTextIcon } from "lucide-react";
+import { RefreshCwIcon, MonitorIcon, Link2Icon, NetworkIcon, CloudIcon, BookOpenTextIcon, CheckCircle2Icon } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getDb, remoteUrlIsFromEnvironment } from "@/lib/db/pglite";
 import { syncStatus } from "@/lib/sync/engine";
@@ -24,7 +24,18 @@ export const dynamic = "force-dynamic";
  * over the internet through a hosted database. Either way, linking is one
  * code copied from one computer's page to another's.
  */
-export default async function SyncPage() {
+const DONE: Record<string, string> = {
+  "linked-copy": "Linked. This computer now has a full copy of the main computer's records, and keeps in step with it.",
+  "linked-merged": "Linked. This computer's records and the main computer's have been merged.",
+  "linked-partial": "Linked, but the first sync did not finish. It will keep trying.",
+  "linked-hosted": "Linked to the hosted database. Syncing has started.",
+  unlinked: "Unlinked. Everything stays on this computer.",
+  "main-on": "This is now the main computer. Copy its code to the other computers.",
+  "main-off": "This computer no longer serves the office network.",
+  "new-code": "A new code was made. Computers linked with the old one must be linked again.",
+};
+
+export default async function SyncPage({ searchParams }: { searchParams: { done?: string } }) {
   const locale = getLocale();
   const me = await getCurrentUser();
   if (!me || me.role !== "admin") {
@@ -67,6 +78,13 @@ export default async function SyncPage() {
           {t(locale, "Sync instructions")}
         </Link>
       </div>
+
+      {searchParams.done && DONE[searchParams.done] ? (
+        <div role="status" className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <CheckCircle2Icon size={17} className="mt-0.5 shrink-0" />
+          <span>{t(locale, DONE[searchParams.done])}</span>
+        </div>
+      ) : null}
 
       <Panel title={<span className="flex items-center gap-2"><MonitorIcon size={16} className="text-brand" /> {t(locale, "This computer")}</span>}>
         <dl className="grid grid-cols-1 gap-x-6 gap-y-3 p-4 text-sm sm:grid-cols-2">

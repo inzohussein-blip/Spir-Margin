@@ -72,7 +72,12 @@ export const GAP_MESSAGE =
   "This machine has been away longer than the other side keeps its history. " +
   "Restore it from a recent backup, or take a copy from a machine that is up to date.";
 
-const COLS = "seq::text as seq, origin, origin_seq::text as origin_seq, table_name, op, pk, row, changed_at";
+// seq and origin_seq go out as text (bigint can outgrow a JS number), so
+// ordering must name the table's column: a bare "order by seq" would sort
+// by this text alias, and "114" would come before "5" — a child applied
+// before its parent.
+const COLS =
+  "c.seq::text as seq, c.origin, c.origin_seq::text as origin_seq, c.table_name, c.op, c.pk, c.row, c.changed_at";
 
 export async function nodeId(db: Db): Promise<string> {
   const r = await db.query<{ n: string }>(`select _spir_node_id()::text as n`);
@@ -103,9 +108,9 @@ export async function pendingCount(db: Db, key: string): Promise<number> {
 export async function pendingRows(db: Db, key: string, limit: number): Promise<ChangeRow[]> {
   const { pushed } = await cursors(db, key);
   const r = await db.query<ChangeRow>(
-    `select ${COLS} from _spir_changes
-      where seq > $1 and received_from is distinct from $2
-      order by seq limit ${Math.max(1, Math.min(limit, 500))}`,
+    `select ${COLS} from _spir_changes c
+      where c.seq > $1 and c.received_from is distinct from $2
+      order by c.seq limit ${Math.max(1, Math.min(limit, 500))}`,
     [pushed, key],
   );
   return r.rows;
@@ -145,7 +150,7 @@ export async function servePull(
 ): Promise<PullPage> {
   const n = Math.max(1, Math.min(limit, 500));
   const page = await db.query<ChangeRow & { received_from: string | null }>(
-    `select ${COLS}, received_from from _spir_changes where seq > $1 order by seq limit ${n}`,
+    `select ${COLS}, c.received_from from _spir_changes c where c.seq > $1 order by c.seq limit ${n}`,
     [after],
   );
   const oldest = await db.query<{ s: string | null }>(`select min(seq)::text as s from _spir_changes`);

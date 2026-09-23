@@ -4,7 +4,7 @@ import { test, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { PGlite } from "@electric-sql/pglite";
 import { pgcrypto } from "@electric-sql/pglite/contrib/pgcrypto";
-import { bootWithMigrations, importTs } from "./helpers.mjs";
+import { bootWithMigrations, importTs, loadSeed } from "./helpers.mjs";
 
 const core = await importTs("src/lib/sync/core.ts");
 // Each database is a whole Postgres in memory; left open, a few tests' worth
@@ -101,6 +101,45 @@ test("what came from a peer is never sent back to it", async () => {
   const deskId = await core.nodeId(o.desk);
   const page = await core.servePull(o.main, "0", deskId, `n:${deskId}`);
   assert.equal(page.rows.length, 0);
+});
+
+test("the log is read in order past the ninth change, parents before children", async () => {
+  // A regression: seq travelled as text and was sorted as text, so change
+  // "10" came before change "9" and a child arrived before its parent.
+  const main = await fresh();
+  const desk = await fresh();
+  for (let i = 1; i <= 11; i++) {
+    await main.query(`insert into labs (code, name) values ($1, $2)`, [`ORD-${i}`, `مختبر ${i}`]);
+  }
+  await main.query(
+    `insert into issues (lab_id, subject, issue_no) select id, 'عطل', 'ISS-ORD' from labs where code = 'ORD-9'`,
+  );
+  const r = await core.syncOnce(desk, viaMain(main));
+  assert.equal(r.ok, true, r.error);
+  assert.equal((await desk.query(`select count(*)::int as n from issues where issue_no = 'ISS-ORD'`)).rows[0].n, 1);
+});
+
+test("a computer with its own work merges with a main computer full of records", async () => {
+  // The demo data: well over a hundred related rows — invoices, their lines,
+  // batches, journal entries — which must arrive parents first.
+  const mainPg = await bootWithMigrations();
+  open.push(mainPg);
+  await mainPg.exec(`select set_config('spir.syncing', 'off', false)`);
+  await loadSeed(mainPg);
+  const main = { pg: mainPg, query: (sql, params = []) => mainPg.query(sql, params) };
+  const desk = await fresh();
+  await desk.query(`insert into labs (code, name) values ('OWN-1', 'عمل سابق')`);
+
+  const r = await core.syncOnce(desk, viaMain(main));
+  assert.equal(r.ok, true, r.error);
+  for (const table of ["labs", "sales_invoices", "kit_batches", "journal_entries", "issues"]) {
+    const [a, b] = await Promise.all([
+      main.query(`select count(*)::int as n from ${table}`),
+      desk.query(`select count(*)::int as n from ${table}`),
+    ]);
+    assert.equal(b.rows[0].n, a.rows[0].n, `${table} should match`);
+  }
+  assert.equal(await labName(main, "OWN-1"), "عمل سابق");
 });
 
 test("a copy of the main computer becomes a computer of its own", async () => {

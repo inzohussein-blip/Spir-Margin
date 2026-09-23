@@ -80,10 +80,12 @@ async function labsText(p, url) {
 
 async function syncNow(p, url) {
   await p.goto(url + "/sync", { waitUntil: "networkidle" });
-  await p.getByRole("button", { name: "مزامنة الآن" }).first().click();
+  await p.locator("main").getByRole("button", { name: "مزامنة الآن" }).click();
   const r = p.locator("[data-sync-result]");
   await r.waitFor({ timeout: 90_000 }).catch(() => {});
-  return { ok: (await r.getAttribute("data-sync-result").catch(() => null)) === "ok", text: await r.innerText().catch(() => "") };
+  const found = await r.getAttribute("data-sync-result").catch(() => null);
+  const text = found ? await r.innerText().catch(() => "") : "(no result) " + (await p.locator("main").innerText()).slice(0, 300).replace(/\n/g, " | ");
+  return { ok: found === "ok", text };
 }
 
 async function link(p, url, code) {
@@ -92,7 +94,8 @@ async function link(p, url, code) {
   await p.getByRole("button", { name: "اربط", exact: true }).click();
   const msg = p.locator('[role="status"], [role="alert"]').filter({ hasText: /تمّ الربط|تعذّر|لم يقبل|ليس رمز|مختلفتين|رمز الحاسوب الرئيسي نفسه/ });
   await msg.first().waitFor({ timeout: 240_000 }).catch(() => {});
-  return (await msg.first().innerText().catch(() => "")).trim();
+  const text = (await msg.first().innerText().catch(() => "")).trim();
+  return (text || "(no message) " + (await p.locator("main").innerText().catch(() => "")).slice(0, 400)).replace(/\n/g, " | ");
 }
 
 // ---------------------------------------------------------------- 1. the main computer
@@ -135,9 +138,9 @@ check("the empty computer links, taking a full copy", joined.includes("نسخة 
 await office.goto(officeSrv.url + "/sync", { waitUntil: "networkidle" });
 check("and says it syncs with the main computer", (await office.getByTestId("syncs-with").innerText()).includes("الحاسوب الرئيسي"));
 
-const mainLabs = await labsText(main, H);
-const firstDemoLab = mainLabs.split("\n").find((l) => /مختبر|مستشفى/.test(l)) ?? "";
-check("it has the main computer's records", !!firstDemoLab && (await labsText(office, officeSrv.url)).includes(firstDemoLab.split("\t")[0].trim()), firstDemoLab.slice(0, 40));
+// The main computer carries the demo records; LAB-001 is one of its labs.
+const demoOnMain = (await labsText(main, H)).includes("LAB-001");
+check("it has the main computer's records", demoOnMain && (await labsText(office, officeSrv.url)).includes("LAB-001"));
 
 // ---------------------------------------------------------------- 3. both directions
 const stamp = String(Date.now()).slice(-6);

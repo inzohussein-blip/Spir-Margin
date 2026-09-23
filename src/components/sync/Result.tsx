@@ -32,3 +32,4 @@ export function Result({ state }: { state: LinkState | null }) {
   }
   return null;
 }
+
