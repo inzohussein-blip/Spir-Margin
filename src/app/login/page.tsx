@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 export default function LoginPage({
   searchParams,
 }: {
-  searchParams?: { next?: string };
+  searchParams?: { next?: string; ended?: string };
 }) {
   const locale = getLocale();
   const next = typeof searchParams?.next === "string" ? searchParams.next : "";
@@ -48,6 +48,12 @@ export default function LoginPage({
         <p className="mb-6 mt-1 text-sm text-ink-gray-5">
           {t(locale, "Medical-device sales, lab tracking & banking.")}
         </p>
+
+        {searchParams?.ended ? (
+          <p role="status" className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            {t(locale, "Your session has ended because the password was changed or the account was disabled. Sign in again.")}
+          </p>
+        ) : null}
 
         <LoginForm defaultEmail={DEMO_EMAIL} next={next} />
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { AppNav } from "@/components/AppNav";
 import { MobileSidebar } from "@/components/MobileSidebar";
 import { Awesomebar } from "@/components/desk/Awesomebar";
@@ -16,7 +17,7 @@ import { ServiceWorkerRegistrar } from "@/components/offline/ServiceWorkerRegist
 import { ErrorReporter } from "@/components/monitoring/ErrorReporter";
 import { Toasts } from "@/components/desk/Toasts";
 import { FeatureUnavailable } from "@/components/settings/FeatureUnavailable";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { readSession } from "@/lib/auth/current-user";
 import { getNotifications } from "@/lib/notifications";
 import { getAccessContext, blockReason, navFeatureState } from "@/lib/features";
 import { getLocale } from "@/lib/i18n-server";
@@ -55,7 +56,12 @@ export default async function RootLayout({
   const isFocused =
     pathname === "/pos" || pathname.startsWith("/pos/") ||
     pathname === "/portal" || pathname.startsWith("/portal/");
-  const user = isBare ? null : await getCurrentUser();
+  const session = isBare ? null : await readSession();
+  // The middleware can only check the cookie's signature. A session that the
+  // server has since ended (password reset, account disabled) is sent to be
+  // cleared, and the person signs in again.
+  if (session?.ended) redirect(`/login/expired?next=${encodeURIComponent(pathname || "/")}`);
+  const user = session?.user ?? null;
   const notifications = user && !isFocused ? await getNotifications(locale) : [];
 
   // Feature availability (admins bypass; core features are always on).

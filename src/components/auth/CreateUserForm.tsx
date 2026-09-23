@@ -46,8 +46,8 @@ export function CreateUserForm() {
         <input name="password" type="text" required minLength={8} className={cls} placeholder={t(locale, "min 8 characters")} />
       </label>
       <div className="sm:col-span-2">
-        {state?.error ? <p className="mb-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p> : null}
-        {state?.ok ? <p className="mb-2 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{state.message}</p> : null}
+        {state?.error ? <p className="mb-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{t(locale, state.error)}</p> : null}
+        {state?.ok ? <p className="mb-2 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{t(locale, state.message ?? "")}</p> : null}
         <SubmitButton />
       </div>
     </form>
