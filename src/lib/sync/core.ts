@@ -291,6 +291,98 @@ export async function noteError(db: Db, key: string, message: string | null): Pr
     .catch(() => undefined);
 }
 
+// ------------------------------------------------------------------ conflicts
+
+/**
+ * A change was refused because its code is already taken by another record
+ * (two computers created the same code apart). Rename OUR record's value —
+ * the one not yet delivered — by adding a short tag of this computer's, as
+ * an ordinary logged change that then travels like any other. Returns the
+ * new value, or null when this is not a conflict it may settle: only
+ * single-column unique text values, never an email, never a value other
+ * records refer to.
+ *
+ * `ourPk` is the primary key of our record: the one being sent (push), or
+ * the local one standing in the way of an incoming change (pull; null asks
+ * this function to find it from `incoming`).
+ */
+export async function renameOnConflict(
+  local: Db,
+  table: string,
+  error: string,
+  ourPk: unknown | null,
+  incoming?: unknown,
+): Promise<string | null> {
+  const m = /unique constraint "([^"]+)"/.exec(error);
+  if (!m) return null;
+  const idx = await local.query<{ col: string; typ: string; referenced: boolean }>(
+    `select a.attname as col, format_type(a.atttypid, a.atttypmod) as typ,
+            exists (select 1 from pg_constraint f
+                     where f.contype = 'f' and f.confrelid = i.indrelid and a.attnum = any (f.confkey)) as referenced
+       from pg_class ic
+       join pg_index i on i.indexrelid = ic.oid
+       join pg_attribute a on a.attrelid = i.indrelid and a.attnum = i.indkey[0]
+      where ic.relname = $1 and i.indrelid = ('public.' || quote_ident($2))::regclass
+        and i.indisunique and not i.indisprimary and i.indnatts = 1`,
+    [m[1], table],
+  );
+  const u = idx.rows[0];
+  if (!u || u.referenced || table === "app_users" || /email/i.test(u.col)) return null;
+  if (!/^(text|character varying)/.test(u.typ)) return null;
+
+  const pkCols = (
+    await local.query<{ a: string }>(
+      `select a.attname as a from pg_index i
+         join lateral unnest(i.indkey) k(attnum) on true
+         join pg_attribute a on a.attrelid = i.indrelid and a.attnum = k.attnum
+        where i.indrelid = ('public.' || quote_ident($1))::regclass and i.indisprimary`,
+      [table],
+    )
+  ).rows.map((r) => r.a);
+  if (!pkCols.length) return null;
+  const where = pkCols.map((c) => `t.${ident(c)}::text = ($1::jsonb ->> ${`'${c.replace(/'/g, "''")}'`})`).join(" and ");
+
+  let pk = ourPk;
+  if (pk === null) {
+    // Pull: find our record holding the value the incoming one wants.
+    const value = (incoming as Record<string, unknown> | null)?.[u.col];
+    if (typeof value !== "string") return null;
+    const r = await local.query<{ pk: unknown }>(
+      `select jsonb_object_agg(k, to_jsonb(t) -> k) as pk
+         from public.${ident(table)} t, unnest($2::text[]) k
+        where t.${ident(u.col)} = $1
+        group by t.ctid limit 1`,
+      [value, pkCols],
+    );
+    pk = r.rows[0]?.pk ?? null;
+    if (pk === null) return null;
+  }
+
+  const cur = await local.query<{ v: string | null }>(
+    `select t.${ident(u.col)}::text as v from public.${ident(table)} t where ${where}`,
+    [asJson(pk)],
+  );
+  const old = cur.rows[0]?.v;
+  if (!old) return null;
+  const tag = (await nodeId(local)).replace(/-/g, "").toUpperCase();
+  for (const len of [4, 6, 8, 12]) {
+    const next = `${old}-${tag.slice(0, len)}`;
+    const taken = await local.query(
+      `select 1 from public.${ident(table)} where ${ident(u.col)} = $1 limit 1`,
+      [next],
+    );
+    if (taken.rows.length) continue;
+    await local.query(`update public.${ident(table)} t set ${ident(u.col)} = $2 where ${where}`, [asJson(pk), next]);
+    await local.query(
+      `insert into _spir_sync_renames (table_name, pk, column_name, old_value, new_value)
+       values ($1, $2::jsonb, $3, $4, $5)`,
+      [table, asJson(pk), u.col, old, next],
+    );
+    return next;
+  }
+  return null;
+}
+
 /**
  * Send what the peer has not seen. A row it refuses is recorded and stepped
  * over: stopping on it would strand every later change behind one bad row.
@@ -301,22 +393,30 @@ export async function pushTo(local: Db, peer: SyncPeer, me: string, rejected: st
     const batch = await pendingRows(local, peer.key, BATCH);
     if (batch.length === 0) break;
     const results = await peer.push(batch, me);
-    batch.forEach((c, i) => {
-      const err = results[i];
-      if (err) rejected.push(`${c.table_name}: ${err}`);
-    });
+    let renamedAny = false;
     for (let i = 0; i < batch.length; i++) {
-      if (results[i]) await noteRejected(local, "push", batch[i], results[i]!);
-      else {
+      const err = results[i];
+      if (!err) {
         total++;
         await noteResolved(local, "push", batch[i]);
+        continue;
       }
+      // A code the peer already has for another record: rename ours; the
+      // rename is a new change, sent on the next round of this loop.
+      const renamed = await renameOnConflict(local, batch[i].table_name, err, batch[i].pk).catch(() => null);
+      if (renamed) {
+        renamedAny = true;
+        continue;
+      }
+      await noteRejected(local, "push", batch[i], err);
+      rejected.push(`${batch[i].table_name}: ${err}`);
     }
     await local.query(`update _spir_sync_state set pushed_through = $2 where peer = $1`, [
       peer.key,
       batch[batch.length - 1].seq,
     ]);
-    if (batch.length < BATCH) break;
+    // A rename is a new change waiting right behind this batch: send it now.
+    if (batch.length < BATCH && !renamedAny) break;
   }
   return total;
 }
@@ -335,7 +435,15 @@ export async function pullFrom(
     const page = await peer.pull(cursor, me);
     for (const c of page.rows) {
       try {
-        await applyOne(local, c);
+        try {
+          await applyOne(local, c);
+        } catch (e) {
+          // Our own record holds the code this one wants: ours has not
+          // reached the peer yet, so ours takes the new name.
+          const renamed = await renameOnConflict(local, c.table_name, (e as Error).message, null, c.row).catch(() => null);
+          if (!renamed) throw e;
+          await applyOne(local, c);
+        }
         await record(local, c, peer.key);
         await noteResolved(local, "pull", c);
         total++;
@@ -487,7 +595,14 @@ export async function snapshotFrom(
   }
   for (const c of waiting) {
     try {
-      await applyOne(local, c);
+      try {
+        await applyOne(local, c);
+      } catch (e) {
+        const renamed = await renameOnConflict(local, c.table_name, (e as Error).message, null, c.row).catch(() => null);
+        if (!renamed) throw e;
+        await applyOne(local, c);
+      }
+      applied++;
     } catch (e) {
       await noteRejected(local, "pull", c, (e as Error).message);
       rejected.push(`${c.table_name}: ${(e as Error).message}`);

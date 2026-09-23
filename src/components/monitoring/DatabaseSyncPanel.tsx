@@ -1,7 +1,7 @@
 import { AlertTriangleIcon, HardDriveIcon, RotateCwIcon, XIcon } from "lucide-react";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { syncDetail, listRejects } from "@/lib/sync/engine";
+import { syncDetail, listRejects, listRenames } from "@/lib/sync/engine";
 import { retryRejectAction, dismissRejectAction } from "@/app/actions/sync";
 import { fmtDateTime, fmtNum } from "@/lib/format";
 import { t, type Locale } from "@/lib/i18n";
@@ -23,7 +23,7 @@ const OP_STYLE: Record<string, string> = {
  * added into one number that hides both.
  */
 export async function DatabaseSyncPanel({ locale }: { locale: Locale }) {
-  const [d, rejects] = await Promise.all([syncDetail(), listRejects()]);
+  const [d, rejects, renames] = await Promise.all([syncDetail(), listRejects(), listRenames()]);
 
   if (!d.configured) {
     return (
@@ -79,6 +79,36 @@ export async function DatabaseSyncPanel({ locale }: { locale: Locale }) {
             </p>
           </div>
         </div>
+      ) : null}
+
+      {renames.length > 0 ? (
+        <Panel title={<span className="flex items-center gap-2 text-amber-700">{t(locale, "Codes renamed to settle a clash")} ({fmtNum(renames.length)})</span>}>
+          <p className="px-4 pt-3 text-sm leading-relaxed text-ink-gray-6">
+            {t(locale, "Another computer had already used these codes for different records. So both records are kept, the one made here got a short tag added. Change it to a better code if you like.")}
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" data-testid="sync-renames">
+              <thead>
+                <tr className="text-start text-xs text-ink-gray-4">
+                  <th className="px-4 py-2 text-start">{t(locale, "Record")}</th>
+                  <th className="px-4 py-2 text-start">{t(locale, "Was")}</th>
+                  <th className="px-4 py-2 text-start">{t(locale, "Now")}</th>
+                  <th className="px-4 py-2 text-start">{t(locale, "When")}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-gray-1">
+                {renames.map((r, i) => (
+                  <tr key={i}>
+                    <td className="px-4 py-2 font-medium">{t(locale, r.table)}</td>
+                    <td className="px-4 py-2 font-mono text-xs" dir="ltr">{r.oldValue}</td>
+                    <td className="px-4 py-2 font-mono text-xs" dir="ltr">{r.newValue}</td>
+                    <td className="px-4 py-2 text-ink-gray-5" dir="ltr">{fmtDateTime(r.at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
       ) : null}
 
       {rejects.length > 0 ? (

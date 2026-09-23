@@ -225,12 +225,47 @@ test("what a main computer takes as a full copy still reaches its office compute
   assert.equal(await labName(desk, "BR-1"), "من الفرع");
 });
 
-test("a change the peer refuses is recorded and stepped over", async () => {
+test("two computers that chose the same code both keep their record", async () => {
   const main = await fresh();
   const desk = await fresh();
-  // Same code, different ids: the second one breaks the unique code on arrival.
-  await main.query(`insert into labs (code, name) values ('L-DUP', 'الرئيسي')`);
-  await desk.query(`insert into labs (code, name) values ('L-DUP', 'المكتب')`);
+  await main.query(`insert into labs (code, name) values ('L-DUP', 'مختبر الرئيسي')`);
+  await desk.query(`insert into labs (code, name) values ('L-DUP', 'مختبر المكتب')`);
+  const r = await core.syncOnce(desk, viaMain(main));
+  assert.equal(r.ok, true, r.error);
+  for (const db of [main, desk]) {
+    const rows = (await db.query(`select code, name from labs where code like 'L-DUP%' order by name`)).rows;
+    assert.equal(rows.length, 2, "both labs exist on both computers");
+    assert.equal(rows.find((x) => x.name === "مختبر الرئيسي").code, "L-DUP", "the one that arrived first keeps its code");
+    assert.match(rows.find((x) => x.name === "مختبر المكتب").code, /^L-DUP-[0-9A-F]{4}$/, "the other gets a tag");
+  }
+  const renames = await desk.query(`select old_value, new_value from _spir_sync_renames`);
+  assert.equal(renames.rows.length, 1, "the rename is recorded where it was made");
+  const again = await core.syncOnce(desk, viaMain(main));
+  assert.equal(again.pushed + again.pulled, 0);
+});
+
+test("the same code met while taking changes in is settled too", async () => {
+  const main = await fresh();
+  const desk = await fresh();
+  const other = await fresh();
+  await other.query(`insert into labs (code, name) values ('L-X', 'من حاسوب آخر')`);
+  await core.syncOnce(other, viaMain(main));      // main now has other's L-X
+  await desk.query(`insert into labs (code, name) values ('L-X', 'من المكتب')`);
+  // desk pulls first here: the incoming L-X meets desk's own, undelivered one.
+  const r = await core.syncOnce(desk, viaMain(main));
+  assert.equal(r.ok, true, r.error);
+  assert.equal(await labName(desk, "L-X"), "من حاسوب آخر");
+  const mine = (await desk.query(`select code from labs where name = 'من المكتب'`)).rows[0].code;
+  assert.match(mine, /^L-X-[0-9A-F]{4}$/);
+  assert.equal((await main.query(`select count(*)::int as n from labs where code like 'L-X%'`)).rows[0].n, 2);
+});
+
+test("a conflict that must not be renamed is recorded and stepped over", async () => {
+  const main = await fresh();
+  const desk = await fresh();
+  // The same email for two different accounts: an address is never altered.
+  await main.query(`select fn_create_user('same@spir.test', 'pass-one-1', 'أحد', 'staff')`);
+  await desk.query(`select fn_create_user('same@spir.test', 'pass-two-2', 'آخر', 'staff')`);
   await desk.query(`insert into labs (code, name) values ('L-OK', 'سليم')`);
   const r = await core.syncOnce(desk, viaMain(main));
   assert.equal(r.ok, false);

@@ -299,3 +299,23 @@ export async function pruneStandalone(): Promise<void> {
     .query(`select fn_spir_prune_changes((select coalesce(max(seq), 0) from _spir_changes))`)
     .catch(() => undefined);
 }
+
+export interface SyncRename {
+  table: string;
+  column: string;
+  oldValue: string;
+  newValue: string;
+  at: string;
+}
+
+/** Codes this computer renamed to settle a clash with another computer (migration 0111). */
+export async function listRenames(limit = 50): Promise<SyncRename[]> {
+  const { db } = await getDb();
+  const r = await db
+    .query<{ table_name: string; column_name: string; old_value: string; new_value: string; at: string }>(
+      `select table_name, column_name, old_value, new_value, at from _spir_sync_renames
+        order by at desc limit ${Math.max(1, Math.min(limit, 200))}`,
+    )
+    .catch(() => ({ rows: [] }));
+  return r.rows.map((x) => ({ table: x.table_name, column: x.column_name, oldValue: x.old_value, newValue: x.new_value, at: x.at }));
+}
