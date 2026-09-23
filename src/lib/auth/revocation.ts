@@ -23,7 +23,11 @@ import type { SessionUser } from "./session";
 // still takes effect on the very next click.
 const TTL_MS = 5_000;
 const MAX = 200;
-const recent = new Map<string, { ok: boolean; at: number }>();
+// On globalThis, not in module scope: Next loads this module once for pages
+// and again for actions, and a reset done in an action must clear the cache
+// the pages read.
+const G = globalThis as unknown as { __spirSessionCache?: Map<string, { ok: boolean; at: number }> };
+const recent = (G.__spirSessionCache ??= new Map());
 
 export function forgetSessions(): void {
   recent.clear();

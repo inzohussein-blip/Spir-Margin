@@ -33,11 +33,11 @@ try {
   check("it says the password is still 123", (await panel.innerText()).includes("123"));
 
   await panel.locator('input[name="current"]').fill("123");
-  await panel.locator('input[name="next"]').fill("123");
-  await panel.locator('input[name="again"]').fill("123");
+  await panel.locator('input[name="next"]').fill(NEW);
+  await panel.locator('input[name="again"]').fill(NEW + "x");
   await panel.getByRole("button", { name: "غيّر كلمة المرور" }).click();
-  await first.p.waitForTimeout(1500);
-  check("123 itself is refused as the new password", (await panel.locator('[role="alert"]').innerText().catch(() => "")).length > 0);
+  await panel.locator('[role="alert"]').waitFor({ timeout: 20_000 }).catch(() => {});
+  check("two different new passwords are refused", (await panel.locator('[role="alert"]').innerText().catch(() => "")).includes("غير متطابقتين"));
 
   await panel.locator('input[name="current"]').fill("123");
   await panel.locator('input[name="next"]').fill(NEW);

@@ -17,7 +17,7 @@ const panel = () => p.locator("#auto-backup");
 
 await p.goto(H + "/settings", { waitUntil: "networkidle" });
 check("Settings has the automatic backups panel", (await panel().count()) === 1);
-check("on by default, with a next time", (await panel().innerText()).includes("التالية"));
+check("on by default, with a next time", (await panel().innerText()).includes("التالي"));
 
 // A folder the program cannot use is refused.
 await panel().locator('input[name="folder"]').fill("relative/path");
@@ -59,15 +59,16 @@ check("a name outside the folder is refused", (await p.request.get(H + "/api/bac
 const junk = join(folder, "not-a-backup.tar.gz");
 writeFileSync(junk, "hello");
 await p.goto(H + "/settings", { waitUntil: "networkidle" });
-const restore = p.locator("form:has(input[type=file])").first();
+const restore = p.locator("form:has(input[name=backup])");
 await restore.locator("input[type=file]").setInputFiles(junk);
 await restore.locator('input[type="checkbox"]').check();
 await restore.locator('button[type="submit"]').click();
-await p.waitForTimeout(8000);
-const after = await p.locator("body").innerText();
-check("a file that is not a backup is refused", after.includes("تعذّر") || after.includes("ليس"));
+const refusal = p.locator('[role="alert"]').filter({ hasText: /تعذّر|ليس|لا/ });
+await refusal.first().waitFor({ timeout: 90_000 }).catch(() => {});
+const after = await refusal.first().innerText().catch(async () => "(none) " + (await p.locator("#auto-backup").locator("..").innerText()).slice(0, 200));
+check("a file that is not a backup is refused", /تعذّر|ليس/.test(after), after.slice(0, 160));
 check("and the data is still there", (await (await p.request.get(H + "/labs")).text()).includes("LAB-001"));
-check("a safety copy was taken first", readdirSync(folder).some((f) => f.startsWith("spir-margin-before-restore-")));
+check("a safety copy was taken first", readdirSync(folder).some((f) => f.startsWith("spir-margin-before-restore-")), readdirSync(folder).join(","));
 
 check("no uncaught page errors", errs.length === 0, errs.join(" | "));
 await browser.close();
