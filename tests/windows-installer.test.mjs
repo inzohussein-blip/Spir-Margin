@@ -8,17 +8,22 @@ import { join } from "node:path";
 
 const WIN = "scripts/windows";
 
-test("the PowerShell installer is UTF-8 with a BOM and CRLF line endings", () => {
+const PS1 = readdirSync(WIN).filter((f) => f.endsWith(".ps1"));
+
+test("the PowerShell scripts are UTF-8 with a BOM and CRLF line endings", () => {
   // Without the BOM, PowerShell 5.1 reads the file as the machine's ANSI code
   // page and every Arabic message turns to mojibake.
-  const raw = readFileSync(join(WIN, "install.ps1"));
-  assert.deepEqual([...raw.subarray(0, 3)], [0xef, 0xbb, 0xbf], "missing UTF-8 BOM");
-  const text = raw.toString("utf8");
-  assert.ok(!/[^\r]\n/.test(text), "a line ends in LF alone");
+  assert.ok(PS1.includes("install.ps1") && PS1.includes("update.ps1"));
+  for (const f of PS1) {
+    const raw = readFileSync(join(WIN, f));
+    assert.deepEqual([...raw.subarray(0, 3)], [0xef, 0xbb, 0xbf], `${f}: missing UTF-8 BOM`);
+    const text = raw.toString("utf8");
+    assert.ok(!/[^\r]\n/.test(text), `${f}: a line ends in LF alone`);
+  }
 });
 
-test("the installer uses nothing PowerShell 5.1 lacks", () => {
-  const code = readFileSync(join(WIN, "install.ps1"), "utf8")
+for (const f of PS1) test(`${f} uses nothing PowerShell 5.1 lacks`, () => {
+  const code = readFileSync(join(WIN, f), "utf8")
     .split(/\r?\n/)
     .filter((l) => !l.trimStart().startsWith("#"))
     .join("\n")
@@ -46,7 +51,7 @@ test("the VBScript files that show Arabic are UTF-16", () => {
 });
 
 test("the command files are CRLF, which cmd.exe needs for labels and goto", () => {
-  for (const f of ["install-windows.cmd", join(WIN, "run-server.cmd")]) {
+  for (const f of ["install-windows.cmd", "update-windows.cmd", join(WIN, "run-server.cmd")]) {
     const text = readFileSync(f, "utf8");
     assert.ok(!/[^\r]\n/.test(text), `${f} has a line ending in LF alone`);
   }

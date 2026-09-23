@@ -3,7 +3,8 @@
 #   Double-click install-windows.cmd in the app folder, or:
 #   powershell -ExecutionPolicy Bypass -File scripts\windows\install.ps1 [-Port 3000] [-Lan] [-Demo]
 #   ... -Port 3001    when another program already uses port 3000
-#   ... -Update       fetch dependencies, rebuild, restart (after copying in a new version)
+#   ... -Update       fetch dependencies, rebuild, restart (after copying in a new version;
+#                     update-windows.cmd downloads the newest release and does all of it)
 #   ... -Uninstall    remove the shortcuts and the start-up entry; the data stays
 #   ... -Demo         start a NEW database with the demo records (for training);
 #                     by default a new database starts empty, ready for real data
@@ -189,7 +190,8 @@ if ($risky) {
 # raises a security prompt at every sign-in, and the program does not start
 # until someone answers it. This is the same as ticking "Unblock" in each
 # file's Properties.
-foreach ($f in @(Get-ChildItem -Path $WinDir -File) + @(Get-Item (Join-Path $AppDir "install-windows.cmd"))) {
+$cmdFiles = @(Get-ChildItem -Path $AppDir -Filter "*-windows.cmd" -File)
+foreach ($f in @(Get-ChildItem -Path $WinDir -File) + $cmdFiles) {
     Unblock-File -Path $f.FullName -ErrorAction SilentlyContinue
 }
 if (Test-Path $Icon) { Unblock-File -Path $Icon -ErrorAction SilentlyContinue }

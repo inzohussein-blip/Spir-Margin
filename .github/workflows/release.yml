@@ -1,0 +1,57 @@
+name: Release
+
+# Every push to main that passes CI becomes a numbered release that installed
+# computers update to (Settings → Updates). Only a green commit is released,
+# so a change that breaks the tests never reaches a computer.
+#
+# The release carries one file, spir-margin.zip: the source at that commit
+# plus version.json — {"number": N, "commit": "…", "date": "YYYY-MM-DD"} —
+# which is how an installed copy knows which release it is. The number is this
+# workflow's run number, so it only ever goes up.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Package
+        env:
+          NUMBER: ${{ github.run_number }}
+          COMMIT: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          DATE=$(git show -s --format=%cs HEAD)
+          printf '{"number":%s,"commit":"%s","date":"%s"}\n' "$NUMBER" "$COMMIT" "$DATE" > version.json
+          git archive --format=zip --prefix=spir-margin/ --add-file=version.json -o spir-margin.zip HEAD
+          unzip -l spir-margin.zip | grep -q 'spir-margin/version.json'
+          unzip -l spir-margin.zip | grep -q 'spir-margin/scripts/windows/update.ps1'
+          echo "DATE=$DATE" >> "$GITHUB_ENV"
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.run_number }}
+          COMMIT: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          git log -1 --format=%B HEAD > notes.txt
+          gh release create "build-$NUMBER" spir-margin.zip \
+            --target "$COMMIT" \
+            --title "Spir-Margin $NUMBER ($DATE)" \
+            --notes-file notes.txt \
+            --latest

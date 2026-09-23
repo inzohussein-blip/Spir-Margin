@@ -4,6 +4,10 @@ import { builtinPasswordChanged } from "@/lib/auth/builtin";
 import { AutoBackupPanel, type AutoBackupView } from "@/components/settings/AutoBackupPanel";
 import { defaultFolder, folderOf, listBackups, nextBackupAt, readBackupSettings } from "@/lib/backup/auto";
 import { fmtDateTime } from "@/lib/format";
+import { UpdatesPanel, type UpdatesView } from "@/components/settings/UpdatesPanel";
+import {
+  currentBuild, lastCheck, readUpdateSettings, readUpdateStatus, updateAvailable, updateKind, updateRunning,
+} from "@/lib/update/updates";
 
 async function autoBackupView(): Promise<AutoBackupView> {
   const s = await readBackupSettings();
@@ -16,7 +20,32 @@ async function autoBackupView(): Promise<AutoBackupView> {
     files: listBackups(folderOf(s)).slice(0, 30),
   };
 }
-import { SettingsIcon, ToggleLeftIcon, ShieldIcon, Trash2Icon, LockIcon, HardDriveIcon, CloudIcon, MonitorDownIcon, BuildingIcon, BookOpenTextIcon, KeyRoundIcon } from "lucide-react";
+async function updatesView(): Promise<UpdatesView> {
+  const kind = updateKind();
+  const build = currentBuild();
+  const check = lastCheck();
+  const status = readUpdateStatus();
+  const settings = await readUpdateSettings();
+  const running = updateRunning();
+  const latest = check.release;
+  return {
+    kind,
+    current: build
+      ? { number: build.number, date: build.date }
+      : null,
+    latest: latest ? { number: latest.number, date: latest.date } : null,
+    available: !!updateAvailable(),
+    checkedAt: check.checkedAt ? fmtDateTime(check.checkedAt) : null,
+    checkError: check.error,
+    running,
+    outcome: status && (running || ["done", "failed", "rolledback"].includes(status.state))
+      ? { state: status.state, number: status.number, detail: status.detail }
+      : null,
+    auto: settings.auto,
+    atTime: settings.atTime,
+  };
+}
+import { SettingsIcon, ToggleLeftIcon, ShieldIcon, Trash2Icon, LockIcon, HardDriveIcon, CloudIcon, MonitorDownIcon, BuildingIcon, BookOpenTextIcon, KeyRoundIcon, DownloadCloudIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
@@ -42,7 +71,7 @@ const STATE_META: { key: FeatureState; label: string; on: string }[] = [
   { key: "hidden", label: "Hide", on: "bg-ink-gray-8 text-white border-ink-gray-8" },
 ];
 
-export default async function SettingsPage({ searchParams }: { searchParams: { builtin?: string; backup?: string } }) {
+export default async function SettingsPage({ searchParams }: { searchParams: { builtin?: string; backup?: string; update?: string } }) {
   const locale = getLocale();
   const me = await getCurrentUser();
   if (!me || me.role !== "admin") {
@@ -110,6 +139,18 @@ export default async function SettingsPage({ searchParams }: { searchParams: { b
           </Link>
         </div>
       </Panel>
+
+      {/* ---- Updates (migration 0112) ---- */}
+      <section id="updates">
+        <Panel title={<span className="flex items-center gap-2"><DownloadCloudIcon size={16} className="text-brand" /> {t(locale, "Updates")}</span>}>
+          {searchParams.update === "saved" || searchParams.update === "checked" ? (
+            <p role="status" className="mx-5 mt-4 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              {t(locale, searchParams.update === "saved" ? "The update setting was saved." : "Checked for updates.")}
+            </p>
+          ) : null}
+          <UpdatesPanel v={await updatesView()} />
+        </Panel>
+      </section>
 
       {/* ---- Built-in account ----
            Its password is 123 and printed on the sign-in page until someone

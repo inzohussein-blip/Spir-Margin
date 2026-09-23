@@ -1,4 +1,4 @@
--- Spir-Margin — combined schema (all 110 migrations). Run ONCE on an EMPTY DB.
+-- Spir-Margin — combined schema (all 111 migrations). Run ONCE on an EMPTY DB.
 --
 -- GENERATED FILE — do not edit by hand. Rebuild with:
 --     npm run schema
@@ -8726,6 +8726,29 @@ create table if not exists _spir_sync_renames (
 );
 create index if not exists idx_spir_sync_renames_at on _spir_sync_renames(at desc);
 
+-- ===== migration: 0112_auto_update.sql =====
+-- =====================================================================
+-- Migration 0112 : Updates
+--
+-- Every change merged into main that passes the tests is published as a
+-- numbered release. An installed computer learns of it by itself (it asks
+-- a few times a day) and an administrator installs it from Settings with
+-- one click — or lets it install itself at a quiet hour.
+--
+-- This table holds that choice: off by default, because an update restarts
+-- the program for a moment and nobody should be surprised by it mid-sale.
+-- Local to this computer (a `_spir` table): each computer updates itself.
+-- =====================================================================
+
+create table if not exists _spir_update (
+    only_row      boolean primary key default true check (only_row),
+    auto          boolean not null default false,
+    at_time       text    not null default '02:00' check (at_time ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'),
+    last_auto_at  timestamptz,
+    updated_at    timestamptz not null default now()
+);
+insert into _spir_update (only_row) values (true) on conflict do nothing;
+
 select _spir_attach_change_log();
 
 create table if not exists _spir_migrations (
@@ -8842,7 +8865,8 @@ insert into _spir_migrations(filename) values
   ('0108_prune_standalone.sql'),
   ('0109_builtin_password.sql'),
   ('0110_auto_backup.sql'),
-  ('0111_sync_renames.sql')
+  ('0111_sync_renames.sql'),
+  ('0112_auto_update.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;

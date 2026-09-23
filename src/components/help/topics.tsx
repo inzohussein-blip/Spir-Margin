@@ -189,9 +189,13 @@ export const HELP_TOPICS: HelpTopic[] = [
 
         <HelpSection title="الخطوة 2: ضع مجلّد البرنامج في مكانه الدائم">
           <Steps>
-            <li>إن وصلك البرنامج ملفاً مضغوطاً (<Code>.zip</Code>): انقر عليه بالزر الأيمن ← «استخراج الكل» (Extract All).</li>
             <li>
-              انقل المجلّد الناتج إلى القرص <Code>C:</Code> وسمّه <Code>Spir-Margin</Code>، فيصير{" "}
+              نزّل أحدث إصدار، الملف <Code>spir-margin.zip</Code>، من{" "}
+              <Code>github.com/inzohussein-blip/Spir-Margin/releases/latest</Code>
+            </li>
+            <li>انقر عليه بالزر الأيمن ← «استخراج الكل» (Extract All).</li>
+            <li>
+              انقل المجلّد <Code>spir-margin</Code> الناتج إلى القرص <Code>C:</Code> وسمّه <Code>Spir-Margin</Code>، فيصير{" "}
               <Code>C:\Spir-Margin</Code>. افتحه وتأكّد أن الملف <Code>install-windows.cmd</Code> يظهر فيه مباشرةً، لا
               داخل مجلّد آخر.
             </li>
@@ -257,7 +261,40 @@ export const HELP_TOPICS: HelpTopic[] = [
           </Steps>
         </HelpSection>
 
-        <HelpSection title="التحديث إلى نسخة جديدة" icon={RefreshCwIcon}>
+        <HelpSection title="التحديثات" icon={RefreshCwIcon}>
+          <p>
+            كل تعديل على البرنامج يُنشر <strong>إصداراً مرقّماً</strong> بعد أن تنجح كل فحوصه. البرنامج يسأل عن الإصدار
+            الجديد وحده عدّة مرات في اليوم حين يتوفّر الإنترنت، ويظهر للمسؤول في الجرس إشعار «{t(locale, "A new release is available")}».
+          </p>
+          <Steps>
+            <li>
+              افتح <UiPath parts={[t(locale, "Setup"), t(locale, "Settings"), t(locale, "Updates")]} href="/settings#updates" />.
+            </li>
+            <li>
+              اضغط «{t(locale, "Update now")}». يأخذ البرنامج نسخة احتياطية أولاً، ثم ينزّل الإصدار ويجهّزه بجانب النسخة
+              العاملة، وتبقى تعمل كالمعتاد بضع دقائق. بعدها يتوقّف البرنامج نحو دقيقة ويعود بالإصدار الجديد، وتعود الصفحة وحدها.
+            </li>
+            <li>
+              أو فعّل «{t(locale, "Install new releases automatically")}» واختر ساعة لا يعمل فيها أحد. إن كان الحاسوب مطفأً في
+              تلك الساعة فالتحديث يجري عند أول تشغيل بعدها.
+            </li>
+          </Steps>
+          <Note>
+            إن لم يعمل الإصدار الجديد على هذا الحاسوب، أُعيد السابق وبياناته كما كانت، تلقائياً. التحديث لا يلمس{" "}
+            <Code>.pglite-data</Code> (البيانات) ولا <Code>.env.local</Code> (مفتاح الجلسات) ولا النسخ الاحتياطية. التفاصيل في{" "}
+            <Code>logs\update.log</Code>.
+          </Note>
+          <Note kind="warn">
+            الحواسيب المرتبطة بالمزامنة: حدّثها كلها في اليوم نفسه، وابدأ بالحاسوب الرئيسي. حاسوب بإصدار أقدم قد يرفض
+            تغييرات لم يعرفها بعد، فتبقى معلّقة حتى يُحدَّث.
+          </Note>
+          <p>
+            من خارج البرنامج: انقر نقراً مزدوجاً على <Code>update-windows.cmd</Code> في مجلّد البرنامج — يفعل ما يفعله الزرّ.
+          </p>
+        </HelpSection>
+
+        <HelpSection title="نسخة ثُبّتت قبل نظام الإصدارات: مرّة واحدة يدوياً">
+          <p>النسخ القديمة لا تعرف التحديث من الإعدادات بعد. حدّثها مرّة واحدة هكذا، وبعدها يكفي الزرّ:</p>
           <Steps>
             <li>
               خذ نسخة احتياطية من{" "}
@@ -265,8 +302,12 @@ export const HELP_TOPICS: HelpTopic[] = [
               واحفظها خارج هذا الحاسوب.
             </li>
             <li>
-              استخرج النسخة الجديدة، وانسخ <strong>محتوياتها</strong> إلى داخل <Code>C:\Spir-Margin</Code>، واختر «استبدال
-              الملفات» حين يسأل ويندوز.
+              نزّل <Code>spir-margin.zip</Code> من صفحة الإصدارات:{" "}
+              <Code>github.com/inzohussein-blip/Spir-Margin/releases/latest</Code>
+            </li>
+            <li>
+              استخرجه، وانسخ <strong>محتويات</strong> المجلّد <Code>spir-margin</Code> الذي في داخله إلى داخل{" "}
+              <Code>C:\Spir-Margin</Code>، واختر «استبدال الملفات» حين يسأل ويندوز.
             </li>
             <li>
               افتح موجّه الأوامر داخل المجلّد: انقر شريط العنوان في مستكشف الملفات، واكتب <Code>cmd</Code> واضغط{" "}
@@ -284,7 +325,7 @@ export const HELP_TOPICS: HelpTopic[] = [
 
         <HelpSection title="النقل إلى حاسوب جديد" icon={HardDriveIcon}>
           <Steps>
-            <li>على الحاسوب القديم: خذ نسخة احتياطية (كما في الخطوة الأولى من التحديث).</li>
+            <li>على الحاسوب القديم: خذ نسخة احتياطية وانقلها إلى الحاسوب الجديد.</li>
             <li>على الحاسوب الجديد: ثبّت البرنامج بالخطوات 1–3 أعلاه.</li>
             <li>
               افتح <UiPath parts={[t(locale, "Setup"), t(locale, "Settings"), t(locale, "Backup and restore")]} href="/settings" />{" "}
@@ -295,9 +336,10 @@ export const HELP_TOPICS: HelpTopic[] = [
         </HelpSection>
 
         <HelpSection title="خيارات المثبِّت">
-          <p>تُكتب في موجّه الأوامر داخل مجلّد البرنامج (انظر خطوة فتحه في «التحديث»):</p>
+          <p>تُكتب في موجّه الأوامر داخل مجلّد البرنامج (انظر خطوة فتحه أعلاه):</p>
           <Pairs
             rows={[
+              [<Code key="w">update-windows.cmd</Code>, "ينزّل أحدث إصدار ويثبّته، كزرّ «حدّث الآن» في الإعدادات. يعمل بالنقر المزدوج أيضاً."],
               [<Code key="u">install-windows.cmd -Update</Code>, "بعد نسخ نسخة جديدة فوق المجلّد: يوقف البرنامج، ويعيد بناءه، ثم يشغّله."],
               [<Code key="p">install-windows.cmd -Port 3001</Code>, "إن كان برنامج آخر يستخدم المنفذ 3000. المثبِّت يكتشف ذلك ويقترحه."],
               [<Code key="x">install-windows.cmd -Uninstall</Code>, "يزيل الأيقونات والتشغيل التلقائي ويوقف البرنامج. لا يحذف البيانات."],
@@ -364,6 +406,13 @@ export const HELP_TOPICS: HelpTopic[] = [
             ربط هذا الحاسوب بحواسيب الشركة الأخرى صار في صفحة مستقلّة:{" "}
             <UiPath parts={[t(locale, "Setup"), t(locale, "Sync")]} href="/sync" />. الشرح الكامل في تبويب «العمل دون
             إنترنت والمزامنة».
+          </p>
+        </HelpSection>
+
+        <HelpSection title={t(locale, "Updates")} icon={RefreshCwIcon}>
+          <p>
+            أيّ إصدار يعمل على هذا الحاسوب، وهل صدر أحدث منه، وزرّ «{t(locale, "Update now")}» وخيار التحديث التلقائي في
+            ساعة تختارها. الشرح في تبويب «التثبيت على ويندوز».
           </p>
         </HelpSection>
 
