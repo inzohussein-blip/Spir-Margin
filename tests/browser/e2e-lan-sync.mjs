@@ -80,9 +80,13 @@ async function labsText(p, url) {
 
 async function syncNow(p, url) {
   await p.goto(url + "/sync", { waitUntil: "networkidle" });
-  await p.locator("main").getByRole("button", { name: "مزامنة الآن" }).click();
+  // A click that lands before the page has hydrated does nothing; if no
+  // result appears, click again. Another pass is harmless.
   const r = p.locator("[data-sync-result]");
-  await r.waitFor({ timeout: 90_000 }).catch(() => {});
+  for (let attempt = 0; attempt < 4 && !(await r.count()); attempt++) {
+    await p.locator("main").getByRole("button", { name: "مزامنة الآن" }).click();
+    await r.waitFor({ timeout: attempt < 3 ? 8_000 : 90_000 }).catch(() => {});
+  }
   const found = await r.getAttribute("data-sync-result").catch(() => null);
   const text = found ? await r.innerText().catch(() => "") : "(no result) " + (await p.locator("main").innerText()).slice(0, 300).replace(/\n/g, " | ");
   return { ok: found === "ok", text };

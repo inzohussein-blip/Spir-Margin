@@ -31,6 +31,10 @@ check(
   res.headers()["content-disposition"] ?? "(none)",
 );
 
+// The hosted database is set on the Sync page now; Settings points there.
+check("Settings points to the Sync page", (await p.locator('a[href="/sync"]').count()) > 0);
+await p.goto(H + "/sync", { waitUntil: "networkidle" });
+
 // A bad connection string must be refused rather than saved.
 await p.fill('input[name="database_url"]', "postgresql://nobody@127.0.0.1:1/none");
 await p.locator('form:has(input[name="database_url"]) button[type="submit"]').click();

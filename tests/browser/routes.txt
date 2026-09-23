@@ -135,6 +135,7 @@
 /stock-reconciliation/new
 /supplier-quotations
 /supplier-quotations/new
+/sync
 /taxes
 /taxes/new
 /tools
