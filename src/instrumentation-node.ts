@@ -1,5 +1,7 @@
 import { applyServerSetting } from "@/lib/sync/lan";
-import { runSync, upstream } from "@/lib/sync/engine";
+import { consumeResetFile } from "@/lib/auth/builtin";
+import { backupTick } from "@/lib/backup/auto";
+import { pruneStandalone, runSync, upstream } from "@/lib/sync/engine";
 
 /**
  * Work the server does on its own, with no page open.
@@ -21,11 +23,21 @@ if (!G.__spirBackground) {
   // pending migrations, and the listener and the timer both need it.
   setTimeout(() => {
     applyServerSetting().catch((e) => console.error("[lan-sync] could not start:", (e as Error).message));
+    // A forgotten built-in password: a reset file left in the folder puts
+    // 123 back (see src/lib/auth/builtin.ts).
+    consumeResetFile().catch(() => undefined);
   }, 5_000);
 
   setInterval(() => {
+    // Automatic backups (Settings): runs if the schedule says one is due.
+    backupTick().catch((e) => console.error("[backup] tick failed:", (e as Error).message));
     upstream()
       .then((up) => (up ? runSync() : null))
       .catch((e) => console.error("[sync] background pass failed:", (e as Error).message));
   }, INTERVAL_MS).unref();
+
+  // Hourly: a computer syncing with nothing still forgets month-old changes.
+  setInterval(() => {
+    pruneStandalone().catch(() => undefined);
+  }, 60 * 60_000).unref();
 }

@@ -3,13 +3,26 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { bootWithMigrations } from "./helpers.mjs";
 
-test("seeded admin verifies with the default password and rejects a wrong one", async () => {
+test("no database account ships with a published password", async () => {
+  // Migration 0107: admin@spir.local / admin1234 and demo@spir.local /
+  // demo1234 used to exist in every database, both administrators.
   const db = await bootWithMigrations();
-  const ok = await db.query(`select id, role from fn_verify_login($1,$2)`, ["admin@spir.local", "admin1234"]);
+  for (const [email, pw] of [["admin@spir.local", "admin1234"], ["demo@spir.local", "demo1234"]]) {
+    const r = await db.query(`select id from fn_verify_login($1,$2)`, [email, pw]);
+    assert.equal(r.rows.length, 0, `${email} should not sign in with ${pw}`);
+  }
+  const left = await db.query(`select count(*)::int as n from app_users`);
+  assert.equal(left.rows[0].n, 0, "a new database has no accounts; the built-in one lives in code");
+  await db.close();
+});
+
+test("a created admin verifies with its password and rejects a wrong one", async () => {
+  const db = await bootWithMigrations();
+  await db.query(`select fn_create_user($1,$2,$3,$4)`, ["boss@spir.test", "right-pass", "Boss", "admin"]);
+  const ok = await db.query(`select id, role from fn_verify_login($1,$2)`, ["boss@spir.test", "right-pass"]);
   assert.equal(ok.rows.length, 1);
   assert.equal(ok.rows[0].role, "admin");
-
-  const bad = await db.query(`select id from fn_verify_login($1,$2)`, ["admin@spir.local", "wrong-password"]);
+  const bad = await db.query(`select id from fn_verify_login($1,$2)`, ["boss@spir.test", "wrong-password"]);
   assert.equal(bad.rows.length, 0);
   await db.close();
 });

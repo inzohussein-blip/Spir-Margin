@@ -25,6 +25,8 @@ const viaMain = (main) => ({
   key: "lan",
   pull: (after, me) => core.servePull(main, after, me, `n:${me}`),
   push: (rows, me) => core.serveAccept(main, rows, `n:${me}`),
+  meta: () => core.serveMeta(main),
+  snapshot: (table, after) => core.serveSnapshot(main, table, after),
 });
 const viaHosted = (hosted) => core.dbPeer(hosted, "remote");
 
@@ -168,17 +170,59 @@ test("a copy of the main computer becomes a computer of its own", async () => {
   assert.equal(again.pushed + again.pulled, 0, "nothing echoes back");
 });
 
-test("a computer that has been away too long is told, not quietly left behind", async () => {
+test("a computer away longer than the log reaches takes a full copy and carries on", async () => {
   const main = await fresh();
   const desk = await fresh();
-  await desk.query(`insert into labs (code, name) values ('L-9', 'قديم')`);
-  await main.query(`insert into labs (code, name) values ('L-10', 'سيُحذف من السجل')`);
-  await main.query(`insert into labs (code, name) values ('L-11', 'يبقى')`);
-  // The main computer has pruned its oldest change.
-  await main.query(`delete from _spir_changes where seq = (select min(seq) from _spir_changes)`);
-  const r = await core.syncOnce(desk, viaMain(main));
-  assert.equal(r.ok, false);
-  assert.equal(r.error, core.GAP_MESSAGE);
+  await main.query(`insert into labs (code, name) values ('L-9', 'قديم')`);
+  let r = await core.syncOnce(desk, viaMain(main));
+  assert.equal(r.ok, true, r.error);
+  // Time passes: the main computer keeps working and prunes its old log.
+  await main.query(`insert into labs (code, name) values ('L-10', 'في السجل المحذوف')`);
+  await main.query(`update labs set name = 'عُدّل بعد الغياب' where code = 'L-9'`);
+  await main.query(`insert into labs (code, name) values ('L-11', 'بعده')`);
+  await main.query(`delete from _spir_changes where seq < (select max(seq) from _spir_changes)`);
+  r = await core.syncOnce(desk, viaMain(main));
+  assert.equal(r.ok, true, r.error);
+  assert.equal(await labName(desk, "L-10"), "في السجل المحذوف", "a change whose log entry is gone still arrives");
+  assert.equal(await labName(desk, "L-9"), "عُدّل بعد الغياب");
+  assert.equal(await labName(desk, "L-11"), "بعده");
+});
+
+test("a new branch computer gets records older than the hosted database's log", async () => {
+  const office = await fresh();
+  const hosted = await fresh();
+  const branch = await fresh();
+  await office.query(`insert into labs (code, name) values ('OLD-1', 'سجل قديم')`);
+  await office.query(`insert into issues (lab_id, subject, issue_no) select id, 'عطل قديم', 'ISS-OLD' from labs where code = 'OLD-1'`);
+  await core.syncOnce(office, viaHosted(hosted));
+  // The hosted database's log no longer reaches back to them.
+  await hosted.query(`delete from _spir_changes where seq < (select max(seq) from _spir_changes)`);
+  const r = await core.syncOnce(branch, viaHosted(hosted));
+  assert.equal(r.ok, true, r.error);
+  assert.equal(await labName(branch, "OLD-1"), "سجل قديم");
+  assert.equal((await branch.query(`select count(*)::int as n from issues where issue_no = 'ISS-OLD'`)).rows[0].n, 1);
+  // …and then keeps in step through the log as usual.
+  await office.query(`update labs set name = 'بعد الربط' where code = 'OLD-1'`);
+  await core.syncOnce(office, viaHosted(hosted));
+  await core.syncOnce(branch, viaHosted(hosted));
+  assert.equal(await labName(branch, "OLD-1"), "بعد الربط");
+});
+
+test("what a main computer takes as a full copy still reaches its office computers", async () => {
+  const hosted = await fresh();
+  const branch = await fresh();
+  const main = await fresh();
+  const desk = await fresh();
+  await branch.query(`insert into labs (code, name) values ('BR-1', 'من الفرع')`);
+  await core.syncOnce(branch, viaHosted(hosted));
+  await hosted.query(`delete from _spir_changes where seq < (select max(seq) from _spir_changes)`); // pruned
+  await core.syncOnce(desk, viaMain(main));        // the office was linked first
+  const r = await core.syncOnce(main, viaHosted(hosted));
+  assert.equal(r.ok, true, r.error);
+  assert.equal(await labName(main, "BR-1"), "من الفرع");
+  const d = await core.syncOnce(desk, viaMain(main));
+  assert.equal(d.ok, true, d.error);
+  assert.equal(await labName(desk, "BR-1"), "من الفرع");
 });
 
 test("a change the peer refuses is recorded and stepped over", async () => {

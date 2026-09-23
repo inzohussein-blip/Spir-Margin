@@ -51,7 +51,8 @@ const dataDir = mkdtempSync(join(tmpdir(), "spir-browser-test-"));
 // only npm used to leave that child alive, still holding the port, to be
 // silently tested by the next run.
 const server = spawn("npm", ["start"], {
-  env: { ...process.env, PORT: String(PORT), PGLITE_DATA_DIR: dataDir },
+  // The suites exercise the demo records; a real install starts empty.
+  env: { SPIR_SEED: "demo", ...process.env, PORT: String(PORT), PGLITE_DATA_DIR: dataDir },
   stdio: ["ignore", "pipe", "pipe"],
   detached: true,
 });

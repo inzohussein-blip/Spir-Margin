@@ -107,6 +107,10 @@ export const HELP_TOPICS: HelpTopic[] = [
           <p>قاعدة البيانات تبدأ فارغة، جاهزة لبيانات الشركة. بهذا الترتيب:</p>
           <Steps>
             <li>
+              <strong>كلمة مرور الحساب الثابت</strong>: غيّر 123 بكلمة مرور للشركة.{" "}
+              <UiPath parts={[t(locale, "Setup"), t(locale, "Settings"), t(locale, "Built-in account password")]} href="/settings#builtin" />
+            </li>
+            <li>
               <strong>هوية الشركة</strong>: الاسم والشعار والعنوان وأرقام التواصل — تظهر على كل مستند مطبوع.{" "}
               <UiPath parts={[t(locale, "Setup"), t(locale, "Settings"), t(locale, "Company identity")]} href="/settings" />
             </li>
@@ -226,6 +230,10 @@ export const HELP_TOPICS: HelpTopic[] = [
           <Steps>
             <li>
               ادخل بالحساب الثابت: البريد <Code>admin@spir.local</Code> وكلمة المرور <Code>123</Code>.
+            </li>
+            <li>
+              <strong>غيّر كلمة المرور 123</strong> فوراً من{" "}
+              <UiPath parts={[t(locale, "Setup"), t(locale, "Settings"), t(locale, "Built-in account password")]} href="/settings#builtin" />.
             </li>
             <li>
               أدخل هوية الشركة من{" "}
@@ -359,6 +367,16 @@ export const HELP_TOPICS: HelpTopic[] = [
           </p>
         </HelpSection>
 
+        <HelpSection title={t(locale, "Built-in account password")} icon={KeyRoundIcon}>
+          <p>
+            تغيير كلمة المرور 123 للحساب <Code>admin@spir.local</Code> على هذا الحاسوب. الشرح في تبويب «المستخدمون والأمان».
+          </p>
+        </HelpSection>
+
+        <HelpSection title={t(locale, "Automatic backups")} icon={HardDriveIcon}>
+          <p>مواعيد النسخ التلقائي ومكانه وعدد النسخ. الشرح في تبويب «النسخ الاحتياطي».</p>
+        </HelpSection>
+
         <HelpSection title={t(locale, "Backup and restore")} icon={HardDriveIcon}>
           <p>تنزيل نسخة كاملة من قاعدة البيانات، واستعادة نسخة سابقة. التفاصيل في تبويب «النسخ الاحتياطي».</p>
         </HelpSection>
@@ -450,16 +468,44 @@ export const HELP_TOPICS: HelpTopic[] = [
           </Note>
         </HelpSection>
 
-        <HelpSection title="بين الفروع: القاعدة المستضافة" icon={CloudIcon}>
+        <HelpSection title="بين الفروع: ربط القاعدة المستضافة (Supabase)" icon={CloudIcon}>
+          <p>
+            القاعدة المستضافة قاعدة بيانات على الإنترنت تلتقي عندها الفروع. قاعدة <strong>واحدة</strong> للشركة كلّها،
+            ويُربط بها حاسوب واحد في كل مكان (الرئيسي في المكتب)، والباقي يرتبط به.
+          </p>
           <Steps>
             <li>
-              في حاسوب واحد (الرئيسي في المكتب عادةً): أدخل عنوان القاعدة المستضافة في قسم «
-              {t(locale, "Hosted database (branches over the internet)")}» واضغط «{t(locale, "Test and connect")}». في
-              Supabase استخدم «Session pooler» (المنفذ 5432)، لا «Transaction pooler».
+              ادخل إلى <Code>supabase.com</Code> وافتح مشروع الشركة (أو أنشئ واحداً: «New project»، واحفظ كلمة مرور
+              القاعدة التي تختارها — ستحتاجها).
             </li>
-            <li>في الصفحة نفسها اضغط «{t(locale, "Show the sync code")}» وانسخه.</li>
-            <li>في حاسوب الفرع: الصق الرمز في «{t(locale, "Sync code")}» واضغط «{t(locale, "Link")}».</li>
+            <li>
+              اضغط زرّ <strong>Connect</strong> أعلى الصفحة، ثم تبويب «Connection string»، واختر
+              <strong> Session pooler</strong>. <span className="text-red-700">لا تختر «Transaction pooler» (المنفذ 6543)</span> — البرنامج
+              يرفضه.
+            </li>
+            <li>
+              انسخ النصّ، وهو يشبه:
+              <div className="mt-1"><Code>postgresql://postgres.xxxx:[YOUR-PASSWORD]@aws-0-….pooler.supabase.com:5432/postgres</Code></div>
+              وضع كلمة مرور القاعدة مكان <Code>[YOUR-PASSWORD]</Code> (بلا الأقواس).
+            </li>
+            <li>
+              في البرنامج افتح <UiPath parts={[t(locale, "Setup"), t(locale, "Sync")]} href="/sync" />، والصق النصّ في قسم «
+              {t(locale, "Hosted database (branches over the internet)")}»، واضغط «{t(locale, "Test and connect")}». يُختبر
+              الاتصال قبل الحفظ، وفي أول ربط يُجهّز البرنامج القاعدة وحده (دقيقة أو اثنتان).
+            </li>
+            <li>
+              في الصفحة نفسها اضغط «{t(locale, "Show the sync code")}» وانسخ الرمز، ثم الصقه في صفحة المزامنة في حاسوب
+              كل فرع واضغط «{t(locale, "Link")}» — لا حاجة لكتابة العنوان مرّة أخرى.
+            </li>
           </Steps>
+          <Note>
+            حاسوب جديد يرتبط بقاعدة فيها بيانات يأخذ كل السجلّات تلقائياً، ثم يبقى متطابقاً معها. تعمل المزامنة وحدها كل
+            دقيقة، ومتى انقطع الإنترنت تنتظر التغييرات وتُرسَل عند عودته.
+          </Note>
+          <Note kind="warn">
+            نصّ الاتصال فيه كلمة مرور القاعدة: لا تشاركه إلا بين حواسيب الشركة، ولا تضعه في النسخة التجريبية على الإنترنت.
+            البرنامج يغلق واجهة Supabase العامة، فلا يصل أحد إلى البيانات بالمفتاح العام.
+          </Note>
         </HelpSection>
 
         <HelpSection title="أمان الرمز">
@@ -518,7 +564,27 @@ export const HELP_TOPICS: HelpTopic[] = [
           عطل في القرص يعني ضياعها إن لم تكن هناك نسخة احتياطية.
         </Note>
 
-        <HelpSection title="أخذ نسخة احتياطية" icon={HardDriveIcon}>
+        <HelpSection title={t(locale, "Automatic backups")} icon={HardDriveIcon}>
+          <p>
+            يأخذ البرنامج نسخة وحده — افتراضياً كل يوم الساعة 22:00، ويحتفظ بآخر 14. إن كان الحاسوب مطفأً في الموعد، تُؤخذ
+            النسخة حين يعمل.
+          </p>
+          <Steps>
+            <li>
+              افتح <UiPath parts={[t(locale, "Setup"), t(locale, "Settings"), t(locale, "Automatic backups")]} href="/settings#auto-backup" />.
+            </li>
+            <li>اختر كم مرّة: كل بضع ساعات، أو كل يوم في ساعة، أو كل أسبوع في يوم وساعة.</li>
+            <li>
+              <strong>المجلّد</strong>: اتركه فارغاً لمجلّد <Code>backups</Code> داخل مجلّد البرنامج، والأفضل قرص آخر أو
+              فلاشة موصولة دائماً أو مجلّد مشترك على الشبكة (مثل <Code>D:\Spir-Backups</Code>) — النسخة على القرص نفسه
+              تضيع معه.
+            </li>
+            <li>اختر عدد النسخ المحفوظة، ثم «{t(locale, "Save the schedule")}». زرّ «{t(locale, "Back up now")}» يأخذ نسخة فوراً.</li>
+          </Steps>
+          <p>النسخ المحفوظة تظهر في القسم نفسه، ويمكن تنزيل أيٍّ منها.</p>
+        </HelpSection>
+
+        <HelpSection title="نسخة يدوية" icon={HardDriveIcon}>
           <Steps>
             <li>
               افتح <UiPath parts={[t(locale, "Setup"), t(locale, "Settings"), t(locale, "Backup and restore")]} href="/settings" />.
@@ -526,15 +592,19 @@ export const HELP_TOPICS: HelpTopic[] = [
             <li>اضغط زرّ التنزيل؛ يُنزَّل ملف باسم يحمل التاريخ والوقت.</li>
             <li><strong>احفظه خارج هذا الحاسوب</strong>: فلاشة، أو قرص خارجي، أو بريد الشركة.</li>
           </Steps>
-          <p>متى؟ بعد إعداد البرنامج مباشرة، ثم أسبوعياً على الأقل، وقبل كل تحديث.</p>
+          <p>مفيدة قبل كل تحديث، ولأخذ نسخة إلى مكان بعيد (بريد الشركة أو قرص خارجي).</p>
         </HelpSection>
 
         <HelpSection title="الاستعادة">
           <p>من القسم نفسه، اختر ملف نسخة احتياطية واستعده.</p>
           <Note kind="warn">
-            الاستعادة <strong>تستبدل</strong> كل ما على هذا الحاسوب بمحتوى النسخة. ما أُدخل بعد تاريخ النسخة يضيع — فخذ
-            نسخة من الوضع الحالي أولاً إن كنت غير متأكّد.
+            الاستعادة <strong>تستبدل</strong> كل ما على هذا الحاسوب بمحتوى النسخة. قبلها يحفظ البرنامج وحده نسخة من الوضع
+            الحالي باسم يبدأ بـ <Code>spir-margin-before-restore</Code>، فإن اخترت الملف الخطأ تستعيد تلك. وإن لم يكن الملف
+            نسخة صالحة يُرفض دون أن يُمسّ شيء.
           </Note>
+          <p>
+            لإضافة حاسوب ثانٍ إلى الشركة استعمل الربط من صفحة المزامنة لا الاستعادة: الربط يعطيه نسخة كاملة ويبقيه متطابقاً.
+          </p>
         </HelpSection>
       </div>
     ),
@@ -583,7 +653,22 @@ export const HELP_TOPICS: HelpTopic[] = [
             {t(locale, "Account")}. إعادة التعيين تُخرج الحساب من كل الأجهزة، فهي أيضاً ما يُفعل إن شُكّ في أن كلمة المرور
             عرفها غير صاحبها.
           </p>
-          <p>كلمة مرور الحساب الثابت <Code>admin@spir.local</Code> لا تتغيّر — ولهذا لا يُستخدم للعمل اليومي.</p>
+        </HelpSection>
+
+        <HelpSection title="كلمة مرور الحساب الثابت (123)" icon={KeyRoundIcon}>
+          <Steps>
+            <li>
+              افتح <UiPath parts={[t(locale, "Setup"), t(locale, "Settings"), t(locale, "Built-in account password")]} href="/settings#builtin" />.
+            </li>
+            <li>اكتب كلمة المرور الحالية (<Code>123</Code> أول مرّة)، ثم الجديدة مرّتين — ثماني خانات على الأقل.</li>
+            <li>اضغط «{t(locale, "Change the password")}». لم تعد صفحة الدخول تعرض 123، وتخرج جلسات هذا الحساب الأخرى.</li>
+          </Steps>
+          <p>كلمة المرور هذه لكل حاسوب على حدة: غيّرها في كل حاسوب مثبَّت.</p>
+          <Note>
+            <strong>نسيتها؟</strong> أنشئ في مجلّد البرنامج (مثل <Code>C:\Spir-Margin</Code>) ملفاً فارغاً باسم{" "}
+            <Code>RESET-ADMIN-PASSWORD.txt</Code> (زرّ أيمن ← جديد ← مستند نصي)، ثم ادخل بـ <Code>123</Code> وغيّرها من جديد.
+            يُحذف الملف وحده بعد استعماله. لا يستطيع ذلك إلا من يصل إلى الحاسوب نفسه.
+          </Note>
         </HelpSection>
 
         <HelpSection title="لماذا البرنامج آمن على هذا الحاسوب" icon={ShieldIcon}>

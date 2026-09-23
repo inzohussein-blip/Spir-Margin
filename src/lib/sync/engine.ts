@@ -59,6 +59,10 @@ export interface SyncStatus {
 
 /** The upstream this computer syncs with, if any. Never throws. */
 export async function upstream(): Promise<Upstream | null> {
+  // The public demo on Vercel runs on demo records in memory. Syncing it
+  // with a real database would pour those records into the company's, and
+  // expose the company's to anyone with the demo's published password.
+  if (process.env.VERCEL && (process.env.SPIR_SEED === "demo" || process.env.SPIR_SEED === "full")) return null;
   const fromEnv = process.env.DATABASE_URL;
   if (fromEnv) return { kind: "hosted", key: "remote", label: hostLabel(fromEnv) };
   try {
@@ -152,7 +156,11 @@ export async function syncDetail(limit = 25): Promise<SyncDetail> {
 }
 
 async function peerFor(up: Upstream): Promise<SyncPeer | null> {
-  if (up.kind === "lan") return up.lan ? lanPeer(up.lan) : null;
+  if (up.kind === "lan") {
+    if (!up.lan) return null;
+    const { db } = await getDb();
+    return lanPeer(up.lan, await nodeId(db));
+  }
   const db = await getRemoteDb();
   return db ? dbPeer(db, "remote") : null;
 }
@@ -276,5 +284,18 @@ export async function dismissReject(id: string): Promise<void> {
   const { db } = await getDb();
   await db
     .query(`update _spir_sync_rejects set resolved_at = now() where id = $1::bigint`, [id])
+    .catch(() => undefined);
+}
+
+/**
+ * With nothing to sync with, nobody is waiting for this computer's log, so
+ * changes older than the retention window can go (migration 0108). Without
+ * this a standalone computer kept every change it ever made.
+ */
+export async function pruneStandalone(): Promise<void> {
+  if (await upstream()) return;
+  const { db } = await getDb();
+  await db
+    .query(`select fn_spir_prune_changes((select coalesce(max(seq), 0) from _spir_changes))`)
     .catch(() => undefined);
 }

@@ -37,7 +37,8 @@ test("scalar/void functions are classified as scalar (routed to `select fn()`)",
 
 test("fn_verify_login yields row objects (the shape the login action consumes)", async () => {
   const db = await bootWithMigrations();
-  const r = await db.query(`select * from fn_verify_login($1,$2)`, ["admin@spir.local", "admin1234"]);
+  await db.query(`select fn_create_user('boss@spir.test','right-pass','Boss','admin')`);
+  const r = await db.query(`select * from fn_verify_login($1,$2)`, ["boss@spir.test", "right-pass"]);
   assert.equal(r.rows.length, 1);
   assert.ok(r.rows[0].id, "row must expose an id column");
   assert.equal(r.rows[0].role, "admin");

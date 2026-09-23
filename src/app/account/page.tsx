@@ -41,12 +41,11 @@ export default async function AccountPage({ searchParams }: { searchParams: { ch
             </p>
           ) : null}
           {user.id === DEMO_USER_ID ? (
-            <p className="text-sm text-ink-gray-6">
-              {t(locale, "The built-in account's password is fixed in the program and cannot be changed. Create an account for each person under Users, and change passwords there.")}
+            <p className="mb-4 text-sm text-ink-gray-6">
+              {t(locale, "This is the built-in account. Its password is kept on this computer only; the default is 123.")}
             </p>
-          ) : (
-            <ChangePasswordForm />
-          )}
+          ) : null}
+          <ChangePasswordForm />
         </div>
       </Panel>
     </div>

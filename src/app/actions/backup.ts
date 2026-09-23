@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { restoreLocalDatabase } from "@/lib/db/pglite";
+import { takeBackup } from "@/lib/backup/auto";
 
 export interface RestoreState {
   error?: string;
@@ -37,12 +38,21 @@ export async function restoreBackupAction(
     return { error: "Confirm that the current data will be replaced" };
   }
 
+  // Keep what is here now, first. Restoring replaces everything, and the
+  // wrong file chosen by mistake must not cost the company its records.
+  try {
+    await takeBackup("before-restore");
+  } catch (e) {
+    console.error("[backup] safety copy before restore failed:", e);
+    return { error: "A safety copy of the current data could not be taken, so nothing was restored. Check the backup folder in Settings." };
+  }
+
   try {
     await restoreLocalDatabase(file);
   } catch (e) {
     console.error("[backup] restore failed:", e);
-    // A truncated or unrelated file lands here; the old data is already gone
-    // by then, which is exactly why the form insists on a confirmation.
+    // A truncated or unrelated file lands here, before anything was touched:
+    // the file is opened on its own first (restoreLocalDatabase).
     return { error: "That file could not be restored. It may not be a Spir-Margin backup." };
   }
 

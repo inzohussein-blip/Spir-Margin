@@ -1,4 +1,4 @@
--- Spir-Margin — combined schema (all 105 migrations). Run ONCE on an EMPTY DB.
+-- Spir-Margin — combined schema (all 109 migrations). Run ONCE on an EMPTY DB.
 --
 -- GENERATED FILE — do not edit by hand. Rebuild with:
 --     npm run schema
@@ -8592,6 +8592,114 @@ end $$;
 
 select _spir_guard_triggers();
 
+-- ===== migration: 0107_drop_default_accounts.sql =====
+-- =====================================================================
+-- Migration 0107 : No accounts with passwords everyone knows
+--
+-- 0059 created admin@spir.local / admin1234 and 0084 demo@spir.local /
+-- demo1234, both administrators, in every database. The program has its own
+-- built-in account (admin@spir.local, checked in code, see
+-- src/lib/auth/demo-credentials.ts), so these two only ever added a second
+-- and third way in with a published password.
+--
+-- They are removed where they still have those passwords. An install that
+-- changed one and uses it as a real account keeps it. Each database runs
+-- this itself, and migrations do not enter the change log, so nothing
+-- travels by sync.
+-- =====================================================================
+
+-- crypt() lives in `extensions` on a hosted Supabase database.
+select set_config('search_path', 'public, extensions, pg_temp', true);
+
+delete from app_users u
+ where (u.email = 'admin@spir.local' and u.password_hash = crypt('admin1234', u.password_hash))
+    or (u.email = 'demo@spir.local'  and u.password_hash = crypt('demo1234',  u.password_hash));
+
+-- ===== migration: 0108_prune_standalone.sql =====
+-- =====================================================================
+-- Migration 0108 : A computer on its own still forgets old changes
+--
+-- The change log was pruned only up to what had been pushed to a peer, so
+-- a computer that syncs with nothing — and a main computer serving the
+-- office with no hosted database above it — kept every change forever.
+--
+-- The caller now says how far is safe: nothing given means "what the peer
+-- has" (as before); a computer with no upstream passes its whole log. The
+-- one-month window still applies. An office computer that has been away
+-- longer than that is not stranded: it takes a full copy on its next sync.
+-- =====================================================================
+
+drop function if exists fn_spir_prune_changes();
+
+create or replace function fn_spir_prune_changes(p_upto bigint default null) returns integer
+language plpgsql as $$
+declare
+    v_keep int;
+    v_upto bigint;
+    v_n int;
+begin
+    select keep_days into v_keep from _spir_retention;
+    v_keep := coalesce(v_keep, 30);
+    v_upto := coalesce(p_upto, (select max(pushed_through) from _spir_sync_state), 0);
+    delete from _spir_changes
+     where seq <= v_upto
+       and changed_at < now() - make_interval(days => v_keep);
+    get diagnostics v_n = row_count;
+    return v_n;
+end $$;
+
+-- ===== migration: 0109_builtin_password.sql =====
+-- =====================================================================
+-- Migration 0109 : The built-in account's password can be changed
+--
+-- The built-in account (admin@spir.local) lives in code so that sign-in
+-- works on a fresh, offline install — and its password, 123, was fixed and
+-- printed on the sign-in page. Its password can now be changed per
+-- computer. Only the hash is kept, here, in a `_spir` table: local to this
+-- computer, never synced (each computer's administrator sets their own).
+-- While no password has been set, 123 still works, and the sign-in page
+-- still says so.
+-- =====================================================================
+
+create table if not exists _spir_builtin (
+    only_row      boolean primary key default true check (only_row),
+    password_hash text,
+    changed_at    timestamptz
+);
+insert into _spir_builtin (only_row) values (true) on conflict do nothing;
+
+-- ===== migration: 0110_auto_backup.sql =====
+-- =====================================================================
+-- Migration 0110 : Automatic backups
+--
+-- A backup that depends on someone remembering is a backup that is missing
+-- the day it is needed. This computer now takes one by itself, on a
+-- schedule set in Settings: every few hours, every day at a time, or once
+-- a week. The copies go to a folder (by default "backups" inside the
+-- program's folder — better a second drive, a USB stick or a shared folder)
+-- and only the newest few are kept.
+--
+-- On by default, daily at 22:00, keeping 14: a new install is protected
+-- before anyone opens Settings. Local to this computer (a `_spir` table):
+-- each computer backs up itself.
+-- =====================================================================
+
+create table if not exists _spir_backup (
+    only_row     boolean primary key default true check (only_row),
+    enabled      boolean not null default true,
+    frequency    text    not null default 'daily' check (frequency in ('hours', 'daily', 'weekly')),
+    every_hours  int     not null default 6  check (every_hours between 1 and 168),
+    at_time      text    not null default '22:00' check (at_time ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'),
+    weekday      int     not null default 4  check (weekday between 0 and 6),
+    folder       text,
+    keep         int     not null default 14 check (keep between 1 and 365),
+    last_run_at  timestamptz,
+    last_file    text,
+    last_error   text,
+    updated_at   timestamptz not null default now()
+);
+insert into _spir_backup (only_row) values (true) on conflict do nothing;
+
 select _spir_attach_change_log();
 
 create table if not exists _spir_migrations (
@@ -8703,7 +8811,11 @@ insert into _spir_migrations(filename) values
   ('0103_end_sessions.sql'),
   ('0104_close_hosted_data_api.sql'),
   ('0105_sync_links.sql'),
-  ('0106_sync_mirrors.sql')
+  ('0106_sync_mirrors.sql'),
+  ('0107_drop_default_accounts.sql'),
+  ('0108_prune_standalone.sql'),
+  ('0109_builtin_password.sql'),
+  ('0110_auto_backup.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;

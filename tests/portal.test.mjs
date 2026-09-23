@@ -16,7 +16,8 @@ test("a portal user is created with the customer role bound to a lab", async () 
 
 test("fn_verify_login exposes lab_id for staff too (null) without breaking", async () => {
   const db = await bootWithMigrations();
-  const row = (await db.query(`select role, lab_id from fn_verify_login('admin@spir.local','admin1234')`)).rows[0];
+  await db.query(`select fn_create_user('boss@spir.test','right-pass','Boss','admin')`);
+  const row = (await db.query(`select role, lab_id from fn_verify_login('boss@spir.test','right-pass')`)).rows[0];
   assert.equal(row.role, "admin");
   assert.equal(row.lab_id, null);
   await db.close();

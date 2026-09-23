@@ -2,7 +2,10 @@ import "server-only";
 import http from "node:http";
 import os from "node:os";
 import { getDb, dumpLocalDatabase, type Db } from "@/lib/db/pglite";
-import { nodeId, servePull, serveAccept, type ChangeRow, type PullPage, type SyncPeer } from "./core";
+import {
+  nodeId, servePull, serveAccept, serveMeta, serveSnapshot,
+  type ChangeRow, type PullPage, type SyncPeer, type SnapshotMeta, type SnapshotPage,
+} from "./core";
 import { encodeSyncCode, type LanCode } from "./code";
 import { seal, unseal, newSecret } from "./seal";
 
@@ -129,8 +132,9 @@ async function handle(op: string, body: Buffer, secret: string, address: string)
   const req = JSON.parse(unseal(secret, op, body).toString("utf8")) as {
     node: string;
     name: string;
-    after?: string;
+    after?: string | null;
     rows?: ChangeRow[];
+    table?: string;
   };
   if (typeof req.node !== "string" || !/^[0-9a-f-]{36}$/i.test(req.node)) throw new Error("bad node");
   const tag = `n:${req.node}`;
@@ -158,13 +162,20 @@ async function handle(op: string, body: Buffer, secret: string, address: string)
     );
     return seal(secret, op, json(results));
   }
+  if (op === "meta") {
+    await noteClient(db, req.node, req.name, address, "", null);
+    return seal(secret, op, json(await serveMeta(db)));
+  }
+  if (op === "snap") {
+    return seal(secret, op, json(await serveSnapshot(db, String(req.table ?? ""), req.after ?? null)));
+  }
   throw new Error("unknown operation");
 }
 
 function start(port: number, secret: string): Promise<void> {
   return new Promise((resolve) => {
     const server = http.createServer(async (req, res) => {
-      const m = /^\/spir-sync\/(hello|pull|push|clone)$/.exec(req.url ?? "");
+      const m = /^\/spir-sync\/(hello|pull|push|clone|meta|snap)$/.exec(req.url ?? "");
       if (req.method !== "POST" || !m) {
         res.writeHead(404).end();
         return;
@@ -267,7 +278,7 @@ export async function fetchClone(code: LanCode, me: string): Promise<Blob> {
 }
 
 /** The main computer as a sync peer. */
-export function lanPeer(code: LanCode): SyncPeer {
+export function lanPeer(code: LanCode, me: string): SyncPeer {
   const name = os.hostname();
   return {
     key: "lan",
@@ -275,6 +286,10 @@ export function lanPeer(code: LanCode): SyncPeer {
       JSON.parse((await call(code, "pull", { node: me, name, after })).toString("utf8")) as PullPage,
     push: async (rows, me) =>
       JSON.parse((await call(code, "push", { node: me, name, rows })).toString("utf8")) as (string | null)[],
+    meta: async () =>
+      JSON.parse((await call(code, "meta", { node: me, name })).toString("utf8")) as SnapshotMeta,
+    snapshot: async (table, after) =>
+      JSON.parse((await call(code, "snap", { node: me, name, table, after })).toString("utf8")) as SnapshotPage,
   };
 }
 

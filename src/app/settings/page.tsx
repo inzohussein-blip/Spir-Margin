@@ -1,5 +1,22 @@
 import Link from "next/link";
-import { SettingsIcon, ToggleLeftIcon, ShieldIcon, Trash2Icon, LockIcon, HardDriveIcon, CloudIcon, MonitorDownIcon, BuildingIcon, BookOpenTextIcon } from "lucide-react";
+import { BuiltinPasswordForm } from "@/components/settings/BuiltinPasswordForm";
+import { builtinPasswordChanged } from "@/lib/auth/builtin";
+import { AutoBackupPanel, type AutoBackupView } from "@/components/settings/AutoBackupPanel";
+import { defaultFolder, folderOf, listBackups, nextBackupAt, readBackupSettings } from "@/lib/backup/auto";
+import { fmtDateTime } from "@/lib/format";
+
+async function autoBackupView(): Promise<AutoBackupView> {
+  const s = await readBackupSettings();
+  const next = nextBackupAt(s);
+  return {
+    ...s,
+    defaultFolder: defaultFolder(),
+    lastRunAt: s.lastRunAt ? fmtDateTime(s.lastRunAt) : null,
+    nextAt: next ? fmtDateTime(next.toISOString()) : null,
+    files: listBackups(folderOf(s)).slice(0, 30),
+  };
+}
+import { SettingsIcon, ToggleLeftIcon, ShieldIcon, Trash2Icon, LockIcon, HardDriveIcon, CloudIcon, MonitorDownIcon, BuildingIcon, BookOpenTextIcon, KeyRoundIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
@@ -25,7 +42,7 @@ const STATE_META: { key: FeatureState; label: string; on: string }[] = [
   { key: "hidden", label: "Hide", on: "bg-ink-gray-8 text-white border-ink-gray-8" },
 ];
 
-export default async function SettingsPage() {
+export default async function SettingsPage({ searchParams }: { searchParams: { builtin?: string; backup?: string } }) {
   const locale = getLocale();
   const me = await getCurrentUser();
   if (!me || me.role !== "admin") {
@@ -37,6 +54,7 @@ export default async function SettingsPage() {
     );
   }
 
+  const builtinChanged = await builtinPasswordChanged();
   const supabase = createClient();
   const [flagRes, usersRes, denyRes] = await Promise.all([
     supabase.from("feature_flags").select("feature, state"),
@@ -93,12 +111,48 @@ export default async function SettingsPage() {
         </div>
       </Panel>
 
+      {/* ---- Built-in account ----
+           Its password is 123 and printed on the sign-in page until someone
+           here changes it (migration 0109). */}
+      <section id="builtin">
+        <Panel title={<span className="flex items-center gap-2"><KeyRoundIcon size={16} className="text-brand" /> {t(locale, "Built-in account password")}</span>}>
+          <div className="space-y-3 p-4">
+            {searchParams.builtin === "changed" ? (
+              <p role="status" className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                {t(locale, "The built-in account's password was changed. Other sessions of it have been signed out.")}
+              </p>
+            ) : null}
+            <p className="text-sm text-ink-gray-6">
+              {builtinChanged
+                ? t(locale, "The password of admin@spir.local has been changed on this computer, and the sign-in page no longer shows it.")
+                : t(locale, "admin@spir.local still has the password 123, shown on the sign-in page. Change it before the program is used for real work.")}
+            </p>
+            <BuiltinPasswordForm changed={builtinChanged} />
+            <p className="text-xs text-ink-gray-5">
+              {t(locale, "Forgotten? Create an empty file named RESET-ADMIN-PASSWORD.txt in the program's folder on this computer, then sign in with 123.")}
+            </p>
+          </div>
+        </Panel>
+      </section>
+
       {/* ---- Backup ----
            First on the page on purpose: with no hosted database this file is
            the only other copy of the company's records. */}
       <Panel title={<span className="flex items-center gap-2"><HardDriveIcon size={16} className="text-brand" /> {t(locale, "Backup and restore")}</span>}>
         <BackupPanel synced={await isRemoteConfigured()} />
       </Panel>
+
+      {/* ---- Automatic backups (migration 0110) ---- */}
+      <section id="auto-backup">
+        <Panel title={<span className="flex items-center gap-2"><HardDriveIcon size={16} className="text-brand" /> {t(locale, "Automatic backups")}</span>}>
+          {searchParams.backup ? (
+            <p role="status" className="mx-5 mt-4 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              {t(locale, searchParams.backup === "done" ? "A backup was taken." : "The backup schedule was saved.")}
+            </p>
+          ) : null}
+          <AutoBackupPanel v={await autoBackupView()} />
+        </Panel>
+      </section>
 
       {/* ---- Feature switches ---- */}
       <Panel title={<span className="flex items-center gap-2"><ToggleLeftIcon size={16} className="text-brand" /> {t(locale, "Non-essential features")}</span>}>

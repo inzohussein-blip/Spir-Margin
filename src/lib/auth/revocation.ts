@@ -30,9 +30,6 @@ export function forgetSessions(): void {
 }
 
 export async function isSessionCurrent(user: SessionUser): Promise<boolean> {
-  // The built-in account lives in the source, not in the table.
-  if (user.id === DEMO_USER_ID) return true;
-
   const key = `${user.id}:${user.issued_at ?? 0}`;
   const hit = recent.get(key);
   if (hit && Date.now() - hit.at < TTL_MS) return hit.ok;
@@ -40,6 +37,18 @@ export async function isSessionCurrent(user: SessionUser): Promise<boolean> {
   let ok: boolean;
   try {
     const { db } = await getDb();
+    if (user.id === DEMO_USER_ID) {
+      // The built-in account has no row in app_users; its password lives in
+      // _spir_builtin (migration 0109), and changing it ends older sessions.
+      const b = await db.query<{ ok: boolean }>(
+        `select changed_at is null or changed_at < to_timestamp($1::double precision + 1) as ok from _spir_builtin`,
+        [user.issued_at ?? 0],
+      );
+      ok = b.rows[0]?.ok !== false;
+      if (recent.size >= MAX) recent.clear();
+      recent.set(key, { ok, at: Date.now() });
+      return ok;
+    }
     // A token signed in second S was issued somewhere inside [S, S+1). It is
     // older than the cut-off only if that whole second is; a session issued in
     // the same second as the password change (the browser that changed its
