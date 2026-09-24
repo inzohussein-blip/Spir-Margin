@@ -20,6 +20,7 @@ import { FeatureUnavailable } from "@/components/settings/FeatureUnavailable";
 import { readSession } from "@/lib/auth/current-user";
 import { getNotifications } from "@/lib/notifications";
 import { updateAvailable } from "@/lib/update/updates";
+import { currentCopyState } from "@/lib/backup/copies-server";
 import { getAccessContext, blockReason, navFeatureState } from "@/lib/features";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -67,6 +68,18 @@ export default async function RootLayout({
   const notifications = user && !isFocused ? await getNotifications(locale) : [];
   // A new release, for whoever can install it (Settings → Updates).
   const release = user?.role === "admin" && !isFocused ? updateAvailable() : null;
+  // The records on this computer alone, with no recent copy anywhere else.
+  const copies = user?.role === "admin" && !isFocused && !process.env.VERCEL ? await currentCopyState() : null;
+  if (copies?.atRisk) {
+    notifications.unshift({
+      title: t(locale, "The company's records are on this computer only"),
+      sub: copies.daysSince === null
+        ? t(locale, "No copy anywhere else yet. Link a second computer, or back up to another drive.")
+        : `${t(locale, "Newest copy elsewhere")}: ${copies.daysSince} ${t(locale, "days")}`,
+      href: "/help?tab=backup",
+      severity: "amber",
+    });
+  }
   if (release) {
     notifications.unshift({
       title: `${t(locale, "A new release is available")}: ${t(locale, "Release")} ${release.number}`,

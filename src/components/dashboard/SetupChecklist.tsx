@@ -7,7 +7,7 @@ const LABEL: Record<SetupStep["key"], string> = {
   company: "Enter the company's name and logo",
   password: "Change the built-in account's password (123)",
   accounts: "Make an account for each person who will use the program",
-  backups: "Choose a backup folder on another drive or a USB stick",
+  copy: "Keep a second copy outside this computer: another office computer linked to it, or automatic backups to another drive",
 };
 
 /** The first steps of a new company, until they are all done. */

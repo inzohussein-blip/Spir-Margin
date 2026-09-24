@@ -223,6 +223,11 @@ const ar: Record<string, string> = {
   "The last automatic backup failed.": "فشلت آخر نسخة تلقائية.",
   "The program cannot write to that folder. Check the path, and that the drive is connected.": "لا يستطيع البرنامج الكتابة في هذا المجلّد. تحقّق من المسار ومن أن القرص موصول.",
   "before a restore": "قبل استعادة",
+  // second copy (home checklist, bell)
+  "Keep a second copy outside this computer: another office computer linked to it, or automatic backups to another drive": "احتفظ بنسخة ثانية خارج هذا الحاسوب: حاسوب مكتب ثانٍ مربوط به، أو نسخ تلقائي على قرص آخر",
+  "The company's records are on this computer only": "سجلّات الشركة على هذا الحاسوب وحده",
+  "No copy anywhere else yet. Link a second computer, or back up to another drive.": "لا توجد نسخة في مكان آخر بعد. اربط حاسوباً ثانياً، أو انسخ احتياطياً على قرص آخر.",
+  "Newest copy elsewhere": "أحدث نسخة في مكان آخر قبل",
   // remote access (Sync → Remote access, migration 0113)
   "This computer already has records of its own.": "هذا الحاسوب لديه سجلات خاصة به.",
   "Linking will merge its": "الربط سيدمج سجلاته وعددها",
