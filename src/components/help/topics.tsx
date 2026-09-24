@@ -705,6 +705,47 @@ export const HELP_TOPICS: HelpTopic[] = [
           عطل في القرص يعني ضياعها إن لم تكن هناك نسخة احتياطية.
         </Note>
 
+        <HelpSection title="نسخة ثانية حيّة: الأهمّ" icon={RefreshCwIcon}>
+          <p>
+            الحاسوب الرئيسي هو قاعدة بيانات الشركة. أفضل حماية له <strong>حاسوب ثانٍ في المكتب يحمل نسخة كاملة</strong> ويتزامن
+            معه كل دقيقة: إن تعطّل الرئيسي تكون البيانات كلّها على الثاني حتى آخر دقيقة، ويكمل العمل منه.
+          </p>
+          <Steps>
+            <li>
+              على الحاسوب الرئيسي: <UiPath parts={[t(locale, "Setup"), t(locale, "Sync")]} href="/sync" /> ←
+              «{t(locale, "Make this the main computer")}» ← اكتب اسم الحاسوب الثاني ← «{t(locale, "Show the sync code")}».
+            </li>
+            <li>على الحاسوب الثاني (مثبّت وفارغ): الصق الرمز في صفحة المزامنة واضغط «{t(locale, "Link")}». يأخذ نسخة كاملة.</li>
+            <li>أبقه مشغّلاً أغلب الوقت، ولو لم يعمل عليه أحد.</li>
+          </Steps>
+          <Note>
+            إن لم تكن هناك نسخة حديثة في مكان آخر منذ 3 أيام (حاسوب ثانٍ تزامن، أو القاعدة المستضافة، أو نسخة تلقائية على قرص
+            آخر)، يظهر للمسؤول في الجرس تنبيه «{t(locale, "The company's records are on this computer only")}».
+          </Note>
+        </HelpSection>
+
+        <HelpSection title="إن تعطّل الحاسوب الرئيسي" icon={LifeBuoyIcon}>
+          <Steps>
+            <li>
+              على الحاسوب الذي يحمل نسخة كاملة: افتح <UiPath parts={[t(locale, "Setup"), t(locale, "Sync")]} href="/sync" /> واضغط
+              «{t(locale, "Unlink")}» — بياناته تبقى كلّها.
+            </li>
+            <li>اضغط «{t(locale, "Make this the main computer")}»: صار هو الرئيسي.</li>
+            <li>
+              اعرض رمزاً لكل حاسوب آخر واربطه به من جديد. سيسأل كل حاسوب قبل دمج سجلّاته — وافق، فهي سجلّات الشركة نفسها.
+            </li>
+            <li>
+              إن كان «{t(locale, "Remote access from other devices")}» مستعملاً: شغّله على الرئيسي الجديد، واربط الأجهزة من جديد
+              برموز جديدة.
+            </li>
+          </Steps>
+          <p>
+            بلا حاسوب ثانٍ: ثبّت البرنامج على حاسوب جديد، ثم استعد آخر نسخة احتياطية من{" "}
+            <UiPath parts={[t(locale, "Setup"), t(locale, "Settings"), t(locale, "Backup and restore")]} href="/settings" />. يضيع ما
+            أُدخل بعد تلك النسخة.
+          </p>
+        </HelpSection>
+
         <HelpSection title={t(locale, "Automatic backups")} icon={HardDriveIcon}>
           <p>
             يأخذ البرنامج نسخة وحده — افتراضياً كل يوم الساعة 22:00، ويحتفظ بآخر 14. إن كان الحاسوب مطفأً في الموعد، تُؤخذ

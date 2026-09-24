@@ -77,6 +77,7 @@ browser ── Next.js (127.0.0.1:3000) ── pages (RSC) + server actions
 | Office network (LAN) | `src/lib/sync/lan.ts` (listener :3310, ops hello/pull/push/clone/meta/snap, client), `seal.ts` (AES-256-GCM), `code.ts` (`SPIR1-…` sync codes) |
 | Sync UI | `src/app/sync/page.tsx`, `src/app/actions/links.ts` (link/unlink/main computer/show code), `components/sync/*`, `components/settings/PeerPanel.tsx` + `actions/peer.ts` (hosted URL, pooler guard) |
 | Remote access (0113) | `src/lib/remote/gateway.ts` (listener :3300 on 0.0.0.0, pairing page `/__spir/pair`, device cookie, proxies to 127.0.0.1:PORT, rewrites own-address redirects), `tokens.ts` (pure: pair codes, cookie, Tailscale 100.64/10, limiter), `devices.ts` (`_spir_devices`: browsers + computers with their own sync secret, revoke), `request.ts` (`isRemoteRequest`, `secureCookies`), `actions/remote.ts` (local admin only), `components/sync/RemoteAccessPanel.tsx`; LAN listener picks a computer's secret from header `x-spir-device` (code field `d`) |
+| Second copy of the records | `src/lib/backup/copies.ts` (pure: a copy elsewhere within 3 days — upstream sync, an office computer's sync, an automatic backup to an outside folder), `copies-server.ts`; bell notice (admins) in `layout.tsx`, «copy» step in the setup checklist |
 | First steps of a new company | `src/lib/setup-checklist.ts`, `components/dashboard/SetupChecklist.tsx` (home page, admins) |
 | Sync status / health | `components/offline/DbSyncStatus.tsx` (header chip), `/monitoring/sync`, `components/monitoring/DatabaseSyncPanel.tsx` |
 | Offline (browser) | `public/offline-sw.js` (navigations only), `public/offline.html`, `src/lib/offline/outbox.ts`, `components/offline/*` |
@@ -188,6 +189,6 @@ Not in the menu: `/login`, `/welcome`, `/account`, `/portal`, `/w/<group>`, and 
 
 ## Docs
 
-`docs/INSTALL.md` (Windows/Linux install, Arabic) · `docs/HOSTED-SETUP.md` (Supabase +
+`docs/INSTALL.md` (Windows/Linux install, Arabic) · `docs/WINDOWS-TRIAL.md` (real-machine checklist) · `docs/HOSTED-SETUP.md` (Supabase +
 Vercel demo) · `docs/DEPLOYMENT.md` · `supabase/migrations/README.md` (migration rules) ·
 `tests/browser/README.md`.
