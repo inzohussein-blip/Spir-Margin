@@ -19,8 +19,10 @@ import { Toasts } from "@/components/desk/Toasts";
 import { FeatureUnavailable } from "@/components/settings/FeatureUnavailable";
 import { readSession } from "@/lib/auth/current-user";
 import { getNotifications } from "@/lib/notifications";
+import { updateAvailable } from "@/lib/update/updates";
 import { getAccessContext, blockReason, navFeatureState } from "@/lib/features";
 import { getLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import "./globals.css";
 
 // The title is what the installed app's window and taskbar button show.
@@ -63,6 +65,16 @@ export default async function RootLayout({
   if (session?.ended) redirect(`/login/expired?next=${encodeURIComponent(pathname || "/")}`);
   const user = session?.user ?? null;
   const notifications = user && !isFocused ? await getNotifications(locale) : [];
+  // A new release, for whoever can install it (Settings → Updates).
+  const release = user?.role === "admin" && !isFocused ? updateAvailable() : null;
+  if (release) {
+    notifications.unshift({
+      title: `${t(locale, "A new release is available")}: ${t(locale, "Release")} ${release.number}`,
+      sub: t(locale, "Install it from Settings"),
+      href: "/settings#updates",
+      severity: "blue",
+    });
+  }
 
   // Feature availability (admins bypass; core features are always on).
   const showShell = !isBare && !!user && !isFocused;

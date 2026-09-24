@@ -2,6 +2,7 @@ import { applyServerSetting } from "@/lib/sync/lan";
 import { consumeResetFile } from "@/lib/auth/builtin";
 import { backupTick } from "@/lib/backup/auto";
 import { pruneStandalone, runSync, upstream } from "@/lib/sync/engine";
+import { updateTick } from "@/lib/update/updates";
 
 /**
  * Work the server does on its own, with no page open.
@@ -31,6 +32,9 @@ if (!G.__spirBackground) {
   setInterval(() => {
     // Automatic backups (Settings): runs if the schedule says one is due.
     backupTick().catch((e) => console.error("[backup] tick failed:", (e as Error).message));
+    // New releases: asked for a few times a day; installed at the chosen
+    // hour if automatic updates are on (Settings → Updates).
+    updateTick().catch((e) => console.error("[update] tick failed:", (e as Error).message));
     upstream()
       .then((up) => (up ? runSync() : null))
       .catch((e) => console.error("[sync] background pass failed:", (e as Error).message));

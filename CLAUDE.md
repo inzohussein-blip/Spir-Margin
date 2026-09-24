@@ -84,6 +84,7 @@ browser ── Next.js (127.0.0.1:3000) ── pages (RSC) + server actions
 | Customer portal | `/portal`, `actions/portal.ts`, `createPortalClient()` |
 | Instructions (تعليمات) | `src/app/help/page.tsx`, `components/help/topics.tsx` (content), `parts.tsx` |
 | Installer (Windows) | `install-windows.cmd` → `scripts/windows/install.ps1` (PS 5.1, UTF-8 BOM, CRLF), `run-server.cmd`, `run-hidden.vbs`, `open-app.vbs` (UTF-16); Linux: `scripts/service/install-linux.sh` |
+| Updates | releases: `.github/workflows/release.yml` (after CI passes on main: tag `build-N`, asset `spir-margin.zip` with `version.json`); app: `src/lib/update/release.ts` (pure), `updates.ts` (check every 6 h, `startUpdate`, `updateTick`), `actions/updates.ts`, `components/settings/UpdatesPanel.tsx`, `/api/update/status`, bell notice in `layout.tsx`; Windows: `scripts/windows/update.ps1` (stage in `updates/stage-N`, build, stop, rename-swap, health check, rollback) + `update-windows.cmd`; web: Vercel deploys main |
 | Workspace pages per group | `src/app/w/[slug]` |
 
 ## Pages (route → server-action files in `src/app/actions/`)
@@ -102,7 +103,7 @@ browser ── Next.js (127.0.0.1:3000) ── pages (RSC) + server actions
 - **Reports** (التقارير): `/reports` All Reports; `/reports/receivables` Receivables Aging; `/reports/profitability` Profitability; `/stock-balance` Stock Balance
 - **Tools** (الأدوات): `/tools/calculator` Calculator; `/tools/profit` Profit Calculator [currency]; `/tools/converter` Currency Converter [currency]
 - **Monitoring** (المراقبة): `/monitoring/errors` Error Monitor [monitoring]; `/monitoring/changes` Change & Deletion Log; `/monitoring/sync` Sync Health [monitoring, pos, selling, sync]
-- **Setup** (الإعداد): `/masters` Masters [masters]; `/users` Users [users]; `/settings` Settings [autobackup, backup, branding, builtin, settings]; `/audit-log` Audit Log; `/sync` Sync [links, peer, sync]; `/help` Instructions
+- **Setup** (الإعداد): `/masters` Masters [masters]; `/users` Users [users]; `/settings` Settings [autobackup, backup, branding, builtin, settings, updates]; `/audit-log` Audit Log; `/sync` Sync [links, peer, sync]; `/help` Instructions
 
 Not in the menu: `/login`, `/welcome`, `/account`, `/portal`, `/w/<group>`, and every
 `/<list>/new` and `/<list>/[id]`.
@@ -122,7 +123,7 @@ Not in the menu: `/login`, `/welcome`, `/account`, `/portal`, `/w/<group>`, and 
   numbers · 0102 Arabic errors · 0103 session cut-off · 0104 closes Supabase REST
   (anon/authenticated) · 0105 sync links · 0106 trigger sync guard · 0107 no default
   accounts · 0108 prune standalone · 0109 built-in password · 0110 auto backup ·
-  0111 sync renames. Full list with titles in `README.md`.
+  0111 sync renames · 0112 auto update. Full list with titles in `README.md`.
 
 ## Sync model (read before touching sync)
 
@@ -160,6 +161,8 @@ Not in the menu: `/login`, `/welcome`, `/account`, `/portal`, `/w/<group>`, and 
 - `pkill -f next` also kills your own shell; find PIDs with `ps` + `awk`.
 - `.ps1` must stay UTF-8 **with BOM** + CRLF; `.vbs` with Arabic must be UTF-16 (`tests/windows-installer.test.mjs`).
 - Restore must never delete data before the file is proven valid (it is opened in memory first).
+- An update must never move `.pglite-data`, `.env.local`, `backups`, `logs` or `updates` (`$Keep` in
+  `update.ps1`); the build in the stage folder writes its own `.env.local` and `.pglite-data` — never swap them in.
 
 ## Tests
 

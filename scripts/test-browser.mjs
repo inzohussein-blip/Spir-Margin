@@ -52,7 +52,15 @@ const dataDir = mkdtempSync(join(tmpdir(), "spir-browser-test-"));
 // silently tested by the next run.
 const server = spawn("npm", ["start"], {
   // The suites exercise the demo records; a real install starts empty.
-  env: { SPIR_SEED: "demo", ...process.env, PORT: String(PORT), PGLITE_DATA_DIR: dataDir },
+  // Updates are asked of a stand-in for GitHub that e2e-updates.mjs runs.
+  env: {
+    SPIR_SEED: "demo",
+    SPIR_UPDATE_API: "http://127.0.0.1:3396",
+    SPIR_UPDATE_REPO: "acme/spir",
+    ...process.env,
+    PORT: String(PORT),
+    PGLITE_DATA_DIR: dataDir,
+  },
   stdio: ["ignore", "pipe", "pipe"],
   detached: true,
 });

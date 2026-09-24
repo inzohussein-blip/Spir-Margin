@@ -11,7 +11,8 @@ import { isDue, nextRun, type BackupSchedule } from "./schedule";
  * Files are named spir-margin-auto-YYYY-MM-DD-HHMMSS.tar.gz — the same format
  * as the download in Settings, so either restores the same way — and only
  * the newest `keep` automatic ones stay. A copy taken just before a restore
- * is named spir-margin-before-restore-… and kept separately (the newest 5).
+ * is named spir-margin-before-restore-…, one taken just before an update
+ * spir-margin-before-update-…; each kind keeps its newest 5.
  */
 
 export interface BackupSettings extends BackupSchedule {
@@ -28,11 +29,16 @@ export interface BackupFile {
   name: string;
   size: number;
   at: string;
-  kind: "auto" | "before-restore";
+  kind: BackupKind;
 }
+
+export type BackupKind = "auto" | "before-restore" | "before-update";
 
 const AUTO = "spir-margin-auto-";
 const SAFETY = "spir-margin-before-restore-";
+const PRE_UPDATE = "spir-margin-before-update-";
+const PREFIX: Record<BackupKind, string> = { auto: AUTO, "before-restore": SAFETY, "before-update": PRE_UPDATE };
+const isOurs = (n: string) => Object.values(PREFIX).some((p) => n.startsWith(p)) && n.endsWith(EXT);
 const EXT = ".tar.gz";
 const KEEP_SAFETY = 5;
 
@@ -107,10 +113,11 @@ export function listBackups(folder: string): BackupFile[] {
     return [];
   }
   return names
-    .filter((n) => (n.startsWith(AUTO) || n.startsWith(SAFETY)) && n.endsWith(EXT))
+    .filter(isOurs)
     .map((name) => {
       const st = fs.statSync(path.join(folder, name));
-      return { name, size: st.size, at: st.mtime.toISOString(), kind: name.startsWith(AUTO) ? "auto" : "before-restore" } as BackupFile;
+      const kind = (Object.keys(PREFIX) as BackupKind[]).find((k) => name.startsWith(PREFIX[k]))!;
+      return { name, size: st.size, at: st.mtime.toISOString(), kind };
     })
     .sort((a, b) => b.name.localeCompare(a.name));
 }
@@ -126,7 +133,7 @@ const G = globalThis as unknown as { __spirBackupRun?: Promise<string> | null };
  * Take a backup now. Written to a temporary name and renamed when complete,
  * so a half-written file never looks like a backup.
  */
-export async function takeBackup(kind: "auto" | "before-restore"): Promise<string> {
+export async function takeBackup(kind: BackupKind): Promise<string> {
   if (G.__spirBackupRun) return G.__spirBackupRun;
   const run = (async () => {
     const s = await readBackupSettings();
@@ -135,7 +142,7 @@ export async function takeBackup(kind: "auto" | "before-restore"): Promise<strin
     try {
       const bad = checkFolder(folder);
       if (bad) throw new Error(`cannot write to ${folder}: ${bad}`);
-      const name = `${kind === "auto" ? AUTO : SAFETY}${stamp(new Date(), workingTimeZone())}${EXT}`;
+      const name = `${PREFIX[kind]}${stamp(new Date(), workingTimeZone())}${EXT}`;
       const target = path.join(folder, name);
       const tmp = `${target}.partial`;
       const dump = Buffer.from(await (await dumpLocalDatabase()).arrayBuffer());
@@ -143,6 +150,7 @@ export async function takeBackup(kind: "auto" | "before-restore"): Promise<strin
       fs.renameSync(tmp, target);
       prune(folder, AUTO, s.keep);
       prune(folder, SAFETY, KEEP_SAFETY);
+      prune(folder, PRE_UPDATE, KEEP_SAFETY);
       if (kind === "auto") {
         await db.query(`update _spir_backup set last_run_at = now(), last_file = $1, last_error = null`, [name]);
       }
@@ -180,7 +188,7 @@ export function nextBackupAt(s: BackupSettings): Date | null {
 /** The full path of a listed backup, or null for any name that is not one. */
 export function backupPath(folder: string, name: string): string | null {
   if (name !== path.basename(name)) return null;
-  if (!(name.startsWith(AUTO) || name.startsWith(SAFETY)) || !name.endsWith(EXT)) return null;
+  if (!isOurs(name)) return null;
   const p = path.join(folder, name);
   return fs.existsSync(p) ? p : null;
 }

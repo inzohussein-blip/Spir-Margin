@@ -25,7 +25,7 @@ export interface AutoBackupView {
   lastFile: string | null;
   lastError: string | null;
   nextAt: string | null;
-  files: { name: string; size: number; at: string; kind: "auto" | "before-restore" }[];
+  files: { name: string; size: number; at: string; kind: "auto" | "before-restore" | "before-update" }[];
 }
 
 function Save() {
@@ -160,6 +160,7 @@ export function AutoBackupPanel({ v }: { v: AutoBackupView }) {
                 <span className="font-mono text-xs text-ink-gray-8" dir="ltr">{f.name}</span>
                 <span className="flex items-center gap-3 text-xs text-ink-gray-5">
                   {f.kind === "before-restore" ? <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-800">{t(locale, "before a restore")}</span> : null}
+                  {f.kind === "before-update" ? <span className="rounded bg-sky-50 px-1.5 py-0.5 text-sky-800">{t(locale, "before an update")}</span> : null}
                   <span dir="ltr">{mb(f.size)}</span>
                   <a href={`/api/backup/file?name=${encodeURIComponent(f.name)}`} className="inline-flex items-center gap-1 text-brand hover:underline">
                     <DownloadIcon size={13} />

@@ -71,6 +71,8 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | `DATABASE_URL` | اختياري: قاعدة مستضافة للمزامنة (يُفضَّل ضبطها من صفحة المزامنة بدلاً من هذا) |
 | `SPIR_TIMEZONE` | اختياري: المنطقة الزمنية (الافتراضي منطقة الحاسوب، ثم Asia/Baghdad) |
 | `PGLITE_DATA_DIR` | اختياري: مكان القاعدة المحلية (`memory` = في الذاكرة) |
+| `SPIR_UPDATES` | اختياري: `off` يوقف السؤال التلقائي عن الإصدارات الجديدة |
+| `SPIR_UPDATE_REPO` / `SPIR_UPDATE_API` | اختياري: مستودع الإصدارات (الافتراضي `inzohussein-blip/Spir-Margin`) وعنوان واجهة GitHub (تستبدله الاختبارات) |
 
 ## 3) خريطة المجلّدات
 
@@ -78,16 +80,17 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 .
 ├── CLAUDE.md                    خريطة المشروع لمساعد البرمجة (إنجليزية)
 ├── install-windows.cmd          مثبِّت ويندوز (يستدعي scripts/windows/install.ps1)
+├── update-windows.cmd           تحديث ويندوز إلى أحدث إصدار (يستدعي scripts/windows/update.ps1)
 ├── docs/                        INSTALL · HOSTED-SETUP · DEPLOYMENT · ERPNEXT-PARITY
 ├── public/                      الأيقونات، offline-sw.js، offline.html
 ├── scripts/
-│   ├── windows/                 install.ps1 · run-server.cmd · run-hidden.vbs · open-app.vbs
+│   ├── windows/                 install.ps1 · update.ps1 · run-server.cmd · run-hidden.vbs · open-app.vbs
 │   ├── service/                 install-linux.sh + قالب systemd
 │   ├── test-browser.mjs         مشغّل اختبارات المتصفّح
 │   ├── build-schema.mjs         يبني supabase/schema.sql من الـ migrations
 │   └── verify-admin.mjs         فحص دخول حساب على القاعدة المستضافة (سير عمل يدوي)
 ├── supabase/
-│   ├── migrations/              0001 … 0111 — كل المخطّط ومنطق العمل (انظر القسم 7)
+│   ├── migrations/              0001 … 0112 — كل المخطّط ومنطق العمل (انظر القسم 7)
 │   ├── schema.sql               مولَّد: كل الـ migrations في ملف واحد
 │   └── seed.sql                 البيانات التجريبية (اختيارية)
 ├── src/
@@ -263,7 +266,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | --- | --- | --- |
 | Masters — البيانات الأساسية | `/masters` | `masters.ts` |
 | Users — المستخدمون | `/users` | `users.ts` |
-| Settings — الإعدادات | `/settings` | `autobackup.ts`, `backup.ts`, `branding.ts`, `builtin.ts`, `settings.ts` |
+| Settings — الإعدادات | `/settings` | `autobackup.ts`, `backup.ts`, `branding.ts`, `builtin.ts`, `settings.ts`, `updates.ts` |
 | Audit Log — سجل التدقيق | `/audit-log` | — |
 | Sync — المزامنة | `/sync` | `links.ts`, `peer.ts`, `sync.ts` |
 | Instructions — تعليمات | `/help` | — |
@@ -298,6 +301,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | **بوّابة الزبائن** | `/portal` · `actions/portal.ts` · `createPortalClient()` |
 | **التعليمات** | `src/app/help/page.tsx` · `components/help/topics.tsx` (كل النصوص) · `parts.tsx` |
 | **المثبِّت** | `install-windows.cmd` · `scripts/windows/` · `scripts/service/install-linux.sh` · `docs/INSTALL.md` |
+| **التحديثات** | الإصدارات: `.github/workflows/release.yml` (بعد نجاح CI على `main`: الوسم `build-N` والملف `spir-margin.zip` وفيه `version.json`) — في البرنامج: `src/lib/update/release.ts` (نقيّ) · `updates.ts` · `actions/updates.ts` · `components/settings/UpdatesPanel.tsx` · `/api/update/status` · الإشعار في `src/app/layout.tsx` — ويندوز: `scripts/windows/update.ps1` · `update-windows.cmd` — الويب: Vercel ينشر كل دمج في `main` |
 
 ## 6) المزامنة بالتفصيل
 
@@ -437,6 +441,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | `0109_builtin_password.sql` | The built-in account's password can be changed |
 | `0110_auto_backup.sql` | Automatic backups |
 | `0111_sync_renames.sql` | Two computers, one code |
+| `0112_auto_update.sql` | Updates |
 
 ## 8) الأمان
 

@@ -56,6 +56,10 @@
 
 بعد تغيير المتغيّرات: **Deployments ← Redeploy**.
 
+**التحديثات:** Vercel يبني وينشر من جديد مع كل دمج في `main` (الملف `vercel.json`
+يوقف النشر من فروع `claude/**`). لا شيء تفعله بيدك. تأكّد مرّة واحدة من **Settings ← Git**
+أن المشروع مربوط بالمستودع `inzohussein-blip/Spir-Margin` وأن **Production Branch** هو `main`.
+
 ---
 
 ## 3) سير عمل «Verify admin login» (اختياري)

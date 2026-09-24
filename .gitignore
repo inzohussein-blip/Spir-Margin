@@ -13,3 +13,8 @@ logs/
 # automatic backups (Settings → Automatic backups)
 /backups/
 RESET-ADMIN-PASSWORD*
+
+# Updates (Settings → Updates): the updater's work folder, and the release
+# number that comes inside each release zip — never committed.
+/updates/
+/version.json
