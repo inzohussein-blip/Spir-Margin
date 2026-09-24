@@ -3,6 +3,7 @@ import { consumeResetFile } from "@/lib/auth/builtin";
 import { backupTick } from "@/lib/backup/auto";
 import { pruneStandalone, runSync, upstream } from "@/lib/sync/engine";
 import { updateTick } from "@/lib/update/updates";
+import { applyGatewaySetting } from "@/lib/remote/gateway";
 
 /**
  * Work the server does on its own, with no page open.
@@ -24,6 +25,8 @@ if (!G.__spirBackground) {
   // pending migrations, and the listener and the timer both need it.
   setTimeout(() => {
     applyServerSetting().catch((e) => console.error("[lan-sync] could not start:", (e as Error).message));
+    // Remote access from other devices, if an administrator turned it on.
+    applyGatewaySetting().catch((e) => console.error("[gateway] could not start:", (e as Error).message));
     // A forgotten built-in password: a reset file left in the folder puts
     // 123 back (see src/lib/auth/builtin.ts).
     consumeResetFile().catch(() => undefined);

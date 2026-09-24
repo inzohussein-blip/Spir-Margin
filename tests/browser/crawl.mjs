@@ -6,7 +6,7 @@ const routes = fs.readFileSync(`${HERE}/routes.txt`, "utf8").trim().split("\n");
 const ARABIC_INDIC = /[٠-٩۰-۹]/;
 // Latin words that leak into an Arabic-only UI. Ignore brand/product/code-ish
 // tokens which are legitimately Latin (Spir-Margin, LAB-001, USD, IQD, CSV…).
-const IGNORE = /Spir-Margin|Administrator|USD|IQD|CSV|PDF|API|URL|ID|QR|SKU|UOM|BOM|RFQ|POS|AMC|LAB-|DEMO|DEV-|KIT-|SPR-|PO-|SI-|PICK-|TRIP-|Demo |Dr\.|Baghdad|Basra|Germany|Nos|Box|⌘K|EN/g;
+const IGNORE = /Spir-Margin|Administrator|USD|IQD|CSV|PDF|API|URL|ID|QR|SKU|UOM|BOM|RFQ|POS|AMC|LAB-|DEMO|DEV-|KIT-|SPR-|PO-|SI-|PICK-|TRIP-|Demo |Dr\.|Baghdad|Basra|Germany|Tailscale|Nos|Box|⌘K|EN/g;
 
 const browser = await launch();
 const ctx = await browser.newContext({ locale: "ar-EG", viewport: { width: 1440, height: 900 } });

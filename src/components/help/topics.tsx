@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import {
   LayoutGridIcon, RocketIcon, MonitorDownIcon, SettingsIcon, WifiOffIcon,
   HardDriveIcon, UsersIcon, LifeBuoyIcon, BuildingIcon, CloudIcon, ToggleLeftIcon,
-  ShieldIcon, RefreshCwIcon, PrinterIcon, KeyRoundIcon, SearchIcon, type LucideIcon,
+  ShieldIcon, RefreshCwIcon, PrinterIcon, KeyRoundIcon, SearchIcon, GlobeIcon, type LucideIcon,
 } from "lucide-react";
 import { navGroups } from "@/lib/nav";
 import { t, type Locale } from "@/lib/i18n";
@@ -344,7 +344,7 @@ export const HELP_TOPICS: HelpTopic[] = [
               [<Code key="p">install-windows.cmd -Port 3001</Code>, "إن كان برنامج آخر يستخدم المنفذ 3000. المثبِّت يكتشف ذلك ويقترحه."],
               [<Code key="x">install-windows.cmd -Uninstall</Code>, "يزيل الأيقونات والتشغيل التلقائي ويوقف البرنامج. لا يحذف البيانات."],
               [<Code key="d">install-windows.cmd -Demo</Code>, "قاعدة جديدة ببيانات تجريبية للتدريب — على حاسوب تدريب، لا على حاسوب العمل."],
-              [<Code key="l">install-windows.cmd -Lan</Code>, "يفتح البرنامج لأجهزة شبكة المكتب. على شبكة موثوقة فقط (انظر «المستخدمون والأمان»)."],
+              [<Code key="l">install-windows.cmd -Lan</Code>, "قديم: يفتح البرنامج لأجهزة شبكة المكتب دون ربط الأجهزة. الأفضل «الوصول من الأجهزة الأخرى» في صفحة المزامنة (انظر تبويبه)."],
             ]}
           />
         </HelpSection>
@@ -506,7 +506,11 @@ export const HELP_TOPICS: HelpTopic[] = [
               إن سأل ويندوز عن السماح لـ Node.js بالشبكة، اختر <strong>السماح</strong> للشبكات الخاصة. بدون ذلك لا تصل
               إليه الحواسيب الأخرى.
             </li>
-            <li>اضغط «{t(locale, "Show the sync code")}» ثم «{t(locale, "Copy the code")}»، وأرسله إلى الحواسيب الأخرى (رسالة أو فلاشة).</li>
+            <li>
+              اكتب اسم الحاسوب الذي سيُربط (مثل «حاسوب المحاسبة»)، واضغط «{t(locale, "Show the sync code")}» ثم «
+              {t(locale, "Copy the code")}»، وأرسله إليه (رسالة أو فلاشة). <strong>لكل حاسوب رمزه الخاص</strong>: يظهر باسمه في
+              قائمة «{t(locale, "Devices allowed in")}»، ويمكن قطعه وحده دون إعادة ربط البقية.
+            </li>
             <li>
               في كل حاسوب آخر: افتح صفحة المزامنة، والصق الرمز في «{t(locale, "Sync code")}»، واضغط «{t(locale, "Link")}».
             </li>
@@ -515,7 +519,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             head={["الحاسوب الذي يُربط", "ماذا يحدث"]}
             rows={[
               ["جديد، لم يُدخَل فيه شيء", "يأخذ نسخة كاملة من سجلّات الحاسوب الرئيسي، ثم يبقى متطابقاً معه."],
-              ["فيه عمل سابق", "يُدمج عمله مع عمل الحاسوب الرئيسي في الاتجاهين، ولا يُحذف شيء."],
+              ["فيه عمل سابق", "يسأل أولاً، ويذكر عدد سجلّاته واسم الشركة التي سيُدمج معها. بعد التأكيد يُدمج عمله مع عمل الحاسوب الرئيسي في الاتجاهين، ولا يُحذف شيء."],
             ]}
           />
           <Note>
@@ -608,6 +612,88 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
 
   // ------------------------------------------------------------------ backup
+  // ------------------------------------------------------------------ remote access
+  {
+    id: "remote",
+    title: "الوصول من الأجهزة الأخرى",
+    icon: GlobeIcon,
+    render: (locale) => (
+      <div className="space-y-4">
+        <HelpSection title="الحاسوب الرئيسي هو قاعدة البيانات" icon={GlobeIcon}>
+          <p>
+            الحاسوب الذي ثُبّت عليه البرنامج يحمل قاعدة بيانات الشركة. الأجهزة الأخرى تصل إليه بطريقتين، ويمكن الجمع بينهما:
+          </p>
+          <Pairs
+            head={["الطريقة", "متى تناسب"]}
+            rows={[
+              ["نسخة كاملة على الجهاز الآخر (رمز مزامنة)", "حواسيب المكتب: تعمل حتى لو انقطع الاتصال أو أُطفئ الحاسوب الرئيسي، ثم تتزامن. الشرح في تبويب «العمل دون إنترنت والمزامنة»."],
+              ["من المتصفّح فقط (الوصول من الأجهزة الأخرى)", "حاسوب محمول في البيت، أو هاتف، أو استعمال عرضي: لا يُثبَّت شيء، لكن يلزم أن يكون الحاسوب الرئيسي مشغّلاً ومتّصلاً."],
+            ]}
+          />
+        </HelpSection>
+
+        <HelpSection title="تشغيل الوصول من المتصفّح">
+          <Steps>
+            <li>
+              على الحاسوب الرئيسي: افتح{" "}
+              <UiPath parts={[t(locale, "Setup"), t(locale, "Sync"), t(locale, "Remote access from other devices")]} href="/sync#remote" /> واضغط «
+              {t(locale, "Turn on remote access")}». إن سأل ويندوز عن السماح لـ Node.js بالشبكة فاختر <strong>السماح</strong>.
+            </li>
+            <li>
+              أنشئ لكل شخص حساباً خاصاً به من <UiPath parts={[t(locale, "Setup"), t(locale, "Users")]} href="/users" />.{" "}
+              <strong>الحساب الثابت <Code>admin@spir.local</Code> لا يعمل إلا على الحاسوب الرئيسي نفسه.</strong>
+            </li>
+            <li>
+              اكتب اسم الجهاز (مثل «حاسوب أحمد المحمول») واضغط «{t(locale, "Add a device")}». يظهر رمز من 8 أرقام، يعمل مرة
+              واحدة خلال 15 دقيقة.
+            </li>
+            <li>
+              على الجهاز الآخر: افتح في المتصفّح أحد العناوين المعروضة (مثل <Code>http://192.168.1.10:3300</Code>)، واكتب
+              الرمز، ثم ادخل بالحساب.
+            </li>
+          </Steps>
+          <Note>
+            كل جهاز مربوط يظهر باسمه وآخر ظهوره في «{t(locale, "Devices allowed in")}». زرّ «{t(locale, "Cut off")}» يوقفه فوراً
+            دون أن يمسّ الأجهزة الأخرى. إطفاء «{t(locale, "Only paired devices (recommended)")}» يجعل صفحة الدخول ظاهرة لكل من
+            يصل إلى المنفذ — على شبكة موثوقة فقط.
+          </Note>
+        </HelpSection>
+
+        <HelpSection title="من خارج المكتب، عبر الإنترنت (مجاناً)">
+          <p>
+            أغلب اتصالات الإنترنت لا تسمح بالوصول إلى حاسوب المكتب من الخارج، وفتح المنافذ في الراوتر غير آمن. الحلّ:{" "}
+            <strong>Tailscale</strong>، برنامج مجاني ضمن حدود تكفي شركة صغيرة، يصنع شبكة خاصة مشفّرة بين أجهزتك كأنها في
+            المكتب نفسه.
+          </p>
+          <Steps>
+            <li>
+              أنشئ حساباً واحداً للشركة في <Code>tailscale.com</Code>، وثبّت Tailscale على الحاسوب الرئيسي وادخل به.
+            </li>
+            <li>ثبّته على كل جهاز بعيد (حاسوب أو هاتف) وادخل بالحساب نفسه.</li>
+            <li>
+              في صفحة المزامنة يظهر عنوان يبدأ بـ <Code>100.</Code> وبجانبه «{t(locale, "over the internet, through Tailscale")}».
+              افتحه على الجهاز البعيد واربطه كما في الخطوات أعلاه.
+            </li>
+            <li>
+              رموز المزامنة للنسخ الكاملة تتضمّن هذا العنوان تلقائياً، فالحاسوب البعيد يتزامن عبر الإنترنت أيضاً.
+            </li>
+          </Steps>
+          <Note kind="warn">
+            لا تفتح منافذ البرنامج في الراوتر مباشرةً على الإنترنت. Tailscale يغني عن ذلك، ولا يدخل منه إلا أجهزتك.
+          </Note>
+        </HelpSection>
+
+        <HelpSection title="شركة أخرى على حاسوبها">
+          <p>
+            كل تثبيت مستقلّ تماماً: قاعدة بياناته وحساباته ورموزه على حاسوبه وحده. شركة أخرى تنزّل البرنامج نفسه وتثبّته على
+            حاسوبها فتحصل على نسختها الخاصة، ولا ترى شيئاً من بيانات غيرها. رموز كل شركة لا تفتح إلا حاسوبها، وربط حاسوب فيه
+            بيانات بشركة أخرى يُسأل عنه ويُذكر فيه اسم تلك الشركة قبل أيّ دمج.
+          </p>
+        </HelpSection>
+      </div>
+    ),
+  },
+
   {
     id: "backup",
     title: "النسخ الاحتياطي",
@@ -728,13 +814,18 @@ export const HELP_TOPICS: HelpTopic[] = [
 
         <HelpSection title="لماذا البرنامج آمن على هذا الحاسوب" icon={ShieldIcon}>
           <Bullets>
-            <li><strong>لا تصل إليه أجهزة الشبكة</strong>: يستمع لهذا الحاسوب وحده، ما لم يُثبَّت عمداً بالخيار <Code>-Lan</Code>.</li>
+            <li>
+              <strong>لا تصل إليه أجهزة الشبكة</strong>: يستمع لهذا الحاسوب وحده. الأجهزة الأخرى تصل إليه فقط عبر «
+              {t(locale, "Remote access from other devices")}» إن شغّلها المسؤول: كل جهاز يُربط برمز لمرة واحدة، والحساب الثابت
+              مرفوض منها.
+            </li>
             <li><strong>لكل تثبيت مفتاح جلسات خاص به</strong>، يُولَّد تلقائياً. لا تنسخ الملف <Code>.env.local</Code> إلى حاسوب آخر.</li>
             <li><strong>سجلّ لا يُمحى</strong>: كل تعديل وحذف في السجلّات المالية والحسّاسة محفوظ ولا يمكن تغييره.</li>
           </Bullets>
           <Note kind="warn">
-            الخيار <Code>-Lan</Code> يفتح البرنامج لكل أجهزة الشبكة، والحساب الثابت يعمل من أيٍّ منها. لا تستخدمه إلا على
-            شبكة موثوقة، وقفل شاشة الحاسوب حين تتركه (<Key>Win</Key>+<Key>L</Key>).
+            خيار التثبيت القديم <Code>-Lan</Code> يفتح البرنامج لكل أجهزة الشبكة دون ربط الأجهزة، والحساب الثابت يعمل من
+            أيٍّ منها. استعمل بدلاً منه «{t(locale, "Remote access from other devices")}»، وقفل شاشة الحاسوب حين تتركه (
+            <Key>Win</Key>+<Key>L</Key>).
           </Note>
         </HelpSection>
       </div>

@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { builtinPasswordMatches, setBuiltinPassword } from "@/lib/auth/builtin";
 import { forgetSessions } from "@/lib/auth/revocation";
 import { BUILT_IN_USER, SESSION_COOKIE, SESSION_MAX_AGE, createSessionToken } from "@/lib/auth/session";
+import { secureCookies } from "@/lib/remote/request";
 
 export interface BuiltinState {
   error?: string;
@@ -34,7 +35,7 @@ export async function setBuiltinPasswordAction(_prev: BuiltinState | null, formD
   if (user.id === BUILT_IN_USER.id) {
     cookies().set(SESSION_COOKIE, await createSessionToken(BUILT_IN_USER), {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: secureCookies(),
       sameSite: "lax",
       path: "/",
       maxAge: SESSION_MAX_AGE,

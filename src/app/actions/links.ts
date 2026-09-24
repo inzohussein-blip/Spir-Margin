@@ -25,6 +25,8 @@ import {
   UnreachableError,
   WrongCodeError,
 } from "@/lib/sync/lan";
+import { addComputer, revokeAllComputers } from "@/lib/remote/devices";
+import { isRemoteRequest } from "@/lib/remote/request";
 
 /**
  * Linking computers (the Sync page).
@@ -42,6 +44,11 @@ export interface LinkState {
   message?: string;
   /** A code to show (on request only). */
   code?: string;
+  /**
+   * This computer has records of its own and the link would merge them into
+   * another's: say whose, and how many, and ask before going on.
+   */
+  confirmMerge?: { code: string; company: string; records: number };
 }
 
 async function requireAdmin() {
@@ -95,7 +102,15 @@ async function linkHosted(url: string): Promise<LinkState> {
   return done("linked-hosted");
 }
 
-async function linkMain(raw: string, code: LanCode): Promise<LinkState> {
+/** Records on this computer that did not come from anywhere else. */
+async function ownRecords(db: Awaited<ReturnType<typeof getDb>>["db"]): Promise<number> {
+  const r = await db.query<{ n: number }>(
+    `select count(distinct (table_name, pk::text))::int as n from _spir_changes where received_from is null`,
+  );
+  return r.rows[0]?.n ?? 0;
+}
+
+async function linkMain(raw: string, code: LanCode, confirmed: boolean): Promise<LinkState> {
   const { db } = await getDb();
   const me = await nodeId(db);
   if (code.n === me) return { error: "This is the main computer's own code. Paste it on the other computers." };
@@ -134,7 +149,14 @@ async function linkMain(raw: string, code: LanCode): Promise<LinkState> {
     return done("linked-copy");
   }
 
-  // This computer already has work of its own: merge the two, both ways.
+  // This computer already has work of its own: merge the two, both ways —
+  // once someone has confirmed they belong to the same company. Merging
+  // another company's records in cannot be undone short of a backup.
+  if (!confirmed) {
+    return {
+      confirmMerge: { code: raw, company: code.c || peer.name, records: await ownRecords(db) },
+    };
+  }
   await db.query(`update _spir_peer set lan_code = $1, database_url = null`, [raw]);
   await db.query(`delete from _spir_sync_state where peer = 'lan'`);
   resetRemoteDb();
@@ -153,7 +175,9 @@ export async function linkWithCodeAction(_prev: LinkState | null, formData: Form
   if (!raw) return { error: "Paste a sync code" };
   const code = decodeSyncCode(raw);
   if (!code) return { error: "That is not a sync code. Copy it again from the Sync page of the other computer." };
-  return code.k === "pg" ? linkHosted(code.u) : linkMain(raw.replace(/\s+/g, ""), code);
+  return code.k === "pg"
+    ? linkHosted(code.u)
+    : linkMain(raw.replace(/\s+/g, ""), code, formData.get("confirm_merge") === "on");
 }
 
 /** Stop syncing. Nothing is deleted; this computer simply works alone. */
@@ -188,6 +212,8 @@ export async function newMainCodeAction(): Promise<LinkState> {
   if (!(await requireAdmin())) return { error: "Only an admin can change this" };
   const { db } = await getDb();
   await db.query(`update _spir_lan_server set secret = $1, updated_at = now()`, [newSecret()]);
+  // Each computer's own code too: this is the "everyone out" button.
+  await revokeAllComputers();
   await applyServerSetting();
   return done("new-code");
 }
@@ -203,9 +229,16 @@ async function label(): Promise<string | undefined> {
 /** Show the code other computers paste — on request, never in the page itself. */
 export async function showCodeAction(_prev: LinkState | null, formData: FormData): Promise<LinkState> {
   if (!(await requireAdmin())) return { error: "Only an admin can change this" };
+  // A sync code is a key to every record: it is handed out at the main
+  // computer itself, not to a device that came in through remote access.
+  if (isRemoteRequest()) return { error: "Sync codes are shown on the main computer itself." };
   const which = String(formData.get("which"));
   if (which === "lan") {
-    const code = await mainComputerCode(await label());
+    if (!(await readServerSetting()).enabled) return { error: "Turn on the main computer first." };
+    // Each computer gets a code of its own (migration 0113), listed under
+    // Remote access, so one can be cut off without re-linking the rest.
+    const name = String(formData.get("name") ?? "").trim() || "—";
+    const code = await mainComputerCode(await label(), await addComputer(name));
     return code ? { ok: true, code } : { error: "Turn on the main computer first." };
   }
   const url = await remoteUrl();

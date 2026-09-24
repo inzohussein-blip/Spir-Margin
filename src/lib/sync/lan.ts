@@ -8,6 +8,7 @@ import {
 } from "./core";
 import { encodeSyncCode, type LanCode } from "./code";
 import { seal, unseal, newSecret } from "./seal";
+import { computerSecret, noteComputerSeen } from "@/lib/remote/devices";
 
 export { newSecret };
 
@@ -71,16 +72,20 @@ export async function readServerSetting(): Promise<ServerSetting> {
   return { enabled: !!row?.enabled, secret: row?.secret ?? null, port: Number(row?.port ?? DEFAULT_PORT) };
 }
 
-/** The code other office computers paste, or null while serving is off. */
-export async function mainComputerCode(label?: string): Promise<string | null> {
+/**
+ * The code another computer pastes, or null while serving is off. With a
+ * device (migration 0113) it carries that computer's own id and secret;
+ * without, the shared secret of older codes.
+ */
+export async function mainComputerCode(label?: string, device?: { id: string; secret: string }): Promise<string | null> {
   const s = await readServerSetting();
   if (!s.enabled || !s.secret) return null;
   const { db } = await getDb();
-  const code: LanCode = { k: "lan", a: lanAddresses(), p: s.port, s: s.secret, n: await nodeId(db) };
+  const code: LanCode = { k: "lan", a: lanAddresses(), p: s.port, s: device?.secret ?? s.secret, n: await nodeId(db) };
   if (label) code.c = label;
+  if (device) code.d = device.id;
   return encodeSyncCode(code);
 }
-
 
 // ------------------------------------------------------------------ serving
 
@@ -180,10 +185,20 @@ function start(port: number, secret: string): Promise<void> {
         res.writeHead(404).end();
         return;
       }
-      const current = G.__spirLan?.secret ?? secret;
+      const address = req.socket.remoteAddress ?? "";
       try {
+        // A computer with a code of its own names itself; its secret is then
+        // looked up, and is gone once it has been cut off.
+        const device = req.headers["x-spir-device"];
+        let current = G.__spirLan?.secret ?? secret;
+        if (typeof device === "string" && device) {
+          const own = await computerSecret(device);
+          if (!own) throw new Error("unable to authenticate: device not allowed");
+          current = own;
+          void noteComputerSeen(device, address.replace(/^::ffff:/, ""));
+        }
         const body = await readBody(req);
-        const out = await handle(m[1], body, current, req.socket.remoteAddress ?? "");
+        const out = await handle(m[1], body, current, address);
         res.writeHead(200, { "content-type": "application/octet-stream" }).end(out);
       } catch (e) {
         const msg = (e as Error).message ?? "";
@@ -246,7 +261,7 @@ export async function call(code: LanCode, op: string, payload: unknown, timeoutM
       const res = await fetch(`http://${addr}:${code.p}/spir-sync/${op}`, {
         method: "POST",
         body: new Uint8Array(body),
-        headers: { "content-type": "application/octet-stream" },
+        headers: { "content-type": "application/octet-stream", ...(code.d ? { "x-spir-device": code.d } : {}) },
         signal: AbortSignal.timeout(op === "clone" ? 300_000 : timeoutMs),
       });
       if (res.status === 403) throw new WrongCodeError("The main computer did not accept this sync code.");

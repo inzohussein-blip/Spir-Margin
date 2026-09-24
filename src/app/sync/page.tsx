@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { RefreshCwIcon, MonitorIcon, Link2Icon, NetworkIcon, CloudIcon, BookOpenTextIcon, CheckCircle2Icon } from "lucide-react";
+import { RefreshCwIcon, MonitorIcon, Link2Icon, NetworkIcon, CloudIcon, BookOpenTextIcon, CheckCircle2Icon, GlobeIcon } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getDb, remoteUrlIsFromEnvironment } from "@/lib/db/pglite";
 import { syncStatus } from "@/lib/sync/engine";
@@ -11,6 +11,11 @@ import { LinkPanel } from "@/components/sync/LinkPanel";
 import { MainComputerPanel } from "@/components/sync/MainComputerPanel";
 import { ShowCode } from "@/components/sync/ShowCode";
 import { SyncNowButton } from "@/components/sync/SyncNowButton";
+import { RemoteAccessPanel, type RemoteAccessView } from "@/components/sync/RemoteAccessPanel";
+import { gatewayState, readGatewaySetting } from "@/lib/remote/gateway";
+import { listDevices } from "@/lib/remote/devices";
+import { addressKind } from "@/lib/remote/tokens";
+import { isRemoteRequest } from "@/lib/remote/request";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
 import { fmtDateTime } from "@/lib/format";
@@ -33,7 +38,38 @@ const DONE: Record<string, string> = {
   "main-on": "This is now the main computer. Copy its code to the other computers.",
   "main-off": "This computer no longer serves the office network.",
   "new-code": "A new code was made. Computers linked with the old one must be linked again.",
+  "remote-on": "Remote access is on. Add the devices allowed in, and open one of the addresses on each.",
+  "remote-off": "Remote access is off. Other devices can no longer open the program.",
+  "device-off": "The device was cut off.",
+  "device-removed": "The device was removed from the list.",
 };
+
+async function remoteView(): Promise<RemoteAccessView> {
+  const [g, devices] = await Promise.all([readGatewaySetting(), listDevices()]);
+  const state = gatewayState();
+  const now = Date.now();
+  return {
+    enabled: g.enabled,
+    running: state.running,
+    error: state.error,
+    port: g.port,
+    requireDevice: g.requireDevice,
+    // Tailscale first: it is the one that works from outside the office.
+    urls: lanAddresses()
+      .map((a) => ({ url: `http://${a}:${g.port}`, kind: addressKind(a) }))
+      .sort((x, y) => (x.kind === "tailscale" ? -1 : 0) - (y.kind === "tailscale" ? -1 : 0)),
+    devices: devices.map((d) => ({
+      id: d.id,
+      name: d.name,
+      kind: d.kind,
+      status: d.revokedAt ? "revoked" : d.paired ? "active" : d.pairUntil && Date.parse(d.pairUntil) > now ? "waiting" : "expired",
+      pairUntil: d.pairUntil ? fmtDateTime(d.pairUntil) : null,
+      lastSeen: d.lastSeenAt ? fmtDateTime(d.lastSeenAt) : null,
+      lastAddress: d.lastAddress,
+    })),
+    remote: isRemoteRequest(),
+  };
+}
 
 export default async function SyncPage({ searchParams }: { searchParams: { done?: string } }) {
   const locale = getLocale();
@@ -148,6 +184,14 @@ export default async function SyncPage({ searchParams }: { searchParams: { done?
           />
         </div>
       </Panel>
+
+      <section id="remote">
+        <Panel title={<span className="flex items-center gap-2"><GlobeIcon size={16} className="text-brand" /> {t(locale, "Remote access from other devices")}</span>}>
+          <div className="p-4">
+            <RemoteAccessPanel v={await remoteView()} />
+          </div>
+        </Panel>
+      </section>
 
       <Panel title={<span className="flex items-center gap-2"><CloudIcon size={16} className="text-brand" /> {t(locale, "Hosted database (branches over the internet)")}</span>}>
         <div className="space-y-4 p-4">
