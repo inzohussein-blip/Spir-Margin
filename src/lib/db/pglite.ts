@@ -632,6 +632,8 @@ export async function restoreLocalDatabase(dump: Blob): Promise<void> {
   // for it. It is one click on the Sync page, with the same code.
   await pg.query(`update _spir_node set node_id = gen_random_uuid(), created_at = now()`);
   await pg.query(`update _spir_lan_server set enabled = false`).catch(() => undefined);
+  // Likewise the remote-access gateway (migration 0113): one click to turn back on.
+  await pg.query(`update _spir_gateway set enabled = false`).catch(() => undefined);
 
   const db = pg as unknown as Db;
   local.raw = pg as unknown as PgliteHandle;

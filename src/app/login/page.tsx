@@ -5,6 +5,7 @@ import { getLocale } from "@/lib/i18n-server";
 import { DEMO_EMAIL, DEMO_PASSWORD } from "@/lib/auth/demo-credentials";
 import { t } from "@/lib/i18n";
 import { builtinPasswordChanged } from "@/lib/auth/builtin";
+import { isRemoteRequest } from "@/lib/remote/request";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,9 @@ export default async function LoginPage({
   // Once an administrator has changed it, the password is theirs to know.
   const changed = await builtinPasswordChanged();
   const next = typeof searchParams?.next === "string" ? searchParams.next : "";
+  // From another device (the remote-access gateway) the built-in account is
+  // refused, so it is neither offered nor described.
+  const remote = isRemoteRequest();
 
   return (
     <div className="relative grid min-h-screen place-items-center overflow-hidden bg-surface-gray-1 p-4">
@@ -58,8 +62,13 @@ export default async function LoginPage({
           </p>
         ) : null}
 
-        <LoginForm defaultEmail={DEMO_EMAIL} next={next} />
+        <LoginForm defaultEmail={remote ? "" : DEMO_EMAIL} next={next} />
 
+        {remote ? (
+          <p className="mt-5 rounded-lg border border-outline-gray-2 bg-surface-gray-1 p-3 text-xs leading-relaxed text-ink-gray-6">
+            {t(locale, "You are signing in from another device. Use the account an administrator made for you on the main computer.")}
+          </p>
+        ) : (
         <div className="mt-5 rounded-lg border border-outline-gray-2 bg-surface-gray-1 p-3 text-xs leading-relaxed text-ink-gray-6">
           <div className="mb-1.5 flex items-center gap-2 font-semibold text-ink-gray-7">
             <KeyRoundIcon size={14} className="shrink-0 text-brand" />
@@ -79,6 +88,7 @@ export default async function LoginPage({
               : t(locale, "This account always works, with or without a network. Change its password in Settings before real use.")}
           </p>
         </div>
+        )}
 
         <div className="mt-4 flex items-center justify-center text-xs text-ink-gray-5">
           <Link href="/welcome" className="hover:text-brand hover:underline">

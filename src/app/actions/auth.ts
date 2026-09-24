@@ -16,14 +16,15 @@ import { DEMO_EMAIL } from "@/lib/auth/demo-credentials";
 import type { LoginState } from "@/lib/auth/login-state";
 import { forgetSessions, settleFutureCutoff } from "@/lib/auth/revocation";
 import { builtinPasswordMatches, setBuiltinPassword } from "@/lib/auth/builtin";
+import { isRemoteRequest, secureCookies } from "@/lib/remote/request";
 
-const cookieOptions = {
+const cookieOptions = () => ({
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: secureCookies(),
   sameSite: "lax" as const,
   path: "/",
   maxAge: SESSION_MAX_AGE,
-};
+});
 
 /** Only allow same-origin relative paths — never accept `//evil.com/...`. */
 function safeNext(raw: string): string {
@@ -44,7 +45,7 @@ function safeNext(raw: string): string {
 async function trySetSession(user: SessionUser): Promise<LoginState> {
   try {
     const token = await createSessionToken(user);
-    cookies().set(SESSION_COOKIE, token, cookieOptions);
+    cookies().set(SESSION_COOKIE, token, cookieOptions());
     return null;
   } catch (e) {
     console.error("[auth] createSessionToken failed:", e);
@@ -69,6 +70,11 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   // The built-in account is checked before any account table. Its password
   // is 123 until an administrator changes it (kept on this computer only).
   if (email === DEMO_EMAIL) {
+    // Its password is printed on the sign-in page until changed, and it is
+    // meant for setting this computer up: from another device, never.
+    if (isRemoteRequest()) {
+      return { error: "The built-in account works only on the main computer itself. Sign in with your own account." };
+    }
     let ok = false;
     try {
       ok = await builtinPasswordMatches(password);

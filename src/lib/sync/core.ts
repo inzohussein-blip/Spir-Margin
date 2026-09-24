@@ -643,6 +643,9 @@ export async function adoptClone(db: Db, upstreamKey: string): Promise<void> {
   await db.query(`update _spir_peer set database_url = null, lan_code = null`);
   await db.query(`update _spir_lan_server set enabled = false, secret = null`);
   await db.query(`delete from _spir_lan_clients`);
+  // The main computer's gateway and the devices it let in are its own.
+  await db.query(`update _spir_gateway set enabled = false`);
+  await db.query(`delete from _spir_devices`);
   await db.query(`update _spir_branding set doc_prefix = null`);
   await db.query(`delete from _spir_doc_counter`);
 }

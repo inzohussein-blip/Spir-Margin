@@ -2,6 +2,8 @@ import "server-only";
 import { cookies } from "next/headers";
 import { SESSION_COOKIE, verifySessionToken, type SessionUser } from "./session";
 import { isSessionCurrent } from "./revocation";
+import { DEMO_USER_ID } from "./demo-credentials";
+import { isRemoteRequest } from "@/lib/remote/request";
 
 /**
  * The session behind this request. `ended` means the cookie is genuine but no
@@ -10,6 +12,8 @@ import { isSessionCurrent } from "./revocation";
 export async function readSession(): Promise<{ user: SessionUser | null; ended: boolean }> {
   const user = await verifySessionToken(cookies().get(SESSION_COOKIE)?.value);
   if (!user) return { user: null, ended: false };
+  // The built-in account is for this computer's own keyboard (see auth.ts).
+  if (user.id === DEMO_USER_ID && isRemoteRequest()) return { user: null, ended: true };
   if (await isSessionCurrent(user)) return { user, ended: false };
   return { user: null, ended: true };
 }

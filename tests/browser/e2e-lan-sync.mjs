@@ -113,10 +113,18 @@ await main.getByRole("button", { name: "اجعل هذا الحاسوب الرئ�
 await main.getByText("يخدم شبكة المكتب على المنفذ").waitFor({ timeout: 30_000 }).catch(() => {});
 check("it becomes the main computer, listening", (await main.getByText("يخدم شبكة المكتب على المنفذ").count()) === 1);
 
-await main.getByRole("button", { name: "اعرض رمز المزامنة" }).click();
-const codeBox = main.locator('textarea[data-sync-code="lan"]');
-await codeBox.waitFor({ timeout: 20_000 }).catch(() => {});
-const code = (await codeBox.inputValue().catch(() => "")).trim();
+/** A code of its own for one computer (migration 0113), made on the main computer's Sync page. */
+async function codeFor(name) {
+  await main.goto(H + "/sync", { waitUntil: "networkidle" });
+  const form = main.locator('form:has(input[name="which"][value="lan"])');
+  await form.locator('input[name="name"]').fill(name);
+  await main.getByRole("button", { name: "اعرض رمز المزامنة" }).click();
+  const box = main.locator('textarea[data-sync-code="lan"]');
+  await box.waitFor({ timeout: 20_000 }).catch(() => {});
+  return (await box.inputValue().catch(() => "")).trim();
+}
+
+const code = await codeFor("حاسوب المكتب");
 check("it shows a sync code", code.startsWith("SPIR1-"), code.slice(0, 20));
 
 // The listener answers nothing but sealed sync requests.
@@ -168,7 +176,22 @@ check("the main computer lists the office computer", (await main.locator("table"
 const ownSrv = await startServer(3397);
 const own = await signedIn(ownSrv.url);
 await addLab(own, ownSrv.url, `OWN-${stamp}`, `مختبر سابق ${stamp}`);
-const merged = await link(own, ownSrv.url, code);
+const ownCode = await codeFor("الحاسوب السابق");
+check("each computer gets a code of its own", ownCode.startsWith("SPIR1-") && ownCode !== code);
+// It holds records of its own: linking asks first, naming the company it
+// would merge into (another company's computer must not merge by mistake).
+await own.goto(ownSrv.url + "/sync", { waitUntil: "networkidle" });
+await own.fill('textarea[name="code"]', ownCode);
+await own.getByRole("button", { name: "اربط", exact: true }).click();
+const ask = own.locator("[data-confirm-merge]");
+await ask.waitFor({ timeout: 120_000 }).catch(() => {});
+check("before merging its records, it asks, saying how many and into whose", (await ask.innerText().catch(() => "")).includes("لديه سجلات خاصة به"),
+  await ask.innerText().catch(() => ""));
+await ask.locator('input[name="confirm_merge"]').check();
+await ask.getByRole("button", { name: "اربط", exact: true }).click();
+const mergedMsg = own.locator('[role="status"], [role="alert"]').filter({ hasText: /تمّ الربط|تعذّر|لم يقبل/ });
+await mergedMsg.first().waitFor({ timeout: 240_000 }).catch(() => {});
+const merged = (await mergedMsg.first().innerText().catch(() => "")).trim();
 check("a computer with its own work merges instead", merged.includes("دُمجت"), merged);
 const ownLabs = await labsText(own, ownSrv.url);
 check("it keeps its own lab", ownLabs.includes(`مختبر سابق ${stamp}`));
@@ -177,7 +200,20 @@ check("its lab reached the main computer", (await labsText(main, H)).includes(`�
 const relay = await syncNow(office, officeSrv.url);
 check("and, through it, the first office computer", relay.ok && (await labsText(office, officeSrv.url)).includes(`مختبر سابق ${stamp}`), relay.text);
 
-// ---------------------------------------------------------------- 5. a new code cuts old ones off
+// ---------------------------------------------------------------- 5. one computer cut off, alone
+await main.goto(H + "/sync#remote", { waitUntil: "networkidle" });
+const devices = main.locator("#remote table");
+check("the main computer lists both computers by name", (await devices.innerText().catch(() => "")).includes("حاسوب المكتب") &&
+  (await devices.innerText().catch(() => "")).includes("الحاسوب السابق"));
+main.once("dialog", (d) => d.accept());
+await main.locator('#remote tr[data-device="الحاسوب السابق"]').getByRole("button", { name: "اقطع" }).click();
+await main.waitForURL(/done=device-off/, { timeout: 30_000 }).catch(() => {});
+const ownCut = await syncNow(own, ownSrv.url);
+check("a computer cut off can no longer sync", !ownCut.ok && ownCut.text.includes("لم يقبل"), ownCut.text);
+const officeStill = await syncNow(office, officeSrv.url);
+check("while the others carry on", officeStill.ok, officeStill.text);
+
+// ---------------------------------------------------------------- 6. a new code cuts old ones off
 await main.goto(H + "/sync", { waitUntil: "networkidle" });
 main.once("dialog", (d) => d.accept());
 await main.getByRole("button", { name: /أنشئ رمزاً جديداً/ }).click();
@@ -185,7 +221,7 @@ await main.waitForLoadState("networkidle");
 const cut = await syncNow(office, officeSrv.url);
 check("after a new code, the old one stops working", !cut.ok && cut.text.includes("لم يقبل"), cut.text);
 
-// ---------------------------------------------------------------- 6. unlink, and switch off
+// ---------------------------------------------------------------- 7. unlink, and switch off
 office.once("dialog", (d) => d.accept());
 await office.goto(officeSrv.url + "/sync", { waitUntil: "networkidle" });
 await office.getByRole("button", { name: "فكّ الربط" }).click();

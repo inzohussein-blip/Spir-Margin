@@ -25,6 +25,12 @@ export interface LanCode {
   n: string;
   /** A label to show: the company name, or the computer's name. */
   c?: string;
+  /**
+   * This computer's own entry on the main computer (migration 0113): the
+   * secret `s` is then its own, and cutting it off leaves the others alone.
+   * Absent in the shared code every computer used before.
+   */
+  d?: string;
 }
 
 export interface PgCode {
@@ -72,7 +78,11 @@ export function decodeSyncCode(raw: string): SyncCode | null {
     if (!a.length || !Number.isInteger(p) || p < 1 || p > 65535) return null;
     if (typeof o.s !== "string" || o.s.length < 32) return null;
     if (typeof o.n !== "string" || !/^[0-9a-f-]{36}$/i.test(o.n)) return null;
-    return { k: "lan", a, p, s: o.s, n: o.n, ...(typeof o.c === "string" ? { c: o.c } : {}) };
+    return {
+      k: "lan", a, p, s: o.s, n: o.n,
+      ...(typeof o.c === "string" ? { c: o.c } : {}),
+      ...(typeof o.d === "string" && /^[0-9a-f-]{36}$/i.test(o.d) ? { d: o.d } : {}),
+    };
   }
   return null;
 }

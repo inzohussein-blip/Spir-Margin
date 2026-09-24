@@ -20,8 +20,10 @@ each other (office network) and with a hosted Supabase Postgres (branches).
 - **Western digits (1234), never Arabic-Indic (١٢٣٤).** Browser suites check this.
 - Talk to the user in Arabic. Code, comments, commits: English.
 - Real data only: a new database starts **empty** (`SPIR_SEED` default `none`).
-- The program listens on **127.0.0.1** only; the office network reaches only the
-  sync port (3310), never the app.
+- The program listens on **127.0.0.1** only. Other devices reach it only through the
+  sync port (3310, sealed) or the **remote-access gateway** (3300, off by default,
+  switched on by an admin on /sync; browsers must pair with a one-time code; it marks
+  requests `x-spir-remote: 1` and the built-in account is refused on them).
 - Commit messages end with the attribution lines the session gives. No model names.
 
 ## Commands
@@ -74,6 +76,8 @@ browser ── Next.js (127.0.0.1:3000) ── pages (RSC) + server actions
 | Sync engine (app side) | `src/lib/sync/engine.ts` — upstream choice (hosted `remote` / main computer `lan`), `runSync` lock (10-min stuck guard), status, rejects, renames |
 | Office network (LAN) | `src/lib/sync/lan.ts` (listener :3310, ops hello/pull/push/clone/meta/snap, client), `seal.ts` (AES-256-GCM), `code.ts` (`SPIR1-…` sync codes) |
 | Sync UI | `src/app/sync/page.tsx`, `src/app/actions/links.ts` (link/unlink/main computer/show code), `components/sync/*`, `components/settings/PeerPanel.tsx` + `actions/peer.ts` (hosted URL, pooler guard) |
+| Remote access (0113) | `src/lib/remote/gateway.ts` (listener :3300 on 0.0.0.0, pairing page `/__spir/pair`, device cookie, proxies to 127.0.0.1:PORT, rewrites own-address redirects), `tokens.ts` (pure: pair codes, cookie, Tailscale 100.64/10, limiter), `devices.ts` (`_spir_devices`: browsers + computers with their own sync secret, revoke), `request.ts` (`isRemoteRequest`, `secureCookies`), `actions/remote.ts` (local admin only), `components/sync/RemoteAccessPanel.tsx`; LAN listener picks a computer's secret from header `x-spir-device` (code field `d`) |
+| First steps of a new company | `src/lib/setup-checklist.ts`, `components/dashboard/SetupChecklist.tsx` (home page, admins) |
 | Sync status / health | `components/offline/DbSyncStatus.tsx` (header chip), `/monitoring/sync`, `components/monitoring/DatabaseSyncPanel.tsx` |
 | Offline (browser) | `public/offline-sw.js` (navigations only), `public/offline.html`, `src/lib/offline/outbox.ts`, `components/offline/*` |
 | Backups | manual: `src/app/api/backup/route.ts`, `components/settings/BackupPanel.tsx`, `actions/backup.ts`; automatic: `src/lib/backup/auto.ts` + `schedule.ts` (pure), `actions/autobackup.ts`, `components/settings/AutoBackupPanel.tsx`, `/api/backup/file`; restore = `restoreLocalDatabase` in `pglite.ts` (validates in memory first, new node id) |
@@ -123,7 +127,7 @@ Not in the menu: `/login`, `/welcome`, `/account`, `/portal`, `/w/<group>`, and 
   numbers · 0102 Arabic errors · 0103 session cut-off · 0104 closes Supabase REST
   (anon/authenticated) · 0105 sync links · 0106 trigger sync guard · 0107 no default
   accounts · 0108 prune standalone · 0109 built-in password · 0110 auto backup ·
-  0111 sync renames · 0112 auto update. Full list with titles in `README.md`.
+  0111 sync renames · 0112 auto update · 0113 remote access. Full list with titles in `README.md`.
 
 ## Sync model (read before touching sync)
 
@@ -137,7 +141,9 @@ Not in the menu: `/login`, `/welcome`, `/account`, `/portal`, `/w/<group>`, and 
 - Relay: received changes are recorded with `received_from` (`remote`, `lan`,
   `n:<node>`); a peer is sent everything except what came from it.
 - Joining: an empty computer linking to a main computer takes a **clone**
-  (`adoptClone`: new node id, cleared doc prefix/links). On a gap (peer log pruned
+  (`adoptClone`: new node id, cleared doc prefix/links, gateway off, devices cleared).
+  A computer with records of its own is merged only after confirming (`confirm_merge`,
+  the main computer's company name and the record count are shown). On a gap (peer log pruned
   past the cursor) a **full copy** (`snapshotFrom`) is taken.
 - Duplicate unique codes: the side that has not delivered yet renames its value
   `CODE-XXXX` (`renameOnConflict`, logged in `_spir_sync_renames`); emails and
@@ -161,6 +167,11 @@ Not in the menu: `/login`, `/welcome`, `/account`, `/portal`, `/w/<group>`, and 
 - `pkill -f next` also kills your own shell; find PIDs with `ps` + `awk`.
 - `.ps1` must stay UTF-8 **with BOM** + CRLF; `.vbs` with Arabic must be UTF-16 (`tests/windows-installer.test.mjs`).
 - Restore must never delete data before the file is proven valid (it is opened in memory first).
+- Next names itself `localhost:PORT` in redirects; the gateway rewrites those to relative
+  paths (`ownAddressToPath`) or remote devices are sent to their own localhost.
+- Session cookies are `Secure` only when the request is not remote (`secureCookies()`):
+  browsers drop Secure cookies on plain http from another address.
+- `next start` leaves a `next-server` child: kill it too (it keeps the ports) — `ps` for `next-server`.
 - An update must never move `.pglite-data`, `.env.local`, `backups`, `logs` or `updates` (`$Keep` in
   `update.ps1`); the build in the stage folder writes its own `.env.local` and `.pglite-data` — never swap them in.
 

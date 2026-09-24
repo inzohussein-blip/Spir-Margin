@@ -46,7 +46,23 @@ export function LinkPanel({ linkedTo, locked }: { linkedTo: string | null; locke
         </form>
       ) : null}
 
-      <form action={action} className="space-y-2">
+      {state?.confirmMerge ? (
+        <form action={action} className="space-y-3 rounded-lg border border-amber-300 bg-amber-50 p-4" data-confirm-merge>
+          <input type="hidden" name="code" value={state.confirmMerge.code} />
+          <p className="text-sm font-semibold text-amber-900">{t(locale, "This computer already has records of its own.")}</p>
+          <p className="text-sm text-amber-900">
+            {t(locale, "Linking will merge its")} <strong>{state.confirmMerge.records}</strong>{" "}
+            {t(locale, "records with those of")} «<strong dir="auto">{state.confirmMerge.company}</strong>». {t(locale, "This cannot be undone except from a backup. Go on only if both computers belong to the same company.")}
+          </p>
+          <label className="flex items-start gap-2 text-sm text-amber-900">
+            <input type="checkbox" name="confirm_merge" required className="mt-0.5 size-4" />
+            <span>{t(locale, "Yes, this computer belongs to the same company, and its records should be merged.")}</span>
+          </label>
+          <LinkButton />
+        </form>
+      ) : null}
+
+      <form action={action} className={`space-y-2 ${state?.confirmMerge ? "hidden" : ""}`}>
         <label className="block text-sm">
           <span className="font-medium text-ink-gray-8">{t(locale, "Sync code")}</span>
           <textarea

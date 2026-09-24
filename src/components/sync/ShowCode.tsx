@@ -32,6 +32,18 @@ export function ShowCode({ which }: { which: "lan" | "pg" }) {
     return (
       <form action={action} className="space-y-2">
         <input type="hidden" name="which" value={which} />
+        {which === "lan" ? (
+          <label className="block max-w-sm text-sm">
+            <span className="font-medium text-ink-gray-8">{t(locale, "Which computer is this code for?")}</span>
+            <input
+              name="name"
+              defaultValue={t(locale, "Office computer")}
+              maxLength={120}
+              className="mt-1 w-full rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+            />
+            <span className="mt-1 block text-xs text-ink-gray-5">{t(locale, "Each computer gets a code of its own, so one can be cut off without re-linking the others.")}</span>
+          </label>
+        ) : null}
         <Reveal />
         <Result state={state} />
       </form>

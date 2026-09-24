@@ -14,6 +14,9 @@ import type {
   ExpiringKit,
 } from "@/lib/types";
 import { localDate } from "@/lib/dates";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { setupSteps } from "@/lib/setup-checklist";
+import { SetupChecklist } from "@/components/dashboard/SetupChecklist";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +57,8 @@ export default async function DashboardPage() {
   const locale = getLocale();
   const supabase = createClient();
 
+  const me = await getCurrentUser();
+  const steps = me?.role === "admin" ? await setupSteps() : [];
   const today = localDate();
   const horizon = localDate(new Date(Date.now() + 60 * 86400_000));
 
@@ -152,6 +157,8 @@ export default async function DashboardPage() {
           className="inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
         ><PlusIcon size={15} /> {t(locale, "Record sale")}</Link>
       </div>
+
+      <SetupChecklist steps={steps} locale={locale} />
 
       {/* KPI row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
