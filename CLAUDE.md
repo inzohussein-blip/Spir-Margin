@@ -134,13 +134,10 @@ Route handlers (no page): `/api/backup` (download a backup), `/api/backup/file` 
 sales-orders, sales-invoices, sales-returns, quotations, purchases, journal-entries, delivery-notes, contracts,
 serials, devices.
 
-Not imported by anything (checked by walking imports from every page/route/layout/middleware/instrumentation
-and the tests): `components/LanguageSwitcher.tsx`, most of the `components/ui/*` kit (alert, alert-dialog,
-breadcrumb, calendar, checkbox, direction, dropdown-menu, empty, form, hover-card, input, input-group, kbd,
-keyboard-keys, label, list-view, loaders, markdown, modal-content-fallback, popover, progress, radio-group,
-select, separator, settings-dialog, skeleton, stats, switch, table, textarea, tooltip, typography), and
-`lib/amountFormula.ts`, `lib/checks.ts`, `lib/company.ts`, `lib/file.ts`, `lib/supabase/client.ts`. Do not
-look for live behaviour there; delete only with the owner's approval.
+Dead code: none. The template's unused files (most of `components/ui/*`, `LanguageSwitcher`, five `lib`
+helpers incl. a browser Supabase client) and 19 packages only they or nothing used were deleted after the
+owner approved. Check again after a big change: walk imports from every page/route/layout/middleware/
+instrumentation and the tests; a file nothing reaches, and a dependency nothing imports, goes.
 
 ## Database
 
