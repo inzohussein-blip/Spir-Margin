@@ -34,7 +34,7 @@ npm run build && npm start   # production
 npx tsc --noEmit && npm run lint
 npm test                     # node --test tests/*.test.mjs  (~4 min, PGlite in memory)
 npm run schema               # rebuild supabase/schema.sql after adding a migration (a test checks it)
-SPIR_TEST_SKIP_BUILD=1 PLAYWRIGHT_CHROMIUM=/opt/pw-browsers/chromium node scripts/test-browser.mjs [filter]
+SPIR_TEST_SKIP_BUILD=1 PLAYWRIGHT_CHROMIUM=/opt/pw-browsers/chromium node scripts/test-browser.mjs [filter[,filter…]]
 ```
 Browser runner: builds (unless skipped), starts its own server on **:3399** with a
 temp data dir and `SPIR_SEED=demo`, runs `tests/browser/*.mjs` alphabetically.

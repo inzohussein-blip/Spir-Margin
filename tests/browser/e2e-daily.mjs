@@ -127,12 +127,24 @@ check("a list exports to a real Excel file (a zip workbook)", !!download && head
   download ? download.suggestedFilename() : "no download");
 
 // ---------------------------------------------------------------- 7. the bell
+// A product with none in stock and a reorder level: the bell says it is short.
+const shortName = `صنف ناقص ${stamp}`;
+await p.goto(H + "/products/new", { waitUntil: "networkidle" });
+await p.fill('input[name="item_code"]', `SHORT-${stamp}`);
+await p.fill('input[name="name"]', shortName);
+await p.locator('select[name="product_type"]').selectOption("spare_part");
+await p.fill('input[name="reorder_level"]', "5");
+await p.locator('button[type="submit"]').last().click();
+await p.waitForURL((u) => !u.pathname.endsWith("/new"), { timeout: 60_000 }).catch(() => {});
+
 await p.goto(H + "/", { waitUntil: "networkidle" });
 await p.locator('header button[title="الإشعارات"]').first().click().catch(() => {});
 await p.waitForTimeout(400);
 const bell = await p.locator("body").innerText();
-// Records were made here and nothing holds a copy yet: the administrator is told.
-check("the bell says when the records exist on this computer only", bell.includes("سجلّات الشركة على هذا الحاسوب وحده"));
+check("the bell lists products below their reorder level", bell.includes(shortName) || bell.includes("أصناف تحت حدّ إعادة الطلب"),
+  bell.slice(0, 200).replace(/\n/g, " | "));
+const reorderNotice = p.locator('header a[href="/reorder"]', { hasText: /إعادة الطلب|صنف ناقص/ });
+check("and it leads to the reorder page", (await reorderNotice.count()) > 0);
 
 check("no uncaught page errors", errs.length === 0, errs.slice(0, 3).join(" | "));
 await browser.close();
