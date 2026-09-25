@@ -4,6 +4,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
+import { SaveError } from "@/components/form/SaveError";
 import { saveRfq, type RfqInput } from "@/app/actions/rfq";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ export function RfqForm({ products, suppliers }: { products: Opt[]; suppliers: O
   const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [picked, setPicked] = useState<Record<string, boolean>>({});
 
   const { register, control, handleSubmit } = useForm<RfqInput>({
@@ -37,8 +39,10 @@ export function RfqForm({ products, suppliers }: { products: Opt[]; suppliers: O
   function onSubmit(values: RfqInput) {
     const supplier_ids = Object.entries(picked).filter(([, v]) => v).map(([k]) => k);
     start(async () => {
+      setSaveError(null);
       const res = await saveRfq({ ...values, supplier_ids });
       if (res.ok) router.push("/rfqs");
+      else setSaveError(res.error ?? "Could not save");
     });
   }
 
@@ -113,6 +117,8 @@ export function RfqForm({ products, suppliers }: { products: Opt[]; suppliers: O
           ))}
         </CardContent>
       </Card>
+
+      <SaveError error={saveError} />
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}

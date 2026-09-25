@@ -1,9 +1,10 @@
 "use client";
 
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
+import { SaveError } from "@/components/form/SaveError";
 import { saveAssetMovement, type AssetMovementInput } from "@/app/actions/asset_movement";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ export function AssetMovementForm({
   const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const { register, control, handleSubmit } = useForm<AssetMovementInput>({
     defaultValues: {
@@ -43,8 +45,10 @@ export function AssetMovementForm({
 
   function onSubmit(values: AssetMovementInput) {
     start(async () => {
+      setSaveError(null);
       const res = await saveAssetMovement(values);
       if (res.ok) router.push("/asset-movements");
+      else setSaveError(res.error ?? "Could not save");
     });
   }
 
@@ -126,6 +130,8 @@ export function AssetMovementForm({
             <PlusIcon size={14} className="mr-1" />{t(locale, "Add device")}</Button>
         </CardContent>
       </Card>
+
+      <SaveError error={saveError} />
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}

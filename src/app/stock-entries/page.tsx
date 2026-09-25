@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -89,14 +90,14 @@ export default async function StockEntriesPage() {
                     <td className="px-4 py-2">
                       {e.status === "draft" ? (
                         <div className="flex gap-2">
-                          <form action={submitStockEntryForm}>
+                          <ValidatedForm action={submitStockEntryForm}>
                             <input type="hidden" name="id" value={e.id} />
                             <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Submit")}</button>
-                          </form>
-                          <form action={cancelStockEntryForm}>
+                          </ValidatedForm>
+                          <ValidatedForm action={cancelStockEntryForm}>
                             <input type="hidden" name="id" value={e.id} />
                             <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Cancel")}</button>
-                          </form>
+                          </ValidatedForm>
                         </div>
                       ) : (
                         <span className="text-xs text-ink-gray-4">—</span>

@@ -148,13 +148,16 @@ export async function cancelPurchaseOrder(id: string) {
 }
 
 export async function submitPurchaseOrderForm(fd: FormData) {
-  await submitPurchaseOrder(String(fd.get("id")));
+  const res = await submitPurchaseOrder(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }
 export async function poToPurchaseInvoiceForm(fd: FormData) {
-  await poToPurchaseInvoice(String(fd.get("id")), String(fd.get("reference") ?? ""));
+  const res = await poToPurchaseInvoice(String(fd.get("id")), String(fd.get("reference") ?? ""));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }
 export async function cancelPurchaseOrderForm(fd: FormData) {
-  await cancelPurchaseOrder(String(fd.get("id")));
+  const res = await cancelPurchaseOrder(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }
 
 /**

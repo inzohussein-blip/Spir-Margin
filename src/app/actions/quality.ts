@@ -87,8 +87,10 @@ export async function cancelQualityInspection(id: string) {
 }
 
 export async function evaluateQualityInspectionForm(fd: FormData) {
-  await evaluateQualityInspection(String(fd.get("id")));
+  const res = await evaluateQualityInspection(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }
 export async function cancelQualityInspectionForm(fd: FormData) {
-  await cancelQualityInspection(String(fd.get("id")));
+  const res = await cancelQualityInspection(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }

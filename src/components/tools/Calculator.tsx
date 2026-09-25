@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useLocale } from "@/components/LocaleProvider";
+import { t as tr } from "@/lib/i18n";
 
 // A safe arithmetic evaluator (no eval): shunting-yard over + - * / % and parens.
 function calc(expr: string): number {
@@ -26,6 +28,7 @@ function calc(expr: string): number {
 const KEYS = ["C", "(", ")", "/", "7", "8", "9", "*", "4", "5", "6", "-", "1", "2", "3", "+", "0", ".", "%", "="];
 
 export function Calculator() {
+  const locale = useLocale();
   const [expr, setExpr] = useState("");
   const [result, setResult] = useState("0");
 
@@ -54,7 +57,7 @@ export function Calculator() {
     <div className="w-full max-w-xs rounded-xl border border-outline-gray-2 bg-surface-white p-4 shadow-sm">
       <div className="mb-3 rounded-lg bg-surface-gray-1 p-3 text-right">
         <div className="h-5 truncate text-sm text-ink-gray-5">{expr || "0"}</div>
-        <div className="truncate text-2xl font-bold text-ink-gray-9">{result}</div>
+        <div className="truncate text-2xl font-bold text-ink-gray-9">{result === "Error" ? tr(locale, "Error") : result}</div>
       </div>
       <div className="grid grid-cols-4 gap-2">
         {KEYS.map((k) => (

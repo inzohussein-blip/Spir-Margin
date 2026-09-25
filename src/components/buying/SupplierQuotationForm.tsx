@@ -1,9 +1,10 @@
 "use client";
 
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
+import { SaveError } from "@/components/form/SaveError";
 import { saveSupplierQuotation, type SupplierQuotationInput } from "@/app/actions/supplier_quotation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ export function SupplierQuotationForm({ suppliers, products }: { suppliers: Opt[
   const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
+  const [saveError, setSaveError] = useState<string | null>(null);
   const { register, control, handleSubmit, setValue } = useForm<SupplierQuotationInput>({
     defaultValues: {
       supplier_id: "",
@@ -36,8 +38,10 @@ export function SupplierQuotationForm({ suppliers, products }: { suppliers: Opt[
 
   function onSubmit(values: SupplierQuotationInput) {
     start(async () => {
+      setSaveError(null);
       const res = await saveSupplierQuotation({ ...values, supplier_id: values.supplier_id || null });
       if (res.ok) router.push("/supplier-quotations");
+      else setSaveError(res.error ?? "Could not save");
     });
   }
   function onProduct(index: number, productId: string) {
@@ -108,6 +112,8 @@ export function SupplierQuotationForm({ suppliers, products }: { suppliers: Opt[
           </div>
         </CardContent>
       </Card>
+
+      <SaveError error={saveError} />
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}

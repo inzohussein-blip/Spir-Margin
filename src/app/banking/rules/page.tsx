@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getRules } from "@/lib/banking";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { getLocale } from "@/lib/i18n-server";
-import { t } from "@/lib/i18n";
+import { t, tValue } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +49,7 @@ export default async function RulesPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                      {r.classify_as.replace(/_/g, " ")}
+                      {tValue(locale, r.classify_as)}
                     </span>
                     <Link href={`/banking/rules/${r.id}/edit`} className="text-xs font-medium text-brand hover:underline">{t(locale, "Edit")}</Link>
                   </div>

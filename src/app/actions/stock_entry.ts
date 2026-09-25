@@ -76,8 +76,10 @@ export async function cancelStockEntry(id: string) {
 }
 
 export async function submitStockEntryForm(fd: FormData) {
-  await submitStockEntry(String(fd.get("id")));
+  const res = await submitStockEntry(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }
 export async function cancelStockEntryForm(fd: FormData) {
-  await cancelStockEntry(String(fd.get("id")));
+  const res = await cancelStockEntry(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }

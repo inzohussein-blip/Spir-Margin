@@ -90,11 +90,13 @@ export async function setIssueStatusForm(fd: FormData) {
 export async function resolveIssueForm(fd: FormData) {
   const supabase = createClient();
   const id = String(fd.get("id"));
-  await supabase
+  const { error: saveError } = await supabase
     .from("issues")
     .update({ resolution_details: str(fd, "resolution_details"), updated_at: new Date().toISOString() })
     .eq("id", id);
-  await supabase.rpc("fn_set_issue_status", { p_id: id, p_status: "resolved" });
+  if (saveError) return formError(saveError);
+  const { error } = await supabase.rpc("fn_set_issue_status", { p_id: id, p_status: "resolved" });
+  if (error) return formError(error);
   revalidatePath("/issues");
   redirect("/issues?saved=created");
 }

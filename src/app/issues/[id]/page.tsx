@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Panel } from "@/components/dashboard/Panel";
@@ -71,7 +72,7 @@ export default async function IssueDetailPage({ params }: { params: { id: string
           {done && it.resolution_details ? (
             <p className="whitespace-pre-wrap px-4 py-4 text-sm text-ink-gray-7">{it.resolution_details}</p>
           ) : (
-            <form action={resolveIssueForm} className="space-y-3 px-4 py-4">
+            <ValidatedForm action={resolveIssueForm} className="space-y-3 px-4 py-4">
               <input type="hidden" name="id" value={it.id} />
               <textarea
                 name="resolution_details"
@@ -81,7 +82,7 @@ export default async function IssueDetailPage({ params }: { params: { id: string
                 defaultValue={it.resolution_details ?? ""}
               />
               <button className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">{t(locale, "Mark resolved")}</button>
-            </form>
+            </ValidatedForm>
           )}
         </Panel>
 

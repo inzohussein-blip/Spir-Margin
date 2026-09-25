@@ -55,11 +55,11 @@ export function ReconcilePanel({
     start(async () => {
       const res = await reconcile(selected.id, p.id, accountId);
       if (res.ok) {
-        setMsg(`Matched ${selected.reference_number ?? ""} → reconciled`);
+        setMsg(`${tr(locale, "Matched and reconciled")} ${selected.reference_number ?? ""}`.trim());
         setSelected(null);
         router.refresh();
       } else {
-        setMsg(`Error: ${res.error}`);
+        setMsg(`${tr(locale, "Error")}: ${tr(locale, res.error ?? "Could not save")}`);
       }
     });
   }
@@ -69,9 +69,9 @@ export function ReconcilePanel({
     start(async () => {
       const res = await applyRulesForAccount(accountId);
       if (res.ok) {
-        setMsg(`Rule engine matched ${res.matched} transaction(s)`);
+        setMsg(`${tr(locale, "Rules matched")} ${res.matched} ${tr(locale, "transaction(s)")}`);
         router.refresh();
-      } else setMsg(`Error: ${res.error}`);
+      } else setMsg(`${tr(locale, "Error")}: ${tr(locale, res.error ?? "Could not save")}`);
     });
   }
 

@@ -225,6 +225,73 @@ const ar: Record<string, string> = {
   "before a restore": "قبل استعادة",
   // daily speed, kits, bell (0114)
   "Could not save": "تعذّر الحفظ",
+  // Save errors returned by server actions (shown by SaveError and the other forms).
+  "A journal needs at least two lines": "القيد يحتاج سطرين على الأقل",
+  "A quotation that became an order cannot be edited": "لا يمكن تعديل عرض سعر تحوّل إلى أمر بيع",
+  "Add at least one batch row": "أضف سطر دفعة واحداً على الأقل",
+  "Add at least one component": "أضف مكوّناً واحداً على الأقل",
+  "Add at least one counted batch": "أضف دفعة معدودة واحدة على الأقل",
+  "Add at least one device": "أضف جهازاً واحداً على الأقل",
+  "Add at least one item": "أضف صنفاً واحداً على الأقل",
+  "Add at least one reading": "أضف قراءة واحدة على الأقل",
+  "Add at least one stop": "أضف محطة واحدة على الأقل",
+  "Amount must be positive": "يجب أن يكون المبلغ أكبر من صفر",
+  "Bundle product is required": "اختر صنف الحزمة",
+  "Choose a file": "اختر ملفاً",
+  "Could not save the rate": "تعذّر حفظ سعر الصرف",
+  "Enter a positive rate": "أدخل سعراً أكبر من صفر",
+  "File too large (max 5 MB)": "الملف كبير جداً (الحدّ 5 ميغابايت)",
+  "Finished product is required": "اختر المنتج النهائي",
+  "Invoice not found": "الفاتورة غير موجودة",
+  "Lab is required": "اختر المختبر",
+  "Missing target record": "السجلّ المقصود غير موجود",
+  "Only an admin or manager can set the rate": "المسؤول أو المدير فقط يحدّد سعر الصرف",
+  "Only draft invoices can be edited": "تُعدَّل الفواتير المسودّة فقط",
+  "Only draft orders can be edited": "تُعدَّل الأوامر المسودّة فقط",
+  "Order not found": "الأمر غير موجود",
+  "Pick a lab": "اختر مختبراً",
+  "Pick an invoice": "اختر فاتورة",
+  "Quotation not found": "عرض السعر غير موجود",
+  "Select at least one supplier": "اختر مورّداً واحداً على الأقل",
+  "Sell price cannot be negative.": "لا يمكن أن يكون سعر البيع سالباً.",
+  "Team name is required": "اكتب اسم الفريق",
+  "Title required": "اكتب العنوان",
+  "Upload failed": "تعذّر رفع الملف",
+  "Pick a bank account": "اختر حساباً مصرفياً",
+  "Manual transaction": "حركة يدوية",
+  "Thank you for your business": "شكراً لتعاملكم معنا",
+  "Quantity must be more than zero": "يجب أن تكون الكمية أكبر من صفر",
+  "No valid rows — check the column mapping (date + amount required)": "لا توجد أسطر صالحة — راجع ربط الأعمدة (التاريخ والمبلغ مطلوبان)",
+  "Imported": "تمّ استيراد",
+  "transaction(s)": "حركة",
+  "Matched and reconciled": "تمّت المطابقة والتسوية",
+  // Record pages (RecordDetail) name columns by their humanised names.
+  "Account no": "رقم الحساب",
+  "Account subtype": "نوع الحساب الفرعي",
+  "Auth": "التصريح",
+  "Bom": "قائمة المواد",
+  "Branch code": "رمز الفرع",
+  "Custodian name": "اسم المسؤول عن الجهاز",
+  "From custodian": "من المسؤول",
+  "Gl posted at": "تاريخ الترحيل إلى الحسابات",
+  "Iban": "رقم الآيبان",
+  "Is company account": "حساب الشركة",
+  "Is credit card": "بطاقة ائتمان",
+  "Line no": "رقم السطر",
+  "Movement": "الحركة",
+  "Source lab": "المختبر المصدر",
+  "Source warehouse": "المخزن المصدر",
+  "Target lab": "المختبر الهدف",
+  "Target warehouse": "المخزن الهدف",
+  "To custodian": "إلى المسؤول",
+  // Stored choice values shown on record pages (tValue).
+  "Payment Entry": "سند دفع",
+  "Delivery Note": "مذكّرة تسليم",
+  "Cold": "مبرّد",
+  "Installation": "تركيب",
+  "Sales": "المبيعات",
+  "Transit": "في الطريق",
+  "Cash": "نقدي",
   "Export to Excel": "تصدير إلى إكسل",
   "Excel": "إكسل",
   "WhatsApp": "واتساب",
@@ -2070,6 +2137,14 @@ export function t(locale: Locale, key: string): string {
 // Status-value translations (enum values shown as badges/indicators).
 const statusAr: Record<string, string> = {
   draft: "مسودة", open: "مفتوح", unsigned: "غير موقّع", pending: "معلّق", planned: "مخطّط",
+  settled: "مسدّد", unreconciled: "غير مسوّى", reconciled: "مسوّى", purchasing: "شراء",
+  day_after_invoice: "أيام بعد الفاتورة", day_after_month_end: "أيام بعد نهاية الشهر",
+  month_after_month_end: "أشهر بعد نهاية الشهر", not_started: "لم يبدأ",
+  by_value: "حسب القيمة", by_qty: "حسب الكمية", applied: "مطبَّق",
+  cash: "نقدي", bank: "مصرف", general: "عام", return: "إرجاع", transfer_in: "تحويل وارد",
+  requested: "مطلوب", receive: "قبض", pay: "دفع", internal_transfer: "تحويل داخلي",
+  voucher_created: "أُنشئ سند", under_amc: "ضمن عقد الصيانة", out_of_amc: "خارج عقد الصيانة",
+  agent: "الوكيل", hospital: "المستشفى", insurance: "التأمين",
   partial: "جزئي", full: "مكتمل",
   submitted: "معتمد", confirmed: "مؤكّد", replied: "تم الرد", in_process: "قيد التنفيذ",
   in_progress: "قيد التنفيذ", partly_paid: "مدفوع جزئياً", partly_completed: "مكتمل جزئياً",
@@ -2081,6 +2156,21 @@ const statusAr: Record<string, string> = {
   ordered: "تم الطلب", expired: "منتهٍ", delivered: "تم التسليم", scheduled: "مجدول",
   in_transit: "قيد النقل", material_transfer: "تحويل مواد", delivery: "تسليم", won: "مكسوبة",
 };
+
+/**
+ * Translate a stored value that names a choice rather than free text — an
+ * enum ("spare_part", "under_warranty") or a fixed word ("Sales Invoice"):
+ * the dictionary first, then its spaced form, then the status labels.
+ */
+export function tValue(locale: Locale, value: string | null | undefined): string {
+  if (!value) return "—";
+  const direct = t(locale, value);
+  if (direct !== value) return direct;
+  const spaced = value.replace(/_/g, " ");
+  const viaSpaced = t(locale, spaced);
+  if (viaSpaced !== spaced) return viaSpaced;
+  return tStatus(locale, value);
+}
 
 /** Translate a status enum value (e.g. "partly_paid"); falls back to a spaced label. */
 export function tStatus(locale: Locale, status: string | null | undefined): string {

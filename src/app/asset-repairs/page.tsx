@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -90,14 +91,14 @@ export default async function AssetRepairsPage() {
                     <td className="px-4 py-2">
                       {r.status === "pending" ? (
                         <div className="flex gap-2">
-                          <form action={completeAssetRepairForm}>
+                          <ValidatedForm action={completeAssetRepairForm}>
                             <input type="hidden" name="id" value={r.id} />
                             <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Complete")}</button>
-                          </form>
-                          <form action={cancelAssetRepairForm}>
+                          </ValidatedForm>
+                          <ValidatedForm action={cancelAssetRepairForm}>
                             <input type="hidden" name="id" value={r.id} />
                             <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Cancel")}</button>
-                          </form>
+                          </ValidatedForm>
                         </div>
                       ) : (
                         <span className="text-xs text-ink-gray-4">{r.completion_date ?? "—"}</span>

@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -67,10 +68,10 @@ export default async function ProductBundlesPage() {
                       </span>
                     </td>
                     <td className="px-4 py-2">
-                      <form action={deleteProductBundleForm}>
+                      <ValidatedForm action={deleteProductBundleForm}>
                         <input type="hidden" name="id" value={b.id} />
                         <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Delete")}</button>
-                      </form>
+                      </ValidatedForm>
                     </td>
                   </tr>
                 ))}

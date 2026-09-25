@@ -97,8 +97,10 @@ export async function cancelMaintenanceVisit(id: string) {
 }
 
 export async function submitMaintenanceVisitForm(fd: FormData) {
-  await submitMaintenanceVisit(String(fd.get("id")));
+  const res = await submitMaintenanceVisit(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }
 export async function cancelMaintenanceVisitForm(fd: FormData) {
-  await cancelMaintenanceVisit(String(fd.get("id")));
+  const res = await cancelMaintenanceVisit(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }

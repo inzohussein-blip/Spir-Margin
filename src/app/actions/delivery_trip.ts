@@ -70,6 +70,7 @@ export async function completeDeliveryTripForm(fd: FormData) {
 
 export async function cancelDeliveryTripForm(fd: FormData) {
   const supabase = createClient();
-  await supabase.from("delivery_trips").update({ status: "cancelled" }).eq("id", String(fd.get("id"))).neq("status", "completed");
+  const { error } = await supabase.from("delivery_trips").update({ status: "cancelled" }).eq("id", String(fd.get("id"))).neq("status", "completed");
+  if (error) return formError(error);
   revalidatePath("/delivery-trips");
 }

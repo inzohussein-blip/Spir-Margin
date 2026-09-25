@@ -81,7 +81,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 ├── CLAUDE.md                    خريطة المشروع لمساعد البرمجة (إنجليزية)
 ├── install-windows.cmd          مثبِّت ويندوز (يستدعي scripts/windows/install.ps1)
 ├── update-windows.cmd           تحديث ويندوز إلى أحدث إصدار (يستدعي scripts/windows/update.ps1)
-├── docs/                        INSTALL · HOSTED-SETUP · DEPLOYMENT · ERPNEXT-PARITY
+├── docs/                        INSTALL · WINDOWS-TRIAL · HOSTED-SETUP · DEPLOYMENT · ERPNEXT-PARITY
 ├── public/                      الأيقونات، offline-sw.js، offline.html
 ├── scripts/
 │   ├── windows/                 install.ps1 · update.ps1 · run-server.cmd · run-hidden.vbs · open-app.vbs
@@ -92,7 +92,8 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 ├── supabase/
 │   ├── migrations/              0001 … 0114 — كل المخطّط ومنطق العمل (انظر القسم 7)
 │   ├── schema.sql               مولَّد: كل الـ migrations في ملف واحد
-│   └── seed.sql                 البيانات التجريبية (اختيارية)
+│   ├── seed-demo.sql            بيانات تجريبية صغيرة (SPIR_SEED=demo — للتدريب والعرض واختبارات المتصفّح)
+│   └── seed.sql                 بيانات اختبار كبيرة (SPIR_SEED=full)
 ├── src/
 │   ├── middleware.ts            يمنع الزائر غير المسجّل، ويفصل بوّابة الزبائن عن الموظّفين
 │   ├── instrumentation*.ts      عمل الخلفية عند تشغيل الخادم
@@ -101,7 +102,9 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 │   │   ├── page.tsx             لوحة التحكّم
 │   │   ├── <قسم>/               صفحة لكل قسم: page.tsx (القائمة)، new/ (إضافة)، [id]/ (تفاصيل)
 │   │   ├── actions/             الإجراءات (Server Actions) — ملف لكل مجال
-│   │   ├── api/                 backup (تنزيل نسخة)، backup/file، attachments
+│   │   ├── api/                 backup (تنزيل نسخة)، backup/file، attachments، update/status
+│   │   ├── <قائمة>/export/      تصدير CSV من الخادم (فواتير، أوامر، عقود، أجهزة…)
+│   │   ├── <مستند>/[id]/print/  صفحة الطباعة (عرض سعر، أمر بيع، فاتورة، أمر شراء، طلب بيع، تصريح نقل)
 │   │   ├── login/ welcome/ account/ portal/ pos/ help/ sync/ settings/ …
 │   │   └── w/[slug]/            صفحة مجموعة (مساحة عمل) لكل قسم من القائمة
 │   ├── components/
@@ -116,9 +119,13 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 │       ├── supabase/server.ts   عملاء البيانات وفحص الصلاحية
 │       ├── auth/                الجلسات، الحساب الثابت، إنهاء الجلسات، تحديد محاولات الدخول
 │       ├── sync/                core (الخوارزمية) · engine · lan (شبكة المكتب) · seal (التشفير) · code (رموز المزامنة)
-│       ├── backup/              auto.ts (النسخ التلقائي) · schedule.ts (المواعيد)
+│       ├── backup/              auto.ts (النسخ التلقائي) · schedule.ts (المواعيد) · copies.ts (النسخة الثانية)
+│       ├── remote/              gateway.ts (بوّابة الأجهزة الأخرى) · tokens.ts · devices.ts · request.ts
+│       ├── update/              release.ts · updates.ts (التحديثات)
+│       ├── text/arabic.ts       توحيد الكتابة العربية للبحث (مثل fn_ar_norm)
 │       ├── features.ts          تفعيل/تعطيل/إخفاء الأقسام وصلاحيات كل مستخدم
 │       ├── branding.ts          هوية الشركة على المطبوعات
+│       ├── kits.ts whatsapp.ts xlsx.ts copy-docs.ts remember.ts   دفعات الكِت، واتساب، إكسل، نسخ مستند، تذكّر الاختيارات
 │       └── dates.ts format.ts … أدوات عامّة (التاريخ بتوقيت بغداد، تنسيق الأرقام)
 └── tests/                       *.test.mjs (وحدات) · browser/*.mjs (متصفّح)
 ```
@@ -138,7 +145,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 
 | الصفحة | المسار | ملفّات الإجراءات |
 | --- | --- | --- |
-| Sales requests — طلبات البيع | `/sale-requests` | `sale_request.ts` |
+| Sales requests — طلبات البيع | `/sale-requests` | `currency.ts`, `kits-hint.ts`, `sale_request.ts` |
 | Transport authorisations — تخويلات النقل | `/authorizations` | `authorization.ts` |
 
 ### CRM — إدارة العملاء
@@ -154,11 +161,11 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 
 | الصفحة | المسار | ملفّات الإجراءات |
 | --- | --- | --- |
-| Point of Sale — نقطة البيع | `/pos` | `monitoring.ts`, `pos.ts`, `selling.ts` |
+| Point of Sale — نقطة البيع | `/pos` | `kits-hint.ts`, `monitoring.ts`, `pos.ts`, `selling.ts` |
 | Labs — المختبرات | `/labs` | `crud.ts` |
-| Quotations — عروض الأسعار | `/quotations` | `quotation.ts` |
-| Sales Orders — أوامر البيع | `/sales-orders` | `currency.ts`, `monitoring.ts`, `pos.ts`, `selling.ts` |
-| Sales Invoices — فواتير البيع | `/sales-invoices` | `attachments.ts`, `currency.ts`, `sales_invoice.ts` |
+| Quotations — عروض الأسعار | `/quotations` | `currency.ts`, `quotation.ts` |
+| Sales Orders — أوامر البيع | `/sales-orders` | `currency.ts`, `kits-hint.ts`, `monitoring.ts`, `pos.ts`, `selling.ts` |
+| Sales Invoices — فواتير البيع | `/sales-invoices` | `attachments.ts`, `currency.ts`, `kits-hint.ts`, `sales_invoice.ts` |
 | Sales Returns — مرتجعات البيع | `/sales-returns` | `sales_return.ts` |
 | Blanket Orders — الاتفاقيات الإطارية | `/blanket-orders` | `blanket_order.ts` |
 | Credit Limits — حدود الائتمان | `/credit-limits` | `credit.ts` |
@@ -171,7 +178,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | Suppliers — الموردون | `/companies` | `crud.ts` |
 | Reorder — إعادة الطلب | `/reorder` | `reorder.ts` |
 | RFQs — طلبات عروض الأسعار | `/rfqs` | `rfq.ts` |
-| Purchase Orders — أوامر الشراء | `/purchase-orders` | `attachments.ts`, `purchase_order.ts` |
+| Purchase Orders — أوامر الشراء | `/purchase-orders` | `attachments.ts`, `currency.ts`, `purchase_order.ts` |
 | Purchase Receipts — سندات الاستلام | `/purchase-receipts` | `purchase_receipt.ts` |
 | Purchases — المشتريات | `/purchases` | `purchasing.ts` |
 | Landed Costs — التكاليف الإجمالية للاستيراد | `/landed-costs` | `landed_cost.ts` |
@@ -268,11 +275,28 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | Users — المستخدمون | `/users` | `users.ts` |
 | Settings — الإعدادات | `/settings` | `autobackup.ts`, `backup.ts`, `branding.ts`, `builtin.ts`, `settings.ts`, `updates.ts` |
 | Audit Log — سجل التدقيق | `/audit-log` | — |
-| Sync — المزامنة | `/sync` | `links.ts`, `peer.ts`, `sync.ts` |
+| Sync — المزامنة | `/sync` | `links.ts`, `peer.ts`, `remote.ts`, `sync.ts` |
 | Instructions — تعليمات | `/help` | — |
 
+صفحات فرعية يُوصل إليها من صفحة أخرى لا من القائمة:
+
+| الصفحة | المسار | من أين | ملفّات الإجراءات |
+| --- | --- | --- | --- |
+| القيود اليومية | `/journal-entries` | الحسابات | `journal.ts` |
+| قوالب الضرائب | `/taxes` | الحسابات | `tax.ts` |
+| مراكز الكلفة | `/cost-centers` | الحسابات | — |
+| طلبات المواد | `/material-requests` | المشتريات | `material.ts` |
+| عروض الموردين | `/supplier-quotations` | المشتريات | `supplier_quotation.ts` |
+| شروط الدفع | `/payment-terms` | المشتريات | `purchasing.ts` |
+| مذكّرات التسليم | `/delivery-notes` | رحلات التوصيل، قوائم الالتقاط، الكِتات | `delivery.ts` |
+| تسوية المخزون | `/stock-reconciliation` | حركات المخزون، الكِتات | `stock.ts` |
+| فريق المبيعات | `/sales-team` | الفرص | — |
+| بيع سريع | `/sales/new` | لوحة التحكّم | `crud.ts` |
+| تقارير المشتريات والمبيعات حسب المختبر والصنف | `/reports/purchases` · `/reports/sales-by-lab` · `/reports/sales-by-product` | التقارير | — |
+
 صفحات خارج القائمة: `/login` (الدخول)، `/welcome` (الترحيب)، `/account` (الحساب وتغيير كلمة المرور)،
-`/portal` (بوّابة الزبائن)، `/w/<قسم>` (مساحة عمل كل مجموعة)، وصفحات `new/` و`[id]/` تحت كل قائمة.
+`/portal` (بوّابة الزبائن)، `/w/<قسم>` (مساحة عمل كل مجموعة)، وصفحات `new/` و`[id]/` تحت كل قائمة،
+و`[id]/print` للطباعة.
 
 ## 5) الخواص الأساسية وأين ملفّاتها
 
@@ -466,7 +490,8 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 - **وحدات** (`tests/*.test.mjs`): تشغّل Postgres في الذاكرة مع الـ migrations الحقيقية، وتختبر منطق العمل والمزامنة
   والنسخ. أدوات مشتركة في `tests/helpers.mjs` (منها `importTs` لتشغيل ملفّات `src` المستقلّة كما هي).
 - **متصفّح** (`tests/browser/*.mjs`): على خادم حقيقي بالمنفذ 3399. منها `crawl.mjs` (يزور كل الصفحات ويبحث عن
-  نصّ إنجليزي أو أرقام هندية أو أخطاء)، و`e2e-lan-sync.mjs` (ثلاثة خوادم تُربط ببعضها عبر الواجهة).
+  نصّ إنجليزي أو أرقام هندية أو أخطاء)، و`record-pages.mjs` (يفتح أول سجلّ من كل قائمة وصفحة طباعته بالفحوص نفسها)،
+  و`e2e-action-errors.mjs` (الأزرار المرفوضة تقول السبب)، و`e2e-lan-sync.mjs` (ثلاثة خوادم تُربط ببعضها عبر الواجهة).
 - CI على GitHub يشغّل الفحص والبناء واختبارات الوحدات عند كل دفع.
 
 ## 10) الوثائق الأخرى
@@ -487,5 +512,6 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 1. الواجهة عربية فقط، وكل نص عبر `t()`، والأرقام 1234. لا تُحذف الإنجليزية من القاموس.
 2. البيانات حقيقية فقط: قاعدة جديدة فارغة، والتجريبية بطلب صريح.
 3. لا يُحذف شيء من بيانات المستخدم قبل التأكّد من البديل (الاستعادة تفحص الملف أولاً وتأخذ نسخة أمان).
-4. البرنامج مغلق أمام الشبكة؛ لا يُفتح عبرها إلا باب المزامنة المشفّر.
+4. البرنامج مغلق أمام الشبكة؛ لا يُفتح عبرها إلا باب المزامنة المشفّر (3310)، وبوّابة الأجهزة الأخرى (3300) إذا شغّلها المسؤول، وكل متصفّح فيها يُربط برمز لمرة واحدة.
 5. كل migration تُختبر بـ `npm test`، وكل تغيير في الواجهة باختبارات المتصفّح.
+6. أيّ زر أو نموذج يفشل يقول السبب بالعربية: أزرار الصفوف داخل `ValidatedForm`، والنماذج تعرض الخطأ بـ `SaveError`، ورسائل قاعدة البيانات تُترجم في `rest.ts` و`errors.ts`. القيم المخزّنة مثل `spare_part` تُعرض عبر `tValue`.

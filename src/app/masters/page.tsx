@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { addMasterForm, deleteMasterForm, addTermForm } from "@/app/actions/masters";
@@ -21,20 +22,20 @@ function NameMaster({ title, table, rows }: { title: string; table: string; rows
             {rows.map((r) => (
               <li key={r.id} className="flex items-center justify-between py-1.5 text-sm">
                 <span className="text-ink-gray-8">{r.name}</span>
-                <form action={deleteMasterForm}>
+                <ValidatedForm action={deleteMasterForm}>
                   <input type="hidden" name="table" value={table} />
                   <input type="hidden" name="id" value={r.id} />
                   <button className="text-xs text-ink-gray-4 hover:text-red-600">{t(locale, "remove")}</button>
-                </form>
+                </ValidatedForm>
               </li>
             ))}
           </ul>
         )}
-        <form action={addMasterForm} className="flex items-center gap-2 pt-2">
+        <ValidatedForm action={addMasterForm} className="flex items-center gap-2 pt-2">
           <input type="hidden" name="table" value={table} />
           <input name="name" placeholder={t(locale, "Add…")} className="flex-1 rounded-md border border-outline-gray-2 px-2 py-1 text-sm" />
           <button className="rounded-md bg-brand px-3 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Add")}</button>
-        </form>
+        </ValidatedForm>
       </div>
     </Panel>
   );
@@ -67,20 +68,20 @@ export default async function MastersPage() {
             <div key={term.id} className="rounded-lg border border-outline-gray-1 p-3">
               <div className="flex items-center justify-between">
                 <span className="font-medium text-ink-gray-8">{term.title}</span>
-                <form action={deleteMasterForm}>
+                <ValidatedForm action={deleteMasterForm}>
                   <input type="hidden" name="table" value="terms_and_conditions" />
                   <input type="hidden" name="id" value={term.id} />
                   <button className="text-xs text-ink-gray-4 hover:text-red-600">{t(locale, "remove")}</button>
-                </form>
+                </ValidatedForm>
               </div>
               {term.terms && <p className="mt-1 text-sm text-ink-gray-6">{term.terms}</p>}
             </div>
           ))}
-          <form action={addTermForm} className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-3">
+          <ValidatedForm action={addTermForm} className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-3">
             <input name="title" placeholder={t(locale, "Title")} className="rounded-md border border-outline-gray-2 px-2 py-1 text-sm" />
             <input name="terms" placeholder={t(locale, "Terms text")} className="rounded-md border border-outline-gray-2 px-2 py-1 text-sm sm:col-span-2" />
             <button className="rounded-md bg-brand px-3 py-1 text-xs font-medium text-white hover:bg-brand-dark sm:col-span-3 sm:w-24">{t(locale, "Add term")}</button>
-          </form>
+          </ValidatedForm>
         </div>
       </Panel>
     </div>

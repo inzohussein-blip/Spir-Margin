@@ -54,7 +54,7 @@ export function SalesReturnForm({ labs, products }: { labs: Opt[]; products: Pro
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {error ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{t(locale, error)}</div>
       ) : null}
       <Card>
         <CardHeader><CardTitle>{t(locale, "Sales Return")}</CardTitle></CardHeader>
