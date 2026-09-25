@@ -3,12 +3,15 @@ import { getSuppliers, getProducts } from "@/lib/queries";
 import { PurchaseOrderForm } from "@/components/purchasing/PurchaseOrderForm";
 import { t } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n-server";
+import { copyPurchaseOrder } from "@/lib/copy-docs";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewPurchaseOrderPage() {
+export default async function NewPurchaseOrderPage({ searchParams }: { searchParams: { from?: string } }) {
   const locale = getLocale();
-  const [suppliers, products] = await Promise.all([getSuppliers(), getProducts()]);
+  const [suppliers, products, copied] = await Promise.all([
+    getSuppliers(), getProducts(), searchParams.from ? copyPurchaseOrder(searchParams.from) : null,
+  ]);
   const supplierOpts = suppliers.map((s) => ({ id: s.id as string, label: s.name as string }));
   const productOpts = products.map((p) => ({
     id: p.id as string,
@@ -22,7 +25,7 @@ export default async function NewPurchaseOrderPage() {
         <Link href="/purchase-orders" className="hover:text-brand">← {t(locale, "Purchase orders")}</Link>
       </div>
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Purchase Order")}</h1>
-      <PurchaseOrderForm suppliers={supplierOpts} products={productOpts} />
+      <PurchaseOrderForm suppliers={supplierOpts} products={productOpts} defaults={copied ?? undefined} />
     </div>
   );
 }

@@ -281,8 +281,9 @@ class Query implements PromiseLike<Result> {
         return `${q(f.col)} is ${f.val === null ? "null" : f.val ? "true" : "false"}`;
       }
       if (f.op === "ilike") {
+        // Arabic spelling variants forgiven on both sides (fn_ar_norm, 0114).
         params.push(f.val);
-        return `${q(f.col)} ilike $${params.length}`;
+        return `fn_ar_norm(${q(f.col)}::text) like fn_ar_norm($${params.length})`;
       }
       const opSql = { eq: "=", neq: "<>", gt: ">", lt: "<", gte: ">=", lte: "<=" }[f.op];
       params.push(f.val);

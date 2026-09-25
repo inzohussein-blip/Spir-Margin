@@ -90,7 +90,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 │   ├── build-schema.mjs         يبني supabase/schema.sql من الـ migrations
 │   └── verify-admin.mjs         فحص دخول حساب على القاعدة المستضافة (سير عمل يدوي)
 ├── supabase/
-│   ├── migrations/              0001 … 0113 — كل المخطّط ومنطق العمل (انظر القسم 7)
+│   ├── migrations/              0001 … 0114 — كل المخطّط ومنطق العمل (انظر القسم 7)
 │   ├── schema.sql               مولَّد: كل الـ migrations في ملف واحد
 │   └── seed.sql                 البيانات التجريبية (اختيارية)
 ├── src/
@@ -302,6 +302,10 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | **التعليمات** | `src/app/help/page.tsx` · `components/help/topics.tsx` (كل النصوص) · `parts.tsx` |
 | **المثبِّت** | `install-windows.cmd` · `scripts/windows/` · `scripts/service/install-linux.sh` · `docs/INSTALL.md` |
 | **الوصول من الأجهزة الأخرى** | بوّابة على المنفذ 3300 (متوقّفة افتراضياً، يشغّلها المسؤول من صفحة المزامنة): `src/lib/remote/gateway.ts` · `tokens.ts` · `devices.ts` · `request.ts` · `actions/remote.ts` · `components/sync/RemoteAccessPanel.tsx` — ربط كل متصفّح برمز لمرة واحدة، ورمز مزامنة خاص لكل حاسوب، وقطع أيّ جهاز وحده. الحساب الثابت لا يعمل من جهاز آخر |
+| **بحث عربي** | `fn_ar_norm` (الـ migration 0114) و`src/lib/text/arabic.ts`: الهمزات، ة/ه، ى/ي، التشكيل، الأرقام الهندية — في شريط البحث وكل القوائم |
+| **اختصارات يومية** | نسخ مستند (`src/lib/copy-docs.ts` · `components/desk/CopyLink.tsx`)، الاختيارات الأخيرة أولاً (`components/form/RecentOptions.tsx`)، تذكّر بحث القائمة (`components/desk/RememberSearch.tsx`)، الباركود في نقطة البيع |
+| **دفعة الكِتّ عند البيع** | `src/lib/kits.ts` · `actions/kits-hint.ts` · `components/form/KitHint.tsx` |
+| **المشاركة** | واتساب (`src/lib/whatsapp.ts` · `components/print/WhatsAppButton.tsx`)، المجموع بالعملتين في `DocumentSheet`، إكسل (`src/lib/xlsx.ts`) |
 | **النسخة الثانية** | `src/lib/backup/copies.ts` (نقي: هل توجد نسخة حديثة في مكان آخر) · `copies-server.ts` — تنبيه في الجرس للمسؤول، وبند في قائمة «البداية» |
 | **خطوات البداية لشركة جديدة** | `src/lib/setup-checklist.ts` · `components/dashboard/SetupChecklist.tsx` (الصفحة الرئيسية، للمسؤول) |
 | **التحديثات** | الإصدارات: `.github/workflows/release.yml` (بعد نجاح CI على `main`: الوسم `build-N` والملف `spir-margin.zip` وفيه `version.json`) — في البرنامج: `src/lib/update/release.ts` (نقيّ) · `updates.ts` · `actions/updates.ts` · `components/settings/UpdatesPanel.tsx` · `/api/update/status` · الإشعار في `src/app/layout.tsx` — ويندوز: `scripts/windows/update.ps1` · `update-windows.cmd` — الويب: Vercel ينشر كل دمج في `main` |
@@ -446,6 +450,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | `0111_sync_renames.sql` | Two computers, one code |
 | `0112_auto_update.sql` | Updates |
 | `0113_remote_access.sql` | Reaching the main computer from other computers |
+| `0114_arabic_search.sql` | Search that forgives Arabic spelling |
 
 ## 8) الأمان
 

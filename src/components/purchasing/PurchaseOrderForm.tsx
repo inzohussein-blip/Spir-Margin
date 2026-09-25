@@ -1,7 +1,8 @@
 "use client";
 
+import { RecentOptions, noteRecent } from "@/components/form/RecentOptions";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
 import { savePurchaseOrder, updatePurchaseOrder, type PurchaseOrderInput } from "@/app/actions/purchase_order";
@@ -32,6 +33,8 @@ export function PurchaseOrderForm({
   const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
+  // A refusal from the server (a missing customer, a closed period…) is said, not swallowed.
+  const [error, setError] = useState<string | null>(null);
 
   const { register, control, handleSubmit, setValue } = useForm<PurchaseOrderInput>({
     defaultValues: defaults ?? {
@@ -58,6 +61,7 @@ export function PurchaseOrderForm({
     start(async () => {
       const res = orderId ? await updatePurchaseOrder(orderId, payload) : await savePurchaseOrder(payload);
       if (res.ok) router.push(orderId ? `/purchase-orders/${orderId}` : "/purchase-orders");
+      else setError(res.error ?? "Could not save");
     });
   }
 
@@ -72,9 +76,9 @@ export function PurchaseOrderForm({
           </label>
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Supplier")}</span>
-            <select {...register("supplier_id")} className={cls}>
+            <select {...register("supplier_id", { onChange: (e) => noteRecent("supplier", e.target.value) })} className={cls}>
               <option value="">{t(locale, "— none —")}</option>
-              {suppliers.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+              <RecentOptions kind="supplier" options={suppliers} />
             </select>
           </label>
           <label className="block">
@@ -134,6 +138,9 @@ export function PurchaseOrderForm({
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}
         {t(locale, orderId ? "Save changes" : "Create order (draft)")}
       </Button>
+    {error ? (
+        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{t(locale, error)}</p>
+      ) : null}
     </form>
   );
 }

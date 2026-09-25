@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DocumentSheet, type DocLine } from "@/components/print/DocumentSheet";
-import { getUsdIqdRate } from "@/app/actions/currency";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
 import { statusLabel } from "@/lib/status";
@@ -15,7 +14,7 @@ interface Item {
 interface Order {
   id: string; naming_series: string | null; transaction_date: string; delivery_date: string | null;
   status: string; total_amount: number; currency: string | null; notes: string | null;
-  labs: { name: string; code: string | null } | null;
+  labs: { name: string; code: string | null; phone: string | null } | null;
   sales_order_items: Item[];
 }
 
@@ -23,7 +22,7 @@ export default async function SalesOrderPrintPage({ params }: { params: { id: st
   const supabase = createClient();
   const { data } = await supabase
     .from("sales_orders")
-    .select("id, naming_series, transaction_date, delivery_date, status, total_amount, currency, notes, labs(name, code), sales_order_items(qty, rate, amount, serial_no, products(name, item_code))")
+    .select("id, naming_series, transaction_date, delivery_date, status, total_amount, currency, notes, labs(name, code, phone), sales_order_items(qty, rate, amount, serial_no, products(name, item_code))")
     .eq("id", params.id)
     .single();
   const so = data as unknown as Order | null;
@@ -31,7 +30,6 @@ export default async function SalesOrderPrintPage({ params }: { params: { id: st
 
   const locale = getLocale();
   const currency = so.currency || "USD";
-  const rate = await getUsdIqdRate();
   const docNo = so.naming_series || `SO-${so.id.slice(0, 8).toUpperCase()}`;
   const lines: DocLine[] = (so.sales_order_items ?? []).map((it) => ({
     label: it.products?.name ?? t(locale, "Item"),
@@ -43,6 +41,7 @@ export default async function SalesOrderPrintPage({ params }: { params: { id: st
 
   return (
     <DocumentSheet
+      whatsappPhone={so.labs?.phone}
       docType={t(locale, "Sales Order")}
       docNo={docNo}
       date={so.transaction_date}
@@ -60,9 +59,6 @@ export default async function SalesOrderPrintPage({ params }: { params: { id: st
       lines={lines}
       totals={[{ label: t(locale, "Total"), value: Number(so.total_amount), strong: true }]}
       notes={so.notes}
-      footer={rate > 0
-        ? `Total ≈ ${new Intl.NumberFormat("en-US").format(Math.round(Number(so.total_amount) * rate))} IQD (1 USD = ${new Intl.NumberFormat("en-US").format(rate)} IQD) — Spir-Margin`
-        : undefined}
     />
   );
 }

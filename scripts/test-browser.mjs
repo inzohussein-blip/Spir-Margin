@@ -17,10 +17,12 @@ import { join } from "node:path";
 const PORT = Number(process.env.SPIR_TEST_PORT ?? 3399);
 const URL_ = `http://localhost:${PORT}`;
 const filter = process.argv[2] ?? "";
+// "a,b" runs every suite whose name contains a or b (still in name order).
+const parts = filter.split(",").map((s) => s.trim()).filter(Boolean);
 
 const suites = readdirSync("tests/browser")
   .filter((f) => f.endsWith(".mjs") && f !== "harness.mjs")
-  .filter((f) => !filter || f.includes(filter))
+  .filter((f) => parts.length === 0 || parts.some((part) => f.includes(part)))
   .sort();
 
 if (suites.length === 0) {

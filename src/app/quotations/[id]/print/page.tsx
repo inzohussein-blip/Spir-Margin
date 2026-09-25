@@ -11,7 +11,7 @@ interface Item { qty: number; rate: number; amount: number; products: { name: st
 interface Quotation {
   id: string; naming_series: string | null; transaction_date: string; valid_till: string | null;
   status: string; total_amount: number; currency: string | null; notes: string | null;
-  labs: { name: string; code: string | null } | null;
+  labs: { name: string; code: string | null; phone: string | null } | null;
   quotation_items: Item[];
 }
 
@@ -19,7 +19,7 @@ export default async function QuotationPrintPage({ params }: { params: { id: str
   const supabase = createClient();
   const { data } = await supabase
     .from("quotations")
-    .select("id, naming_series, transaction_date, valid_till, status, total_amount, currency, notes, labs(name, code), quotation_items(qty, rate, amount, products(name, item_code))")
+    .select("id, naming_series, transaction_date, valid_till, status, total_amount, currency, notes, labs(name, code, phone), quotation_items(qty, rate, amount, products(name, item_code))")
     .eq("id", params.id)
     .single();
   const q = data as unknown as Quotation | null;
@@ -37,6 +37,7 @@ export default async function QuotationPrintPage({ params }: { params: { id: str
 
   return (
     <DocumentSheet
+      whatsappPhone={q.labs?.phone}
       docType={t(locale, "Quotation")}
       docNo={q.naming_series || `QTN-${q.id.slice(0, 8)}`}
       date={q.transaction_date}

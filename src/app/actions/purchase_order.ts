@@ -3,6 +3,7 @@
 import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db/pglite";
 import { assertFeature } from "@/lib/features";
 import { localDate } from "@/lib/dates";
 
@@ -31,7 +32,7 @@ export async function savePurchaseOrder(input: PurchaseOrderInput) {
   const { data: header, error: hErr } = await supabase
     .from("purchase_orders")
     .insert({
-      po_no: input.po_no || null,
+      po_no: input.po_no?.trim() || (await nextDocNo("po")),
       supplier_id: input.supplier_id || null,
       transaction_date: input.transaction_date || localDate(),
       required_by: input.required_by || null,
@@ -154,4 +155,14 @@ export async function poToPurchaseInvoiceForm(fd: FormData) {
 }
 export async function cancelPurchaseOrderForm(fd: FormData) {
   await cancelPurchaseOrder(String(fd.get("id")));
+}
+
+/**
+ * A number when none was typed: minted by the database (fn_next_doc_no,
+ * migrations 0095/0098), unique per computer, like sales requests'. Left
+ * blank, the insert used to fail on the not-null number column.
+ */
+async function nextDocNo(kind: string): Promise<string> {
+  const { db } = await getDb();
+  return (await db.query<{ n: string }>(`select fn_next_doc_no($1) as n`, [kind])).rows[0].n;
 }

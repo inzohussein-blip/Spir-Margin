@@ -1,5 +1,6 @@
 "use client";
 
+import { RecentOptions, noteRecent } from "@/components/form/RecentOptions";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -77,18 +78,18 @@ export function StockEntryForm({
           {purpose !== "receipt" && (
             <label className="block">
               <span className="font-medium text-ink-gray-8">{t(locale, "From warehouse")}</span>
-              <select {...register("from_warehouse")} className={cls}>
+              <select {...register("from_warehouse", { onChange: (e) => noteRecent("warehouse", e.target.value) })} className={cls}>
                 <option value="">{t(locale, "— none —")}</option>
-                {warehouses.map((w) => <option key={w.id} value={w.id}>{w.label}</option>)}
+                <RecentOptions kind="warehouse" options={warehouses} />
               </select>
             </label>
           )}
           {purpose !== "issue" && (
             <label className="block">
               <span className="font-medium text-ink-gray-8">{t(locale, "To warehouse")}</span>
-              <select {...register("to_warehouse")} className={cls}>
+              <select {...register("to_warehouse", { onChange: (e) => noteRecent("warehouse", e.target.value) })} className={cls}>
                 <option value="">{t(locale, "— none —")}</option>
-                {warehouses.map((w) => <option key={w.id} value={w.id}>{w.label}</option>)}
+                <RecentOptions kind="warehouse" options={warehouses} />
               </select>
             </label>
           )}

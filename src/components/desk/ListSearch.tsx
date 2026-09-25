@@ -1,5 +1,7 @@
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
+import { Suspense } from "react";
+import { RememberSearch } from "./RememberSearch";
 
 /** Server-side list search: a plain GET form that reloads the list filtered by
  *  ?q= across the whole table (not just the current page). No client JS — it
@@ -16,6 +18,9 @@ export function ListSearch({
   const locale = getLocale();
   return (
     <form action={basePath} method="get" className="flex items-center gap-2 border-b border-outline-gray-1 px-4 py-3">
+      <Suspense fallback={null}>
+        <RememberSearch basePath={basePath} />
+      </Suspense>
       <input
         name="q"
         defaultValue={q ?? ""}
@@ -26,7 +31,7 @@ export function ListSearch({
         {t(locale, "Search")}
       </button>
       {q ? (
-        <a href={basePath} className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-6 hover:bg-surface-gray-1">
+        <a href={`${basePath}?q=`} className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-6 hover:bg-surface-gray-1">
           {t(locale, "Clear")}
         </a>
       ) : null}
