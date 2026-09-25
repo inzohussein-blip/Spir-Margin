@@ -25,6 +25,10 @@ each other (office network) and with a hosted Supabase Postgres (branches).
   switched on by an admin on /sync; browsers must pair with a one-time code; it marks
   requests `x-spir-remote: 1` and the built-in account is refused on them).
 - Commit messages end with the attribution lines the session gives. No model names.
+- **Merging: the owner does not want to be asked.** Work on the session branch, open a PR, and merge it
+  into `main` yourself (squash) as soon as CI passes — no approval step. Never push straight to `main`:
+  every change to `main` becomes a release that Windows computers install, so it must pass CI first.
+  A red CI is fixed, never merged. Still ask before anything destructive to data or the hosted DB.
 
 ## Commands
 
