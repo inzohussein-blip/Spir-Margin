@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import {
   SearchIcon, PlusIcon, MinusIcon, XIcon,
@@ -10,6 +10,9 @@ import { useLocale } from "@/components/LocaleProvider";
 import { useOffline } from "@/components/offline/OfflineProvider";
 import { SyncStatus } from "@/components/offline/SyncStatus";
 import { t } from "@/lib/i18n";
+import { arabicIncludes, foldArabic } from "@/lib/text/arabic";
+import { remember, recall } from "@/lib/remember";
+import { KitHint } from "@/components/form/KitHint";
 
 interface Product {
   id: string;
@@ -43,10 +46,42 @@ export function PosTerminal({
   const [error, setError] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = query.trim();
     if (!q) return products;
-    return products.filter((p) => p.name.toLowerCase().includes(q) || p.item_code.toLowerCase().includes(q));
+    return products.filter((p) => arabicIncludes(p.name, q) || arabicIncludes(p.item_code, q));
   }, [products, query]);
+
+  // The last customer and currency used here come back next time.
+  const recalled = useRef(false);
+  useEffect(() => {
+    const lab = recall("pos.lab");
+    if (lab && labs.some((l) => l.id === lab)) setLabId(lab);
+    const cur = recall("pos.currency");
+    if (cur === "USD" || cur === "IQD") setCurrency(cur);
+    recalled.current = true;
+  }, [labs]);
+  useEffect(() => {
+    if (recalled.current) remember("pos.lab", labId);
+  }, [labId]);
+  useEffect(() => {
+    if (recalled.current) remember("pos.currency", currency);
+  }, [currency]);
+
+  /**
+   * Enter in the search box: a barcode scanner types the code and presses
+   * Enter, so an exact code adds that product at once; so does a search
+   * that leaves exactly one product.
+   */
+  function onSearchEnter() {
+    const q = foldArabic(query.trim());
+    if (!q) return;
+    const exact = products.find((p) => foldArabic(p.item_code) === q);
+    const pick = exact ?? (filtered.length === 1 ? filtered[0] : null);
+    if (pick) {
+      addProduct(pick);
+      setQuery("");
+    }
+  }
 
   const subtotal = cart.reduce((s, l) => s + l.qty * l.sell, 0);
   const cost = cart.reduce((s, l) => s + l.qty * Number(l.product.default_buy_price), 0);
@@ -128,6 +163,8 @@ export function PosTerminal({
           <div className="relative mb-3">
             <SearchIcon size={16} className="pointer-events-none absolute top-1/2 -translate-y-1/2 text-ink-gray-4 start-3" />
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t(locale, "Search products by name or code…")}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onSearchEnter(); } }}
+              data-testid="pos-search"
               className={`${inputCls} w-full ps-9`} autoFocus />
           </div>
           <div className="grid min-h-0 flex-1 auto-rows-min grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4">
@@ -186,6 +223,7 @@ export function PosTerminal({
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium text-ink-gray-8">{l.product.name}</p>
+                        {l.product.product_type === "kit" ? <KitHint productId={l.product.id} /> : null}
                         <p className="text-xs text-ink-gray-4">{l.product.item_code}</p>
                       </div>
                       <button onClick={() => remove(l.product.id)} className="text-ink-gray-4 hover:text-red-600"><XIcon size={16} /></button>

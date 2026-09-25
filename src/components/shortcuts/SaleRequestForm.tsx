@@ -1,5 +1,7 @@
 "use client";
 
+import { KitHint } from "@/components/form/KitHint";
+import { RecentOptions, noteRecent } from "@/components/form/RecentOptions";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -97,9 +99,9 @@ export function SaleRequestForm({
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
               <span className="text-sm font-medium text-ink-gray-7">{t(locale, "Lab")}</span>
-              <select {...register("lab_id")} className={cls}>
+              <select {...register("lab_id", { onChange: (e) => noteRecent("lab", e.target.value) })} className={cls}>
                 <option value="">{t(locale, "— none —")}</option>
-                {labs.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
+                <RecentOptions kind="lab" options={labs} />
               </select>
               <span className="mt-1 block text-xs text-ink-gray-5">
                 {t(locale, "Or leave this empty and write the customer's name below.")}
@@ -140,6 +142,7 @@ export function SaleRequestForm({
                     <option value="">{t(locale, "— free text —")}</option>
                     {products.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
                   </select>
+                  <KitHint productId={items?.[i]?.product_id} />
                 </label>
                 <label className="block">
                   <span className="text-xs text-ink-gray-5">{t(locale, "Description")}</span>

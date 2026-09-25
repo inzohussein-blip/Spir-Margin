@@ -1,4 +1,5 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { CopyLink } from "@/components/desk/CopyLink";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { PencilIcon, Trash2Icon } from "lucide-react";
@@ -107,6 +108,7 @@ export default async function SalesOrdersPage({
                             <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Deliver")}</button>
                           </ValidatedForm>
                         )}
+                        <CopyLink href={`/sales-orders/new?from=${o.id}`} size="xs" />
                         {o.status === "draft" && (
                           <>
                             <Link href={`/sales-orders/${o.id}/edit`} className="inline-flex items-center gap-1 rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:border-brand hover:text-brand">

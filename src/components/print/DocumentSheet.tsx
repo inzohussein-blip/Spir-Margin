@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { PrintButton } from "./PrintButton";
+import { WhatsAppButton } from "./WhatsAppButton";
+import { waLink } from "@/lib/whatsapp";
+import { getUsdIqdRate } from "@/app/actions/currency";
 import { getLocale } from "@/lib/i18n-server";
 import { getBranding, brandingLines } from "@/lib/branding";
 import { t } from "@/lib/i18n";
@@ -38,6 +41,7 @@ export async function DocumentSheet({
   meta,
   notes,
   footer,
+  whatsappPhone,
 }: {
   docType: string;
   docNo: string;
@@ -50,6 +54,8 @@ export async function DocumentSheet({
   meta?: { label: string; value: ReactNode }[];
   notes?: string | null;
   footer?: ReactNode;
+  /** The customer's phone, for the WhatsApp button (none: pick the chat in WhatsApp). */
+  whatsappPhone?: string | null;
 }) {
   const locale = getLocale();
   const brand = await getBranding();
@@ -57,11 +63,29 @@ export async function DocumentSheet({
   const contact = brandingLines(brand);
   const watermark = brand.watermarkOn ? (brand.watermarkText ?? brand.companyName) : null;
 
+  // The main total in the other currency too: dollars and dinars side by side.
+  const rate = await getUsdIqdRate().catch(() => 0);
+  const main = totals.find((x) => x.strong) ?? totals[totals.length - 1];
+  const other =
+    rate > 0 && main
+      ? currency === "IQD"
+        ? { value: main.value / rate, currency: "USD" }
+        : currency === "USD"
+          ? { value: Math.round(main.value * rate), currency: "IQD" }
+          : null
+      : null;
+  const summary = `${name}: ${docType} ${docNo} — ${date}${main ? ` — ${main.label}: ${money(main.value, currency)}` : ""}${
+    other ? ` (≈ ${money(other.value, other.currency)})` : ""
+  }`;
+
   return (
     <div className="mx-auto max-w-3xl">
       <div className="no-print mb-4 flex items-center justify-between">
         <Link href={backHref} className="text-sm text-ink-gray-5 hover:text-brand"><span aria-hidden>→</span> {t(locale, "Back")}</Link>
-        <PrintButton />
+        <div className="flex items-center gap-2">
+          <WhatsAppButton href={waLink(whatsappPhone, summary)} />
+          <PrintButton />
+        </div>
       </div>
 
       <div className="relative overflow-hidden rounded-lg border border-outline-gray-2 bg-white p-8 text-ink-gray-8 print:rounded-none print:border-0 print:p-0">
@@ -170,6 +194,16 @@ export async function DocumentSheet({
                   <td className={`py-1.5 text-end ${t.strong ? "text-lg font-bold" : ""}`}>{money(t.value, currency)}</td>
                 </tr>
               ))}
+              {other ? (
+                <tr data-other-currency>
+                  <td className="pb-1.5 text-xs text-ink-gray-5">
+                    ≈ {t(locale, "at")} <span dir="ltr">1 USD = {rate.toLocaleString("en-US")} IQD</span>
+                  </td>
+                  <td className="pb-1.5 text-end text-sm font-semibold text-ink-gray-6">
+                    {money(other.value, other.currency).replace(/\.00$/, "")}
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>

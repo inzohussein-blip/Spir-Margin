@@ -1,5 +1,7 @@
 "use client";
 
+import { KitHint } from "@/components/form/KitHint";
+import { RecentOptions, noteRecent } from "@/components/form/RecentOptions";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -111,9 +113,9 @@ export function SalesOrderForm({
             <span className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-ink-gray-7">
               <FlaskConicalIcon size={14} className="text-brand" /> {t(locale, "Lab *")}
             </span>
-            <select {...register("lab_id", { required: true })} className={`${field} font-medium`}>
+            <select {...register("lab_id", { required: true, onChange: (e) => noteRecent("lab", e.target.value) })} className={`${field} font-medium`}>
               <option value="">{t(locale, "Select…")}</option>
-              {labs.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
+              <RecentOptions kind="lab" options={labs} />
             </select>
           </label>
           <label className="block">
@@ -171,6 +173,7 @@ export function SalesOrderForm({
                     <option value="">{t(locale, "Select…")}</option>
                     {products.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
                   </select>
+                  <KitHint productId={items?.[i]?.product_id} />
                 </label>
 
                 {/* qty stepper */}

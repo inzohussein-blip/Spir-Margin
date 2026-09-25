@@ -11,7 +11,7 @@ interface Item { qty: number; rate: number; amount: number; products: { name: st
 interface PO {
   id: string; po_no: string; transaction_date: string; required_by: string | null;
   status: string; total_amount: number; notes: string | null;
-  companies: { name: string } | null;
+  companies: { name: string; phone: string | null } | null;
   purchase_order_items: Item[];
 }
 
@@ -19,7 +19,7 @@ export default async function PurchaseOrderPrintPage({ params }: { params: { id:
   const supabase = createClient();
   const { data } = await supabase
     .from("purchase_orders")
-    .select("id, po_no, transaction_date, required_by, status, total_amount, notes, companies:supplier_id(name), purchase_order_items(qty, rate, amount, products(name, item_code))")
+    .select("id, po_no, transaction_date, required_by, status, total_amount, notes, companies:supplier_id(name, phone), purchase_order_items(qty, rate, amount, products(name, item_code))")
     .eq("id", params.id)
     .single();
   const po = data as unknown as PO | null;
@@ -36,6 +36,7 @@ export default async function PurchaseOrderPrintPage({ params }: { params: { id:
 
   return (
     <DocumentSheet
+      whatsappPhone={po.companies?.phone}
       docType={t(locale, "Purchase Order")}
       docNo={po.po_no}
       date={po.transaction_date}

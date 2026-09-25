@@ -39,6 +39,7 @@ export default async function SaleRequestReceipt({ params }: { params: { id: str
 
   return (
     <DocumentSheet
+      whatsappPhone={req.labs?.phone ?? req.customer_phone}
       docType={t(locale, "Receipt")}
       docNo={req.request_no}
       date={fmtDate(req.request_date)}

@@ -3,12 +3,15 @@ import { getLabs, getProducts } from "@/lib/queries";
 import { SalesInvoiceForm } from "@/components/selling/SalesInvoiceForm";
 import { t } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n-server";
+import { copySalesInvoice } from "@/lib/copy-docs";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewSalesInvoicePage() {
+export default async function NewSalesInvoicePage({ searchParams }: { searchParams: { from?: string } }) {
   const locale = getLocale();
-  const [labs, products] = await Promise.all([getLabs(), getProducts()]);
+  const [labs, products, copied] = await Promise.all([
+    getLabs(), getProducts(), searchParams.from ? copySalesInvoice(searchParams.from) : null,
+  ]);
   const labOpts = labs.map((l) => ({ id: l.id as string, label: l.name as string }));
   const productOpts = products.map((p) => ({
     id: p.id as string,
@@ -22,7 +25,7 @@ export default async function NewSalesInvoicePage() {
         <Link href="/sales-invoices" className="hover:text-brand">← {t(locale, "Sales invoices")}</Link>
       </div>
       <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "New Sales Invoice")}</h1>
-      <SalesInvoiceForm labs={labOpts} products={productOpts} />
+      <SalesInvoiceForm labs={labOpts} products={productOpts} defaults={copied ?? undefined} />
     </div>
   );
 }

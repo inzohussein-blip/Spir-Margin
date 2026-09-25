@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CopyLink } from "@/components/desk/CopyLink";
 import { notFound } from "next/navigation";
 import { PrinterIcon, PencilIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -73,6 +74,7 @@ export default async function SaleRequestPage({ params }: { params: { id: string
               <PencilIcon size={15} /> {t(locale, "Edit")}
             </Link>
           ) : null}
+          <CopyLink href={`/sale-requests/new?from=${req.id}`} />
           <Link
             href={`/sale-requests/${req.id}/print`}
             className="inline-flex items-center gap-1.5 rounded-md bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark"

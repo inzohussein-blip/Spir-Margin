@@ -3,6 +3,7 @@
 import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db/pglite";
 import { localDate } from "@/lib/dates";
 
 export interface InvoiceLineInput {
@@ -31,7 +32,7 @@ export async function saveSalesInvoice(input: SalesInvoiceInput) {
   const { data: header, error: hErr } = await supabase
     .from("sales_invoices")
     .insert({
-      invoice_no: input.invoice_no || null,
+      invoice_no: input.invoice_no?.trim() || (await nextDocNo("si")),
       lab_id: input.lab_id,
       posting_date: input.posting_date || localDate(),
       due_date: input.due_date || null,
@@ -146,4 +147,14 @@ export async function cancelSalesInvoiceForm(fd: FormData) {
 export async function recordInvoicePaymentForm(fd: FormData) {
   const amount = Number(fd.get("amount"));
   if (amount > 0) await recordInvoicePayment(String(fd.get("id")), amount);
+}
+
+/**
+ * A number when none was typed: minted by the database (fn_next_doc_no,
+ * migrations 0095/0098), unique per computer, like sales requests'. Left
+ * blank, the insert used to fail on the not-null number column.
+ */
+async function nextDocNo(kind: string): Promise<string> {
+  const { db } = await getDb();
+  return (await db.query<{ n: string }>(`select fn_next_doc_no($1) as n`, [kind])).rows[0].n;
 }

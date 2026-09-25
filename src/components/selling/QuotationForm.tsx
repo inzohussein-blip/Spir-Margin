@@ -1,7 +1,8 @@
 "use client";
 
+import { RecentOptions, noteRecent } from "@/components/form/RecentOptions";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
 import { saveQuotation, updateQuotation, type QuotationInput } from "@/app/actions/quotation";
@@ -31,6 +32,8 @@ export function QuotationForm({
   const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
+  // A refusal from the server (a missing customer, a closed period…) is said, not swallowed.
+  const [error, setError] = useState<string | null>(null);
   const editing = Boolean(quotationId);
 
   const { register, control, handleSubmit, setValue } = useForm<QuotationInput>({
@@ -50,6 +53,7 @@ export function QuotationForm({
     start(async () => {
       const res = editing ? await updateQuotation(quotationId!, values) : await saveQuotation(values);
       if (res.ok) router.push("/quotations");
+      else setError(res.error ?? "Could not save");
     });
   }
   function onProduct(index: number, productId: string) {
@@ -65,9 +69,9 @@ export function QuotationForm({
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           <label className="block">
             <span className="font-medium text-ink-gray-8">{t(locale, "Lab *")}</span>
-            <select {...register("lab_id", { required: true })} className={cls}>
+            <select {...register("lab_id", { required: true, onChange: (e) => noteRecent("lab", e.target.value) })} className={cls}>
               <option value="">{t(locale, "Select…")}</option>
-              {labs.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
+              <RecentOptions kind="lab" options={labs} />
             </select>
           </label>
           <label className="block">
@@ -125,6 +129,9 @@ export function QuotationForm({
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}
         {editing ? t(locale, "Save changes") : t(locale, "Create quotation (draft)")}
       </Button>
+    {error ? (
+        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{t(locale, error)}</p>
+      ) : null}
     </form>
   );
 }

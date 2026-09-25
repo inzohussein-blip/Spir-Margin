@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { SearchIcon } from "lucide-react";
+import { arabicIncludes } from "@/lib/text/arabic";
 
 /**
  * Generic ERPNext-style list quick-filter. Filters the rows of the sibling
@@ -16,10 +17,10 @@ export function ListFilter({ placeholder = "Filter…" }: { placeholder?: string
     const root = ref.current?.closest("[data-desk-shell]");
     const rows = root?.querySelectorAll<HTMLTableRowElement>("[data-desk-list] tbody tr");
     if (!rows) return;
-    const needle = q.trim().toLowerCase();
+    const needle = q.trim();
     let shown = 0;
     rows.forEach((tr) => {
-      const match = !needle || (tr.textContent ?? "").toLowerCase().includes(needle);
+      const match = !needle || arabicIncludes(tr.textContent ?? "", needle);
       tr.hidden = !match;
       if (match) shown++;
     });

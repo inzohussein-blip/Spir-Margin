@@ -85,6 +85,10 @@ browser ── Next.js (127.0.0.1:3000) ── pages (RSC) + server actions
 | Audit trail | `fn_audit` trigger → `audit_log`; actor from `src/lib/audit/actor.ts`; `/audit-log`, `/monitoring/changes` |
 | Errors → Arabic | `src/lib/db/errors.ts`, `form-error.ts`, migration 0102 (rewrites `raise exception` texts) |
 | Global search (Ctrl K) | `components/desk/Awesomebar.tsx`, `actions/search.ts`, `fn_global_search` |
+| Arabic-aware search (0114) | `fn_ar_norm` (SQL) = `foldArabic` (`src/lib/text/arabic.ts`, pure): hamza forms, ة/ه, ى/ي, diacritics, tatweel, Arabic-Indic digits; used by `fn_global_search`, every `.ilike()` in `rest.ts`, `ListFilter`, POS |
+| Daily speed-ups | copy a document: `src/lib/copy-docs.ts` + `/<doc>/new?from=<id>`, `components/desk/CopyLink.tsx`; recent picks first: `components/form/RecentOptions.tsx`; list search memory: `components/desk/RememberSearch.tsx` (no `q` in URL → restore; `?q=` → clear); POS barcode Enter; `src/lib/remember.ts` (localStorage, fail-safe) |
+| Kit batch hint | `src/lib/kits.ts` (pure, FEFO like `fn_deduct_kit_stock`), `actions/kits-hint.ts`, `components/form/KitHint.tsx` (POS, invoice, order, request lines) |
+| Sharing | WhatsApp: `src/lib/whatsapp.ts` (pure, Iraqi numbers), `components/print/WhatsAppButton.tsx` in `DocumentSheet`; other-currency total in `DocumentSheet`; Excel: `src/lib/xlsx.ts` (pure zip+XML writer), button in `ExportCsvButton.tsx` |
 | Generic CRUD forms | `src/app/actions/crud.ts`, `components/desk/*` (ListShell, FormShell, Pager…), `components/form/*` |
 | Customer portal | `/portal`, `actions/portal.ts`, `createPortalClient()` |
 | Instructions (تعليمات) | `src/app/help/page.tsx`, `components/help/topics.tsx` (content), `parts.tsx` |
@@ -128,7 +132,7 @@ Not in the menu: `/login`, `/welcome`, `/account`, `/portal`, `/w/<group>`, and 
   numbers · 0102 Arabic errors · 0103 session cut-off · 0104 closes Supabase REST
   (anon/authenticated) · 0105 sync links · 0106 trigger sync guard · 0107 no default
   accounts · 0108 prune standalone · 0109 built-in password · 0110 auto backup ·
-  0111 sync renames · 0112 auto update · 0113 remote access. Full list with titles in `README.md`.
+  0111 sync renames · 0112 auto update · 0113 remote access · 0114 Arabic search. Full list with titles in `README.md`.
 
 ## Sync model (read before touching sync)
 
@@ -173,6 +177,10 @@ Not in the menu: `/login`, `/welcome`, `/account`, `/portal`, `/w/<group>`, and 
 - Session cookies are `Secure` only when the request is not remote (`secureCookies()`):
   browsers drop Secure cookies on plain http from another address.
 - `next start` leaves a `next-server` child: kill it too (it keeps the ports) — `ps` for `next-server`.
+- Invoice/PO numbers left blank are minted by `fn_next_doc_no` (the columns are not null; a blank
+  number used to fail silently). Forms must show `res.error` — never swallow a failed save.
+- Re-rendering a `<select>`'s options (optgroups) replaces them and loses an uncontrolled choice:
+  `RecentOptions` restores it — do the same in any component that reorders options.
 - An update must never move `.pglite-data`, `.env.local`, `backups`, `logs` or `updates` (`$Keep` in
   `update.ps1`); the build in the stage folder writes its own `.env.local` and `.pglite-data` — never swap them in.
 

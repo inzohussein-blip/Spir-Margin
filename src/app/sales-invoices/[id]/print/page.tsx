@@ -1,10 +1,8 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DocumentSheet, type DocLine } from "@/components/print/DocumentSheet";
-import { getUsdIqdRate } from "@/app/actions/currency";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
-import { fmtNum } from "@/lib/format";
 import { statusLabel } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +12,7 @@ interface Invoice {
   id: string; invoice_no: string; posting_date: string; due_date: string | null;
   status: string; total_amount: number; paid_amount: number; outstanding: number;
   currency: string | null; notes: string | null;
-  labs: { name: string; code: string | null } | null;
+  labs: { name: string; code: string | null; phone: string | null } | null;
   sales_invoice_items: Item[];
 }
 
@@ -22,7 +20,7 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
   const supabase = createClient();
   const { data } = await supabase
     .from("sales_invoices")
-    .select("id, invoice_no, posting_date, due_date, status, total_amount, paid_amount, outstanding, currency, notes, labs(name, code), sales_invoice_items(qty, rate, amount, products(name, item_code))")
+    .select("id, invoice_no, posting_date, due_date, status, total_amount, paid_amount, outstanding, currency, notes, labs(name, code, phone), sales_invoice_items(qty, rate, amount, products(name, item_code))")
     .eq("id", params.id)
     .single();
   const inv = data as unknown as Invoice | null;
@@ -30,7 +28,6 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
 
   const locale = getLocale();
   const currency = inv.currency || "USD";
-  const rate = await getUsdIqdRate();
   const lines: DocLine[] = (inv.sales_invoice_items ?? []).map((it) => ({
     label: it.products?.name ?? t(locale, "Item"),
     sub: it.products?.item_code ?? null,
@@ -41,6 +38,7 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
 
   return (
     <DocumentSheet
+      whatsappPhone={inv.labs?.phone}
       docType={t(locale, "Invoice")}
       docNo={inv.invoice_no}
       date={inv.posting_date}
@@ -62,10 +60,6 @@ export default async function InvoicePrintPage({ params }: { params: { id: strin
         { label: t(locale, "Balance due"), value: Number(inv.outstanding), strong: true },
       ]}
       notes={inv.notes}
-      footer={rate > 0
-        ? `${t(locale, "Balance due")} ≈ ${fmtNum(Math.round(Number(inv.outstanding) * rate))} ${t(locale, "IQD")}`
-          + ` (1 ${t(locale, "USD")} = ${fmtNum(rate)} ${t(locale, "IQD")}) — Spir-Margin`
-        : undefined}
     />
   );
 }
