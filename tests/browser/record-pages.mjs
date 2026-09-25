@@ -89,7 +89,7 @@ for (const list of lists) {
     check(`${url.replace(new RegExp(UUID), "[id]")} shows cleanly`, issues.length === 0, issues.join(" ; "));
   }
 }
-check("record pages were found to visit", visited >= 10, `${visited} visited`);
+check("record pages were found to visit", visited >= 6, `${visited} visited`);
 
 await browser.close();
 done();

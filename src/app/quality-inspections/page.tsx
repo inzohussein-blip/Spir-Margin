@@ -6,7 +6,7 @@ import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { evaluateQualityInspectionForm, cancelQualityInspectionForm } from "@/app/actions/quality";
 import { getLocale } from "@/lib/i18n-server";
-import { t } from "@/lib/i18n";
+import { t, tValue } from "@/lib/i18n";
 import { statusLabel } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
@@ -75,7 +75,7 @@ export default async function QualityInspectionsPage() {
                 {rows.map((q) => (
                   <tr key={q.id}>
                     <td className="px-4 py-2 font-medium"><Link href={`/quality-inspections/${q.id}`} className="text-brand hover:underline">{q.qi_no}</Link></td>
-                    <td className="px-4 py-2 text-ink-gray-5">{q.inspection_type}</td>
+                    <td className="px-4 py-2 text-ink-gray-5">{tValue(locale, q.inspection_type)}</td>
                     <td className="px-4 py-2">{q.products?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{q.report_date}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{q.quality_inspection_readings?.length ?? 0}</td>

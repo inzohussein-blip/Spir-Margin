@@ -7,7 +7,7 @@ import { ListShell } from "@/components/desk/ListShell";
 import { Indicator } from "@/components/desk/Indicator";
 import { submitBlanketOrderForm, cancelBlanketOrderForm } from "@/app/actions/blanket_order";
 import { getLocale } from "@/lib/i18n-server";
-import { t } from "@/lib/i18n";
+import { t, tValue } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -70,7 +70,7 @@ export default async function BlanketOrdersPage() {
                 {rows.map((r) => (
                   <tr key={r.id} className="hover:bg-surface-gray-1">
                     <td className="px-4 py-2 font-medium"><Link href={`/blanket-orders/${r.id}`} className="text-brand hover:underline">{r.order_no}</Link></td>
-                    <td className="px-4 py-2 capitalize text-ink-gray-5">{r.order_type}</td>
+                    <td className="px-4 py-2 capitalize text-ink-gray-5">{tValue(locale, r.order_type)}</td>
                     <td className="px-4 py-2">{(r.order_type === "purchasing" ? r.companies?.name : r.labs?.name) ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{r.from_date} → {r.to_date}</td>
                     <td className="px-4 py-2 text-right">{agreedValue(r).toLocaleString("en-US")}</td>

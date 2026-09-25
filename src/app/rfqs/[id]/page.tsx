@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { rfqToQuotationForm } from "@/app/actions/rfq";
 import { getLocale } from "@/lib/i18n-server";
-import { t } from "@/lib/i18n";
+import { t, tValue } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -79,7 +79,7 @@ export default async function RfqDetailPage({ params }: { params: { id: string }
                     <td className="px-4 py-2 font-medium">{s.companies?.name ?? "—"}</td>
                     <td className="px-4 py-2">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${s.quote_status === "received" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-                        {s.quote_status}
+                        {tValue(locale, s.quote_status)}
                       </span>
                     </td>
                     <td className="px-4 py-2">

@@ -6,7 +6,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { ListShell } from "@/components/desk/ListShell";
 import { setAppointmentStatusForm } from "@/app/actions/appointment";
 import { getLocale } from "@/lib/i18n-server";
-import { t } from "@/lib/i18n";
+import { t, tValue } from "@/lib/i18n";
 import { statusLabel } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
@@ -75,7 +75,7 @@ export default async function AppointmentsPage() {
                   <tr key={a.id}>
                     <td className="px-4 py-2 font-medium"><Link href={`/appointments/${a.id}`} className="text-brand hover:underline">{a.appointment_no}</Link></td>
                     <td className="px-4 py-2 text-ink-gray-5">{new Date(a.scheduled_time).toLocaleString("en-US")}</td>
-                    <td className="px-4 py-2 text-ink-gray-5">{a.purpose}</td>
+                    <td className="px-4 py-2 text-ink-gray-5">{tValue(locale, a.purpose)}</td>
                     <td className="px-4 py-2">{a.labs?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{a.devices?.asset_code ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{a.contact_name ?? "—"}</td>

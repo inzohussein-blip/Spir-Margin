@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { reconcile, applyRulesForAccount } from "@/app/actions/banking";
 import { useLocale } from "@/components/LocaleProvider";
-import { t as tr } from "@/lib/i18n";
+import { t as tr, tValue } from "@/lib/i18n";
 
 interface Txn {
   id: string;
@@ -160,7 +160,7 @@ export function ReconcilePanel({
                   <div>
                     <div className="font-medium text-ink-gray-8">
                       {p.party_name ?? "—"}{" "}
-                      <span className="text-xs text-ink-gray-4">({p.payment_type})</span>
+                      <span className="text-xs text-ink-gray-4">({tValue(locale, p.payment_type)})</span>
                     </div>
                     <div className="text-xs text-ink-gray-4">
                       {p.posting_date} · {p.reference_no ?? tr(locale, "no ref")}

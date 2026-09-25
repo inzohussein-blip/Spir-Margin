@@ -55,7 +55,7 @@ export default async function RulesPage() {
                   </div>
                 </div>
                 <div className="mt-1 text-xs text-ink-gray-4">
-                  {r.transaction_type}
+                  {tValue(locale, r.transaction_type)}
                   {r.min_amount != null && ` · ≥ ${r.min_amount}`}
                   {r.max_amount != null && ` · ≤ ${r.max_amount}`}
                   {r.bank_rule_conditions?.map((c, i) => (
