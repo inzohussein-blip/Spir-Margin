@@ -109,7 +109,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 │   │   └── w/[slug]/            صفحة مجموعة (مساحة عمل) لكل قسم من القائمة
 │   ├── components/
 │   │   ├── desk/                أدوات القوائم والنماذج: ListShell, FormShell, Pager, Awesomebar (بحث Ctrl K) …
-│   │   ├── form/ ui/            حقول النماذج ومكوّنات الواجهة العامّة
+│   │   ├── form/ ui/            حقول النماذج، ومكوّنات الواجهة الستّة المستعملة (زر، بطاقة، شارة، حوار، تبويبات، قائمة أوامر)
 │   │   ├── auth/ settings/ sync/ offline/ monitoring/ help/ print/ shortcuts/ …
 │   │   └── <مجال>/              مكوّنات خاصّة بكل مجال (banking, selling, stock, …)
 │   └── lib/
