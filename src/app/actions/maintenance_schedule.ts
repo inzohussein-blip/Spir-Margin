@@ -54,8 +54,10 @@ export async function cancelMaintenanceSchedule(id: string) {
 }
 
 export async function generateMaintenanceScheduleForm(fd: FormData) {
-  await generateMaintenanceSchedule(String(fd.get("id")));
+  const res = await generateMaintenanceSchedule(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }
 export async function cancelMaintenanceScheduleForm(fd: FormData) {
-  await cancelMaintenanceSchedule(String(fd.get("id")));
+  const res = await cancelMaintenanceSchedule(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }

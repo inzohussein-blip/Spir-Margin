@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { ListShell } from "@/components/desk/ListShell";
 import { getLocale } from "@/lib/i18n-server";
-import { t } from "@/lib/i18n";
+import { t, tValue } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -73,7 +73,7 @@ export default async function ProductsPage() {
                           typeBadge[p.product_type] ?? "bg-surface-gray-2"
                         }`}
                       >
-                        {t(locale, p.product_type.replace(/_/g, " "))}
+                        {tValue(locale, p.product_type)}
                       </span>
                     </td>
                     <td className="px-4 py-2 text-ink-gray-5">

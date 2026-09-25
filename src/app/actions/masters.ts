@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -11,7 +12,8 @@ export async function addMasterForm(fd: FormData) {
   const name = String(fd.get("name") ?? "").trim();
   if (!name || !NAME_TABLES.includes(table as (typeof NAME_TABLES)[number])) return;
   const supabase = createClient();
-  await supabase.from(table).insert({ name });
+  const { error } = await supabase.from(table).insert({ name });
+  if (error) return formError(error);
   revalidatePath("/masters");
 }
 
@@ -20,7 +22,8 @@ export async function deleteMasterForm(fd: FormData) {
   const allowed = [...NAME_TABLES, "terms_and_conditions"];
   if (!allowed.includes(table)) return;
   const supabase = createClient();
-  await supabase.from(table).delete().eq("id", String(fd.get("id")));
+  const { error } = await supabase.from(table).delete().eq("id", String(fd.get("id")));
+  if (error) return formError(error);
   revalidatePath("/masters");
 }
 
@@ -29,9 +32,10 @@ export async function addTermForm(fd: FormData) {
   const title = String(fd.get("title") ?? "").trim();
   if (!title) return;
   const supabase = createClient();
-  await supabase.from("terms_and_conditions").insert({
+  const { error } = await supabase.from("terms_and_conditions").insert({
     title,
     terms: String(fd.get("terms") ?? "").trim() || null,
   });
+  if (error) return formError(error);
   revalidatePath("/masters");
 }

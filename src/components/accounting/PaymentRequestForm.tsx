@@ -1,9 +1,10 @@
 "use client";
 
 import { useForm } from "react-hook-form";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2Icon } from "lucide-react";
+import { SaveError } from "@/components/form/SaveError";
 import { savePaymentRequest, type PaymentRequestInput } from "@/app/actions/payment_request";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ export function PaymentRequestForm({
   const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const { register, handleSubmit, setValue, watch } = useForm<PaymentRequestInput>({
     defaultValues: {
@@ -53,8 +55,10 @@ export function PaymentRequestForm({
 
   function onSubmit(values: PaymentRequestInput) {
     start(async () => {
+      setSaveError(null);
       const res = await savePaymentRequest({ ...values, lab_id: values.lab_id || null });
       if (res.ok) router.push("/payment-requests");
+      else setSaveError(res.error ?? "Could not save");
     });
   }
 
@@ -98,6 +102,8 @@ export function PaymentRequestForm({
           </label>
         </CardContent>
       </Card>
+
+      <SaveError error={saveError} />
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}

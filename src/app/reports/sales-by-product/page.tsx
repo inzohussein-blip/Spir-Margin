@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ListShell } from "@/components/desk/ListShell";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { getLocale } from "@/lib/i18n-server";
-import { t } from "@/lib/i18n";
+import { t, tValue } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 const money = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n || 0);
@@ -36,7 +36,7 @@ export default async function SalesByProductReport() {
               <tr key={r.product_id} className="hover:bg-surface-gray-1">
                 <td className="px-4 py-2 font-medium">{r.item_code ?? "—"}</td>
                 <td className="px-4 py-2">{r.product_name}</td>
-                <td className="px-4 py-2 capitalize text-ink-gray-5">{r.product_type?.replace(/_/g, " ")}</td>
+                <td className="px-4 py-2 capitalize text-ink-gray-5">{tValue(locale, r.product_type)}</td>
                 <td className="px-4 py-2 text-right">{Number(r.qty_sold)}</td>
                 <td className="px-4 py-2 text-right text-ink-gray-5">{Number(r.invoices)}</td>
                 <td className="px-4 py-2 text-right font-medium">{money(Number(r.revenue))}</td>

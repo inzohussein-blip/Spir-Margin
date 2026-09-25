@@ -75,6 +75,8 @@ export interface WorkOrderInput {
 export async function saveWorkOrder(input: WorkOrderInput) {
   const supabase = createClient();
   if (!input.product_id) return { ok: false as const, error: "Finished product is required" };
+  const qty = input.qty === undefined || input.qty === null || String(input.qty) === "" ? 1 : Number(input.qty);
+  if (!(qty > 0)) return { ok: false as const, error: "Quantity must be more than zero" };
 
   const { data, error } = await supabase
     .from("work_orders")
@@ -82,7 +84,7 @@ export async function saveWorkOrder(input: WorkOrderInput) {
       wo_no: input.wo_no || null,
       product_id: input.product_id,
       bom_id: input.bom_id || null,
-      qty: Number(input.qty) || 1,
+      qty,
       fg_warehouse: input.fg_warehouse || null,
       planned_start: input.planned_start || null,
       planned_end: input.planned_end || null,
@@ -135,14 +137,16 @@ export async function createWorkOrder(fd: FormData) {
     planned_end: s("planned_end"),
     notes: s("notes") ?? "",
   });
-  if (!res.ok) throw new Error(res.error);
+  if (!res.ok) return { error: res.error };
   redirect("/work-orders?saved=created");
 }
 
 /** FormData wrappers for inline <form action={…}> buttons. */
 export async function completeWorkOrderForm(fd: FormData) {
-  await completeWorkOrder(String(fd.get("id")));
+  const res = await completeWorkOrder(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }
 export async function cancelWorkOrderForm(fd: FormData) {
-  await cancelWorkOrder(String(fd.get("id")));
+  const res = await cancelWorkOrder(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }

@@ -1,9 +1,10 @@
 "use client";
 
 import { useForm, useFieldArray } from "react-hook-form";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
+import { SaveError } from "@/components/form/SaveError";
 import { saveMaintenanceTeam, type MaintenanceTeamInput } from "@/app/actions/maintenance_team";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ export function MaintenanceTeamForm() {
   const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const { register, control, handleSubmit } = useForm<MaintenanceTeamInput>({
     defaultValues: {
@@ -32,8 +34,10 @@ export function MaintenanceTeamForm() {
 
   function onSubmit(values: MaintenanceTeamInput) {
     start(async () => {
+      setSaveError(null);
       const res = await saveMaintenanceTeam(values);
       if (res.ok) router.push("/maintenance-teams");
+      else setSaveError(res.error ?? "Could not save");
     });
   }
 
@@ -113,6 +117,8 @@ export function MaintenanceTeamForm() {
             <PlusIcon size={14} className="mr-1" />{t(locale, "Add task")}</Button>
         </CardContent>
       </Card>
+
+      <SaveError error={saveError} />
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}

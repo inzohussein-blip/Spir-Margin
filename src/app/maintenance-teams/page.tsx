@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { getLocale } from "@/lib/i18n-server";
-import { t } from "@/lib/i18n";
+import { t, tValue } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -58,7 +58,7 @@ export default async function MaintenanceTeamsPage() {
                   {(t.maintenance_tasks ?? []).map((k) => (
                     <li key={k.id} className="flex justify-between">
                       <span className="text-ink-gray-8">{k.task_name}</span>
-                      <span className="text-ink-gray-4">{k.maintenance_type}{k.periodicity ? ` · ${k.periodicity}` : ""}</span>
+                      <span className="text-ink-gray-4">{tValue(locale, k.maintenance_type)}{k.periodicity ? ` · ${tValue(locale, k.periodicity)}` : ""}</span>
                     </li>
                   ))}
                 </ul>

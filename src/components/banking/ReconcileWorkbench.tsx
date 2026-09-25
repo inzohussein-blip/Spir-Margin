@@ -36,7 +36,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { useLocale } from "@/components/LocaleProvider";
-import { t as tr } from "@/lib/i18n";
+import { t as tr, tValue } from "@/lib/i18n";
 
 // --- Faithful port of bankRecAtoms (subset) -------------------------------
 export interface SelectedBank {
@@ -463,7 +463,7 @@ export function ReconcileWorkbench({ accounts }: { accounts: SelectedBank[] }) {
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="truncate font-medium text-ink-gray-8">{p.party_name ?? "—"}</span>
-                            <span className="text-xs text-ink-gray-5">({p.payment_type})</span>
+                            <span className="text-xs text-ink-gray-5">({tValue(locale, p.payment_type)})</span>
                             {selectedTxn && (
                               <Badge
                                 theme={q === "full" ? "green" : q === "partial" ? "orange" : "gray"}

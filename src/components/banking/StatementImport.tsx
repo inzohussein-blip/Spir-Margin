@@ -159,13 +159,13 @@ export function StatementImport({ accounts }: { accounts: Account[] }) {
 
   function runImport() {
     setMsg(null);
-    if (!accountId) return setMsg("Pick a bank account");
-    if (!valid.length) return setMsg("No valid rows — check the column mapping (date + amount required)");
+    if (!accountId) return setMsg(t(locale, "Pick a bank account"));
+    if (!valid.length) return setMsg(t(locale, "No valid rows — check the column mapping (date + amount required)"));
     const currency = accounts.find((a) => a.id === accountId)?.currency ?? "USD";
     start(async () => {
       const res = await importTransactions(accountId, currency, fileName, valid);
-      if (res.ok) { setMsg(`Imported ${res.inserted} transaction(s)`); router.push(`/banking/reconcile`); }
-      else setMsg(`Error: ${res.error}`);
+      if (res.ok) { setMsg(`${t(locale, "Imported")} ${res.inserted} ${t(locale, "transaction(s)")}`); router.push(`/banking/reconcile`); }
+      else setMsg(`${t(locale, "Error")}: ${t(locale, res.error ?? "Could not save")}`);
     });
   }
 

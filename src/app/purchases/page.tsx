@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -110,14 +111,14 @@ export default async function PurchasesPage({
                     <td className="px-4 py-2">
                       {p.status === "draft" ? (
                         <div className="flex gap-2">
-                          <form action={receivePurchaseForm}>
+                          <ValidatedForm action={receivePurchaseForm}>
                             <input type="hidden" name="id" value={p.id} />
                             <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Receive")}</button>
-                          </form>
-                          <form action={cancelPurchaseForm}>
+                          </ValidatedForm>
+                          <ValidatedForm action={cancelPurchaseForm}>
                             <input type="hidden" name="id" value={p.id} />
                             <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Cancel")}</button>
-                          </form>
+                          </ValidatedForm>
                         </div>
                       ) : (
                         <span className="text-xs text-ink-gray-4">—</span>

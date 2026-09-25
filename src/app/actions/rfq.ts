@@ -55,7 +55,8 @@ export async function saveRfq(input: RfqInput) {
 
 export async function submitRfqForm(fd: FormData) {
   const supabase = createClient();
-  await supabase.rpc("fn_submit_rfq", { p_rfq_id: String(fd.get("id")) });
+  const { error } = await supabase.rpc("fn_submit_rfq", { p_rfq_id: String(fd.get("id")) });
+  if (error) return formError(error);
   revalidatePath("/rfqs");
 }
 

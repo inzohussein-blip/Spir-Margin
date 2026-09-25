@@ -66,7 +66,7 @@ browser ── Next.js (127.0.0.1:3000) ── pages (RSC) + server actions
 | Feature | Files |
 | --- | --- |
 | Navigation, groups, icons | `src/lib/nav.ts` (drives sidebar, feature flags, help "features" tab) |
-| Translations | `src/lib/i18n.ts` (dict + status labels), `src/lib/i18n-server.ts` |
+| Translations | `src/lib/i18n.ts` (dict, `tStatus`, `tValue` for stored choice values), `src/lib/i18n-server.ts` |
 | Sign-in, sessions | `src/app/actions/auth.ts`, `src/lib/auth/session.ts` (JWT cookie `spir_session`, 7 d), `current-user.ts` (`readSession`), `revocation.ts` (password-cutoff / disabled check, 5 s cache on globalThis), `rate-limit.ts`, `src/app/login/*`, `src/app/login/expired/route.ts` |
 | Built-in account `admin@spir.local` | `src/lib/auth/demo-credentials.ts` (id, default pw `123`), `src/lib/auth/builtin.ts` (hash in `_spir_builtin`, reset file `RESET-ADMIN-PASSWORD.txt`), `src/app/actions/builtin.ts`, `components/settings/BuiltinPasswordForm.tsx` |
 | Users & roles (admin/manager/staff/customer) | `src/app/users/page.tsx`, `src/app/actions/users.ts`, `components/auth/*` (Create/Reset/ChangePassword forms, UserMenu) |
@@ -83,7 +83,7 @@ browser ── Next.js (127.0.0.1:3000) ── pages (RSC) + server actions
 | Offline (browser) | `public/offline-sw.js` (navigations only), `public/offline.html`, `src/lib/offline/outbox.ts`, `components/offline/*` |
 | Backups | manual: `src/app/api/backup/route.ts`, `components/settings/BackupPanel.tsx`, `actions/backup.ts`; automatic: `src/lib/backup/auto.ts` + `schedule.ts` (pure), `actions/autobackup.ts`, `components/settings/AutoBackupPanel.tsx`, `/api/backup/file`; restore = `restoreLocalDatabase` in `pglite.ts` (validates in memory first, new node id) |
 | Audit trail | `fn_audit` trigger → `audit_log`; actor from `src/lib/audit/actor.ts`; `/audit-log`, `/monitoring/changes` |
-| Errors → Arabic | `src/lib/db/errors.ts`, `form-error.ts`, migration 0102 (rewrites `raise exception` texts) |
+| Errors → Arabic | `src/lib/db/errors.ts` (`describeDbError`: 23xxx by SQLSTATE + table/constraint, P0001 shown as raised), `form-error.ts`, `rest.ts` `dbError` (turns every 23xxx `message` Arabic), migration 0102 (rewrites `raise exception` texts); on screen: `components/form/SaveError.tsx` (client forms), `ValidatedForm.tsx` (server-action forms and row buttons) |
 | Global search (Ctrl K) | `components/desk/Awesomebar.tsx`, `actions/search.ts`, `fn_global_search` |
 | Arabic-aware search (0114) | `fn_ar_norm` (SQL) = `foldArabic` (`src/lib/text/arabic.ts`, pure): hamza forms, ة/ه, ى/ي, diacritics, tatweel, Arabic-Indic digits; used by `fn_global_search`, every `.ilike()` in `rest.ts`, `ListFilter`, POS |
 | Daily speed-ups | copy a document: `src/lib/copy-docs.ts` + `/<doc>/new?from=<id>`, `components/desk/CopyLink.tsx`; recent picks first: `components/form/RecentOptions.tsx`; list search memory: `components/desk/RememberSearch.tsx` (no `q` in URL → restore; `?q=` → clear); POS barcode Enter; `src/lib/remember.ts` (localStorage, fail-safe) |
@@ -99,10 +99,10 @@ browser ── Next.js (127.0.0.1:3000) ── pages (RSC) + server actions
 ## Pages (route → server-action files in `src/app/actions/`)
 
 - **Home** (الرئيسية): `/` Dashboard
-- **Shortcuts** (اختصارات): `/sale-requests` Sales requests [sale_request]; `/authorizations` Transport authorisations [authorization]
+- **Shortcuts** (اختصارات): `/sale-requests` Sales requests [currency, kits-hint, sale_request]; `/authorizations` Transport authorisations [authorization]
 - **CRM** (إدارة العملاء): `/leads` Leads [crm]; `/opportunities` Opportunities [opportunity]; `/appointments` Appointments [appointment]; `/contracts` Contracts [contract]
-- **Selling** (المبيعات): `/pos` Point of Sale [monitoring, pos, selling]; `/labs` Labs [crud]; `/quotations` Quotations [quotation]; `/sales-orders` Sales Orders [currency, monitoring, pos, selling]; `/sales-invoices` Sales Invoices [attachments, currency, sales_invoice]; `/sales-returns` Sales Returns [sales_return]; `/blanket-orders` Blanket Orders [blanket_order]; `/credit-limits` Credit Limits [credit]; `/pricing-rules` Pricing Rules [pricing_rule]
-- **Buying** (المشتريات): `/companies` Suppliers [crud]; `/reorder` Reorder [reorder]; `/rfqs` RFQs [rfq]; `/purchase-orders` Purchase Orders [attachments, purchase_order]; `/purchase-receipts` Purchase Receipts [purchase_receipt]; `/purchases` Purchases [purchasing]; `/landed-costs` Landed Costs [landed_cost]
+- **Selling** (المبيعات): `/pos` Point of Sale [kits-hint, monitoring, pos, selling]; `/labs` Labs [crud]; `/quotations` Quotations [currency, quotation]; `/sales-orders` Sales Orders [currency, kits-hint, monitoring, pos, selling]; `/sales-invoices` Sales Invoices [attachments, currency, kits-hint, sales_invoice]; `/sales-returns` Sales Returns [sales_return]; `/blanket-orders` Blanket Orders [blanket_order]; `/credit-limits` Credit Limits [credit]; `/pricing-rules` Pricing Rules [pricing_rule]
+- **Buying** (المشتريات): `/companies` Suppliers [crud]; `/reorder` Reorder [reorder]; `/rfqs` RFQs [rfq]; `/purchase-orders` Purchase Orders [attachments, currency, purchase_order]; `/purchase-receipts` Purchase Receipts [purchase_receipt]; `/purchases` Purchases [purchasing]; `/landed-costs` Landed Costs [landed_cost]
 - **Stock** (المخزون): `/products` Products [crud]; `/product-bundles` Bundles [product_bundle]; `/kits` Kits [crud]; `/serials` Serials [serials]; `/warehouses` Warehouses [crud]; `/stock-entries` Stock Entries [stock_entry]; `/pick-lists` Pick Lists [pick_list]; `/delivery-trips` Delivery Trips [delivery_trip]; `/stock-balance` Stock Balance; `/prices` Prices [pricing]
 - **Manufacturing** (التصنيع): `/boms` BOMs [manufacturing]; `/work-orders` Work Orders [manufacturing]; `/quality-inspections` Quality [quality]
 - **Assets** (الأصول): `/devices` Devices [crud]; `/asset-movements` Movements [asset_movement]; `/installation-notes` Installations [installation]; `/asset-repairs` Repairs [asset_repair]
@@ -112,10 +112,31 @@ browser ── Next.js (127.0.0.1:3000) ── pages (RSC) + server actions
 - **Reports** (التقارير): `/reports` All Reports; `/reports/receivables` Receivables Aging; `/reports/profitability` Profitability; `/stock-balance` Stock Balance
 - **Tools** (الأدوات): `/tools/calculator` Calculator; `/tools/profit` Profit Calculator [currency]; `/tools/converter` Currency Converter [currency]
 - **Monitoring** (المراقبة): `/monitoring/errors` Error Monitor [monitoring]; `/monitoring/changes` Change & Deletion Log; `/monitoring/sync` Sync Health [monitoring, pos, selling, sync]
-- **Setup** (الإعداد): `/masters` Masters [masters]; `/users` Users [users]; `/settings` Settings [autobackup, backup, branding, builtin, settings, updates]; `/audit-log` Audit Log; `/sync` Sync [links, peer, sync]; `/help` Instructions
+- **Setup** (الإعداد): `/masters` Masters [masters]; `/users` Users [users]; `/settings` Settings [autobackup, backup, branding, builtin, settings, updates]; `/audit-log` Audit Log; `/sync` Sync [links, peer, remote, sync]; `/help` Instructions
 
-Not in the menu: `/login`, `/welcome`, `/account`, `/portal`, `/w/<group>`, and every
-`/<list>/new` and `/<list>/[id]`.
+Reached from another page, not the menu (parent in brackets):
+`/journal-entries` [journal] and `/taxes` [tax] and `/cost-centers` (read only) — from `/accounts`;
+`/material-requests` [material], `/supplier-quotations` [supplier_quotation], `/payment-terms` [purchasing] — from `/purchases`;
+`/delivery-notes` [delivery] — from `/delivery-trips`, `/pick-lists`, `/kits`; `/stock-reconciliation` [stock] — from `/stock-entries`, `/kits`;
+`/sales-team` (read only) — from `/opportunities`; `/sales/new` [crud] — from the dashboard;
+`/reports/purchases`, `/reports/sales-by-lab`, `/reports/sales-by-product` — from `/reports`.
+
+Also outside the menu: `/login` [auth], `/welcome`, `/account` [auth], `/portal` [auth, portal], `/w/<group>`, and every
+`/<list>/new`, `/<list>/[id]`, and `/<doc>/[id]/print` (quotations, sales-orders, sales-invoices,
+purchase-orders, sale-requests through `components/print/DocumentSheet.tsx`; authorizations through `AuthorizationSheet.tsx`).
+
+Route handlers (no page): `/api/backup` (download a backup), `/api/backup/file` (an automatic backup by name),
+`/api/attachments/[id]`, `/api/update/status`, `/login/expired`, and CSV exports `/<list>/export` for
+sales-orders, sales-invoices, sales-returns, quotations, purchases, journal-entries, delivery-notes, contracts,
+serials, devices.
+
+Not imported by anything (checked by walking imports from every page/route/layout/middleware/instrumentation
+and the tests): `components/LanguageSwitcher.tsx`, most of the `components/ui/*` kit (alert, alert-dialog,
+breadcrumb, calendar, checkbox, direction, dropdown-menu, empty, form, hover-card, input, input-group, kbd,
+keyboard-keys, label, list-view, loaders, markdown, modal-content-fallback, popover, progress, radio-group,
+select, separator, settings-dialog, skeleton, stats, switch, table, textarea, tooltip, typography), and
+`lib/amountFormula.ts`, `lib/checks.ts`, `lib/company.ts`, `lib/file.ts`, `lib/supabase/client.ts`. Do not
+look for live behaviour there; delete only with the owner's approval.
 
 ## Database
 
@@ -181,6 +202,15 @@ Not in the menu: `/login`, `/welcome`, `/account`, `/portal`, `/w/<group>`, and 
   number used to fail silently). Forms must show `res.error` — never swallow a failed save.
 - Re-rendering a `<select>`'s options (optgroups) replaces them and loses an uncontrolled choice:
   `RecentOptions` restores it — do the same in any component that reorders options.
+- A row button is a `<ValidatedForm action={xForm}>`, never a plain `<form action>`: a plain form drops
+  what the action returns, so a refused submit/cancel/pay looked like a dead button. Every `…Form(fd)`
+  wrapper returns `{ error }` on failure (the inner `{ ok, error }` or `formError(error)`); client forms show
+  `res.error` with `SaveError`.
+- `raise exception` (P0001) texts are for the person and are shown as they are; `formError` used to throw
+  them onto the error screen. Branch on `error.code` (23505…), never on message text — `rest.ts` rewrites
+  constraint messages into Arabic.
+- A stored choice (`spare_part`, `under_warranty`, "Sales Invoice") is shown with `tValue(locale, v)`,
+  never `v.replace(/_/g, " ")`; `RecordDetail` does it for `…type/status/purpose…` columns.
 - An update must never move `.pglite-data`, `.env.local`, `backups`, `logs` or `updates` (`$Keep` in
   `update.ps1`); the build in the stage folder writes its own `.env.local` and `.pglite-data` — never swap them in.
 
@@ -191,7 +221,9 @@ Not in the menu: `/login`, `/welcome`, `/account`, `/portal`, `/w/<group>`, and 
   self-contained `src/**/*.ts` file as is — used for `sync/core.ts`, `code.ts`,
   `seal.ts`, `backup/schedule.ts`).
 - Browser (`tests/browser/*.mjs`, harness `harness.mjs`): `crawl.mjs` visits every
-  route in `routes.txt` (Latin text / Arabic-Indic digits / console errors);
+  route in `routes.txt` (Latin text / Arabic-Indic digits / console errors); `record-pages.mjs`
+  (runs last) opens the first record of every list and its print page with the same checks;
+  `e2e-action-errors.mjs` checks refused buttons say why;
   `e2e-lan-sync.mjs` starts two extra servers (:3398, :3397) and links them through
   the UI; `e2e-builtin.mjs` restores 123 via the reset file at the end.
 

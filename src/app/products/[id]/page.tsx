@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { getLocale } from "@/lib/i18n-server";
-import { t } from "@/lib/i18n";
+import { t, tValue } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +34,7 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
 
   const info: [string, string][] = [
     [t(locale, "Item code"), p.item_code],
-    [t(locale, "Type"), p.product_type.replace(/_/g, " ")],
+    [t(locale, "Type"), tValue(locale, p.product_type)],
     [t(locale, "Brand"), p.brand || "—"],
     [t(locale, "Unit"), p.uom],
     [t(locale, "Buy price"), money(Number(p.default_buy_price))],

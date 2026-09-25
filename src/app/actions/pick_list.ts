@@ -72,6 +72,7 @@ export async function completePickListForm(fd: FormData) {
 
 export async function cancelPickListForm(fd: FormData) {
   const supabase = createClient();
-  await supabase.from("pick_lists").update({ status: "cancelled" }).eq("id", String(fd.get("id"))).neq("status", "completed");
+  const { error } = await supabase.from("pick_lists").update({ status: "cancelled" }).eq("id", String(fd.get("id"))).neq("status", "completed");
+  if (error) return formError(error);
   revalidatePath("/pick-lists");
 }

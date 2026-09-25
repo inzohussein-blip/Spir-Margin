@@ -1,9 +1,10 @@
 "use client";
 
 import { useForm, useFieldArray } from "react-hook-form";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
+import { SaveError } from "@/components/form/SaveError";
 import { saveDeliveryNote, type DeliveryNoteInput } from "@/app/actions/delivery";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ export function DeliveryNoteForm({ labs, batches }: { labs: Opt[]; batches: Batc
   const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
+  const [saveError, setSaveError] = useState<string | null>(null);
   const { register, control, handleSubmit } = useForm<DeliveryNoteInput>({
     defaultValues: {
       lab_id: "",
@@ -33,8 +35,10 @@ export function DeliveryNoteForm({ labs, batches }: { labs: Opt[]; batches: Batc
 
   function onSubmit(values: DeliveryNoteInput) {
     start(async () => {
+      setSaveError(null);
       const res = await saveDeliveryNote(values);
       if (res.ok) router.push("/delivery-notes");
+      else setSaveError(res.error ?? "Could not save");
     });
   }
 
@@ -88,6 +92,8 @@ export function DeliveryNoteForm({ labs, batches }: { labs: Opt[]; batches: Batc
             <PlusIcon size={14} className="mr-1" />{t(locale, "Add batch")}</Button>
         </CardContent>
       </Card>
+
+      <SaveError error={saveError} />
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}

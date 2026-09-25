@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -69,17 +70,17 @@ export default async function PricingRulesPage() {
                     </td>
                     <td className="px-4 py-2">
                       <div className="flex gap-2">
-                        <form action={togglePricingRuleForm}>
+                        <ValidatedForm action={togglePricingRuleForm}>
                           <input type="hidden" name="id" value={r.id} />
                           <input type="hidden" name="disabled" value={String(!r.disabled)} />
                           <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">
                             {r.disabled ? "Enable" : "Disable"}
                           </button>
-                        </form>
-                        <form action={deletePricingRuleForm}>
+                        </ValidatedForm>
+                        <ValidatedForm action={deletePricingRuleForm}>
                           <input type="hidden" name="id" value={r.id} />
                           <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Delete")}</button>
-                        </form>
+                        </ValidatedForm>
                       </div>
                     </td>
                   </tr>

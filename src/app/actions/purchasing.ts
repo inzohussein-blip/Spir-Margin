@@ -105,8 +105,10 @@ export async function createPaymentTerm(fd: FormData) {
 
 /** FormData wrapper so the receive/cancel buttons can be plain <form> posts. */
 export async function receivePurchaseForm(fd: FormData) {
-  await receivePurchase(String(fd.get("id")));
+  const res = await receivePurchase(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }
 export async function cancelPurchaseForm(fd: FormData) {
-  await cancelPurchase(String(fd.get("id")));
+  const res = await cancelPurchase(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }

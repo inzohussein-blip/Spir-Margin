@@ -74,8 +74,10 @@ export async function cancelInstallationNote(id: string) {
 }
 
 export async function submitInstallationNoteForm(fd: FormData) {
-  await submitInstallationNote(String(fd.get("id")));
+  const res = await submitInstallationNote(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }
 export async function cancelInstallationNoteForm(fd: FormData) {
-  await cancelInstallationNote(String(fd.get("id")));
+  const res = await cancelInstallationNote(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }

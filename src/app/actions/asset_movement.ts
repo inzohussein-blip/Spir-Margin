@@ -75,8 +75,10 @@ export async function cancelAssetMovement(id: string) {
 }
 
 export async function submitAssetMovementForm(fd: FormData) {
-  await submitAssetMovement(String(fd.get("id")));
+  const res = await submitAssetMovement(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }
 export async function cancelAssetMovementForm(fd: FormData) {
-  await cancelAssetMovement(String(fd.get("id")));
+  const res = await cancelAssetMovement(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }

@@ -59,7 +59,7 @@ import { setFeatureStateAction, setUserAccessAction, deleteUserAccountAction } f
 import { TOGGLEABLE_FEATURES, type FeatureState } from "@/lib/features";
 import { navGroups } from "@/lib/nav";
 import { getLocale } from "@/lib/i18n-server";
-import { t } from "@/lib/i18n";
+import { t, tValue } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -249,7 +249,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: { b
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-ink-gray-8">{u.full_name || u.email}</p>
-                      <p className="truncate text-xs text-ink-gray-4">{u.email} · <span className="capitalize">{u.role}</span></p>
+                      <p className="truncate text-xs text-ink-gray-4">{u.email} · <span>{tValue(locale, u.role)}</span></p>
                     </div>
                     <form action={deleteUserAccountAction}>
                       <input type="hidden" name="user_id" value={u.id} />

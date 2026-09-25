@@ -28,7 +28,7 @@ export async function createUserAction(_prev: unknown, formData: FormData) {
   const { error } = await supabase.rpc("fn_create_user", {
     p_email: email, p_password: password, p_full_name: full_name || null, p_role: role,
   });
-  if (error) return { error: error.message.includes("unique") ? "That email already exists" : "Could not create user" };
+  if (error) return { error: error.code === "23505" ? "That email already exists" : "Could not create user" };
   revalidatePath("/users");
   return { ok: true as const, message: "User created" };
 }

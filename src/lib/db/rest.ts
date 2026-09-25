@@ -1,6 +1,7 @@
 import "server-only";
 import { getDb, type FkMeta } from "./pglite";
 import { withAuditActor } from "@/lib/audit/actor";
+import { describeDbError } from "./errors";
 
 /**
  * A small subset of the supabase-js (PostgREST) query builder implemented over
@@ -17,18 +18,29 @@ import { withAuditActor } from "@/lib/audit/actor";
  * `constraint` that rejected the row. Without them all a caller can do is
  * show the raw Postgres sentence.
  */
-type DbError = { message: string; code?: string; constraint?: string; detail?: string };
+type DbError = { message: string; code?: string; constraint?: string; detail?: string; table?: string; column?: string };
 type Result = { data: any; error: DbError | null; count?: number };
 
 /** Keep the Postgres diagnostics that `new Error(...)` would throw away. */
 function dbError(e: unknown): DbError {
-  const anyE = e as { message?: string; code?: string; constraint?: string; detail?: string };
-  return {
+  const anyE = e as { message?: string; code?: string; constraint?: string; detail?: string; table?: string; column?: string };
+  const err: DbError = {
     message: e instanceof Error ? e.message : String(e),
     ...(anyE?.code ? { code: anyE.code } : {}),
     ...(anyE?.constraint ? { constraint: anyE.constraint } : {}),
     ...(anyE?.detail ? { detail: anyE.detail } : {}),
+    ...(anyE?.table ? { table: anyE.table } : {}),
+    ...(anyE?.column ? { column: anyE.column } : {}),
   };
+  // A constraint the row broke (23xxx: duplicate, still referenced, required,
+  // out of range) is said in Arabic here, once, because many actions hand
+  // error.message straight to the screen. Callers that branch on the kind of
+  // failure use `code`, which is kept.
+  // Only a named constraint: a function's own `raise … using errcode =
+  // 'check_violation'` ("not enough stock: 3 available, 5 needed") already
+  // says it better than a general sentence would.
+  if (err.code?.startsWith("23") && (err.constraint || err.code === "23502")) err.message = describeDbError("ar", err) ?? err.message;
+  return err;
 }
 
 const q = (id: string) => `"${id.replace(/"/g, '""')}"`;

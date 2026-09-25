@@ -66,6 +66,7 @@ export async function submitPurchaseReceiptForm(fd: FormData) {
 
 export async function cancelPurchaseReceiptForm(fd: FormData) {
   const supabase = createClient();
-  await supabase.from("purchase_receipts").update({ status: "cancelled" }).eq("id", String(fd.get("id"))).eq("status", "draft");
+  const { error } = await supabase.from("purchase_receipts").update({ status: "cancelled" }).eq("id", String(fd.get("id"))).eq("status", "draft");
+  if (error) return formError(error);
   revalidatePath("/purchase-receipts");
 }

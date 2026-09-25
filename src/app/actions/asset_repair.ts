@@ -55,8 +55,10 @@ export async function cancelAssetRepair(id: string) {
 }
 
 export async function completeAssetRepairForm(fd: FormData) {
-  await completeAssetRepair(String(fd.get("id")));
+  const res = await completeAssetRepair(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }
 export async function cancelAssetRepairForm(fd: FormData) {
-  await cancelAssetRepair(String(fd.get("id")));
+  const res = await cancelAssetRepair(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }

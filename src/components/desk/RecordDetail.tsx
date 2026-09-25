@@ -8,7 +8,7 @@ import { getDb } from "@/lib/db/pglite";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { Indicator } from "@/components/desk/Indicator";
 import { getLocale } from "@/lib/i18n-server";
-import { t, type Locale } from "@/lib/i18n";
+import { t, tValue, type Locale } from "@/lib/i18n";
 
 /**
  * Generic record detail (ERPNext "form view", read mode) for any table with a
@@ -58,6 +58,15 @@ function fmt(v: unknown): string {
   if (v == null || v === "") return "—";
   if (typeof v === "boolean") return v ? "✓" : "—";
   return String(v);
+}
+
+// Columns whose value names a choice (an enum or a fixed word such as
+// "Sales Invoice"), shown translated; every other value is shown as stored.
+const CHOICE_COL = /(^|_)(type|kind|status|purpose|periodicity|interval|role|basis|based_on|applies_to|billed_to|method|classify)$/;
+
+function show(locale: Locale, col: string, v: unknown): string {
+  if (typeof v === "string" && v && CHOICE_COL.test(col)) return tValue(locale, v);
+  return fmt(v);
 }
 
 interface Db {
@@ -120,7 +129,7 @@ export async function RecordDetail({
         ),
       });
     } else {
-      fields.push({ label, node: fmt(val) });
+      fields.push({ label, node: show(locale, col, val) });
     }
   }
 
@@ -195,7 +204,7 @@ export async function RecordDetail({
                 <tbody className="divide-y divide-outline-gray-1">
                   {c.rows.map((row, i) => (
                     <tr key={i} className="hover:bg-surface-gray-1">
-                      {c.cols.map((col) => <td key={col} className="px-4 py-2">{fmt(row[col])}</td>)}
+                      {c.cols.map((col) => <td key={col} className="px-4 py-2">{show(locale, col, row[col])}</td>)}
                     </tr>
                   ))}
                 </tbody>

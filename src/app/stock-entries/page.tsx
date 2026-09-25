@@ -1,8 +1,9 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n-server";
-import { t } from "@/lib/i18n";
+import { t, tValue } from "@/lib/i18n";
 import { statusLabel } from "@/lib/status";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { submitStockEntryForm, cancelStockEntryForm } from "@/app/actions/stock_entry";
@@ -74,7 +75,7 @@ export default async function StockEntriesPage() {
                     <td className="px-4 py-2 font-medium"><Link href={`/stock-entries/${e.id}`} className="text-brand hover:underline">{e.entry_no}</Link></td>
                     <td className="px-4 py-2">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${purposeBadge[e.purpose] ?? "bg-surface-gray-2"}`}>
-                        {e.purpose}
+                        {tValue(locale, e.purpose)}
                       </span>
                     </td>
                     <td className="px-4 py-2 text-ink-gray-5">{e.posting_date}</td>
@@ -89,14 +90,14 @@ export default async function StockEntriesPage() {
                     <td className="px-4 py-2">
                       {e.status === "draft" ? (
                         <div className="flex gap-2">
-                          <form action={submitStockEntryForm}>
+                          <ValidatedForm action={submitStockEntryForm}>
                             <input type="hidden" name="id" value={e.id} />
                             <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Submit")}</button>
-                          </form>
-                          <form action={cancelStockEntryForm}>
+                          </ValidatedForm>
+                          <ValidatedForm action={cancelStockEntryForm}>
                             <input type="hidden" name="id" value={e.id} />
                             <button className="rounded-md border border-outline-gray-2 px-2.5 py-1 text-xs font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Cancel")}</button>
-                          </form>
+                          </ValidatedForm>
                         </div>
                       ) : (
                         <span className="text-xs text-ink-gray-4">—</span>

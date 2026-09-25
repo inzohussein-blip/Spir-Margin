@@ -7,7 +7,7 @@ import { ListShell } from "@/components/desk/ListShell";
 import { Indicator } from "@/components/desk/Indicator";
 import { openPickListForm, completePickListForm, cancelPickListForm } from "@/app/actions/pick_list";
 import { getLocale } from "@/lib/i18n-server";
-import { t } from "@/lib/i18n";
+import { t, tValue } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +69,7 @@ export default async function PickListsPage() {
                 {rows.map((r) => (
                   <tr key={r.id} className="hover:bg-surface-gray-1">
                     <td className="px-4 py-2 font-medium"><Link href={`/pick-lists/${r.id}`} className="text-brand hover:underline">{r.pick_no}</Link></td>
-                    <td className="px-4 py-2 capitalize text-ink-gray-5">{r.purpose.replace(/_/g, " ")}</td>
+                    <td className="px-4 py-2 capitalize text-ink-gray-5">{tValue(locale, r.purpose)}</td>
                     <td className="px-4 py-2">{r.labs?.name ?? "—"}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{r.posting_date}</td>
                     <td className="px-4 py-2 text-right text-ink-gray-5">{r.pick_list_items?.length ?? 0}</td>

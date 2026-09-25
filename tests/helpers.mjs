@@ -80,3 +80,33 @@ export async function importTs(rel) {
   writeFileSync(file, out);
   return import(file);
 }
+
+/**
+ * importTs for a file with a few imports of its own: `links` maps each import
+ * specifier to the src file it names ({ "@/lib/i18n": "src/lib/i18n.ts" }),
+ * and those are imported the same way first. Still no bundler — the linked
+ * files must themselves be self-contained.
+ */
+export async function importTsLinked(rel, links) {
+  const ts = (await import("typescript")).default;
+  const { mkdtempSync, writeFileSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { pathToFileURL } = await import("node:url");
+  const dir = mkdtempSync(join(tmpdir(), "spir-ts-"));
+  const emit = (file) => {
+    const out = ts.transpileModule(readFileSync(join(ROOT, file), "utf8"), {
+      compilerOptions: { module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022 },
+    }).outputText;
+    const path = join(dir, file.replace(/[\\/]/g, "_").replace(/\.ts$/, ".mjs"));
+    return { out, path };
+  };
+  const main = emit(rel);
+  let code = main.out;
+  for (const [spec, file] of Object.entries(links)) {
+    const dep = emit(file);
+    writeFileSync(dep.path, dep.out);
+    code = code.split(`"${spec}"`).join(JSON.stringify(pathToFileURL(dep.path).href));
+  }
+  writeFileSync(main.path, code);
+  return import(main.path);
+}

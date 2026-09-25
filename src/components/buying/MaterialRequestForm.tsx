@@ -1,9 +1,10 @@
 "use client";
 
 import { useForm, useFieldArray } from "react-hook-form";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
+import { SaveError } from "@/components/form/SaveError";
 import { saveMaterialRequest, type MaterialRequestInput } from "@/app/actions/material";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ export function MaterialRequestForm({ products, warehouses }: { products: Opt[];
   const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
+  const [saveError, setSaveError] = useState<string | null>(null);
   const { register, control, handleSubmit } = useForm<MaterialRequestInput>({
     defaultValues: {
       transaction_date: localDate(),
@@ -32,8 +34,10 @@ export function MaterialRequestForm({ products, warehouses }: { products: Opt[];
 
   function onSubmit(values: MaterialRequestInput) {
     start(async () => {
+      setSaveError(null);
       const res = await saveMaterialRequest(values);
       if (res.ok) router.push("/material-requests");
+      else setSaveError(res.error ?? "Could not save");
     });
   }
 
@@ -92,6 +96,8 @@ export function MaterialRequestForm({ products, warehouses }: { products: Opt[];
           </Button>
         </CardContent>
       </Card>
+
+      <SaveError error={saveError} />
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}

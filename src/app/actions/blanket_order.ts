@@ -65,6 +65,7 @@ export async function submitBlanketOrderForm(fd: FormData) {
 
 export async function cancelBlanketOrderForm(fd: FormData) {
   const supabase = createClient();
-  await supabase.from("blanket_orders").update({ status: "cancelled" }).eq("id", String(fd.get("id"))).neq("status", "cancelled");
+  const { error } = await supabase.from("blanket_orders").update({ status: "cancelled" }).eq("id", String(fd.get("id"))).neq("status", "cancelled");
+  if (error) return formError(error);
   revalidatePath("/blanket-orders");
 }

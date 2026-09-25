@@ -1,3 +1,4 @@
+import { ValidatedForm } from "@/components/form/ValidatedForm";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -77,10 +78,10 @@ export default async function RfqsPage() {
                       </td>
                       <td className="px-4 py-2">
                         {r.status === "draft" ? (
-                          <form action={submitRfqForm}>
+                          <ValidatedForm action={submitRfqForm}>
                             <input type="hidden" name="id" value={r.id} />
                             <button className="rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark">{t(locale, "Submit")}</button>
-                          </form>
+                          </ValidatedForm>
                         ) : (
                           <Link href={`/rfqs/${r.id}`} className="text-xs text-brand hover:underline">{t(locale, "open")}</Link>
                         )}

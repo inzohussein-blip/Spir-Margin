@@ -57,6 +57,7 @@ export async function payPaymentRequestForm(fd: FormData) {
 
 export async function cancelPaymentRequestForm(fd: FormData) {
   const supabase = createClient();
-  await supabase.from("payment_requests").update({ status: "cancelled" }).eq("id", String(fd.get("id"))).neq("status", "paid");
+  const { error } = await supabase.from("payment_requests").update({ status: "cancelled" }).eq("id", String(fd.get("id"))).neq("status", "paid");
+  if (error) return formError(error);
   revalidatePath("/payment-requests");
 }

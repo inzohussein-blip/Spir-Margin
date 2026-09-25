@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getPaymentEntries } from "@/lib/banking";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { getLocale } from "@/lib/i18n-server";
-import { t } from "@/lib/i18n";
+import { t, tValue } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +51,7 @@ export default async function PaymentsPage() {
                 {rows.map((p) => (
                   <tr key={p.id}>
                     <td className="px-4 py-2 font-medium">{p.naming_series ?? p.reference_no ?? "—"}</td>
-                    <td className="px-4 py-2">{p.payment_type}</td>
+                    <td className="px-4 py-2">{tValue(locale, p.payment_type)}</td>
                     <td className="px-4 py-2">{p.party_name ?? "—"}</td>
                     <td className="px-4 py-2">
                       {Number(p.received_amount || p.paid_amount).toLocaleString("en-US")}

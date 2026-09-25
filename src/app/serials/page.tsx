@@ -2,7 +2,7 @@ import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n-server";
-import { t } from "@/lib/i18n";
+import { t, tValue } from "@/lib/i18n";
 import { statusLabel } from "@/lib/status";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
 import { Pager, PAGE_SIZE, parsePage, pageRange } from "@/components/desk/Pager";
@@ -85,7 +85,7 @@ export default async function SerialsPage({
                         {statusLabel(locale, s.status)}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-ink-gray-5">{s.maintenance_status?.replace(/_/g, " ") ?? "—"}</td>
+                    <td className="px-4 py-2 text-ink-gray-5">{tValue(locale, s.maintenance_status)}</td>
                     <td className="px-4 py-2 text-ink-gray-5">{s.warranty_expiry_date ?? "—"}</td>
                   </tr>
                 ))}

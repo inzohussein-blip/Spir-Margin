@@ -34,15 +34,17 @@ export async function createPricingRule(fd: FormData) {
 
 export async function togglePricingRuleForm(fd: FormData) {
   const supabase = createClient();
-  await supabase
+  const { error } = await supabase
     .from("pricing_rules")
     .update({ disabled: fd.get("disabled") === "true" })
     .eq("id", String(fd.get("id")));
+  if (error) return formError(error);
   revalidatePath("/pricing-rules");
 }
 
 export async function deletePricingRuleForm(fd: FormData) {
   const supabase = createClient();
-  await supabase.from("pricing_rules").delete().eq("id", String(fd.get("id")));
+  const { error } = await supabase.from("pricing_rules").delete().eq("id", String(fd.get("id")));
+  if (error) return formError(error);
   revalidatePath("/pricing-rules");
 }

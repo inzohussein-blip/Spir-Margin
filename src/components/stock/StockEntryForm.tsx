@@ -2,9 +2,10 @@
 
 import { RecentOptions, noteRecent } from "@/components/form/RecentOptions";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon, Trash2Icon, Loader2Icon } from "lucide-react";
+import { SaveError } from "@/components/form/SaveError";
 import { saveStockEntry, type StockEntryInput } from "@/app/actions/stock_entry";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ export function StockEntryForm({
   const locale = useLocale();
   const router = useRouter();
   const [pending, start] = useTransition();
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const { register, control, handleSubmit } = useForm<StockEntryInput>({
     defaultValues: {
@@ -45,12 +47,14 @@ export function StockEntryForm({
 
   function onSubmit(values: StockEntryInput) {
     start(async () => {
+      setSaveError(null);
       const res = await saveStockEntry({
         ...values,
         from_warehouse: values.from_warehouse || null,
         to_warehouse: values.to_warehouse || null,
       });
       if (res.ok) router.push("/stock-entries");
+      else setSaveError(res.error ?? "Could not save");
     });
   }
 
@@ -133,6 +137,8 @@ export function StockEntryForm({
             <PlusIcon size={14} className="mr-1" />{t(locale, "Add batch")}</Button>
         </CardContent>
       </Card>
+
+      <SaveError error={saveError} />
 
       <Button type="submit" variant="solid" size="md" disabled={pending}>
         {pending ? <Loader2Icon size={14} className="mr-1 animate-spin" /> : null}

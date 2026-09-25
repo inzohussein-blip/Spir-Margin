@@ -139,14 +139,18 @@ export async function cancelSalesInvoice(id: string) {
 }
 
 export async function submitSalesInvoiceForm(fd: FormData) {
-  await submitSalesInvoice(String(fd.get("id")));
+  const res = await submitSalesInvoice(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }
 export async function cancelSalesInvoiceForm(fd: FormData) {
-  await cancelSalesInvoice(String(fd.get("id")));
+  const res = await cancelSalesInvoice(String(fd.get("id")));
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }
 export async function recordInvoicePaymentForm(fd: FormData) {
   const amount = Number(fd.get("amount"));
-  if (amount > 0) await recordInvoicePayment(String(fd.get("id")), amount);
+  if (!(amount > 0)) return { error: "Amount must be positive" };
+  const res = await recordInvoicePayment(String(fd.get("id")), amount);
+  if (!res.ok) return { error: res.error ?? "Could not save" };
 }
 
 /**

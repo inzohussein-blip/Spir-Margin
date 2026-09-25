@@ -1,5 +1,6 @@
 "use server";
 
+import { formError } from "@/lib/db/form-error";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -51,6 +52,7 @@ export async function saveProductBundle(input: ProductBundleInput) {
 
 export async function deleteProductBundleForm(fd: FormData) {
   const supabase = createClient();
-  await supabase.from("product_bundles").delete().eq("id", String(fd.get("id")));
+  const { error } = await supabase.from("product_bundles").delete().eq("id", String(fd.get("id")));
+  if (error) return formError(error);
   revalidatePath("/product-bundles");
 }
