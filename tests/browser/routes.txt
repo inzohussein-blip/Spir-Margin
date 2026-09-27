@@ -42,10 +42,15 @@
 /delivery-trips/new
 /devices
 /devices/new
+/guides
+/guides/new
+/guides/quiz
+/guides/trainees
 /help
 /help?tab=activation
 /help?tab=backup
 /help?tab=coldchain
+/help?tab=guides
 /help?tab=hr
 /help?tab=install
 /help?tab=offline
@@ -164,6 +169,7 @@
 /users
 /verify/not-a-real-token
 /w/cold-chain
+/w/guides
 /w/hr
 /w/shortcuts
 /warehouses

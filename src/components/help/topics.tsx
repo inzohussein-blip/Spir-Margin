@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import {
   LayoutGridIcon, RocketIcon, MonitorDownIcon, SettingsIcon, WifiOffIcon,
   HardDriveIcon, UsersIcon, LifeBuoyIcon, BuildingIcon, CloudIcon, ToggleLeftIcon,
-  ShieldIcon, RefreshCwIcon, PrinterIcon, KeyRoundIcon, SearchIcon, GlobeIcon, ThermometerSnowflakeIcon, type LucideIcon,
+  ShieldIcon, RefreshCwIcon, PrinterIcon, KeyRoundIcon, SearchIcon, GlobeIcon, ThermometerSnowflakeIcon, GraduationCapIcon, type LucideIcon,
 } from "lucide-react";
 import { navGroups } from "@/lib/nav";
 import { t, type Locale } from "@/lib/i18n";
@@ -872,6 +872,30 @@ export const HELP_TOPICS: HelpTopic[] = [
             <li>سجّل الصيانة والأعطال والمعايرات؛ تسجيل «معايرة» ينقل تاريخ المعايرة القادمة تلقائياً.</li>
           </Bullets>
           <Note>المحطة جزء من رمز التفعيل باسم «{t(locale, "Cold chain & calibration")}».</Note>
+        </HelpSection>
+      </div>
+    ),
+  },
+  {
+    id: "guides",
+    title: "الأدلة والتدريب",
+    icon: GraduationCapIcon,
+    render: (locale) => (
+      <div className="space-y-4">
+        <HelpSection title="دليل لكل جهاز وكِت" icon={GraduationCapIcon}>
+          <Steps>
+            <li>من <UiPath parts={[t(locale, "Guides"), t(locale, "Guides")]} href="/guides" /> اضغط «دليل جديد».</li>
+            <li>اكتب الغرض والخطوات، خطوة في كل سطر. ابدأ السطر بعلامة <Code>!</Code> ليظهر تحذيراً بالأحمر.</li>
+            <li>أضف النصائح والسلامة وجدول حلّ الأعطال بالشكل <Code>المشكلة | السبب | الحل</Code>، ثم الصور وملفات PDF من المرفقات.</li>
+            <li>كل تعديل على المحتوى يرفع رقم الإصدار تلقائياً، وتظهر «حان موعد المراجعة» عند تجاوز تاريخ المراجعة القادمة. الدليل يُطبع إجراءَ عمل.</li>
+          </Steps>
+        </HelpSection>
+        <HelpSection title="الاختبارات">
+          <Bullets>
+            <li>صفحة «{t(locale, "Quiz")}» تصنع أسئلة من الأدلة نفسها: الغرض، الخطوة التالية، من أي دليل هذه الخطوة، وحلّ العطل.</li>
+            <li>اختر المتدرّب قبل البدء لتُحفظ النتيجة في سجله، أو اتركه فارغاً للتدريب دون حفظ.</li>
+            <li>صفحة «{t(locale, "Trainees")}» تعرض عدد الاختبارات وأفضل نتيجة وآخرها لكل متدرّب.</li>
+          </Bullets>
         </HelpSection>
       </div>
     ),

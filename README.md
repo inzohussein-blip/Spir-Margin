@@ -90,7 +90,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 │   ├── build-schema.mjs         يبني supabase/schema.sql من الـ migrations
 │   └── verify-admin.mjs         فحص دخول حساب على القاعدة المستضافة (سير عمل يدوي)
 ├── supabase/
-│   ├── migrations/              0001 … 0119 — كل المخطّط ومنطق العمل (انظر القسم 7)
+│   ├── migrations/              0001 … 0120 — كل المخطّط ومنطق العمل (انظر القسم 7)
 │   ├── schema.sql               مولَّد: كل الـ migrations في ملف واحد
 │   ├── seed-demo.sql            بيانات تجريبية صغيرة (SPIR_SEED=demo — للتدريب والعرض واختبارات المتصفّح)
 │   └── seed.sql                 بيانات اختبار كبيرة (SPIR_SEED=full)
@@ -279,6 +279,14 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | Fridges & stores — الثلاجات والمخازن | `/cold-chain/units` | `coldchain.ts` |
 | Instruments & calibration — الأجهزة والمعايرة | `/cold-chain/equipment` | `coldchain.ts` |
 
+### Guides — الأدلة والتدريب
+
+| الصفحة | المسار | ملفّات الإجراءات |
+| --- | --- | --- |
+| Guides — الأدلة | `/guides` | `guides.ts`, `attachments.ts` |
+| Quiz — الاختبار | `/guides/quiz` | `guides.ts` |
+| Trainees — المتدرّبون | `/guides/trainees` | `guides.ts` |
+
 ### Monitoring — المراقبة
 
 | الصفحة | المسار | ملفّات الإجراءات |
@@ -351,6 +359,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | **دفعة الكِتّ عند البيع** | `src/lib/kits.ts` · `actions/kits-hint.ts` · `components/form/KitHint.tsx` |
 | **المشاركة** | واتساب (`src/lib/whatsapp.ts` · `components/print/WhatsAppButton.tsx`)، المجموع بالعملتين في `DocumentSheet`، إكسل (`src/lib/xlsx.ts`) |
 | **رموز التفعيل والمحطات** | خادم الرموز (نسخة الويب على Vercel): صفحة `/licenses` لإنشاء رمز لكل شركة (عدد الحواسيب، الأيام، المحطات، الدفع، رسالة، قاعدة بيانات الشركة، نسخة احتياطية، تحقق بخطوتين) — `src/lib/license/core.ts` · `server.ts` · `/api/license` — على الحاسوب: `device.ts` (الترخيص في `_spir_license`، يُتحقق منه دون إنترنت، ويُحدَّث كل 6 ساعات) · `state.ts` · `modules.ts` (المحطات الخمس) · `company-db.ts` · نافذة التفعيل `components/license/LicensePanel.tsx` — الشرح في `docs/HOSTED-SETUP.md` (القسم 3) وتبويب «رمز التفعيل والمحطات» في التعليمات |
+| **الأدلة والتدريب (0120)** | منقولة من محطة التدريب في spir-lab-manager: دليل لكل جهاز وكِت وإجراء (الغرض، الخطوات مع التحذيرات، النصائح، السلامة، جدول حلّ الأعطال، الصور)، يُطبع إجراءَ عمل بإصدار يرتفع تلقائياً؛ واختبارات تُصنع من الأدلة للمتدرّبين مع حفظ النتائج. الصفحات `/guides/*`، ومحطة `guides` |
 | **رمز QR على المستندات المطبوعة (0119)** | الفاتورة وعرض السعر والطلب وتخويل النقل تُطبع برمز QR يحمل بيانات المستند موقَّعة بمفتاح الرمز؛ من يمسحه يرى في صفحة `/verify` على خادم الرموز هل المستند أصلي. التوقيع لا يحتاج إنترنت |
 | **ملصقات الباركود** | `/labels`: ملصقات Code 128 للمنتجات ودفعات الكِتات والأرقام التسلسلية، بعدد النسخ المطلوب، تُطبع وتُقرأ بالقارئ في نقطة البيع |
 | **التبريد والمعايرة (0118)** | منقولة من محطة الجودة في spir-lab-manager: حرارة كل ثلاجة ومخزن صباحاً ومساءً مع الإجراء عند الخروج عن المدى وسجل شهري يُطبع، وأجهزة الشركة مع مهامها الدورية وسجل الصيانة والأعطال والمعايرة. الصفحات `/cold-chain/*`، ومحطة `coldchain` |
@@ -506,6 +515,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | `0117_hr.sql` | Staff & shifts: employees, roster, attendance, leave, advances |
 | `0118_cold_chain.sql` | Cold chain & calibration: fridge temperatures, instruments |
 | `0119_license_verify_key.sql` | The key printed documents are signed with (their QR) |
+| `0120_guides.sql` | Guides & training: device and kit guides, trainees, quiz results |
 
 ## 8) الأمان
 
