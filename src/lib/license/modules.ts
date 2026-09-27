@@ -71,6 +71,14 @@ export const STATIONS: Station[] = [
     href: "/hr/attendance",
     tone: { ring: "border-emerald-300 hover:border-emerald-500", icon: "from-emerald-500 to-emerald-700", button: "bg-emerald-600 hover:bg-emerald-700", soft: "bg-emerald-50 text-emerald-700" },
   },
+  {
+    id: "coldchain",
+    label: "Cold chain & calibration",
+    desc: "Morning and evening temperatures of every fridge and store, and the calibration of the company's own instruments.",
+    groups: ["Cold chain"],
+    href: "/cold-chain/temperatures",
+    tone: { ring: "border-cyan-300 hover:border-cyan-500", icon: "from-cyan-500 to-cyan-700", button: "bg-cyan-600 hover:bg-cyan-700", soft: "bg-cyan-50 text-cyan-700" },
+  },
 ];
 
 export const STATION_IDS = STATIONS.map((s) => s.id);

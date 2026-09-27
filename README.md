@@ -90,7 +90,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 │   ├── build-schema.mjs         يبني supabase/schema.sql من الـ migrations
 │   └── verify-admin.mjs         فحص دخول حساب على القاعدة المستضافة (سير عمل يدوي)
 ├── supabase/
-│   ├── migrations/              0001 … 0117 — كل المخطّط ومنطق العمل (انظر القسم 7)
+│   ├── migrations/              0001 … 0118 — كل المخطّط ومنطق العمل (انظر القسم 7)
 │   ├── schema.sql               مولَّد: كل الـ migrations في ملف واحد
 │   ├── seed-demo.sql            بيانات تجريبية صغيرة (SPIR_SEED=demo — للتدريب والعرض واختبارات المتصفّح)
 │   └── seed.sql                 بيانات اختبار كبيرة (SPIR_SEED=full)
@@ -271,6 +271,14 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | Payroll — الرواتب | `/hr/payroll` | — |
 | Shifts & rules — المناوبات والقواعد | `/hr/shifts` | `hr.ts` |
 
+### Cold chain — التبريد والمعايرة
+
+| الصفحة | المسار | ملفّات الإجراءات |
+| --- | --- | --- |
+| Temperatures — درجات الحرارة | `/cold-chain/temperatures` | `coldchain.ts` |
+| Fridges & stores — الثلاجات والمخازن | `/cold-chain/units` | `coldchain.ts` |
+| Instruments & calibration — الأجهزة والمعايرة | `/cold-chain/equipment` | `coldchain.ts` |
+
 ### Monitoring — المراقبة
 
 | الصفحة | المسار | ملفّات الإجراءات |
@@ -343,6 +351,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | **دفعة الكِتّ عند البيع** | `src/lib/kits.ts` · `actions/kits-hint.ts` · `components/form/KitHint.tsx` |
 | **المشاركة** | واتساب (`src/lib/whatsapp.ts` · `components/print/WhatsAppButton.tsx`)، المجموع بالعملتين في `DocumentSheet`، إكسل (`src/lib/xlsx.ts`) |
 | **رموز التفعيل والمحطات** | خادم الرموز (نسخة الويب على Vercel): صفحة `/licenses` لإنشاء رمز لكل شركة (عدد الحواسيب، الأيام، المحطات، الدفع، رسالة، قاعدة بيانات الشركة، نسخة احتياطية، تحقق بخطوتين) — `src/lib/license/core.ts` · `server.ts` · `/api/license` — على الحاسوب: `device.ts` (الترخيص في `_spir_license`، يُتحقق منه دون إنترنت، ويُحدَّث كل 6 ساعات) · `state.ts` · `modules.ts` (المحطات الخمس) · `company-db.ts` · نافذة التفعيل `components/license/LicensePanel.tsx` — الشرح في `docs/HOSTED-SETUP.md` (القسم 3) وتبويب «رمز التفعيل والمحطات» في التعليمات |
+| **التبريد والمعايرة (0118)** | منقولة من محطة الجودة في spir-lab-manager: حرارة كل ثلاجة ومخزن صباحاً ومساءً مع الإجراء عند الخروج عن المدى وسجل شهري يُطبع، وأجهزة الشركة مع مهامها الدورية وسجل الصيانة والأعطال والمعايرة. الصفحات `/cold-chain/*`، ومحطة `coldchain` |
 | **الكادر والدوام (0117)** | منقولة من محطة الدوام في spir-lab-manager، على قاعدة البيانات وتُزامَن: الموظفون، المناوبات، جدول المناوبات الأسبوعي ومن يغطي من، الحضور والانصراف، الإجازات ورصيدها، السلف، كشف الرواتب. القواعد في `src/lib/hr/core.ts`، الصفحات `/hr/*`، ومحطة `hr` في رمز التفعيل |
 | **صفحة الترحيب** | `src/app/welcome/page.tsx`: اسم الشركة وشعارها، المحطات بألوان المشروع، مكان البيانات، سطر التواصل والإصدار، ونافذة التفعيل فوقها. البطاقات: «النظام كاملاً» أولاً (على حاسوب مفعَّل يُفتح برمز التفعيل نفسه بصلاحية المدير، ومنه تُنشأ حسابات الموظفين)، ثم المحطات، ثلاث في كل صف؛ ورقم المزوّد 07803993585 أسفل الصفحة. تظهر قبل نافذة الدخول: من لم يسجّل دخوله يرى الترحيب أولاً (`/welcome?next=…`) ثم يدخل من محطة أو «النظام كاملاً»، والخروج يعود إليها |
 | **النسخة الثانية** | `src/lib/backup/copies.ts` (نقي: هل توجد نسخة حديثة في مكان آخر) · `copies-server.ts` — تنبيه في الجرس للمسؤول، وبند في قائمة «البداية» |
@@ -493,6 +502,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | `0115_device_license.sql` | This computer's activation code |
 | `0116_license_code_sign_in.sql` | Sign in to the whole system with the activation code |
 | `0117_hr.sql` | Staff & shifts: employees, roster, attendance, leave, advances |
+| `0118_cold_chain.sql` | Cold chain & calibration: fridge temperatures, instruments |
 
 ## 8) الأمان
 

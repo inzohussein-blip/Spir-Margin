@@ -9,6 +9,7 @@ import {
   BarChart3Icon, TrendingUpIcon, CalculatorIcon, RepeatIcon, SettingsIcon,
   AlertTriangleIcon, HistoryIcon, RefreshCwIcon, ReceiptTextIcon, BookOpenTextIcon,
   ClockIcon, CalendarRangeIcon, PlaneIcon, BanknoteIcon, WalletIcon, TimerIcon,
+  ThermometerSnowflakeIcon, RefrigeratorIcon, GaugeIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -112,6 +113,12 @@ export const navGroups: NavGroup[] = [
     { href: "/hr/payroll", label: "Payroll", icon: WalletIcon },
     { href: "/hr/shifts", label: "Shifts & rules", icon: TimerIcon },
   ]},
+  // Cold chain & calibration (migration 0118): station "coldchain".
+  { label: "Cold chain", items: [
+    { href: "/cold-chain/temperatures", label: "Temperatures", icon: ThermometerSnowflakeIcon },
+    { href: "/cold-chain/units", label: "Fridges & stores", icon: RefrigeratorIcon },
+    { href: "/cold-chain/equipment", label: "Instruments & calibration", icon: GaugeIcon },
+  ]},
   { label: "Monitoring", items: [
     { href: "/monitoring/errors", label: "Error Monitor", icon: AlertTriangleIcon },
     { href: "/monitoring/changes", label: "Change & Deletion Log", icon: HistoryIcon },
@@ -126,6 +133,9 @@ export const navGroups: NavGroup[] = [
     { href: "/help", label: "Instructions", icon: BookOpenTextIcon },
   ]},
 ];
+
+/** A group's workspace address: /w/<slug> ("Cold chain" → "cold-chain"). */
+export const groupSlug = (label: string) => label.toLowerCase().replace(/\s+/g, "-");
 
 /** Flat destination list for the awesomebar. */
 export const allNavItems: NavItem[] = navGroups.flatMap((g) => g.items);
@@ -144,7 +154,7 @@ const FEATURE_BY_HREF = navGroups
 export function featureForHref(pathname: string): string | null {
   if (pathname === "/w" || pathname.startsWith("/w/")) {
     const slug = pathname.slice(3).split("/")[0].toLowerCase();
-    const g = navGroups.find((grp) => grp.label.toLowerCase() === slug);
+    const g = navGroups.find((grp) => groupSlug(grp.label) === slug);
     return g ? g.label : null;
   }
   const hit = FEATURE_BY_HREF.find((e) => pathname === e.href || pathname.startsWith(e.href + "/"));
