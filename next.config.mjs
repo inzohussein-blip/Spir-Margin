@@ -53,6 +53,13 @@ const nextConfig = {
     serverComponentsExternalPackages: ["@electric-sql/pglite", "pg"],
     instrumentationHook: true,
   },
+  // The code manager lives at /licenses; the singular is what people type.
+  async redirects() {
+    return [
+      { source: "/license", destination: "/licenses", permanent: false },
+      { source: "/license/:rest*", destination: "/licenses", permanent: false },
+    ];
+  },
   // Defence-in-depth headers. The app never needs to be framed, sniffed, or to
   // tell another site which page someone came from.
   async headers() {

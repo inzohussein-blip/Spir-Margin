@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db/pglite";
 import { currentBuild } from "@/lib/update/updates";
 import { verifyLicense, hashCode, type Jwk, type DeviceSync } from "./core";
 import { judge, isLocked, type DeviceState, type Payload } from "./state";
+import { webMode, webDeviceState, webMessage, webActivate, webForget } from "./web";
 
 /**
  * This computer's activation code — the device side.
@@ -110,6 +111,7 @@ const payloadOf = (r: Row): Payload | null => (r.token && r.pub ? (verifyLicense
 
 /** Where this computer stands (cached for a few seconds: every page asks). */
 export async function deviceState(): Promise<DeviceState> {
+  if (webMode()) return webDeviceState();
   if (!licenseServer()) return { kind: "off" };
   const c = g.__spirLicense;
   if (c && Date.now() - c.at < CACHE_MS) return c.state;
@@ -142,6 +144,10 @@ export async function deviceLocked(): Promise<boolean> {
 
 /** What the welcome page and the notices show alongside the state. */
 export async function deviceInfo(): Promise<{ message: string; contact: string; version: string; server: string }> {
+  if (webMode()) {
+    const { getContact } = await import("./server");
+    return { message: await webMessage(), contact: await getContact().catch(() => ""), version: appVersion(), server: "" };
+  }
   if (!licenseServer()) return { message: "", contact: "", version: appVersion(), server: "" };
   const r = await readRow();
   return { message: r.blocked ? "" : r.message, contact: r.contact, version: appVersion(), server: licenseServer() };
@@ -187,6 +193,7 @@ export type ActivateError = "not_found" | "seats_full" | "stopped" | "expired" |
 
 /** Enter the company's code on this computer (also used to renew with a new code). */
 export async function activateCode(code: string): Promise<{ ok: true } | { ok: false; error: ActivateError }> {
+  if (webMode()) return webActivate(code, appVersion());
   if (!licenseServer()) return { ok: false, error: "disabled" };
   const r = await readRow();
   try {
@@ -257,7 +264,9 @@ export async function licenseTick(): Promise<void> {
  * codes server, which also brings the license up to date.
  */
 export async function codeOpensThisComputer(code: string): Promise<boolean> {
-  if (!licenseServer() || !code.trim()) return false;
+  if (!code.trim()) return false;
+  if (webMode()) return (await deviceState()).kind === "ok" && (await webActivate(code, appVersion())).ok;
+  if (!licenseServer()) return false;
   if ((await deviceState()).kind !== "ok") return false;
   const r = await readRow();
   if (r.code_hash && r.code_hash === hashCode(code)) return true;
@@ -267,6 +276,7 @@ export async function codeOpensThisComputer(code: string): Promise<boolean> {
 
 /** "Check now" on the lock screen and the welcome page: ask again at once. */
 export async function recheck(): Promise<DeviceState> {
+  if (webMode()) { webForget(); return deviceState(); }
   await fetchEnabled();
   await refreshLicense(true);
   g.__spirLicense = null;
