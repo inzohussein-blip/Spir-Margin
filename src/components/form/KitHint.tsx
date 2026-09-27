@@ -6,25 +6,31 @@ import { kitHintsAction } from "@/app/actions/kits-hint";
 import type { KitHint as Hint } from "@/lib/kits";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
+import { useDataActions } from "@/components/data/DataActions";
 
-// One request per page, shared by every line of the form.
-let pending: Promise<Record<string, Hint>> | null = null;
-function loadHints(): Promise<Record<string, Hint>> {
-  pending ??= kitHintsAction().catch(() => ({}));
-  return pending;
+// One request per page per source, shared by every line of the form.
+const pending = new Map<() => Promise<Record<string, Hint>>, Promise<Record<string, Hint>>>();
+function loadHints(source: () => Promise<Record<string, Hint>>): Promise<Record<string, Hint>> {
+  let p = pending.get(source);
+  if (!p) {
+    p = source().catch(() => ({}));
+    pending.set(source, p);
+  }
+  return p;
 }
 
 /** Under a sale line's product: the kit batch it will be taken from, and a warning near expiry. */
 export function KitHint({ productId }: { productId: string | null | undefined }) {
   const locale = useLocale();
   const [hints, setHints] = useState<Record<string, Hint> | null>(null);
+  const source = useDataActions().kitHints ?? kitHintsAction;
   useEffect(() => {
     let live = true;
-    loadHints().then((h) => live && setHints(h));
+    loadHints(source).then((h) => live && setHints(h));
     return () => {
       live = false;
     };
-  }, []);
+  }, [source]);
   const h = productId ? hints?.[productId] : undefined;
   if (!h) return null;
   const cls =

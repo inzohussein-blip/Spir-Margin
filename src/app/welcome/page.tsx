@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import {
-  ArrowLeftIcon, CloudIcon, GraduationCapIcon, DatabaseIcon, FactoryIcon, HardDriveIcon, LandmarkIcon, LockIcon, PackageIcon,
+  ArrowLeftIcon, AppWindowIcon, CloudIcon, GraduationCapIcon, DatabaseIcon, FactoryIcon, HardDriveIcon, LandmarkIcon, LockIcon, PackageIcon,
   KeyRoundIcon, PhoneIcon, RefreshCwIcon, ShieldCheckIcon, ShoppingCartIcon, ThermometerSnowflakeIcon, UsersRoundIcon, WifiOffIcon, WrenchIcon, type LucideIcon,
 } from "lucide-react";
 import { getLocale } from "@/lib/i18n-server";
@@ -13,6 +13,7 @@ import { deviceState, deviceInfo, licenseTick } from "@/lib/license/device";
 import type { DeviceState } from "@/lib/license/state";
 import { LicensePanel } from "@/components/license/LicensePanel";
 import { PROVIDER_PHONE } from "@/lib/license/provider";
+import { codesServerEnabled } from "@/lib/license/env";
 import { readSession } from "@/lib/auth/current-user";
 import { logoutAction } from "@/app/actions/auth";
 
@@ -105,6 +106,22 @@ export default async function WelcomePage({ searchParams }: { searchParams?: Rec
             {t(locale, "Choose a station to go in. Each one opens its part of the system; everything is saved on this computer first and keeps working when the network does not.")}
           </p>
         </div>
+
+        {/* ── The web app: on the site that gives out the codes, the program
+             itself runs in the browser (/app), with or without the internet. */}
+        {codesServerEnabled() && (
+          <Link href="/app" data-testid="open-web-app"
+            className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-brand/30 bg-surface-white/95 p-4 shadow-sm hover:border-brand">
+            <div className="flex items-center gap-3">
+              <span className="grid size-10 place-items-center rounded-xl bg-brand-light text-brand"><AppWindowIcon size={20} /></span>
+              <div>
+                <div className="font-bold text-ink-gray-9">{t(locale, "The web app — no installing")}</div>
+                <div className="text-xs leading-relaxed text-ink-gray-6">{t(locale, "Enter your code once: the program settles in this browser and works with the internet or without it.")}</div>
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white">{t(locale, "Open the web app")} <ArrowLeftIcon size={14} /></span>
+          </Link>
+        )}
 
         {/* ── Stations: the whole system first, then each station ───── */}
         <section className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="stations">

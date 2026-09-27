@@ -10,10 +10,14 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/session";
 // when the program is not running must load for anyone, signed in or not.
 // `/licenses` and `/api/license` are the codes server: the owner's page has a
 // sign-in of its own (LICENSE_ADMIN_PASSWORD), and computers activating a code
-// have no account there.
+// have no account there. `/app` is the web app: it signs people in on the
+// browser's own database (src/lib/local), not with the server's cookie;
+// `/pglite` (the database engine) and `/spir` (its schema and worker) are the
+// public files it loads (scripts/prepare-local-app.mjs).
 const PUBLIC_PATHS = [
   "/login", "/welcome", "/manifest.webmanifest", "/sw.js",
   "/offline-sw.js", "/offline.html", "/licenses", "/api/license", "/verify", "/api/ping", "/api/cloud",
+  "/app", "/pglite", "/spir",
 ];
 
 export async function middleware(req: NextRequest) {
@@ -59,7 +63,10 @@ export async function middleware(req: NextRequest) {
   headers.set("x-pathname", pathname);
   // Whose page this is: the offline worker keeps copies of a person's pages
   // only for that person, and drops them when nobody is signed in.
-  const tag = (res: NextResponse) => { res.headers.set("x-spir-user", user ? user.id : "0"); return res; };
+  // The web app's page (/app) holds no one's data — its records live in the
+  // browser — so it is kept for anyone, and opens without the internet.
+  const isApp = pathname === "/app";
+  const tag = (res: NextResponse) => { res.headers.set("x-spir-user", isApp ? "shell" : user ? user.id : "0"); return res; };
 
   if (user && user.role !== "customer") {
     // Opening the program (the desktop icon, a bookmark, the address typed)

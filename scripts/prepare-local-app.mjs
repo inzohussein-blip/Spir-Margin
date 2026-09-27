@@ -51,8 +51,12 @@ import { PGlite } from "/pglite/${version}/index.js";
 import { worker } from "/pglite/${version}/worker/index.js";
 import { pgcrypto } from "/pglite/${version}/contrib/pgcrypto.js";
 
+// Dates and times stay text, as on the server (a JS Date would shift the day).
+const asText = (v) => v;
+const parsers = { 1082: asText, 1083: asText, 1114: asText, 1184: asText, 1266: asText };
+
 worker({
-  init: (options) => PGlite.create({ dataDir: options.dataDir, extensions: { pgcrypto } }),
+  init: (options) => PGlite.create({ dataDir: options.dataDir, extensions: { pgcrypto }, parsers }),
 });
 `);
 console.log(`[local-app] PGlite ${version} copied, ${migrations.length} migrations bundled`);

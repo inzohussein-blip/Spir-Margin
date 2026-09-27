@@ -24,6 +24,13 @@
  *     this browser, or signing out, drops them;
  *   - only full page loads and static code are touched — never data
  *     requests, form posts or server actions.
+ *
+ * The web app (/app) is different: it is one page holding the company's
+ * database in the browser, meant to open without the internet at all. Its
+ * page is kept for anyone (it holds no one's data — `x-spir-user: shell`),
+ * the database engine under /pglite/<version>/ is kept for good (the version
+ * is in the path), and its schema files under /spir/ are asked for first and
+ * kept for when there is no answer.
  */
 const OFFLINE = "spir-offline-v2";
 const PAGES = "spir-pages-v2";
@@ -31,7 +38,9 @@ const ASSETS = "spir-assets-v2";
 const PAGE = "/offline.html";
 const MAX_PAGES = 80;
 const MAX_ASSETS = 500;
-const KEEP = new Set([OFFLINE, PAGES, ASSETS]);
+const SHELL = "spir-shell-v1";
+const ENGINE = "spir-engine-v1";
+const KEEP = new Set([OFFLINE, PAGES, ASSETS, SHELL, ENGINE]);
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -77,7 +86,9 @@ async function page(request) {
   try {
     const res = await fetch(request);
     const who = res.headers.get("x-spir-user");
-    if (who === "0") {
+    if (who === "shell") {
+      if (res.ok && !res.redirected) await (await caches.open(SHELL)).put(key, res.clone());
+    } else if (who === "0") {
       // Nobody signed in: no one's pages stay on this browser.
       await caches.delete(PAGES);
       await setOwner("");
@@ -92,20 +103,32 @@ async function page(request) {
     }
     return res;
   } catch {
-    const kept = await (await caches.open(PAGES)).match(key);
+    const kept = (await (await caches.open(PAGES)).match(key)) || (await (await caches.open(SHELL)).match(key, { ignoreSearch: true }));
     if (kept) return kept;
     return (await caches.match(PAGE)) || Response.error();
   }
 }
 
-async function asset(request) {
-  const cache = await caches.open(ASSETS);
+/** Asked of the server first; the kept copy when there is no answer. */
+async function fresh(request) {
+  const cache = await caches.open(SHELL);
+  try {
+    const res = await fetch(request);
+    if (res.ok) await cache.put(request, res.clone());
+    return res;
+  } catch {
+    return (await cache.match(request, { ignoreSearch: true })) || Response.error();
+  }
+}
+
+async function asset(request, name = ASSETS) {
+  const cache = await caches.open(name);
   const hit = await cache.match(request);
   if (hit) return hit;
   const res = await fetch(request);
   if (res.ok) {
     cache.put(request, res.clone());
-    trim(ASSETS, MAX_ASSETS);
+    if (name === ASSETS) trim(ASSETS, MAX_ASSETS);
   }
   return res;
 }
@@ -120,4 +143,6 @@ self.addEventListener("fetch", (event) => {
     return;
   }
   if (url.pathname.startsWith("/_next/static/")) event.respondWith(asset(request));
+  else if (url.pathname.startsWith("/pglite/")) event.respondWith(asset(request, ENGINE));
+  else if (url.pathname.startsWith("/spir/")) event.respondWith(fresh(request));
 });
