@@ -9,6 +9,7 @@
 // at "check now". The server the runner started is not involved (its codes
 // are off), so the other suites never meet an activation window.
 import { spawn } from "node:child_process";
+import { createServer } from "node:http";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -53,11 +54,19 @@ function stopAll() {
 }
 process.on("exit", stopAll);
 
-const [codes, pcA, pcB] = await Promise.all([
+// An address that answers, but not as a codes server (a password-protected
+// deployment): the computer pointed at it must stay open.
+const notCodes = createServer((_req, res) => res.writeHead(401, { "content-type": "text/html" }).end("<html>Authentication Required</html>"));
+await new Promise((r) => notCodes.listen(3392, "127.0.0.1", r));
+notCodes.unref(); // never what keeps this suite alive
+
+const [codes, pcA, pcB, pcC] = await Promise.all([
   startServer(3395, { LICENSE_ADMIN_PASSWORD: OWNER_PASSWORD, AUTH_SECRET: "codes-server-secret-for-tests", SPIR_ACTIVATION_CONTACT: "للتفعيل والدعم: 07700000000" }),
   startServer(3394, { SPIR_LICENSE_SERVER: CODES }),
   startServer(3393, { SPIR_LICENSE_SERVER: CODES }),
+  startServer(3391, { SPIR_LICENSE_SERVER: "http://127.0.0.1:3392" }),
 ]);
+
 
 async function page(url) {
   const ctx = await browser.newContext(opts);
@@ -67,6 +76,19 @@ async function page(url) {
   return p;
 }
 const text = async (p) => (await p.locator("body").innerText().catch(() => "")) ?? "";
+
+{
+  const c = await page(pcC.url);
+  // The first page may render before that address has answered at all; the answer is kept.
+  await c.goto(pcC.url + "/welcome", { waitUntil: "networkidle" });
+  await c.waitForTimeout(4000);
+  await c.goto(pcC.url + "/welcome", { waitUntil: "networkidle" });
+  check("an address that is not a codes server locks nothing", (await c.getByTestId("license-window").count()) === 0
+    && (await c.locator('[data-testid="stations"] [data-station]').count()) === 6, (await text(c)).slice(0, 160));
+  await c.goto(pcC.url + "/login", { waitUntil: "networkidle" });
+  check("and its sign-in page opens", new URL(c.url()).pathname === "/login", c.url());
+  await c.context().close();
+}
 
 // ---------------------------------------------------------------- 1. the owner signs in
 const status = await (await fetch(`${CODES}/api/license`)).json();

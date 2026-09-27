@@ -83,8 +83,9 @@
 
 3. **Deployments ← Redeploy**، ثم افتح `/licenses` وادخل بكلمة المرور، وفعّل **التحقق بخطوتين**
    من الصفحة نفسها (Google Authenticator أو Microsoft Authenticator).
-4. أرسل عنوان الموقع لمن يطوّر البرنامج ليُثبَّت في كل الإصدارات (`DEFAULT_LICENSE_SERVER` في
-   `src/lib/license/device.ts`)، أو ضعه في `.env.local` على الحاسوب: `SPIR_LICENSE_SERVER=https://…`.
+4. عنوان الموقع مثبَّت في كل الإصدارات: `https://spir-margin-three.vercel.app` (`DEFAULT_LICENSE_SERVER` في
+   `src/lib/license/device.ts`). لحاسوب واحد بعنوان آخر ضعه في `.env.local`: `SPIR_LICENSE_SERVER=https://…`.
+   ما دام الموقع بلا `LICENSE_ADMIN_PASSWORD` وقاعدة الرموز يجيب بأن الرموز مطفأة، فلا يُقفل أي حاسوب.
 
 > من دون `LICENSE_ADMIN_PASSWORD` والقاعدة الدائمة لا يعمل خادم الرموز (الصفحة تقول ذلك)، ولا تُقفل
 > أي حواسيب. هاتفك الضائع: ضع `LICENSE_2FA_OFF=1` مؤقتاً، ادخل، أعد الإعداد، ثم احذفه.

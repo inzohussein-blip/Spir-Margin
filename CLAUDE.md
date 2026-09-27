@@ -214,8 +214,9 @@ instrumentation and the tests; a file nothing reaches, and a dependency nothing 
   constraint messages into Arabic.
 - A stored choice (`spare_part`, `under_warranty`, "Sales Invoice") is shown with `tValue(locale, v)`,
   never `v.replace(/_/g, " ")`; `RecordDetail` does it for `…type/status/purpose…` columns.
-- Activation codes are OFF unless a codes server is set: `DEFAULT_LICENSE_SERVER` is empty in the code and the
-  browser runner forces `SPIR_LICENSE_SERVER=""`, so no suite but `e2e-license.mjs` (its own servers :3395/:3394/:3393)
+- Activation codes: every build asks `DEFAULT_LICENSE_SERVER` (the owner's site, https://spir-margin-three.vercel.app);
+  codes are off while that site answers `enabled: false` (no `LICENSE_ADMIN_PASSWORD` / codes DB). The
+  browser runner forces `SPIR_LICENSE_SERVER=""`, so no suite but `e2e-license.mjs` (its own servers :3395/:3394/:3393/:3391, and a not-a-codes-server stub on :3392)
   ever meets the activation window. A server set but never reached counts as ON (the first registration needs
   the internet). `_spir_license` is kept across a restore; only a real refusal (stopped/expired/moved/deleted) locks.
 - A code's database link is applied by `planCompanyLink` only where it cannot hurt: never over the company's own
