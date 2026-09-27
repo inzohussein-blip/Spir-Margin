@@ -51,6 +51,11 @@ const NUMBER_CARDS: Record<string, { label: string; table: string }[]> = {
     { label: "Opportunities", table: "opportunities" },
     { label: "Contracts", table: "contracts" },
   ],
+  hr: [
+    { label: "Employees", table: "hr_employees" },
+    { label: "Leaves", table: "hr_leaves" },
+    { label: "Advances", table: "hr_advances" },
+  ],
   accounting: [
     { label: "Payment Requests", table: "payment_requests" },
     { label: "Sales Invoices", table: "sales_invoices" },

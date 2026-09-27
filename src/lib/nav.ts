@@ -8,6 +8,7 @@ import {
   CalendarDaysIcon, UsersIcon, CreditCardIcon, PercentIcon, ListChecksIcon,
   BarChart3Icon, TrendingUpIcon, CalculatorIcon, RepeatIcon, SettingsIcon,
   AlertTriangleIcon, HistoryIcon, RefreshCwIcon, ReceiptTextIcon, BookOpenTextIcon,
+  ClockIcon, CalendarRangeIcon, PlaneIcon, BanknoteIcon, WalletIcon, TimerIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -100,6 +101,16 @@ export const navGroups: NavGroup[] = [
     { href: "/tools/calculator", label: "Calculator", icon: CalculatorIcon },
     { href: "/tools/profit", label: "Profit Calculator", icon: TrendingUpIcon },
     { href: "/tools/converter", label: "Currency Converter", icon: ArrowLeftRightIcon },
+  ]},
+  // The company's own staff (migration 0117): its station in the activation code is "hr".
+  { label: "HR", items: [
+    { href: "/hr/attendance", label: "Attendance", icon: ClockIcon },
+    { href: "/hr/roster", label: "Roster", icon: CalendarRangeIcon },
+    { href: "/hr/employees", label: "Employees", icon: UsersIcon },
+    { href: "/hr/leaves", label: "Leaves", icon: PlaneIcon },
+    { href: "/hr/advances", label: "Advances", icon: BanknoteIcon },
+    { href: "/hr/payroll", label: "Payroll", icon: WalletIcon },
+    { href: "/hr/shifts", label: "Shifts & rules", icon: TimerIcon },
   ]},
   { label: "Monitoring", items: [
     { href: "/monitoring/errors", label: "Error Monitor", icon: AlertTriangleIcon },
