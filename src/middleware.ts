@@ -13,7 +13,7 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/session";
 // have no account there.
 const PUBLIC_PATHS = [
   "/login", "/welcome", "/manifest.webmanifest", "/sw.js",
-  "/offline-sw.js", "/offline.html", "/licenses", "/api/license", "/verify", "/api/ping",
+  "/offline-sw.js", "/offline.html", "/licenses", "/api/license", "/verify", "/api/ping", "/api/cloud",
 ];
 
 export async function middleware(req: NextRequest) {

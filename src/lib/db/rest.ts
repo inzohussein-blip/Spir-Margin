@@ -1,37 +1,21 @@
 import "server-only";
-import { getDb, type FkMeta } from "./pglite";
+import { getDb } from "./pglite";
 import { withAuditActor } from "@/lib/audit/actor";
 import { describeDbError } from "./errors";
+import { PgRestClient, plainDbError, type Db, type DbError } from "./rest-core";
 
 /**
- * A small subset of the supabase-js (PostgREST) query builder implemented over
- * PGlite. Supports the exact surface this app uses: select with embedded
- * resources (to-one objects / to-many arrays, aliases, nesting), the common
- * filters, order/limit/single, insert/update/delete, and rpc().
+ * The server's data client: the query builder (rest-core.ts) on this
+ * computer's database, with the access guard before every query, the acting
+ * person recorded on every write, constraint messages in Arabic, and failed
+ * reads reported.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/**
- * `error` mirrors supabase-js's shape, plus the two fields that make a
- * database failure explainable to the person who caused it: the SQLSTATE
- * `code` (23505 = duplicate, 23503 = still referenced, …) and the
- * `constraint` that rejected the row. Without them all a caller can do is
- * show the raw Postgres sentence.
- */
-type DbError = { message: string; code?: string; constraint?: string; detail?: string; table?: string; column?: string };
-type Result = { data: any; error: DbError | null; count?: number };
+export type { DbError } from "./rest-core";
 
 /** Keep the Postgres diagnostics that `new Error(...)` would throw away. */
 function dbError(e: unknown): DbError {
-  const anyE = e as { message?: string; code?: string; constraint?: string; detail?: string; table?: string; column?: string };
-  const err: DbError = {
-    message: e instanceof Error ? e.message : String(e),
-    ...(anyE?.code ? { code: anyE.code } : {}),
-    ...(anyE?.constraint ? { constraint: anyE.constraint } : {}),
-    ...(anyE?.detail ? { detail: anyE.detail } : {}),
-    ...(anyE?.table ? { table: anyE.table } : {}),
-    ...(anyE?.column ? { column: anyE.column } : {}),
-  };
+  const err = plainDbError(e);
   // A constraint the row broke (23xxx: duplicate, still referenced, required,
   // out of range) is said in Arabic here, once, because many actions hand
   // error.message straight to the screen. Callers that branch on the kind of
@@ -43,143 +27,6 @@ function dbError(e: unknown): DbError {
   return err;
 }
 
-const q = (id: string) => `"${id.replace(/"/g, '""')}"`;
-
-// ---- rpc return-shape metadata ---------------------------------------------
-
-// Cache each function's proretset flag (true = TABLE/SETOF). The catalog never
-// changes at runtime, so one lookup per function name is enough. `undefined`
-// means "not yet looked up".
-const retsetCache = new Map<string, boolean>();
-
-/** True when the named public function returns a set (TABLE/SETOF). */
-async function isSetReturning(
-  db: { query<T = any>(sql: string, params?: unknown[]): Promise<{ rows: T[] }> },
-  fn: string
-): Promise<boolean> {
-  const cached = retsetCache.get(fn);
-  if (cached !== undefined) return cached;
-  try {
-    const r = await db.query<{ proretset: boolean | null }>(
-      `select bool_or(p.proretset) as proretset
-         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-        where p.proname = $1 and n.nspname = 'public'`,
-      [fn]
-    );
-    const v = !!r.rows[0]?.proretset;
-    retsetCache.set(fn, v);
-    return v;
-  } catch {
-    return false; // fall back to the scalar path + its error-based recovery
-  }
-}
-
-// ---- select-string parsing -------------------------------------------------
-
-interface Field {
-  raw: string;
-  alias?: string;
-  name: string; // column name, table/fk token, or "*"
-  sub?: Field[]; // present => embedded resource
-}
-
-/** Split a comma list at top level (ignoring commas inside parentheses). */
-function splitTop(s: string): string[] {
-  const out: string[] = [];
-  let depth = 0,
-    cur = "";
-  for (const ch of s) {
-    if (ch === "(") depth++;
-    if (ch === ")") depth--;
-    if (ch === "," && depth === 0) {
-      out.push(cur);
-      cur = "";
-    } else cur += ch;
-  }
-  if (cur.trim()) out.push(cur);
-  return out;
-}
-
-function parseFields(sel: string): Field[] {
-  return splitTop(sel).map((tokenRaw) => {
-    const token = tokenRaw.trim();
-    const paren = token.indexOf("(");
-    if (paren !== -1 && token.endsWith(")")) {
-      const head = token.slice(0, paren).trim();
-      const inner = token.slice(paren + 1, -1);
-      const [aliasOrName, maybeName] = head.split(":").map((x) => x.trim());
-      const alias = maybeName ? aliasOrName : undefined;
-      const name = maybeName ? maybeName : aliasOrName;
-      return { raw: token, alias, name, sub: parseFields(inner) };
-    }
-    const [aliasOrName, maybeName] = token.split(":").map((x) => x.trim());
-    const alias = maybeName ? aliasOrName : undefined;
-    const name = maybeName ? maybeName : aliasOrName;
-    return { raw: token, alias, name };
-  });
-}
-
-// ---- embed resolution ------------------------------------------------------
-
-interface Embed {
-  kind: "one" | "many";
-  ftable: string;
-  joinCol: string; // for "one": parent.<joinCol> = ftable.id ; for "many": ftable.<joinCol> = parent.id
-}
-
-function resolveEmbed(meta: FkMeta, parent: string, name: string): Embed | null {
-  const parentCols = meta.columns[parent];
-  // 1) token is a FK column on the parent -> to-one via that column
-  if (parentCols?.has(name)) {
-    const fk = (meta.outgoing[parent] ?? []).find((f) => f.column === name);
-    if (fk) return { kind: "one", ftable: fk.ftable, joinCol: name };
-  }
-  // 2) token is a table name
-  if (meta.tables.has(name)) {
-    const out = (meta.outgoing[parent] ?? []).filter((f) => f.ftable === name);
-    if (out.length === 1) return { kind: "one", ftable: name, joinCol: out[0].column };
-    const inc = (meta.outgoing[name] ?? []).filter((f) => f.ftable === parent);
-    if (inc.length >= 1) return { kind: "many", ftable: name, joinCol: inc[0].column };
-    if (out.length > 1) return { kind: "one", ftable: name, joinCol: out[0].column };
-  }
-  return null;
-}
-
-/** Build the comma-separated SELECT field SQL for a table (recursing embeds). */
-function buildFields(meta: FkMeta, table: string, fields: Field[]): string {
-  const parts: string[] = [];
-  for (const f of fields) {
-    if (f.name === "*" && !f.sub) {
-      parts.push(`${q(table)}.*`);
-      continue;
-    }
-    if (!f.sub) {
-      parts.push(`${q(table)}.${q(f.name)}`);
-      continue;
-    }
-    const emb = resolveEmbed(meta, table, f.name);
-    const key = f.alias ?? f.name;
-    if (!emb) {
-      // unknown embed -> emit null so the shape still matches
-      parts.push(`null as ${q(key)}`);
-      continue;
-    }
-    const sub = buildFields(meta, emb.ftable, f.sub);
-    if (emb.kind === "one") {
-      parts.push(
-        `(select to_jsonb(_e) from (select ${sub} from ${q(emb.ftable)} ` +
-          `where ${q(emb.ftable)}.${q("id")} = ${q(table)}.${q(emb.joinCol)}) _e) as ${q(key)}`
-      );
-    } else {
-      parts.push(
-        `(select coalesce(jsonb_agg(_e), '[]'::jsonb) from (select ${sub} from ${q(emb.ftable)} ` +
-          `where ${q(emb.ftable)}.${q(emb.joinCol)} = ${q(table)}.${q("id")}) _e) as ${q(key)}`
-      );
-    }
-  }
-  return parts.join(", ");
-}
-
 /**
  * Most pages read with `const { data } = await …` and show an empty list when
  * data is null — so a read that fails (a missing column after a botched
@@ -188,7 +35,7 @@ function buildFields(meta: FkMeta, table: string, fields: Field[]): string {
  * (app_errors), at most once a minute per table and error code.
  */
 type ErrG = { __spirReadErrors?: Map<string, number> };
-async function noteFailedRead(db: { query: (sql: string, params?: unknown[]) => Promise<unknown> }, table: string, err: DbError) {
+async function noteFailedRead(db: Db, table: string, err: DbError) {
   try {
     const seen = ((globalThis as ErrG).__spirReadErrors ??= new Map());
     const key = `${table}|${err.code ?? ""}`;
@@ -205,333 +52,18 @@ async function noteFailedRead(db: { query: (sql: string, params?: unknown[]) => 
   }
 }
 
-// ---- builder ---------------------------------------------------------------
-
-interface Filter {
-  col: string;
-  op: "eq" | "neq" | "in" | "gt" | "lt" | "gte" | "lte" | "is" | "ilike" | "search";
-  val: unknown;
-}
-interface Order {
-  col: string;
-  asc: boolean;
-  nullsFirst?: boolean;
-}
-
-class Query implements PromiseLike<Result> {
-  private op: "select" | "insert" | "update" | "delete" = "select";
-  private selectStr = "*";
-  private filters: Filter[] = [];
-  private orders: Order[] = [];
-  private limitN?: number;
-  private offsetN?: number;
-  private singleRow = false;
-  private payload: Record<string, unknown> | Record<string, unknown>[] | null = null;
-  private updateVals: Record<string, unknown> | null = null;
-  private returning = false;
-  private conflictTarget?: string;
-  private ignoreDup = false;
-  private wantCount = false;
-  private rpcSpec?: { fn: string; params: Record<string, unknown> };
-
-  constructor(private table: string, private guard?: () => Promise<void>) {}
-
-  _asRpc(fn: string, params: Record<string, unknown>) {
-    this.rpcSpec = { fn, params };
-    return this;
-  }
-
-  select(cols = "*", opts?: { count?: "exact" | "planned" | "estimated"; head?: boolean }) {
-    if (this.op === "insert" || this.op === "update" || this.op === "delete") {
-      this.returning = true;
-      if (cols !== "*") this.selectStr = cols;
-      return this;
-    }
-    this.op = "select";
-    this.selectStr = cols;
-    if (opts?.count) this.wantCount = true;
-    return this;
-  }
-  insert(payload: Record<string, unknown> | Record<string, unknown>[]) {
-    this.op = "insert";
-    this.payload = payload;
-    return this;
-  }
-  update(vals: Record<string, unknown>) {
-    this.op = "update";
-    this.updateVals = vals;
-    return this;
-  }
-  upsert(
-    payload: Record<string, unknown> | Record<string, unknown>[],
-    opts?: { onConflict?: string; ignoreDuplicates?: boolean; count?: string }
-  ) {
-    this.op = "insert";
-    this.payload = payload;
-    this.conflictTarget = opts?.onConflict;
-    this.ignoreDup = opts?.ignoreDuplicates ?? false;
-    if (opts?.count) this.wantCount = true;
-    return this;
-  }
-  delete() {
-    this.op = "delete";
-    return this;
-  }
-  eq(col: string, val: unknown) { this.filters.push({ col, op: "eq", val }); return this; }
-  neq(col: string, val: unknown) { this.filters.push({ col, op: "neq", val }); return this; }
-  in(col: string, val: unknown[]) { this.filters.push({ col, op: "in", val }); return this; }
-  gt(col: string, val: unknown) { this.filters.push({ col, op: "gt", val }); return this; }
-  lt(col: string, val: unknown) { this.filters.push({ col, op: "lt", val }); return this; }
-  gte(col: string, val: unknown) { this.filters.push({ col, op: "gte", val }); return this; }
-  lte(col: string, val: unknown) { this.filters.push({ col, op: "lte", val }); return this; }
-  is(col: string, val: unknown) { this.filters.push({ col, op: "is", val }); return this; }
-  ilike(col: string, val: string) { this.filters.push({ col, op: "ilike", val }); return this; }
-  /**
-   * A list's search box: any of `cols` contains `term`, Arabic spelling
-   * variants forgiven (fn_ar_norm). No-op for an empty term. Not in supabase-js;
-   * the columns come from code, never from the request.
-   */
-  search(cols: string[], term: string | null | undefined) {
-    const v = String(term ?? "").trim();
-    if (v && cols.length) this.filters.push({ col: cols.join(","), op: "search", val: `%${v}%` });
-    return this;
-  }
-  order(col: string, opts?: { ascending?: boolean; nullsFirst?: boolean }) {
-    this.orders.push({ col, asc: opts?.ascending ?? true, nullsFirst: opts?.nullsFirst });
-    return this;
-  }
-  limit(n: number) { this.limitN = n; return this; }
-  /** Inclusive row window like supabase-js: range(0, 9) returns the first 10 rows. */
-  range(from: number, to: number) {
-    this.offsetN = Math.max(0, from);
-    this.limitN = Math.max(0, to - from + 1);
-    return this;
-  }
-  single() { this.singleRow = true; return this; }
-  maybeSingle() { this.singleRow = true; return this; }
-
-  private whereSql(params: unknown[]): string {
-    if (this.filters.length === 0) return "";
-    const clauses = this.filters.map((f) => {
-      if (f.op === "in") {
-        // Expand to `col IN ($1,$2,…)` — binding a JS array to a single param
-        // mis-serializes in PGlite and breaks for enum columns.
-        const arr = Array.isArray(f.val) ? f.val : [f.val];
-        if (arr.length === 0) return "false";
-        const placeholders = arr.map((v) => {
-          params.push(v);
-          return `$${params.length}`;
-        });
-        return `${q(f.col)} in (${placeholders.join(", ")})`;
-      }
-      if (f.op === "is") {
-        return `${q(f.col)} is ${f.val === null ? "null" : f.val ? "true" : "false"}`;
-      }
-      if (f.op === "search") {
-        params.push(f.val);
-        const n = params.length;
-        return "(" + f.col.split(",").map((c) => `fn_ar_norm(${q(c)}::text) like fn_ar_norm($${n})`).join(" or ") + ")";
-      }
-      if (f.op === "ilike") {
-        // Arabic spelling variants forgiven on both sides (fn_ar_norm, 0114).
-        params.push(f.val);
-        return `fn_ar_norm(${q(f.col)}::text) like fn_ar_norm($${params.length})`;
-      }
-      const opSql = { eq: "=", neq: "<>", gt: ">", lt: "<", gte: ">=", lte: "<=" }[f.op];
-      params.push(f.val);
-      return `${q(f.col)} ${opSql} $${params.length}`;
-    });
-    return " where " + clauses.join(" and ");
-  }
-
-  private async exec(): Promise<Result> {
-    // Every query checks who is asking before it touches the database. A
-    // refusal is an ordinary error result, so callers written for supabase-js
-    // (which check `error`) fail closed without any change of their own.
-    if (this.guard) {
-      try {
-        await this.guard();
-      } catch (e) {
-        return { data: null, error: { message: e instanceof Error ? e.message : String(e), code: "42501" } };
-      }
-    }
-    const { db, meta } = await getDb();
-    const params: unknown[] = [];
-    let sql = "";
-
-    // rpc(): call a Postgres function. Scalar/void funcs return their value;
-    // set/table-returning funcs return rows (filterable / single()). The two
-    // shapes need different SQL — `select fn()` for scalars, `select * from
-    // fn()` for sets — and picking the wrong one silently corrupts the result
-    // (a TABLE function surfaced via `select fn() as result` collapses to a
-    // single composite string). So route by the catalog's `proretset` flag.
-    if (this.rpcSpec) {
-      const keys = Object.keys(this.rpcSpec.params);
-      const values = keys.map((k) => this.rpcSpec!.params[k]);
-      const argSql = keys.map((k, i) => `${q(k)} => $${i + 1}`).join(", ");
-
-      const runSet = async () => {
-        const p2 = [...values];
-        let s2 = `select * from ${q(this.rpcSpec!.fn)}(${argSql})`;
-        s2 += this.whereSql(p2);
-        if (this.singleRow) s2 += " limit 1";
-        const res = await db.query<Record<string, unknown>>(s2, p2);
-        const rows = res.rows ?? [];
-        return { data: this.singleRow ? rows[0] ?? null : rows, error: null };
-      };
-
-      if (await isSetReturning(db, this.rpcSpec.fn)) {
-        try {
-          return await runSet();
-        } catch (e2) {
-          return { data: null, error: dbError(e2) };
-        }
-      }
-      try {
-        const res = await db.query<{ result: unknown }>(
-          `select ${q(this.rpcSpec.fn)}(${argSql}) as result`,
-          values
-        );
-        return { data: res.rows[0]?.result ?? null, error: null };
-      } catch (e) {
-        // Safety net: if the metadata lookup was wrong or unavailable, fall
-        // back to the set path when Postgres complains about a set-returning
-        // function used in a scalar context.
-        const msg = e instanceof Error ? e.message : String(e);
-        if (/set-returning|must appear in the FROM/i.test(msg)) {
-          try {
-            return await runSet();
-          } catch (e2) {
-            return { data: null, error: dbError(e2) };
-          }
-        }
-        return { data: null, error: dbError(e) };
-      }
-    }
-
-    if (this.op === "select") {
-      const fields = parseFields(this.selectStr);
-      sql = `select ${buildFields(meta, this.table, fields)} from ${q(this.table)}`;
-      sql += this.whereSql(params);
-      if (this.orders.length) {
-        sql +=
-          " order by " +
-          this.orders
-            .map(
-              (o) =>
-                `${q(o.col)} ${o.asc ? "asc" : "desc"}` +
-                (o.nullsFirst === undefined ? "" : o.nullsFirst ? " nulls first" : " nulls last")
-            )
-            .join(", ");
-      }
-      if (this.limitN != null) sql += ` limit ${this.limitN}`;
-      if (this.singleRow) sql += " limit 1";
-      if (this.offsetN != null && this.offsetN > 0) sql += ` offset ${this.offsetN}`;
-    } else if (this.op === "insert") {
-      const rows = Array.isArray(this.payload) ? this.payload : [this.payload!];
-      if (rows.length === 0) return { data: this.singleRow ? null : [], error: null };
-      const cols = Object.keys(rows[0]);
-      const valuesSql = rows
-        .map(
-          (r) =>
-            "(" +
-            cols
-              .map((c) => {
-                params.push((r as Record<string, unknown>)[c]);
-                return `$${params.length}`;
-              })
-              .join(", ") +
-            ")"
-        )
-        .join(", ");
-      sql = `insert into ${q(this.table)} (${cols.map(q).join(", ")}) values ${valuesSql}`;
-      if (this.conflictTarget !== undefined || this.ignoreDup) {
-        const target = this.conflictTarget
-          ? `(${this.conflictTarget.split(",").map((c) => q(c.trim())).join(", ")})`
-          : "";
-        sql += ` on conflict ${target} do nothing`;
-      }
-      if (this.returning) sql += ` returning ${this.selectStr === "*" ? "*" : this.selectStr}`;
-    } else if (this.op === "update") {
-      const cols = Object.keys(this.updateVals!);
-      const setSql = cols
-        .map((c) => {
-          params.push(this.updateVals![c]);
-          return `${q(c)} = $${params.length}`;
-        })
-        .join(", ");
-      sql = `update ${q(this.table)} set ${setSql}`;
-      sql += this.whereSql(params);
-      if (this.returning) sql += ` returning ${this.selectStr === "*" ? "*" : this.selectStr}`;
-    } else {
-      sql = `delete from ${q(this.table)}`;
-      sql += this.whereSql(params);
-      if (this.returning) sql += ` returning ${this.selectStr === "*" ? "*" : this.selectStr}`;
-    }
-
-    try {
-      // Mutations (insert/update/delete) run with the acting user recorded for
-      // the audit trail; selects run plainly (no actor, no serialization).
-      const res =
-        this.op === "select"
-          ? await db.query<Record<string, unknown>>(sql, params)
-          : await withAuditActor(db, () => db.query<Record<string, unknown>>(sql, params));
-      const rows = res.rows ?? [];
-      let count: number | undefined;
-      if (this.wantCount) {
-        if (this.op === "select") {
-          // The total matching rows, independent of limit/offset — needed so
-          // callers can paginate. Re-uses the same filters with fresh params.
-          const cparams: unknown[] = [];
-          const csql = `select count(*)::int as n from ${q(this.table)}` + this.whereSql(cparams);
-          const cres = await db.query<{ n: number }>(csql, cparams);
-          count = cres.rows?.[0]?.n ?? rows.length;
-        } else {
-          count = res.affectedRows ?? rows.length;
-        }
-      }
-      if (this.singleRow) {
-        return { data: rows[0] ?? null, error: null, count };
-      }
-      if (this.op !== "select" && !this.returning) {
-        return { data: null, error: null, count };
-      }
-      return { data: rows, error: null, count };
-    } catch (e) {
-      const err = dbError(e);
-      if (this.op === "select") void noteFailedRead(db, this.table, err);
-      return { data: null, error: err };
-    }
-  }
-
-  // Typed so `await`/destructuring stays loose (like supabase-js): the fulfilled
-  // value is `any`, so `const { data, error } = await query` gives `any` data.
-  then(
-    onF?: ((v: any) => any) | null,
-    onR?: ((r: any) => any) | null
-  ): Promise<any> {
-    return this.exec().then(onF ?? undefined, onR ?? undefined);
-  }
-}
-
-export class PgRestClient {
-  constructor(private guard?: () => Promise<void>) {}
-
-  from(table: string) {
-    return new Query(table, this.guard);
-  }
-
-  /** Call a Postgres function. Returns a chainable/awaitable builder so
-   *  `.single()`, filters, etc. work like supabase-js. */
-  rpc(fn: string, params: Record<string, unknown> = {}) {
-    return new Query(fn, this.guard)._asRpc(fn, params);
-  }
-}
-
 /**
  * Build a data client over the working store. `guard` runs before every query
  * and throws to refuse it — see `@/lib/supabase/server` for who may ask what.
  */
 export function createPgRestClient(guard?: () => Promise<void>) {
-  return new PgRestClient(guard);
+  return new PgRestClient({
+    open: getDb,
+    guard,
+    error: dbError,
+    write: (db, run) => withAuditActor(db, run),
+    failedRead: (db, table, err) => void noteFailedRead(db, table, err),
+  });
 }
+
+export type { PgRestClient };

@@ -4,7 +4,9 @@
   "private": true,
   "description": "Lightweight web app for medical-device sales, lab tracking, spare parts and reagent kits. Re-imagined from ERPNext on Next.js + Supabase.",
   "scripts": {
+    "predev": "node scripts/prepare-local-app.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/prepare-local-app.mjs",
     "build": "next build",
     "start": "next start",
     "test": "node --test tests/*.test.mjs",
