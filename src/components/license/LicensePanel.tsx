@@ -118,12 +118,13 @@ export function LicensePanel({ state, contact, message, showStatus, now }: {
       gone: T("This computer's code is no longer valid (its seat was freed, or the code was replaced or deleted)."),
       grace_over: T("The 30 days this computer could run without a code are over."),
       clock: T("This computer's date or clock is wrong. Correct it, then press «Check now»."),
+      offline: T("This computer has not reached the codes server for longer than your code allows. Connect it to the internet, then press «Check now»."),
     }[state.reason];
     return (
       <Screen icon={state.reason === "clock" ? <ClockIcon size={22} /> : <LockIcon size={22} />} title={T("This computer is locked")} contact={contact}>
         <p className="mb-1 mt-1 text-sm text-ink-gray-6" data-reason={state.reason}>{why}</p>
         <p className="mb-4 text-xs text-ink-gray-5">{T("The company's records are safe on this computer and come back in full once the code runs again.")}</p>
-        {state.reason !== "clock" && <CodeForm cta={T("Enter a new code")} />}
+        {state.reason !== "clock" && state.reason !== "offline" && <CodeForm cta={T("Enter a new code")} />}
         <CheckNow />
       </Screen>
     );

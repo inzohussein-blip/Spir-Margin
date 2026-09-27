@@ -53,6 +53,8 @@ await owner.goto(URL_ + "/license", { waitUntil: "networkidle" });
 check("/license leads to the code manager", new URL(owner.url()).pathname === "/licenses", owner.url());
 await owner.fill('input[name="password"]', PASSWORD);
 await owner.locator("form button").click();
+await owner.getByTestId("panel-nav").waitFor({ timeout: 30_000 }).catch(() => {});
+await owner.locator('[data-section="new"]').click();
 await owner.getByTestId("create-code").waitFor({ timeout: 30_000 }).catch(() => {});
 const form = owner.getByTestId("create-code");
 await form.locator('input[name="company"]').fill("شركة الويب");

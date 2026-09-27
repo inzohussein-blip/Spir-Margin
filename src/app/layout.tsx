@@ -56,6 +56,7 @@ export default async function RootLayout({
     pathname.startsWith("/login/") ||
     pathname === "/welcome" ||
     pathname === "/licenses" ||
+    pathname.startsWith("/licenses/") ||
     pathname.startsWith("/verify/") ||
     pathname.startsWith("/welcome/");
   // Focused pages keep auth but provide their own chrome (POS terminal, and the
@@ -66,7 +67,7 @@ export default async function RootLayout({
   // This computer's activation code (src/lib/license): waiting for it, or
   // locked, every page but the welcome screen (where the code is entered)
   // and the codes server's own page sends there.
-  const licenseFree = pathname === "/welcome" || pathname.startsWith("/welcome/") || pathname === "/licenses" || pathname.startsWith("/verify/") || pathname.startsWith("/login/expired");
+  const licenseFree = pathname === "/welcome" || pathname.startsWith("/welcome/") || pathname === "/licenses" || pathname.startsWith("/licenses/") || pathname.startsWith("/verify/") || pathname.startsWith("/login/expired");
   const license = await deviceState().catch(() => ({ kind: "off" }) as DeviceState);
   if (!licenseFree && isLocked(license)) redirect("/welcome?activate=1");
   const session = isBare ? null : await readSession();
@@ -105,6 +106,15 @@ export default async function RootLayout({
       notifications.unshift({
         title: `${t(locale, "The activation code ends in")} ${left} ${t(locale, "days")}`,
         sub: `${license.company} — ${new Date(license.until).toLocaleDateString("en-CA")}`,
+        href: "/welcome?license=1",
+        severity: "amber",
+      });
+    }
+    // A code with an offline limit: warn a few days before this computer must reach the server.
+    if (license.kind === "ok" && license.checkBy && license.checkBy - Date.now() <= 3 * 86_400_000) {
+      notifications.unshift({
+        title: t(locale, "Connect this computer to the internet"),
+        sub: `${t(locale, "The activation code must be checked by")} ${new Date(license.checkBy).toLocaleDateString("en-CA")}`,
         href: "/welcome?license=1",
         severity: "amber",
       });

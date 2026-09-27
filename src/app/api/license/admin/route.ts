@@ -22,6 +22,7 @@ export async function GET() {
   return json({
     enabled: true, owner: true, storage,
     licenses: await licenses.list(), events: await licenses.events(), signIns: await licenses.signIns(),
+    actions: await licenses.actions(), plan: await licenses.plan(),
     twoFactor: await twoFactorStatus(), contact: await getContact(), version: currentBuild()?.number ?? null, now: Date.now(),
   });
 }
@@ -62,17 +63,45 @@ export async function POST(req: NextRequest) {
 
   if (!(await isOwner())) return json({ ok: false, error: "auth" }, 401);
 
+  // Every change the owner makes is kept with the address it came from (never a code or a password).
+  const ip = ipOf(req.headers), agent = req.headers.get("user-agent") ?? "";
+  const note = (action: string, license_id = "", company = "", detail = "") => licenses.logAction({ ip, agent, license_id, company, action, detail });
+  const nameOf = async (id: string) => (id ? (await licenses.get(id))?.company ?? "" : "");
+
   if (b.op === "create") {
     const company = String(b.company ?? "").trim();
     const days = Number(b.days), seats = Number(b.seats);
     if (!company || !Number.isFinite(days) || days < 1 || !Number.isFinite(seats) || seats < 1) return json({ ok: false, error: "bad_request" }, 400);
-    const { row, code } = await licenses.create({ company, days, seats, modules: b.modules, note: String(b.note ?? ""), trial: b.trial === true });
+    const { row, code } = await licenses.create({
+      company, days, seats, modules: b.modules, note: String(b.note ?? ""), trial: b.trial === true,
+      phone: String(b.phone ?? ""), maxOfflineDays: Number(b.maxOfflineDays ?? 0), price: String(b.price ?? ""),
+    });
+    await note(row.is_trial ? "create_trial" : "create", row.id, row.company, `${row.duration_days}d · ${row.seats}`);
     return json({ ok: true, row, code });
   }
-  if (b.op === "update") return json({ ok: true, ...(await licenses.update(String(b.id ?? ""), b.change as LicenseAction)) });
-  if (b.op === "backup") return json({ ok: true, backup: await licenses.exportAll() });
+  if (b.op === "update") {
+    const id = String(b.id ?? "");
+    const change = (b.change ?? {}) as LicenseAction;
+    const company = await nameOf(id);
+    const res = await licenses.update(id, change);
+    const c = change as Record<string, unknown>;
+    const detail = c.action === "extend" ? `+${c.days}` : c.action === "seats" ? String(c.seats) : c.action === "offline" ? String(c.days)
+      : c.action === "payment" ? `${c.paid ? "paid" : "unpaid"} ${String(c.price ?? "")}` : c.action === "modules" && Array.isArray(c.modules) ? c.modules.join(",") : "";
+    await note(String(c.action ?? "update"), id, res.row?.company ?? company, detail);
+    return json({ ok: true, ...res });
+  }
+  if (b.op === "backup") { await note("backup"); return json({ ok: true, backup: await licenses.exportAll() }); }
   if (b.op === "restore") {
-    try { return json({ ok: true, ...(await licenses.importAll(b.backup)) }); } catch { return json({ ok: false, error: "invalid" }, 400); }
+    try {
+      const r = await licenses.importAll(b.backup);
+      await note("restore", "", "", `${r.licenses}`);
+      return json({ ok: true, ...r });
+    } catch { return json({ ok: false, error: "invalid" }, 400); }
+  }
+  if (b.op === "plan") {
+    const plan = await licenses.setPlan(b.plan);
+    await note("plan");
+    return json({ ok: true, plan });
   }
   if (b.op === "selftest") return json({ ok: true, storage: await storageStatus(true) });
   if (b.op === "totp_setup") {
@@ -81,9 +110,17 @@ export async function POST(req: NextRequest) {
     const QRCode = (await import("qrcode")).default;
     return json({ ok: true, secret: r.secret, qr: await QRCode.toDataURL(r.uri, { margin: 1, width: 220, errorCorrectionLevel: "M" }) });
   }
-  if (b.op === "totp_enable") return (await confirmTwoFactor(String(b.code ?? ""))) ? json({ ok: true }) : json({ ok: false, error: "wrong_code" }, 400);
-  if (b.op === "totp_disable") return (await disableTwoFactor(String(b.code ?? ""))) ? json({ ok: true }) : json({ ok: false, error: "wrong_code" }, 400);
-  if (b.op === "contact") { await setContact(String(b.contact ?? "")); return json({ ok: true }); }
+  if (b.op === "totp_enable") {
+    if (!(await confirmTwoFactor(String(b.code ?? "")))) return json({ ok: false, error: "wrong_code" }, 400);
+    await note("totp_on");
+    return json({ ok: true });
+  }
+  if (b.op === "totp_disable") {
+    if (!(await disableTwoFactor(String(b.code ?? "")))) return json({ ok: false, error: "wrong_code" }, 400);
+    await note("totp_off");
+    return json({ ok: true });
+  }
+  if (b.op === "contact") { await setContact(String(b.contact ?? "")); await note("contact"); return json({ ok: true }); }
 
   // A company's own database, carried by its code: see (never the password), test, link, copy, unlink.
   if (b.op === "sync_get") {
@@ -94,12 +131,14 @@ export async function POST(req: NextRequest) {
     const from = await licenses.getSync(String(b.from ?? ""));
     if (!from) return json({ ok: false, error: "bad_config" }, 400);
     const err = await licenses.setSync(String(b.id ?? ""), from.conn, databaseHost(from.conn), "owner");
+    if (!err) await note("sync", String(b.id ?? ""), await nameOf(String(b.id ?? "")), databaseHost(from.conn));
     return err ? json({ ok: false, error: err }, 400) : json({ ok: true });
   }
   if (b.op === "sync_set" || b.op === "sync_test") {
     const id = String(b.id ?? "");
     if (b.op === "sync_set" && b.conn == null) {
       const err = await licenses.setSync(id, null, "", "owner");
+      if (!err) await note("unsync", id, await nameOf(id));
       return err ? json({ ok: false, error: err }, 400) : json({ ok: true });
     }
     // Left empty in the form: keep what is saved (the owner never sees it again).
@@ -110,6 +149,7 @@ export async function POST(req: NextRequest) {
     if (failure) return json({ ok: false, error: "connect", detail: failure.slice(0, 200) }, 502);
     if (b.op === "sync_test") return json({ ok: true, host: databaseHost(conn) });
     const err = await licenses.setSync(id, conn, databaseHost(conn), "owner");
+    if (!err) await note("sync", id, await nameOf(id), databaseHost(conn));
     return err ? json({ ok: false, error: err }, 400) : json({ ok: true, host: databaseHost(conn) });
   }
   return json({ ok: false, error: "bad_request" }, 400);
