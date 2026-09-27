@@ -63,6 +63,14 @@ export const STATIONS: Station[] = [
     href: "/w/accounting",
     tone: { ring: "border-sky-300 hover:border-sky-500", icon: "from-sky-500 to-sky-700", button: "bg-sky-600 hover:bg-sky-700", soft: "bg-sky-50 text-sky-700" },
   },
+  {
+    id: "hr",
+    label: "Staff & shifts",
+    desc: "Employees, the weekly roster, attendance, leave, advances and the monthly payroll.",
+    groups: ["HR"],
+    href: "/hr/attendance",
+    tone: { ring: "border-emerald-300 hover:border-emerald-500", icon: "from-emerald-500 to-emerald-700", button: "bg-emerald-600 hover:bg-emerald-700", soft: "bg-emerald-50 text-emerald-700" },
+  },
 ];
 
 export const STATION_IDS = STATIONS.map((s) => s.id);

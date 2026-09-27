@@ -84,7 +84,7 @@ const text = async (p) => (await p.locator("body").innerText().catch(() => "")) 
   await c.waitForTimeout(4000);
   await c.goto(pcC.url + "/welcome", { waitUntil: "networkidle" });
   check("an address that is not a codes server locks nothing", (await c.getByTestId("license-window").count()) === 0
-    && (await c.locator('[data-testid="stations"] [data-station]').count()) === 6, (await text(c)).slice(0, 160));
+    && (await c.locator('[data-testid="stations"] [data-station]').count()) === 7, (await text(c)).slice(0, 160));
   await c.goto(pcC.url + "/login", { waitUntil: "networkidle" });
   check("and its sign-in page opens", new URL(c.url()).pathname === "/login", c.url());
   await c.context().close();
@@ -126,7 +126,7 @@ check("a computer waiting for its code sends every page to the welcome screen", 
 const win = a.getByTestId("license-window");
 check("the activation window is over the welcome page", (await win.count()) === 1 && (await win.innerText()).includes("تفعيل هذا الحاسوب"));
 check("with the provider's contact line", (await win.innerText()).includes("07700000000"));
-check("the stations are behind it, in the project's colours", (await a.locator('[data-testid="stations"] [data-station]').count()) === 6);
+check("the stations are behind it, in the project's colours", (await a.locator('[data-testid="stations"] [data-station]').count()) === 7);
 check("the whole system comes first", (await a.locator('[data-testid="stations"] [data-station]').first().getAttribute("data-station")) === "all");
 check("the provider's number is at the foot of the page", (await a.getByTestId("provider-contact").innerText()).includes("07803993585"));
 

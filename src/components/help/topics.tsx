@@ -802,6 +802,42 @@ export const HELP_TOPICS: HelpTopic[] = [
   },
 
   {
+    id: "hr",
+    title: "الكادر والدوام",
+    icon: UsersIcon,
+    render: (locale) => (
+      <div className="space-y-4">
+        <HelpSection title="ما هي محطة الكادر والدوام" icon={UsersIcon}>
+          <p>
+            موظفو الشركة أنفسهم: جدول المناوبات الأسبوعي، والحضور والانصراف، والإجازات ورصيدها، والسلف، وكشف الرواتب الشهري.
+            كل شيء يُحفظ على الحاسوب أولاً ويُزامَن مع باقي حواسيب الشركة كبقية السجلّات.
+          </p>
+        </HelpSection>
+
+        <HelpSection title="البدء">
+          <Steps>
+            <li>
+              من <UiPath parts={[t(locale, "HR"), t(locale, "Shifts & rules")]} href="/hr/shifts" /> اضغط «أضف المناوبات المعتادة»، أو أضف
+              مناوباتك بأوقاتها. وحدّد دقائق السماح قبل التأخير وأيام الإجازة السنوية.
+            </li>
+            <li>أضف الموظفين من <UiPath parts={[t(locale, "HR"), t(locale, "Employees")]} href="/hr/employees" /> مع الراتب الأساسي.</li>
+            <li>في <UiPath parts={[t(locale, "HR"), t(locale, "Roster")]} href="/hr/roster" /> اختر لكل موظف مناوبة كل يوم أو «راحة»، ومن يغطيه إن غاب. زر «نسخ الأسبوع الماضي» يكرّر الجدول.</li>
+          </Steps>
+        </HelpSection>
+
+        <HelpSection title="الحضور والرواتب">
+          <Bullets>
+            <li>في صفحة «{t(locale, "Attendance")}» زرّا «وصل» و«انصرف» لليوم، و«تعديل الأوقات» لتصحيح أي يوم.</li>
+            <li>يُحسب التأخير بعد دقائق السماح، والغياب لمن له مناوبة ولم يحضر، والمُستبدَل لا يُحسب غائباً.</li>
+            <li>السلفة تُخصم من راتب الشهر الذي تختاره. كشف الرواتب: الراتب الأساسي ناقص السلف، ويُطبع.</li>
+            <li>اختيارياً (من القواعد): خصم أجر يوم (الراتب ÷ 30) عن كل يوم غياب أو إجازة بدون راتب.</li>
+          </Bullets>
+          <Note>المحطة جزء من رمز التفعيل باسم «{t(locale, "Staff & shifts")}»؛ رمز لا يشملها يخفي صفحاتها.</Note>
+        </HelpSection>
+      </div>
+    ),
+  },
+  {
     id: "backup",
     title: "النسخ الاحتياطي",
     icon: HardDriveIcon,
