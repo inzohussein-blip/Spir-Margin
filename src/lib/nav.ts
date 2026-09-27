@@ -9,7 +9,7 @@ import {
   BarChart3Icon, TrendingUpIcon, CalculatorIcon, RepeatIcon, SettingsIcon,
   AlertTriangleIcon, HistoryIcon, RefreshCwIcon, ReceiptTextIcon, BookOpenTextIcon,
   ClockIcon, CalendarRangeIcon, PlaneIcon, BanknoteIcon, WalletIcon, TimerIcon,
-  ThermometerSnowflakeIcon, RefrigeratorIcon, GaugeIcon, BarcodeIcon,
+  ThermometerSnowflakeIcon, RefrigeratorIcon, GaugeIcon, BarcodeIcon, GraduationCapIcon, ListTodoIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -119,6 +119,12 @@ export const navGroups: NavGroup[] = [
     { href: "/cold-chain/temperatures", label: "Temperatures", icon: ThermometerSnowflakeIcon },
     { href: "/cold-chain/units", label: "Fridges & stores", icon: RefrigeratorIcon },
     { href: "/cold-chain/equipment", label: "Instruments & calibration", icon: GaugeIcon },
+  ]},
+  // Guides & training (migration 0120): station "guides".
+  { label: "Guides", items: [
+    { href: "/guides", label: "Guides", icon: BookOpenIcon },
+    { href: "/guides/quiz", label: "Quiz", icon: ListTodoIcon },
+    { href: "/guides/trainees", label: "Trainees", icon: GraduationCapIcon },
   ]},
   { label: "Monitoring", items: [
     { href: "/monitoring/errors", label: "Error Monitor", icon: AlertTriangleIcon },
