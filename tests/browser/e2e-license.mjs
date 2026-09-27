@@ -94,6 +94,7 @@ await owner.getByTestId("new-code").waitFor({ timeout: 20_000 }).catch(() => {})
 const code = ((await owner.locator("[data-code]").innerText().catch(() => "")) ?? "").trim();
 check("a new code is shown once, readable", /^[2-9A-Z]{4}-[2-9A-Z]{4}-[2-9A-Z]{4}$/.test(code), code);
 const row = () => owner.locator('[data-code-row="شركة الاختبار"]');
+await row().locator('[data-state="waiting"]').waitFor({ timeout: 20_000 }).catch(() => {});
 check("the code is listed as not activated yet", (await row().locator('[data-state="waiting"]').count()) === 1);
 
 // ---------------------------------------------------------------- 3. computer A: closed until the code
@@ -104,6 +105,8 @@ const win = a.getByTestId("license-window");
 check("the activation window is over the welcome page", (await win.count()) === 1 && (await win.innerText()).includes("تفعيل هذا الحاسوب"));
 check("with the provider's contact line", (await win.innerText()).includes("07700000000"));
 check("the stations are behind it, in the project's colours", (await a.locator('[data-testid="stations"] [data-station]').count()) === 6);
+check("the whole system comes first", (await a.locator('[data-testid="stations"] [data-station]').first().getAttribute("data-station")) === "all");
+check("the provider's number is at the foot of the page", (await a.getByTestId("provider-contact").innerText()).includes("07803993585"));
 
 await win.locator('input[name="code"]').fill("AAAA-BBBB-CCCC");
 await win.getByRole("button", { name: /تفعيل/ }).click();
@@ -117,12 +120,23 @@ check("the right code opens the computer", (await a.getByTestId("license-window"
 check("a station not in the code is shown locked", (await a.locator('[data-station="manufacturing"][data-closed="1"]').count()) === 1
   && (await a.locator('[data-station="sales"][data-closed]').count()) === 0);
 
-// Signed in, the closed station's sections are gone for the admin too.
-await a.goto(pcA.url + "/login", { waitUntil: "networkidle" });
-await a.fill('input[name="email"]', "admin@spir.local");
-await a.fill('input[name="password"]', "123");
-await a.locator('form:has(input[name="password"]) button[type="submit"]').first().click();
+// «The whole system» opens with the same code; the closed station's sections are gone for the admin too.
+check("the whole system opens with the code", ((await a.locator('[data-station="all"]').getAttribute("href")) ?? "").includes("with=code"));
+await a.locator('[data-station="all"]').click();
+await a.waitForURL((u) => u.pathname === "/login", { timeout: 60_000 }).catch(() => {});
+const codeForm = a.getByTestId("code-login");
+await codeForm.waitFor({ timeout: 30_000 }).catch(() => {});
+await a.waitForLoadState("networkidle").catch(() => {});
+await codeForm.locator('input[name="code"]').fill("AAAA-BBBB-CCCC");
+await codeForm.getByRole("button").click();
+await codeForm.getByRole("alert").waitFor({ timeout: 30_000 }).catch(() => {});
+check("another code does not open it", (await codeForm.innerText()).includes("هذا ليس رمز التفعيل"), await codeForm.innerText().catch(() => ""));
+await codeForm.locator('input[name="code"]').fill(code);
+await codeForm.getByRole("button").click();
 await a.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 60_000 }).catch(() => {});
+check("the company's code signs in as the administrator", !new URL(a.url()).pathname.startsWith("/login"), a.url());
+await a.goto(pcA.url + "/users", { waitUntil: "networkidle" });
+check("who can give the staff accounts", new URL(a.url()).pathname === "/users" && (await a.locator('input[name="email"]').count()) > 0, a.url());
 await a.goto(pcA.url + "/boms", { waitUntil: "networkidle" });
 check("a page of a station outside the code says so", (await text(a)).includes("غير مشمولة برمز تفعيل هذا الحاسوب"));
 await a.goto(pcA.url + "/labs", { waitUntil: "networkidle" });

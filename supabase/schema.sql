@@ -1,4 +1,4 @@
--- Spir-Margin — combined schema (all 114 migrations). Run ONCE on an EMPTY DB.
+-- Spir-Margin — combined schema (all 115 migrations). Run ONCE on an EMPTY DB.
 --
 -- GENERATED FILE — do not edit by hand. Rebuild with:
 --     npm run schema
@@ -8913,6 +8913,19 @@ select true,
        or exists (select 1 from sales_invoices)
 on conflict (only_row) do nothing;
 
+-- ===== migration: 0116_license_code_sign_in.sql =====
+-- =====================================================================
+-- Migration 0116 : Sign in to the whole system with the activation code
+--
+-- The company's activation code also opens the whole system on the computer
+-- it activated (as the administrator; staff then get accounts of their own
+-- on the Users page). Only a fingerprint of the code is kept — the same
+-- sha256 the codes server keeps — so it is checked offline and the code
+-- itself is never stored. Empty until the code is entered on this computer.
+-- =====================================================================
+
+alter table _spir_license add column if not exists code_hash text not null default '';
+
 select _spir_attach_change_log();
 
 create table if not exists _spir_migrations (
@@ -9033,7 +9046,8 @@ insert into _spir_migrations(filename) values
   ('0112_auto_update.sql'),
   ('0113_remote_access.sql'),
   ('0114_arabic_search.sql'),
-  ('0115_device_license.sql')
+  ('0115_device_license.sql'),
+  ('0116_license_code_sign_in.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;

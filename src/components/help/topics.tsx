@@ -746,6 +746,18 @@ export const HELP_TOPICS: HelpTopic[] = [
           </Note>
         </HelpSection>
 
+        <HelpSection title="النظام كاملاً بالرمز نفسه">
+          <Steps>
+            <li>في صفحة الترحيب اضغط بطاقة «{t(locale, "The whole system")}» — أول البطاقات.</li>
+            <li>اكتب رمز التفعيل نفسه واضغط «{t(locale, "Open the whole system")}»: تدخل بصلاحية المدير على هذا الحاسوب.</li>
+            <li>
+              من <UiPath parts={[t(locale, "Setup"), t(locale, "Users")]} href="/users" /> أنشئ لكل موظف حساباً خاصاً به؛ الموظفون
+              يدخلون من بطاقة محطتهم بحساباتهم.
+            </li>
+          </Steps>
+          <Note>يُحفظ على الحاسوب بصمة للرمز لا الرمز نفسه، فالدخول به يعمل دون إنترنت، ولا يعمل من جهاز آخر.</Note>
+        </HelpSection>
+
         <HelpSection title="المحطات">
           <p>صفحة الترحيب تعرض محطات البرنامج، وكل محطة تفتح أقساماً من القائمة:</p>
           <Pairs

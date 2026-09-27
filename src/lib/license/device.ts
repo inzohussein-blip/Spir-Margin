@@ -2,7 +2,7 @@ import "server-only";
 import os from "node:os";
 import { getDb } from "@/lib/db/pglite";
 import { currentBuild } from "@/lib/update/updates";
-import { verifyLicense, type Jwk, type DeviceSync } from "./core";
+import { verifyLicense, hashCode, type Jwk, type DeviceSync } from "./core";
 import { judge, isLocked, type DeviceState, type Payload } from "./state";
 
 /**
@@ -53,6 +53,7 @@ interface Row {
   legacy: boolean;
   grace_start: number | null;
   sync_host: string;
+  code_hash: string;
 }
 
 type G = { __spirLicense?: { state: DeviceState; at: number } | null; __spirLicenseAsked?: number };
@@ -80,6 +81,7 @@ async function readRow(): Promise<Row> {
     legacy: r.legacy === true || r.legacy === "t",
     grace_start: num(r.grace_start),
     sync_host: String(r.sync_host ?? ""),
+    code_hash: String(r.code_hash ?? ""),
   };
 }
 
@@ -185,7 +187,12 @@ export async function activateCode(code: string): Promise<{ ok: true } | { ok: f
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ code, device: r.device_id, label: deviceLabel(), version: appVersion() }),
     });
-    if (body?.ok) { await store(body); return { ok: true }; }
+    if (body?.ok) {
+      await store(body);
+      // A fingerprint of the code (never the code): it also opens the whole system here, offline.
+      await write({ code_hash: hashCode(code) });
+      return { ok: true };
+    }
     const e = String(body?.error ?? "error");
     return { ok: false, error: (["not_found", "seats_full", "stopped", "expired", "too_many", "bad_request", "disabled"].includes(e) ? e : "error") as ActivateError };
   } catch {
@@ -232,6 +239,23 @@ export async function licenseTick(): Promise<void> {
   if (!licenseServer()) return;
   if (!g.__spirLicenseAsked || Date.now() - g.__spirLicenseAsked > ASK_ENABLED_MS) await fetchEnabled();
   await refreshLicense(false);
+}
+
+/**
+ * The company's activation code as the key to the whole system on this
+ * computer (signed in as the administrator, who then gives staff accounts of
+ * their own). Checked offline against the fingerprint kept at activation; a
+ * code this computer has not seen yet — a new code from the provider, or a
+ * computer activated before fingerprints were kept — is checked with the
+ * codes server, which also brings the license up to date.
+ */
+export async function codeOpensThisComputer(code: string): Promise<boolean> {
+  if (!licenseServer() || !code.trim()) return false;
+  if ((await deviceState()).kind !== "ok") return false;
+  const r = await readRow();
+  if (r.code_hash && r.code_hash === hashCode(code)) return true;
+  const res = await activateCode(code);
+  return res.ok && (await deviceState()).kind === "ok";
 }
 
 /** "Check now" on the lock screen and the welcome page: ask again at once. */
