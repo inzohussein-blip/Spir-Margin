@@ -3,6 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { navGroups, featureForHref } from "@/lib/nav";
 import type { SessionUser } from "@/lib/auth/session";
+import { deviceState } from "@/lib/license/device";
+import { STATION_IDS, closedGroups } from "@/lib/license/modules";
+import { openStations } from "@/lib/license/state";
 
 /**
  * Feature settings & access control.
@@ -50,6 +53,8 @@ export interface AccessContext {
   flags: Map<string, FeatureState>;
   /** features this specific account may not use */
   denied: Set<string>;
+  /** features in stations this computer's activation code does not open — closed for every account */
+  closed?: Set<string>;
 }
 
 /** Load the current user's access context (global flags + their deny list). */
@@ -71,12 +76,20 @@ export async function getAccessContext(user: SessionUser): Promise<AccessContext
   } catch {
     // Tables not migrated yet, or a transient read error — default to full access.
   }
-  return { role: user.role, flags, denied };
+  let closed = new Set<string>();
+  try {
+    closed = closedGroups(openStations(await deviceState(), STATION_IDS));
+  } catch {
+    // The license could not be read: nothing is closed on that account.
+  }
+  return { role: user.role, flags, denied, closed };
 }
 
 /** Effective state of a feature for this account (admins always "enabled"). */
 export function effectiveState(feature: string, ctx: AccessContext): FeatureState {
   if (CORE_FEATURES.has(feature)) return "enabled";
+  // Not in this computer's activation code: hidden for everyone, admins too.
+  if (ctx.closed?.has(feature)) return "hidden";
   // Elevated features are invisible to anyone below manager, flags aside.
   if (ELEVATED_FEATURES.has(feature) && !isElevatedRole(ctx.role)) return "hidden";
   if (ctx.role === "admin") return "enabled";
@@ -96,9 +109,10 @@ export function isPathAllowed(pathname: string, ctx: AccessContext): boolean {
  * "denied"   → this account was specifically denied the feature.
  * "disabled" → the feature is globally disabled or hidden.
  */
-export function blockReason(pathname: string, ctx: AccessContext): "denied" | "disabled" | null {
+export function blockReason(pathname: string, ctx: AccessContext): "denied" | "disabled" | "license" | null {
   const feature = featureForPath(pathname);
   if (!feature || CORE_FEATURES.has(feature)) return null;
+  if (ctx.closed?.has(feature)) return "license";
   if (ELEVATED_FEATURES.has(feature) && !isElevatedRole(ctx.role)) return "denied";
   if (ctx.role === "admin") return null;
   if (ctx.denied.has(feature)) return "denied";

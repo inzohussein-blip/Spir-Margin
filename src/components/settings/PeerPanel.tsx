@@ -61,6 +61,11 @@ export function PeerPanel({ info }: { info: PeerInfo }) {
           <LockIcon size={15} className="mt-0.5 shrink-0 text-ink-gray-4" />
           <span>{t(locale, "This server was deployed with a hosted database, so the address is fixed and cannot be changed here.")}</span>
         </div>
+      ) : info.fromCode ? (
+        <div data-testid="link-from-code" className="flex items-start gap-2 rounded-lg border border-outline-gray-2 bg-surface-gray-1 px-3 py-2.5 text-sm text-ink-gray-6">
+          <LockIcon size={15} className="mt-0.5 shrink-0 text-ink-gray-4" />
+          <span>{t(locale, "This link comes with the company's activation code: every computer of the company syncs with it. The provider changes it from the code manager.")}</span>
+        </div>
       ) : (
         <>
           <form action={formAction} className="space-y-3">

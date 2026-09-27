@@ -18,6 +18,8 @@ import { ErrorReporter } from "@/components/monitoring/ErrorReporter";
 import { Toasts } from "@/components/desk/Toasts";
 import { FeatureUnavailable } from "@/components/settings/FeatureUnavailable";
 import { readSession } from "@/lib/auth/current-user";
+import { deviceState, deviceInfo } from "@/lib/license/device";
+import { isLocked, daysLeft, WARN_DAYS, type DeviceState } from "@/lib/license/state";
 import { getNotifications } from "@/lib/notifications";
 import { updateAvailable } from "@/lib/update/updates";
 import { currentCopyState } from "@/lib/backup/copies-server";
@@ -53,12 +55,19 @@ export default async function RootLayout({
     pathname === "/login" ||
     pathname.startsWith("/login/") ||
     pathname === "/welcome" ||
+    pathname === "/licenses" ||
     pathname.startsWith("/welcome/");
   // Focused pages keep auth but provide their own chrome (POS terminal, and the
   // customer portal, which must never show the staff desk shell).
   const isFocused =
     pathname === "/pos" || pathname.startsWith("/pos/") ||
     pathname === "/portal" || pathname.startsWith("/portal/");
+  // This computer's activation code (src/lib/license): waiting for it, or
+  // locked, every page but the welcome screen (where the code is entered)
+  // and the codes server's own page sends there.
+  const licenseFree = pathname === "/welcome" || pathname.startsWith("/welcome/") || pathname === "/licenses" || pathname.startsWith("/login/expired");
+  const license = await deviceState().catch(() => ({ kind: "off" }) as DeviceState);
+  if (!licenseFree && isLocked(license)) redirect("/welcome?activate=1");
   const session = isBare ? null : await readSession();
   // The middleware can only check the cookie's signature. A session that the
   // server has since ended (password reset, account disabled) is sent to be
@@ -79,6 +88,28 @@ export default async function RootLayout({
       href: "/help?tab=backup",
       severity: "amber",
     });
+  }
+  // The activation code: ending soon, the grace period of a computer that
+  // predates codes, and the provider's message — for everyone signed in.
+  if (user && !isFocused && (license.kind === "ok" || license.kind === "grace")) {
+    const left = daysLeft(license, Date.now()) ?? 0;
+    if (license.kind === "grace") {
+      notifications.unshift({
+        title: t(locale, "Enter your company's activation code"),
+        sub: `${t(locale, "This computer runs without a code until")} ${new Date(license.until).toLocaleDateString("en-CA")} (${left} ${t(locale, "days")})`,
+        href: "/welcome?activate=1",
+        severity: "amber",
+      });
+    } else if (left <= WARN_DAYS) {
+      notifications.unshift({
+        title: `${t(locale, "The activation code ends in")} ${left} ${t(locale, "days")}`,
+        sub: `${license.company} — ${new Date(license.until).toLocaleDateString("en-CA")}`,
+        href: "/welcome?license=1",
+        severity: "amber",
+      });
+    }
+    const { message } = await deviceInfo().catch(() => ({ message: "" }));
+    if (message) notifications.unshift({ title: t(locale, "Message from the provider"), sub: message, href: "/welcome?license=1", severity: "blue" });
   }
   if (release) {
     notifications.unshift({

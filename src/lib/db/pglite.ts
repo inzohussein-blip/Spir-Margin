@@ -595,6 +595,14 @@ export async function restoreLocalDatabase(dump: Blob): Promise<void> {
     throw new Error(`not a Spir-Margin backup: ${(e as Error).message}`);
   }
 
+  // This computer's activation code (migration 0115) belongs to this computer,
+  // not to the backup: kept aside here and put back after the restore.
+  const keepLicense = local.dbRef
+    ? await local.dbRef.query(`select row_to_json(l)::text as j from _spir_license l`)
+        .then((r) => (r.rows[0] as { j?: string } | undefined)?.j ?? null)
+        .catch(() => null)
+    : null;
+
   // Close the live instance first: it holds the data directory open.
   if (local.raw) await local.raw.close().catch(() => undefined);
   local.dbRef = null;
@@ -634,6 +642,11 @@ export async function restoreLocalDatabase(dump: Blob): Promise<void> {
   await pg.query(`update _spir_lan_server set enabled = false`).catch(() => undefined);
   // Likewise the remote-access gateway (migration 0113): one click to turn back on.
   await pg.query(`update _spir_gateway set enabled = false`).catch(() => undefined);
+  if (keepLicense) {
+    await pg.query(`delete from _spir_license`).catch(() => undefined);
+    await pg.query(`insert into _spir_license select * from json_populate_record(null::_spir_license, $1::json)`, [keepLicense])
+      .catch((e) => console.error("[restore] could not keep this computer's license:", (e as Error).message));
+  }
 
   const db = pg as unknown as Db;
   local.raw = pg as unknown as PgliteHandle;

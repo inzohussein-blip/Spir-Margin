@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { setRemoteUrl, remoteUrl, remoteUrlIsFromEnvironment, resetRemoteDb, isTransactionPooler } from "@/lib/db/pglite";
+import { databaseHost as summarise, probeDatabase as probe } from "@/lib/db/probe";
+import { linkFromCode } from "@/lib/license/company-db";
 
 export interface PeerState {
   error?: string;
@@ -17,20 +19,8 @@ export interface PeerInfo {
   configured: boolean;
   fromEnvironment: boolean;
   summary: string | null;
-}
-
-/**
- * Describe the configured address without handing the password back to the
- * browser. Host and database name are enough to tell one server from another.
- */
-function summarise(url: string): string {
-  try {
-    const u = new URL(url);
-    const db = u.pathname.replace(/^\//, "");
-    return db ? `${u.host}/${db}` : u.host;
-  } catch {
-    return "…";
-  }
+  /** The link came with this computer's activation code (the provider sets it). */
+  fromCode?: boolean;
 }
 
 export async function getPeerInfoAction(): Promise<PeerInfo> {
@@ -43,26 +33,8 @@ export async function getPeerInfoAction(): Promise<PeerInfo> {
     configured: !!url,
     fromEnvironment: remoteUrlIsFromEnvironment(),
     summary: url ? summarise(url) : null,
+    fromCode: !!(await linkFromCode().catch(() => null)),
   };
-}
-
-/** Open a connection and close it, so a bad address is caught before saving. */
-async function probe(url: string): Promise<string | null> {
-  const pgLib = (await import("pg")).default as typeof import("pg");
-  const client = new pgLib.Client({
-    connectionString: url,
-    ssl: process.env.PGSSL === "disable" ? undefined : { rejectUnauthorized: false },
-    connectionTimeoutMillis: 10_000,
-  });
-  try {
-    await client.connect();
-    await client.query("select 1");
-    return null;
-  } catch (e) {
-    return (e as Error).message;
-  } finally {
-    await client.end().catch(() => undefined);
-  }
 }
 
 export async function savePeerAction(_prev: PeerState | null, formData: FormData): Promise<PeerState> {
@@ -70,6 +42,9 @@ export async function savePeerAction(_prev: PeerState | null, formData: FormData
   if (!user || user.role !== "admin") return { error: "Only an admin can change this" };
   if (remoteUrlIsFromEnvironment()) {
     return { error: "This server was deployed with a hosted database, so it cannot be changed here." };
+  }
+  if (await linkFromCode().catch(() => null)) {
+    return { error: "This link comes with the company's activation code. Ask the provider to change it." };
   }
 
   const url = String(formData.get("database_url") ?? "").trim();
@@ -102,6 +77,9 @@ export async function clearPeerAction(): Promise<PeerState> {
   if (!user || user.role !== "admin") return { error: "Only an admin can change this" };
   if (remoteUrlIsFromEnvironment()) {
     return { error: "This server was deployed with a hosted database, so it cannot be changed here." };
+  }
+  if (await linkFromCode().catch(() => null)) {
+    return { error: "This link comes with the company's activation code. Ask the provider to change it." };
   }
   await setRemoteUrl(null);
   resetRemoteDb();

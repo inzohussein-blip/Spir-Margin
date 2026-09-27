@@ -90,7 +90,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 │   ├── build-schema.mjs         يبني supabase/schema.sql من الـ migrations
 │   └── verify-admin.mjs         فحص دخول حساب على القاعدة المستضافة (سير عمل يدوي)
 ├── supabase/
-│   ├── migrations/              0001 … 0114 — كل المخطّط ومنطق العمل (انظر القسم 7)
+│   ├── migrations/              0001 … 0115 — كل المخطّط ومنطق العمل (انظر القسم 7)
 │   ├── schema.sql               مولَّد: كل الـ migrations في ملف واحد
 │   ├── seed-demo.sql            بيانات تجريبية صغيرة (SPIR_SEED=demo — للتدريب والعرض واختبارات المتصفّح)
 │   └── seed.sql                 بيانات اختبار كبيرة (SPIR_SEED=full)
@@ -294,7 +294,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | بيع سريع | `/sales/new` | لوحة التحكّم | `crud.ts` |
 | تقارير المشتريات والمبيعات حسب المختبر والصنف | `/reports/purchases` · `/reports/sales-by-lab` · `/reports/sales-by-product` | التقارير | — |
 
-صفحات خارج القائمة: `/login` (الدخول)، `/welcome` (الترحيب)، `/account` (الحساب وتغيير كلمة المرور)،
+صفحات خارج القائمة: `/login` (الدخول)، `/welcome` (الترحيب والمحطات ونافذة التفعيل)، `/licenses` (إدارة الرموز — لمالك البرنامج، بكلمة مرور خاصة)، `/account` (الحساب وتغيير كلمة المرور)،
 `/portal` (بوّابة الزبائن)، `/w/<قسم>` (مساحة عمل كل مجموعة)، وصفحات `new/` و`[id]/` تحت كل قائمة،
 و`[id]/print` للطباعة.
 
@@ -330,6 +330,8 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | **اختصارات يومية** | نسخ مستند (`src/lib/copy-docs.ts` · `components/desk/CopyLink.tsx`)، الاختيارات الأخيرة أولاً (`components/form/RecentOptions.tsx`)، تذكّر بحث القائمة (`components/desk/RememberSearch.tsx`)، الباركود في نقطة البيع |
 | **دفعة الكِتّ عند البيع** | `src/lib/kits.ts` · `actions/kits-hint.ts` · `components/form/KitHint.tsx` |
 | **المشاركة** | واتساب (`src/lib/whatsapp.ts` · `components/print/WhatsAppButton.tsx`)، المجموع بالعملتين في `DocumentSheet`، إكسل (`src/lib/xlsx.ts`) |
+| **رموز التفعيل والمحطات** | خادم الرموز (نسخة الويب على Vercel): صفحة `/licenses` لإنشاء رمز لكل شركة (عدد الحواسيب، الأيام، المحطات، الدفع، رسالة، قاعدة بيانات الشركة، نسخة احتياطية، تحقق بخطوتين) — `src/lib/license/core.ts` · `server.ts` · `/api/license` — على الحاسوب: `device.ts` (الترخيص في `_spir_license`، يُتحقق منه دون إنترنت، ويُحدَّث كل 6 ساعات) · `state.ts` · `modules.ts` (المحطات الخمس) · `company-db.ts` · نافذة التفعيل `components/license/LicensePanel.tsx` — الشرح في `docs/HOSTED-SETUP.md` (القسم 3) وتبويب «رمز التفعيل والمحطات» في التعليمات |
+| **صفحة الترحيب** | `src/app/welcome/page.tsx`: اسم الشركة وشعارها، المحطات بألوان المشروع، مكان البيانات، سطر التواصل والإصدار، ونافذة التفعيل فوقها |
 | **النسخة الثانية** | `src/lib/backup/copies.ts` (نقي: هل توجد نسخة حديثة في مكان آخر) · `copies-server.ts` — تنبيه في الجرس للمسؤول، وبند في قائمة «البداية» |
 | **خطوات البداية لشركة جديدة** | `src/lib/setup-checklist.ts` · `components/dashboard/SetupChecklist.tsx` (الصفحة الرئيسية، للمسؤول) |
 | **التحديثات** | الإصدارات: `.github/workflows/release.yml` (بعد نجاح CI على `main`: الوسم `build-N` والملف `spir-margin.zip` وفيه `version.json`) — في البرنامج: `src/lib/update/release.ts` (نقيّ) · `updates.ts` · `actions/updates.ts` · `components/settings/UpdatesPanel.tsx` · `/api/update/status` · الإشعار في `src/app/layout.tsx` — ويندوز: `scripts/windows/update.ps1` · `update-windows.cmd` — الويب: Vercel ينشر كل دمج في `main` |
@@ -475,6 +477,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | `0112_auto_update.sql` | Updates |
 | `0113_remote_access.sql` | Reaching the main computer from other computers |
 | `0114_arabic_search.sql` | Search that forgives Arabic spelling |
+| `0115_device_license.sql` | This computer's activation code |
 
 ## 8) الأمان
 
