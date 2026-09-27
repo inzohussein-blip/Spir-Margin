@@ -1,4 +1,6 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, ListFooter, type ListQuery } from "@/components/desk/ListPaging";
+import { ListSearch } from "@/components/desk/ListSearch";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -30,14 +32,16 @@ const purposeBadge: Record<string, string> = {
   transfer: "bg-violet-100 text-violet-700",
 };
 
-export default async function AssetMovementsPage() {
+export default async function AssetMovementsPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("asset_movements")
-    .select("id, movement_no, purpose, status, transaction_date, asset_movement_items(id)")
-    .order("transaction_date", { ascending: false });
+    .select("id, movement_no, purpose, status, transaction_date, asset_movement_items(id)", { count: "exact" }).search(["movement_no"], q)
+    .order("transaction_date", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
 
   return (
     <div className="space-y-6">
@@ -49,7 +53,8 @@ export default async function AssetMovementsPage() {
         </div>
       </div>
 
-      <Panel title={`${t(locale, "Movements")} (${rows.length})`}>
+      <Panel title={`${t(locale, "Movements")} (${total})`}>
+        <ListSearch basePath="/asset-movements" q={q} />
         {rows.length === 0 ? (
           <EmptyRow text={t(locale, "No movements yet — relocate devices between labs and warehouses")} />
         ) : (
@@ -103,6 +108,7 @@ export default async function AssetMovementsPage() {
             </table>
           </div>
         )}
+        <ListFooter basePath="/asset-movements" page={page} total={total} q={q} />
       </Panel>
     </div>
   );

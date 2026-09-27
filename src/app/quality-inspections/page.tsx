@@ -1,4 +1,6 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, ListFooter, type ListQuery } from "@/components/desk/ListPaging";
+import { ListSearch } from "@/components/desk/ListSearch";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -29,16 +31,21 @@ const statusBadge: Record<string, string> = {
   cancelled: "bg-orange-100 text-orange-700",
 };
 
-export default async function QualityInspectionsPage() {
+export default async function QualityInspectionsPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("quality_inspections")
-    .select("id, qi_no, report_date, inspection_type, status, inspected_by, products(name), quality_inspection_readings(id)")
-    .order("report_date", { ascending: false });
+    .select("id, qi_no, report_date, inspection_type, status, inspected_by, products(name), quality_inspection_readings(id)", { count: "exact" }).search(["qi_no", "inspected_by"], q)
+    .order("report_date", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
-  const accepted = rows.filter((r) => r.status === "accepted").length;
-  const rejected = rows.filter((r) => r.status === "rejected").length;
+  const total = count ?? rows.length;
+  // The cards count every inspection, not just this page.
+  const { data: allData } = await supabase.from("quality_inspections").select("status");
+  const all = (allData as { status: string }[]) ?? [];
+  const accepted = all.filter((r) => r.status === "accepted").length;
+  const rejected = all.filter((r) => r.status === "rejected").length;
 
   return (
     <div className="space-y-6">
@@ -50,10 +57,11 @@ export default async function QualityInspectionsPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label={t(locale, "Accepted")} value={String(accepted)} accent="green" />
         <StatCard label={t(locale, "Rejected")} value={String(rejected)} accent="brand" />
-        <StatCard label={t(locale, "Total")} value={String(rows.length)} accent="amber" />
+        <StatCard label={t(locale, "Total")} value={String(all.length)} accent="amber" />
       </div>
 
-      <Panel title={`${t(locale, "Inspections")} (${rows.length})`}>
+      <Panel title={`${t(locale, "Inspections")} (${total})`}>
+        <ListSearch basePath="/quality-inspections" q={q} />
         {rows.length === 0 ? (
           <EmptyRow text={t(locale, "No inspections yet — record incoming/outgoing QC for kits and devices")} />
         ) : (
@@ -107,6 +115,7 @@ export default async function QualityInspectionsPage() {
             </table>
           </div>
         )}
+        <ListFooter basePath="/quality-inspections" page={page} total={total} q={q} />
       </Panel>
     </div>
   );

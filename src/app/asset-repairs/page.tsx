@@ -1,4 +1,6 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, ListFooter, type ListQuery } from "@/components/desk/ListPaging";
+import { ListSearch } from "@/components/desk/ListSearch";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -28,16 +30,21 @@ const statusBadge: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
-export default async function AssetRepairsPage() {
+export default async function AssetRepairsPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("asset_repairs")
-    .select("id, repair_no, status, failure_date, completion_date, repair_cost, description, devices(asset_code, products(name))")
-    .order("failure_date", { ascending: false });
+    .select("id, repair_no, status, failure_date, completion_date, repair_cost, description, devices(asset_code, products(name))", { count: "exact" }).search(["repair_no", "description"], q)
+    .order("failure_date", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
-  const pending = rows.filter((r) => r.status === "pending").length;
-  const cost = rows.filter((r) => r.status === "completed").reduce((s, r) => s + Number(r.repair_cost), 0);
+  const total = count ?? rows.length;
+  // The cards cover every repair, not just this page.
+  const { data: allData } = await supabase.from("asset_repairs").select("status, repair_cost");
+  const all = (allData as { status: string; repair_cost: number }[]) ?? [];
+  const pending = all.filter((r) => r.status === "pending").length;
+  const cost = all.filter((r) => r.status === "completed").reduce((s, r) => s + Number(r.repair_cost), 0);
 
   return (
     <div className="space-y-6">
@@ -52,10 +59,11 @@ export default async function AssetRepairsPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label={t(locale, "Pending")} value={String(pending)} accent="amber" />
         <StatCard label={t(locale, "Completed cost")} value={cost.toLocaleString("en-US")} accent="green" />
-        <StatCard label={t(locale, "Total")} value={String(rows.length)} accent="brand" />
+        <StatCard label={t(locale, "Total")} value={String(all.length)} accent="brand" />
       </div>
 
-      <Panel title={`${t(locale, "Repairs")} (${rows.length})`}>
+      <Panel title={`${t(locale, "Repairs")} (${total})`}>
+        <ListSearch basePath="/asset-repairs" q={q} />
         {rows.length === 0 ? (
           <EmptyRow text={t(locale, "No repairs yet — raise a breakdown repair for a device")} />
         ) : (
@@ -110,6 +118,7 @@ export default async function AssetRepairsPage() {
             </table>
           </div>
         )}
+        <ListFooter basePath="/asset-repairs" page={page} total={total} q={q} />
       </Panel>
     </div>
   );

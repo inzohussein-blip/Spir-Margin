@@ -1,4 +1,5 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, type ListQuery } from "@/components/desk/ListPaging";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EmptyRow } from "@/components/dashboard/Panel";
@@ -25,17 +26,22 @@ interface Row {
   labs: { name: string } | null;
 }
 
-export default async function PaymentRequestsPage() {
+export default async function PaymentRequestsPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("payment_requests")
-    .select("id, request_no, posting_date, amount, status, sales_invoices:invoice_id(invoice_no), labs:lab_id(name)")
-    .order("posting_date", { ascending: false });
+    .select("id, request_no, posting_date, amount, status, sales_invoices:invoice_id(invoice_no), labs:lab_id(name)", { count: "exact" }).search(["request_no"], q)
+    .order("posting_date", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
-  const outstanding = rows.filter((r) => r.status === "draft" || r.status === "requested");
+  const total = count ?? rows.length;
+  // The cards cover every request, not just this page.
+  const { data: allData } = await supabase.from("payment_requests").select("status, amount");
+  const all = (allData as { status: string; amount: number }[]) ?? [];
+  const outstanding = all.filter((r) => r.status === "draft" || r.status === "requested");
   const requestedValue = outstanding.reduce((s, r) => s + Number(r.amount), 0);
-  const collected = rows.filter((r) => r.status === "paid").reduce((s, r) => s + Number(r.amount), 0);
+  const collected = all.filter((r) => r.status === "paid").reduce((s, r) => s + Number(r.amount), 0);
 
   return (
     <div className="space-y-6">
@@ -48,7 +54,8 @@ export default async function PaymentRequestsPage() {
       <ListShell
         title={t(locale, "Payment Requests")}
         breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Accounting") }]}
-        count={rows.length}
+        count={total}
+        paging={{ basePath: "/payment-requests", page, total, q }}
         newHref="/payment-requests/new"
         newLabel={t(locale, "New request")}
         actions={<Link href="/sales-invoices" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Sales invoices")}</Link>}

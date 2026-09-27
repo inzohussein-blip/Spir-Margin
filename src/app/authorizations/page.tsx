@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { listWindow, type ListQuery } from "@/components/desk/ListPaging";
 import { createClient } from "@/lib/supabase/server";
 import { ListShell } from "@/components/desk/ListShell";
 import { EmptyRow } from "@/components/dashboard/Panel";
@@ -15,21 +16,23 @@ interface Row {
   bearer_name: string; from_governorate: string; to_governorate: string;
 }
 
-export default async function AuthorizationsPage() {
+export default async function AuthorizationsPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("transport_authorizations")
-    .select("id, auth_no, issue_date, valid_to, status, bearer_name, from_governorate, to_governorate")
-    .order("issue_date", { ascending: false })
-    .limit(200);
+    .select("id, auth_no, issue_date, valid_to, status, bearer_name, from_governorate, to_governorate", { count: "exact" }).search(["auth_no", "bearer_name", "from_governorate", "to_governorate"], q)
+    .order("issue_date", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
   const today = localDate();
 
   return (
     <ListShell
       title={t(locale, "Transport authorisations")}
-      count={rows.length}
+      count={total}
+      paging={{ basePath: "/authorizations", page, total, q }}
       newHref="/authorizations/new"
       newLabel={t(locale, "New transport authorisation")}
     >

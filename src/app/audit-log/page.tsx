@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { listWindow, type ListQuery } from "@/components/desk/ListPaging";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { ListShell } from "@/components/desk/ListShell";
 import { EmptyRow } from "@/components/dashboard/Panel";
@@ -24,7 +25,7 @@ const ACTION_STYLE: Record<string, string> = {
 };
 const ACTION_LABEL: Record<string, string> = { INSERT: "إنشاء", UPDATE: "تعديل", DELETE: "حذف" };
 
-export default async function AuditLogPage() {
+export default async function AuditLogPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const me = await getCurrentUser();
   if (!me || me.role !== "admin") {
@@ -37,18 +38,20 @@ export default async function AuditLogPage() {
   }
 
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("audit_log")
-    .select("id, table_name, record_id, action, actor, changed_at, changed_fields")
-    .order("changed_at", { ascending: false })
-    .limit(300);
+    .select("id, table_name, record_id, action, actor, changed_at, changed_fields", { count: "exact" }).search(["table_name", "actor", "action"], q)
+    .order("changed_at", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
 
   return (
     <ListShell
       title={t(locale, "Audit Log")}
       breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Setup") }]}
-      count={rows.length}
+      count={total}
+      paging={{ basePath: "/audit-log", page, total, q }}
       filterPlaceholder={t(locale, "Filter by table / actor…")}
     >
       <div className="border-b border-outline-gray-1 bg-surface-gray-1 px-4 py-2 text-xs text-ink-gray-5">

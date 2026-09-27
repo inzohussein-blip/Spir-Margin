@@ -1,4 +1,5 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, type ListQuery } from "@/components/desk/ListPaging";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n-server";
@@ -29,20 +30,23 @@ const prioBadge: Record<string, string> = {
   Low: "bg-surface-gray-2 text-ink-gray-6",
 };
 
-export default async function IssuesPage() {
+export default async function IssuesPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("issues")
-    .select("id, issue_no, subject, status, priority, issue_type, opening_date, labs(name), devices(asset_code)")
-    .order("opening_date", { ascending: false });
+    .select("id, issue_no, subject, status, priority, issue_type, opening_date, labs(name), devices(asset_code)", { count: "exact" }).search(["issue_no", "subject"], q)
+    .order("opening_date", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
 
   return (
     <ListShell
       title={t(locale, "Support Issues")}
       breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Support") }]}
-      count={rows.length}
+      count={total}
+      paging={{ basePath: "/issues", page, total, q }}
       newHref="/issues/new"
       newLabel={t(locale, "New issue")}
     >

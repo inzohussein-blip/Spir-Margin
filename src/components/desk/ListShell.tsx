@@ -5,6 +5,9 @@ import { ListFilter } from "./ListFilter";
 import { ExportCsvButton } from "./ExportCsvButton";
 import { DensityToggle } from "./DensityToggle";
 import { ResponsiveTableLabels } from "./ResponsiveTableLabels";
+import { RememberSearch } from "./RememberSearch";
+import { ListFooter } from "./ListPaging";
+import { Suspense } from "react";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
 
@@ -24,6 +27,7 @@ export function ListShell({
   actions,
   filterable = true,
   filterPlaceholder,
+  paging,
   children,
 }: {
   title: string;
@@ -34,6 +38,12 @@ export function ListShell({
   actions?: ReactNode;
   filterable?: boolean;
   filterPlaceholder?: string;
+  /**
+   * A list that shows one page at a time: its search box searches the whole
+   * table on the server (?q=), and the pager sits under the table. Without it
+   * the box only filters the rows on screen.
+   */
+  paging?: { basePath: string; page: number; total: number; q?: string };
   children: ReactNode;
 }) {
   const locale = getLocale();
@@ -73,7 +83,19 @@ export function ListShell({
       <div className="overflow-hidden rounded-2xl border border-outline-gray-2 bg-surface-white shadow-sm">
         {filterable && (
           <div className="flex items-center justify-between gap-3 border-b border-outline-gray-1 bg-surface-gray-1/40 px-3 py-2">
-            <ListFilter placeholder={filterPlaceholder ?? `${t(locale, "Filter")}…`} />
+            {paging ? (
+              <form action={paging.basePath} method="get" className="flex min-w-0 flex-1 items-center gap-2" data-list-search>
+                <Suspense fallback={null}><RememberSearch basePath={paging.basePath} /></Suspense>
+                <input name="q" defaultValue={paging.q ?? ""} placeholder={filterPlaceholder ?? `${t(locale, "Search")}…`}
+                  className="w-full max-w-xs rounded-md border border-outline-gray-2 bg-surface-white px-3 py-1.5 text-sm text-ink-gray-8 placeholder:text-ink-gray-4 focus:border-brand focus:outline-none" />
+                <button className="rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark">{t(locale, "Search")}</button>
+                {paging.q ? (
+                  <a href={`${paging.basePath}?q=`} className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-6 hover:bg-surface-gray-1">{t(locale, "Clear")}</a>
+                ) : null}
+              </form>
+            ) : (
+              <ListFilter placeholder={filterPlaceholder ?? `${t(locale, "Filter")}…`} />
+            )}
             <div className="flex items-center gap-2">
               <DensityToggle />
               <ExportCsvButton title={title} label={t(locale, "Export")} />
@@ -81,6 +103,7 @@ export function ListShell({
           </div>
         )}
         <div data-desk-list className="overflow-x-auto">{children}</div>
+        {paging && <ListFooter basePath={paging.basePath} page={paging.page} total={paging.total} q={paging.q} />}
         <ResponsiveTableLabels />
       </div>
     </div>

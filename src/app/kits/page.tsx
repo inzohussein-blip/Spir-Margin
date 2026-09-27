@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { listWindow, type ListQuery } from "@/components/desk/ListPaging";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -18,23 +19,26 @@ interface KitRow {
   warehouses: { name: string } | null;
 }
 
-export default async function KitsPage() {
+export default async function KitsPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("kit_batches")
     .select(
       "id, batch_no, expiry_date, qty_available, buy_price, sell_price, products(name), warehouses(name)"
-    )
-    .order("expiry_date");
+    , { count: "exact" }).search(["batch_no"], q)
+    .order("expiry_date").range(from, to);
   const kits = (data as unknown as KitRow[]) ?? [];
+  const total = count ?? kits.length;
 
   const linkCls = "rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1";
   return (
     <ListShell
       title={t(locale, "Reagent Kits")}
       breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Stock") }]}
-      count={kits.length}
+      count={total}
+      paging={{ basePath: "/kits", page, total, q }}
       newHref="/kits/new"
       newLabel={t(locale, "New batch")}
       actions={

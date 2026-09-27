@@ -1,4 +1,6 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, ListFooter, type ListQuery } from "@/components/desk/ListPaging";
+import { ListSearch } from "@/components/desk/ListSearch";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -34,17 +36,22 @@ const typeBadge: Record<string, string> = {
   breakdown: "bg-red-100 text-red-700",
 };
 
-export default async function MaintenanceVisitsPage() {
+export default async function MaintenanceVisitsPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("maintenance_visits")
-    .select("id, visit_no, visit_date, maintenance_type, completion_status, status, service_person, labs(name), maintenance_visit_purposes(id)")
-    .order("visit_date", { ascending: false });
+    .select("id, visit_no, visit_date, maintenance_type, completion_status, status, service_person, labs(name), maintenance_visit_purposes(id)", { count: "exact" }).search(["visit_no", "service_person"], q)
+    .order("visit_date", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
-  const draft = rows.filter((r) => r.status === "draft").length;
-  const done = rows.filter((r) => r.status === "submitted").length;
-  const breakdowns = rows.filter((r) => r.maintenance_type === "breakdown").length;
+  const total = count ?? rows.length;
+  // The cards count every visit, not just this page.
+  const { data: allData } = await supabase.from("maintenance_visits").select("status, maintenance_type");
+  const all = (allData as { status: string; maintenance_type: string }[]) ?? [];
+  const draft = all.filter((r) => r.status === "draft").length;
+  const done = all.filter((r) => r.status === "submitted").length;
+  const breakdowns = all.filter((r) => r.maintenance_type === "breakdown").length;
 
   return (
     <div className="space-y-6">
@@ -62,7 +69,8 @@ export default async function MaintenanceVisitsPage() {
         <StatCard label={t(locale, "Breakdowns")} value={String(breakdowns)} accent="brand" />
       </div>
 
-      <Panel title={`${t(locale, "Visits")} (${rows.length})`}>
+      <Panel title={`${t(locale, "Visits")} (${total})`}>
+        <ListSearch basePath="/maintenance-visits" q={q} />
         {rows.length === 0 ? (
           <EmptyRow text={t(locale, "No maintenance visits yet — record a service call to a lab")} />
         ) : (
@@ -120,6 +128,7 @@ export default async function MaintenanceVisitsPage() {
             </table>
           </div>
         )}
+        <ListFooter basePath="/maintenance-visits" page={page} total={total} q={q} />
       </Panel>
     </div>
   );

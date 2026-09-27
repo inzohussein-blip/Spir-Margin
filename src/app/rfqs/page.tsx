@@ -1,4 +1,6 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, ListFooter, type ListQuery } from "@/components/desk/ListPaging";
+import { ListSearch } from "@/components/desk/ListSearch";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -25,14 +27,16 @@ const statusBadge: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
-export default async function RfqsPage() {
+export default async function RfqsPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("rfqs")
-    .select("id, rfq_no, transaction_date, status, rfq_items(id), rfq_suppliers(id, quote_status)")
-    .order("transaction_date", { ascending: false });
+    .select("id, rfq_no, transaction_date, status, rfq_items(id), rfq_suppliers(id, quote_status)", { count: "exact" }).search(["rfq_no"], q)
+    .order("transaction_date", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
 
   return (
     <div className="space-y-6">
@@ -44,7 +48,8 @@ export default async function RfqsPage() {
         </div>
       </div>
 
-      <Panel title={`${t(locale, "RFQs")} (${rows.length})`}>
+      <Panel title={`${t(locale, "RFQs")} (${total})`}>
+        <ListSearch basePath="/rfqs" q={q} />
         {rows.length === 0 ? (
           <EmptyRow text={t(locale, "No RFQs yet — ask several suppliers to quote the same items")} />
         ) : (
@@ -93,6 +98,7 @@ export default async function RfqsPage() {
             </table>
           </div>
         )}
+        <ListFooter basePath="/rfqs" page={page} total={total} q={q} />
       </Panel>
     </div>
   );

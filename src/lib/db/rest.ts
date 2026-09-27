@@ -180,11 +180,36 @@ function buildFields(meta: FkMeta, table: string, fields: Field[]): string {
   return parts.join(", ");
 }
 
+/**
+ * Most pages read with `const { data } = await …` and show an empty list when
+ * data is null — so a read that fails (a missing column after a botched
+ * update, a broken view) would look like "no records yet". Every failed read
+ * is therefore written to the server log and to the Error Monitor
+ * (app_errors), at most once a minute per table and error code.
+ */
+type ErrG = { __spirReadErrors?: Map<string, number> };
+async function noteFailedRead(db: { query: (sql: string, params?: unknown[]) => Promise<unknown> }, table: string, err: DbError) {
+  try {
+    const seen = ((globalThis as ErrG).__spirReadErrors ??= new Map());
+    const key = `${table}|${err.code ?? ""}`;
+    const now = Date.now();
+    if (now - (seen.get(key) ?? 0) < 60_000) return;
+    seen.set(key, now);
+    console.error(`[db] read of ${table} failed:`, err.code ?? "", err.message);
+    await db.query(
+      `insert into app_errors (severity, source, message, detail) values ('error', 'server', $1, $2)`,
+      [`Reading ${table} failed`.slice(0, 2000), `${err.code ?? ""} ${err.message}`.slice(0, 8000)],
+    );
+  } catch {
+    /* the monitor must never add a failure of its own */
+  }
+}
+
 // ---- builder ---------------------------------------------------------------
 
 interface Filter {
   col: string;
-  op: "eq" | "neq" | "in" | "gt" | "lt" | "gte" | "lte" | "is" | "ilike";
+  op: "eq" | "neq" | "in" | "gt" | "lt" | "gte" | "lte" | "is" | "ilike" | "search";
   val: unknown;
 }
 interface Order {
@@ -261,6 +286,16 @@ class Query implements PromiseLike<Result> {
   lte(col: string, val: unknown) { this.filters.push({ col, op: "lte", val }); return this; }
   is(col: string, val: unknown) { this.filters.push({ col, op: "is", val }); return this; }
   ilike(col: string, val: string) { this.filters.push({ col, op: "ilike", val }); return this; }
+  /**
+   * A list's search box: any of `cols` contains `term`, Arabic spelling
+   * variants forgiven (fn_ar_norm). No-op for an empty term. Not in supabase-js;
+   * the columns come from code, never from the request.
+   */
+  search(cols: string[], term: string | null | undefined) {
+    const v = String(term ?? "").trim();
+    if (v && cols.length) this.filters.push({ col: cols.join(","), op: "search", val: `%${v}%` });
+    return this;
+  }
   order(col: string, opts?: { ascending?: boolean; nullsFirst?: boolean }) {
     this.orders.push({ col, asc: opts?.ascending ?? true, nullsFirst: opts?.nullsFirst });
     return this;
@@ -291,6 +326,11 @@ class Query implements PromiseLike<Result> {
       }
       if (f.op === "is") {
         return `${q(f.col)} is ${f.val === null ? "null" : f.val ? "true" : "false"}`;
+      }
+      if (f.op === "search") {
+        params.push(f.val);
+        const n = params.length;
+        return "(" + f.col.split(",").map((c) => `fn_ar_norm(${q(c)}::text) like fn_ar_norm($${n})`).join(" or ") + ")";
       }
       if (f.op === "ilike") {
         // Arabic spelling variants forgiven on both sides (fn_ar_norm, 0114).
@@ -458,7 +498,9 @@ class Query implements PromiseLike<Result> {
       }
       return { data: rows, error: null, count };
     } catch (e) {
-      return { data: null, error: dbError(e) };
+      const err = dbError(e);
+      if (this.op === "select") void noteFailedRead(db, this.table, err);
+      return { data: null, error: err };
     }
   }
 

@@ -1,4 +1,5 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, ListFooter, type ListQuery } from "@/components/desk/ListPaging";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -22,14 +23,16 @@ const statusBadge: Record<string, string> = {
   expired: "bg-amber-100 text-amber-700",
 };
 
-export default async function SupplierQuotationsPage() {
+export default async function SupplierQuotationsPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("supplier_quotations")
-    .select("id, transaction_date, valid_till, status, total_amount, companies(name), supplier_quotation_items(id)")
-    .order("transaction_date", { ascending: false });
+    .select("id, transaction_date, valid_till, status, total_amount, companies(name), supplier_quotation_items(id)", { count: "exact" })
+    .order("transaction_date", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -39,7 +42,7 @@ export default async function SupplierQuotationsPage() {
           <Link href="/supplier-quotations/new" className="inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"><PlusIcon size={15} /> {t(locale, "New")}</Link>
         </div>
       </div>
-      <Panel title={`${t(locale, "Supplier Quotations")} (${rows.length})`}>
+      <Panel title={`${t(locale, "Supplier Quotations")} (${total})`}>
         {rows.length === 0 ? (
           <EmptyRow text={t(locale, "No supplier quotations — record a supplier's offer, then convert to a purchase")} />
         ) : (
@@ -74,6 +77,7 @@ export default async function SupplierQuotationsPage() {
             </table>
           </div>
         )}
+        <ListFooter basePath="/supplier-quotations" page={page} total={total} />
       </Panel>
     </div>
   );

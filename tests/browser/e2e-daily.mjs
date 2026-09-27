@@ -24,9 +24,13 @@ await p.locator('button[type="submit"]').last().click();
 await p.waitForURL((u) => !u.pathname.endsWith("/new"), { timeout: 60_000 }).catch(() => {});
 
 await p.goto(H + "/labs", { waitUntil: "networkidle" });
-await p.locator("[data-desk-shell] input").first().fill(`احمد الكندى ${stamp}`);
+// The labs list searches the whole table on the server (it shows one page at a time).
+await p.locator("form[data-list-search] input[name=q]").fill(`احمد الكندى ${stamp}`);
+await p.locator("form[data-list-search] button").click();
+await p.waitForURL(/q=/);
+await p.waitForLoadState("networkidle");
 const visible = await p.locator("[data-desk-list] tbody tr:not([hidden])").allInnerTexts();
-check("the list filter finds «أحمد الكندي» typed as «احمد الكندى»", visible.length === 1 && visible[0].includes(labName), visible.join(" | ").slice(0, 200));
+check("the list search finds «أحمد الكندي» typed as «احمد الكندى»", visible.length === 1 && visible[0].includes(labName), visible.join(" | ").slice(0, 200));
 
 await p.keyboard.press("Control+k");
 const palette = p.locator("[cmdk-input]");

@@ -1,4 +1,5 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, type ListQuery } from "@/components/desk/ListPaging";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EmptyRow } from "@/components/dashboard/Panel";
@@ -21,17 +22,19 @@ interface Row {
   labs: { name: string } | null;
 }
 
-export default async function OpportunitiesPage() {
+export default async function OpportunitiesPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const [{ data }, { data: summary }] = await Promise.all([
+  const { page, from, to, q } = listWindow(searchParams);
+  const [{ data, count }, { data: summary }] = await Promise.all([
     supabase
       .from("opportunities")
-      .select("id, title, status, sales_stage, opportunity_amount, probability, expected_closing, labs(name)")
-      .order("created_at", { ascending: false }),
+      .select("id, title, status, sales_stage, opportunity_amount, probability, expected_closing, labs(name)", { count: "exact" }).search(["title", "sales_stage"], q)
+      .order("created_at", { ascending: false }).range(from, to),
     supabase.from("v_pipeline_summary").select("*").single(),
   ]);
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
   const s = summary as { open_amount: number; weighted_amount: number; open_count: number; won_count: number } | null;
 
   return (
@@ -48,7 +51,8 @@ export default async function OpportunitiesPage() {
       <ListShell
         title={t(locale, "Opportunities")}
         breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "CRM") }]}
-        count={rows.length}
+        count={total}
+        paging={{ basePath: "/opportunities", page, total, q }}
         newHref="/opportunities/new"
         newLabel={t(locale, "New opportunity")}
         actions={<Link href="/sales-team" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Sales team")}</Link>}

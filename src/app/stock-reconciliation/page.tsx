@@ -1,4 +1,5 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, ListFooter, type ListQuery } from "@/components/desk/ListPaging";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -24,14 +25,16 @@ const statusBadge: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
-export default async function StockReconPage() {
+export default async function StockReconPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("stock_reconciliations")
-    .select("id, posting_date, status, notes, stock_reconciliation_items(id)")
-    .order("posting_date", { ascending: false });
+    .select("id, posting_date, status, notes, stock_reconciliation_items(id)", { count: "exact" })
+    .order("posting_date", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
 
   return (
     <div className="space-y-6">
@@ -42,7 +45,7 @@ export default async function StockReconPage() {
           <Link href="/stock-reconciliation/new" className="inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"><PlusIcon size={15} /> {t(locale, "New count")}</Link>
         </div>
       </div>
-      <Panel title={`${t(locale, "Counts")} (${rows.length})`}>
+      <Panel title={`${t(locale, "Counts")} (${total})`}>
         {rows.length === 0 ? (
           <EmptyRow text={t(locale, "No stock counts — reconcile kit batch quantities to a physical count")} />
         ) : (
@@ -84,6 +87,7 @@ export default async function StockReconPage() {
             </table>
           </div>
         )}
+        <ListFooter basePath="/stock-reconciliation" page={page} total={total} />
       </Panel>
     </div>
   );
