@@ -93,13 +93,13 @@ check("the cart says which kit batch goes out, and warns it expires soon",
 
 // ---------------------------------------------------------------- 5. a list's search comes back
 await p.goto(H + "/sales-invoices?q=SI", { waitUntil: "networkidle" });
-await p.goto(H + "/", { waitUntil: "networkidle" });
+await p.goto(H + "/station/all", { waitUntil: "networkidle" });
 await p.goto(H + "/sales-invoices", { waitUntil: "networkidle" });
 await p.waitForURL(/q=SI/, { timeout: 15_000 }).catch(() => {});
 check("returning to a list brings its last search back", new URL(p.url()).searchParams.get("q") === "SI", p.url());
 await p.getByRole("link", { name: "تفريغ" }).first().click();
 await p.waitForURL((u) => !u.searchParams.get("q"), { timeout: 15_000 }).catch(() => {});
-await p.goto(H + "/", { waitUntil: "networkidle" });
+await p.goto(H + "/station/all", { waitUntil: "networkidle" });
 await p.goto(H + "/sales-invoices", { waitUntil: "networkidle" });
 await p.waitForTimeout(1500);
 check("«Clear» clears it for good", !new URL(p.url()).searchParams.get("q"), p.url());
@@ -137,7 +137,7 @@ await p.fill('input[name="reorder_level"]', "5");
 await p.locator('button[type="submit"]').last().click();
 await p.waitForURL((u) => !u.pathname.endsWith("/new"), { timeout: 60_000 }).catch(() => {});
 
-await p.goto(H + "/", { waitUntil: "networkidle" });
+await p.goto(H + "/station/all", { waitUntil: "networkidle" });
 await p.locator('header button[title="الإشعارات"]').first().click().catch(() => {});
 await p.waitForTimeout(400);
 const bell = await p.locator("body").innerText();

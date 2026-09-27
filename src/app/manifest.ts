@@ -17,7 +17,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "مبيعات الأجهزة الطبية، ومتابعة المختبرات، ونقطة البيع، والحسابات المصرفية — يعمل على هذا الحاسوب بلا إنترنت.",
     lang: "ar",
     dir: "rtl",
-    start_url: "/",
+    start_url: "/welcome",
     scope: "/",
     display: "standalone",
     background_color: "#f4f5f8",

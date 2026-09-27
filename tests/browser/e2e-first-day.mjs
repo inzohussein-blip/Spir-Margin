@@ -74,7 +74,7 @@ check("overselling is refused in Arabic, with what is left", refusal,
   refusal ? "" : (await p.locator("aside").last().innerText()).replace(/\s+/g, " ").slice(0, 200));
 
 // 5. And it shows where the company will look for it.
-await p.goto(H + "/", { waitUntil: "networkidle" });
+await p.goto(H + "/station/all", { waitUntil: "networkidle" });
 const home = await p.locator("body").innerText();
 check("the dashboard renders after the first sale", !home.includes("حدث خطأ ما"));
 

@@ -7,16 +7,13 @@ const WORKER = "/offline-sw.js";
 /**
  * Installs the one service worker this app uses, and retires any other.
  *
- * `/offline-sw.js` does a single job: when the program on this computer does
- * not answer a full page load, it shows a page that explains and retries on
- * its own, instead of the browser's "site can't be reached". It caches no app
- * code, which is what made the earlier `/sw.js` unsafe: that one cached
- * `/_next/*` and HTML, so after an update it could answer with a chunk from
- * the previous build, the browser rejected it, and the user landed on the
- * error screen right after signing in.
+ * `/offline-sw.js` (see its header) keeps a copy of the pages a person opens
+ * and of their content-hashed code, and shows those copies — or a page that
+ * retries by itself — when the server cannot be reached. Pages always come
+ * from the server first; the copies are only for when it does not answer.
  *
- * So any registration that is not this worker — `/sw.js` included — is
- * removed, and this one is registered.
+ * Any registration that is not this worker — the retired `/sw.js` included —
+ * is removed, and this one is registered.
  */
 export function ServiceWorkerRegistrar() {
   useEffect(() => {

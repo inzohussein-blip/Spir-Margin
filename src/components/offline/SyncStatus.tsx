@@ -17,7 +17,9 @@ import { t } from "@/lib/i18n";
  */
 export function SyncStatus({ compact = false }: { compact?: boolean }) {
   const locale = useLocale();
-  const { online, pending, syncing, flush } = useOffline();
+  // What matters is whether the program answers — on an installed computer it
+  // runs right here, with or without the internet.
+  const { serverUp: online, pending, syncing, flush } = useOffline();
   const count = pending.length;
 
   return (

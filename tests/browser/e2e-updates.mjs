@@ -56,7 +56,7 @@ check("with the date it was published", text.includes("2026-09-24"));
 check("and when it last asked", text.includes("آخر تحقّق"));
 check("a computer that cannot update itself shows the steps instead", text.includes("الخطوات في التعليمات") && (await panel().getByRole("button", { name: "حدّث الآن" }).count()) === 0);
 
-await p.goto(H + "/", { waitUntil: "networkidle" });
+await p.goto(H + "/station/all", { waitUntil: "networkidle" });
 await p.locator('header button[title="الإشعارات"]').first().click().catch(() => {});
 await p.waitForTimeout(500);
 const bell = await p.locator("body").innerText();

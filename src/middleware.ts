@@ -13,7 +13,7 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/session";
 // have no account there.
 const PUBLIC_PATHS = [
   "/login", "/welcome", "/manifest.webmanifest", "/sw.js",
-  "/offline-sw.js", "/offline.html", "/licenses", "/api/license", "/verify",
+  "/offline-sw.js", "/offline.html", "/licenses", "/api/license", "/verify", "/api/ping",
 ];
 
 export async function middleware(req: NextRequest) {
@@ -24,12 +24,14 @@ export async function middleware(req: NextRequest) {
 
   const user = await verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
 
-  // Signed-in users have no reason to see the landing screen or the login page —
-  // unless it is to enter or renew this computer's activation code there.
-  const forLicense = isWelcome && (req.nextUrl.searchParams.has("activate") || req.nextUrl.searchParams.has("license"));
-  if (user && (pathname === "/login" || (isWelcome && !forLicense))) {
-    return NextResponse.redirect(new URL(user.role === "customer" ? "/portal" : "/", req.url));
+  // Signed in, the sign-in page leads on: to the page asked for, or to the
+  // main menu (the welcome page, which signed-in staff use to pick a station).
+  if (user && pathname === "/login") {
+    const next = req.nextUrl.searchParams.get("next") ?? "";
+    const safe = next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") && !next.startsWith("/login") ? next : "";
+    return NextResponse.redirect(new URL(user.role === "customer" ? "/portal" : safe || "/welcome", req.url));
   }
+  if (user?.role === "customer" && isWelcome) return NextResponse.redirect(new URL("/portal", req.url));
 
   // Everything else requires a session. A person opening a page is shown the
   // welcome screen first (the stations, then sign-in); anything else — an API
@@ -55,7 +57,30 @@ export async function middleware(req: NextRequest) {
   // Expose the path to the root layout so it can skip the app shell on /login.
   const headers = new Headers(req.headers);
   headers.set("x-pathname", pathname);
-  return NextResponse.next({ request: { headers } });
+  // Whose page this is: the offline worker keeps copies of a person's pages
+  // only for that person, and drops them when nobody is signed in.
+  const tag = (res: NextResponse) => { res.headers.set("x-spir-user", user ? user.id : "0"); return res; };
+
+  if (user && user.role !== "customer") {
+    // Opening the program (the desktop icon, a bookmark, the address typed)
+    // starts at the main menu, not in the middle of the dashboard: a full
+    // page load that no page led to (no Referer). Links inside the app are not
+    // affected — they carry the page they came from, or are not page loads at
+    // all (RSC). Sec-Fetch-Site would say the same, but the offline worker
+    // re-sends page loads as its own, which makes it "same-origin".
+    const fresh = req.method === "GET" && !req.headers.get("referer") && !req.headers.get("rsc")
+      && (req.headers.get("accept") ?? "").includes("text/html");
+    if (pathname === "/" && fresh) return tag(NextResponse.redirect(new URL("/welcome", req.url)));
+    // «The whole system»: the dashboard, with every section in the sidebar.
+    // (The station itself is remembered by the sidebar, in the browser: a
+    // cookie set here would also be set by Next's prefetch of every station
+    // card on the main menu.)
+    if (pathname === "/station/all") {
+      headers.set("x-pathname", "/");
+      return tag(NextResponse.rewrite(new URL("/", req.url), { request: { headers } }));
+    }
+  }
+  return tag(NextResponse.next({ request: { headers } }));
 }
 
 export const config = {

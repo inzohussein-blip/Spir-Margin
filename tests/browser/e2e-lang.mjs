@@ -66,7 +66,7 @@ check("html lang=ar dir=rtl", langDir[0] === "ar" && langDir[1] === "rtl", langD
 
 // Forcing the old English cookie must NOT switch the UI.
 await ctx.addCookies([{ name: "spir_locale", value: "en", url: H }]);
-await page.goto(H + "/", { waitUntil: "networkidle", timeout: 120000 });
+await page.goto(H + "/station/all", { waitUntil: "networkidle", timeout: 120000 });
 const forced = await page.evaluate(() => document.body.innerText);
 check("spir_locale=en is ignored, UI stays Arabic", forced.includes("لوحة التحكم"));
 check("still no Arabic-Indic digits with the en cookie", !ARABIC_INDIC.test(forced));

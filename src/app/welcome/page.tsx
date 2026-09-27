@@ -13,6 +13,8 @@ import { deviceState, deviceInfo, licenseTick } from "@/lib/license/device";
 import type { DeviceState } from "@/lib/license/state";
 import { LicensePanel } from "@/components/license/LicensePanel";
 import { PROVIDER_PHONE } from "@/lib/license/provider";
+import { readSession } from "@/lib/auth/current-user";
+import { logoutAction } from "@/app/actions/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -30,8 +32,17 @@ const ICONS: Record<string, LucideIcon> = {
  */
 export default async function WelcomePage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
   const locale = getLocale();
-  // A fresh answer from the codes server when it comes quickly; offline, the saved one.
-  await Promise.race([licenseTick().catch(() => undefined), new Promise((r) => setTimeout(r, 2500))]);
+  // A computer waiting for its code (or locked) waits briefly for a fresh answer
+  // from the codes server; one that runs asks in the background, so this page
+  // — the main menu — never waits on the network.
+  const before = await deviceState().catch(() => ({ kind: "off" }) as DeviceState);
+  if (before.kind === "need" || before.kind === "locked") {
+    await Promise.race([licenseTick().catch(() => undefined), new Promise((r) => setTimeout(r, 2500))]);
+  } else {
+    void licenseTick().catch(() => undefined);
+  }
+  const session = await readSession().catch(() => ({ user: null, ended: false }));
+  const me = session.ended ? null : session.user;
   const [synced, brand, license, info] = await Promise.all([
     isRemoteConfigured(),
     getBranding(),
@@ -45,7 +56,11 @@ export default async function WelcomePage({ searchParams }: { searchParams?: Rec
   const raw = typeof searchParams?.next === "string" ? searchParams.next : "";
   const licensed = license.kind === "ok";
   const next = raw.startsWith("/") && !raw.startsWith("//") && !raw.startsWith("/\\") && !raw.startsWith("/login") && !raw.startsWith("/welcome") ? raw : "";
-  const allHref = `/login?${[licensed ? "with=code" : "", next ? `next=${encodeURIComponent(next)}` : ""].filter(Boolean).join("&")}`.replace(/\?$/, "");
+  // Signed in, the cards lead straight in; signed out, through sign-in.
+  const allHref = me
+    ? next || "/station/all"
+    : `/login?${[licensed ? "with=code" : "", `next=${encodeURIComponent(next || "/station/all")}`].filter(Boolean).join("&")}`;
+  const stationHref = (id: string) => (me ? `/station/${id}` : `/login?next=${encodeURIComponent(`/station/${id}`)}`);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-surface-gray-1">
@@ -67,12 +82,20 @@ export default async function WelcomePage({ searchParams }: { searchParams?: Rec
               <div className="text-xs text-ink-gray-5">{brand.tagline || t(locale, "Medical-device sales, lab tracking & banking.")}</div>
             </div>
           </div>
+          <div className="flex flex-wrap items-center gap-2">
+          {me && (
+            <form action={logoutAction} className="flex items-center gap-2 rounded-full border border-outline-gray-2 bg-surface-white px-3 py-1 text-xs" data-testid="signed-in-as">
+              <span className="font-semibold text-ink-gray-8">{me.full_name || me.email}</span>
+              <button className="text-ink-gray-5 underline hover:text-red-600">{t(locale, "Sign out")}</button>
+            </form>
+          )}
           {license.kind === "ok" && (
             <Link href="/welcome?license=1" data-testid="license-chip"
               className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:border-emerald-400">
               <ShieldCheckIcon size={14} /> {license.company} · {t(locale, "until")} {new Date(license.until).toLocaleDateString("en-CA")}
             </Link>
           )}
+          </div>
         </div>
 
         {/* ── Headline ─────────────────────────────────────────────── */}
@@ -92,12 +115,14 @@ export default async function WelcomePage({ searchParams }: { searchParams?: Rec
               <div className="text-base font-bold">{t(locale, "The whole system")}</div>
             </div>
             <p className="mt-2 flex-1 text-xs leading-relaxed text-white/85">
-              {licensed
+              {me
+                ? t(locale, "The dashboard and every section, as your account allows.")
+                : licensed
                 ? t(locale, "Opens with your company's activation code. Inside, give each employee an account of their own.")
                 : t(locale, "The dashboard, the stations your code opens, reports, settings and sync — with your account.")}
             </p>
             <span className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-brand-dark">
-              {licensed ? <><KeyRoundIcon size={14} /> {t(locale, "Open with the code")}</> : <>{t(locale, "Sign in")} <ArrowLeftIcon size={14} /></>}
+              {me ? <>{t(locale, "Go in")} <ArrowLeftIcon size={14} /></> : licensed ? <><KeyRoundIcon size={14} /> {t(locale, "Open with the code")}</> : <>{t(locale, "Sign in")} <ArrowLeftIcon size={14} /></>}
             </span>
           </Link>
 
@@ -120,7 +145,7 @@ export default async function WelcomePage({ searchParams }: { searchParams?: Rec
             return closed ? (
               <div key={s.id} data-station={s.id} data-closed="1" aria-disabled="true" className={`${cls} pointer-events-none opacity-60 grayscale`}>{body}</div>
             ) : (
-              <Link key={s.id} data-station={s.id} href={`/login?next=${encodeURIComponent(s.href)}`} className={cls}>{body}</Link>
+              <Link key={s.id} data-station={s.id} href={stationHref(s.id)} className={cls}>{body}</Link>
             );
           })}
         </section>
