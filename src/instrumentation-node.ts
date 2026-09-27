@@ -2,7 +2,6 @@ import { applyServerSetting } from "@/lib/sync/lan";
 import { consumeResetFile } from "@/lib/auth/builtin";
 import { backupTick } from "@/lib/backup/auto";
 import { pruneStandalone, runSync, upstream } from "@/lib/sync/engine";
-import { updateTick } from "@/lib/update/updates";
 import { licenseTick } from "@/lib/license/device";
 import { applyGatewaySetting } from "@/lib/remote/gateway";
 
@@ -36,9 +35,6 @@ if (!G.__spirBackground) {
   setInterval(() => {
     // Automatic backups (Settings): runs if the schedule says one is due.
     backupTick().catch((e) => console.error("[backup] tick failed:", (e as Error).message));
-    // New releases: asked for a few times a day; installed at the chosen
-    // hour if automatic updates are on (Settings → Updates).
-    updateTick().catch((e) => console.error("[update] tick failed:", (e as Error).message));
     // The activation code: asked about a few times a day, refreshed when due.
     licenseTick().catch((e) => console.error("[license] tick failed:", (e as Error).message));
     upstream()

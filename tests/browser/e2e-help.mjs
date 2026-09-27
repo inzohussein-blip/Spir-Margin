@@ -17,7 +17,6 @@ p.on("pageerror", (e) => errs.push(String(e).slice(0, 140)));
 const TABS = [
   ["features", "الخواص"],
   ["start", "البدء السريع"],
-  ["install", "التثبيت على ويندوز"],
   ["settings", "الإعدادات"],
   ["offline", "العمل دون إنترنت والمزامنة"],
   ["activation", "رمز التفعيل والمحطات"],

@@ -7,7 +7,8 @@
 - **التقنية:** Next.js 14 (App Router) + Tailwind CSS.
 - **قاعدة البيانات:** Postgres مدمج (PGlite) على كل حاسوب — لا خادم خارجي ولا إعداد.
 - **المزامنة:** بين حواسيب المكتب عبر الشبكة المحلية، وبين الفروع عبر قاعدة مستضافة (Supabase).
-- **التثبيت:** نقرة مزدوجة على `install-windows.cmd` في ويندوز (وسكربت systemd في لينكس).
+- **النشر:** نسخة الويب على Vercel (كل دمج في `main` يُنشر وحده)، وتطبيق الويب `/app` يعمل داخل المتصفح بلا إنترنت بعد أول فتح.
+- **نسخة ويندوز (البرنامج المثبَّت) مغلقة ومؤرشفة** في [`windows-archive/`](./windows-archive/README.md): لا تُبنى ولا تُختبر ولا تصدر لها إصدارات، ومحفوظة كما هي لاستخدامها لاحقاً.
 
 > ملف [`CLAUDE.md`](./CLAUDE.md) هو الخريطة نفسها مختصرةً بالإنجليزية لمساعد البرمجة Claude.
 > هذا الملف هو الشرح المفصّل.
@@ -71,21 +72,16 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | `DATABASE_URL` | اختياري: قاعدة مستضافة للمزامنة (يُفضَّل ضبطها من صفحة المزامنة بدلاً من هذا) |
 | `SPIR_TIMEZONE` | اختياري: المنطقة الزمنية (الافتراضي منطقة الحاسوب، ثم Asia/Baghdad) |
 | `PGLITE_DATA_DIR` | اختياري: مكان القاعدة المحلية (`memory` = في الذاكرة) |
-| `SPIR_UPDATES` | اختياري: `off` يوقف السؤال التلقائي عن الإصدارات الجديدة |
-| `SPIR_UPDATE_REPO` / `SPIR_UPDATE_API` | اختياري: مستودع الإصدارات (الافتراضي `inzohussein-blip/Spir-Margin`) وعنوان واجهة GitHub (تستبدله الاختبارات) |
 
 ## 3) خريطة المجلّدات
 
 ```
 .
 ├── CLAUDE.md                    خريطة المشروع لمساعد البرمجة (إنجليزية)
-├── install-windows.cmd          مثبِّت ويندوز (يستدعي scripts/windows/install.ps1)
-├── update-windows.cmd           تحديث ويندوز إلى أحدث إصدار (يستدعي scripts/windows/update.ps1)
-├── docs/                        INSTALL · WINDOWS-TRIAL · HOSTED-SETUP · DEPLOYMENT · ERPNEXT-PARITY
+├── windows-archive/             نسخة ويندوز مغلقة: المثبّت، المحدِّث، الإصدارات، وثائقها واختباراتها (لا تُبنى ولا تُختبر)
+├── docs/                        MAP · FILES · HOSTED-SETUP · DEPLOYMENT · ERPNEXT-PARITY
 ├── public/                      الأيقونات، offline-sw.js، offline.html
 ├── scripts/
-│   ├── windows/                 install.ps1 · update.ps1 · run-server.cmd · run-hidden.vbs · open-app.vbs
-│   ├── service/                 install-linux.sh + قالب systemd
 │   ├── test-browser.mjs         مشغّل اختبارات المتصفّح
 │   ├── build-schema.mjs         يبني supabase/schema.sql من الـ migrations
 │   └── verify-admin.mjs         فحص دخول حساب على القاعدة المستضافة (سير عمل يدوي)
@@ -102,7 +98,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 │   │   ├── page.tsx             لوحة التحكّم
 │   │   ├── <قسم>/               صفحة لكل قسم: page.tsx (القائمة)، new/ (إضافة)، [id]/ (تفاصيل)
 │   │   ├── actions/             الإجراءات (Server Actions) — ملف لكل مجال
-│   │   ├── api/                 backup (تنزيل نسخة)، backup/file، attachments، update/status
+│   │   ├── api/                 backup (تنزيل نسخة)، backup/file، attachments، license، cloud
 │   │   ├── <قائمة>/export/      تصدير CSV من الخادم (فواتير، أوامر، عقود، أجهزة…)
 │   │   ├── <مستند>/[id]/print/  صفحة الطباعة (عرض سعر، أمر بيع، فاتورة، أمر شراء، طلب بيع، تصريح نقل)
 │   │   ├── login/ welcome/ account/ portal/ pos/ help/ sync/ settings/ …
@@ -121,7 +117,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 │       ├── sync/                core (الخوارزمية) · engine · lan (شبكة المكتب) · seal (التشفير) · code (رموز المزامنة)
 │       ├── backup/              auto.ts (النسخ التلقائي) · schedule.ts (المواعيد) · copies.ts (النسخة الثانية)
 │       ├── remote/              gateway.ts (بوّابة الأجهزة الأخرى) · tokens.ts · devices.ts · request.ts
-│       ├── update/              release.ts · updates.ts (التحديثات)
+│       ├── version.ts           رقم الإصدار من version.json إن وُجد
 │       ├── text/arabic.ts       توحيد الكتابة العربية للبحث (مثل fn_ar_norm)
 │       ├── features.ts          تفعيل/تعطيل/إخفاء الأقسام وصلاحيات كل مستخدم
 │       ├── branding.ts          هوية الشركة على المطبوعات
@@ -303,7 +299,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | --- | --- | --- |
 | Masters — البيانات الأساسية | `/masters` | `masters.ts` |
 | Users — المستخدمون | `/users` | `users.ts` |
-| Settings — الإعدادات | `/settings` | `autobackup.ts`, `backup.ts`, `branding.ts`, `builtin.ts`, `settings.ts`, `updates.ts` |
+| Settings — الإعدادات | `/settings` | `autobackup.ts`, `backup.ts`, `branding.ts`, `builtin.ts`, `settings.ts` |
 | Audit Log — سجل التدقيق | `/audit-log` | — |
 | Sync — المزامنة | `/sync` | `links.ts`, `peer.ts`, `remote.ts`, `sync.ts` |
 | Instructions — تعليمات | `/help` | — |
@@ -354,7 +350,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | **البنوك والتسوية** | `/banking` · `components/banking/` · `actions/banking.ts` · `src/lib/banking.ts` |
 | **بوّابة الزبائن** | `/portal` · `actions/portal.ts` · `createPortalClient()` |
 | **التعليمات** | `src/app/help/page.tsx` · `components/help/topics.tsx` (كل النصوص) · `parts.tsx` |
-| **المثبِّت** | `install-windows.cmd` · `scripts/windows/` · `scripts/service/install-linux.sh` · `docs/INSTALL.md` |
+| **المثبِّت (مؤرشف)** | في `windows-archive/`: `install-windows.cmd` · `scripts/windows/` · `scripts/service/install-linux.sh` · `docs/INSTALL.md` — مغلق |
 | **الوصول من الأجهزة الأخرى** | بوّابة على المنفذ 3300 (متوقّفة افتراضياً، يشغّلها المسؤول من صفحة المزامنة): `src/lib/remote/gateway.ts` · `tokens.ts` · `devices.ts` · `request.ts` · `actions/remote.ts` · `components/sync/RemoteAccessPanel.tsx` — ربط كل متصفّح برمز لمرة واحدة، ورمز مزامنة خاص لكل حاسوب، وقطع أيّ جهاز وحده. الحساب الثابت لا يعمل من جهاز آخر |
 | **بحث عربي** | `fn_ar_norm` (الـ migration 0114) و`src/lib/text/arabic.ts`: الهمزات، ة/ه، ى/ي، التشكيل، الأرقام الهندية — في شريط البحث وكل القوائم |
 | **اختصارات يومية** | نسخ مستند (`src/lib/copy-docs.ts` · `components/desk/CopyLink.tsx`)، الاختيارات الأخيرة أولاً (`components/form/RecentOptions.tsx`)، تذكّر بحث القائمة (`components/desk/RememberSearch.tsx`)، الباركود في نقطة البيع |
@@ -374,7 +370,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | **صفحة الترحيب** | `src/app/welcome/page.tsx`: اسم الشركة وشعارها، المحطات بألوان المشروع، مكان البيانات، سطر التواصل والإصدار، ونافذة التفعيل فوقها. البطاقات: «النظام كاملاً» أولاً (على حاسوب مفعَّل يُفتح برمز التفعيل نفسه بصلاحية المدير، ومنه تُنشأ حسابات الموظفين)، ثم المحطات، ثلاث في كل صف؛ ورقم المزوّد 07803993585 أسفل الصفحة. تظهر قبل نافذة الدخول: من لم يسجّل دخوله يرى الترحيب أولاً (`/welcome?next=…`) ثم يدخل من محطة أو «النظام كاملاً»، والخروج يعود إليها |
 | **النسخة الثانية** | `src/lib/backup/copies.ts` (نقي: هل توجد نسخة حديثة في مكان آخر) · `copies-server.ts` — تنبيه في الجرس للمسؤول، وبند في قائمة «البداية» |
 | **خطوات البداية لشركة جديدة** | `src/lib/setup-checklist.ts` · `components/dashboard/SetupChecklist.tsx` (الصفحة الرئيسية، للمسؤول) |
-| **التحديثات** | الإصدارات: `.github/workflows/release.yml` (بعد نجاح CI على `main`: الوسم `build-N` والملف `spir-margin.zip` وفيه `version.json`) — في البرنامج: `src/lib/update/release.ts` (نقيّ) · `updates.ts` · `actions/updates.ts` · `components/settings/UpdatesPanel.tsx` · `/api/update/status` · الإشعار في `src/app/layout.tsx` — ويندوز: `scripts/windows/update.ps1` · `update-windows.cmd` — الويب: Vercel ينشر كل دمج في `main` |
+| **التحديثات** | الويب: Vercel ينشر كل دمج في `main`، وتطبيق الويب ينزّل النسخة الجديدة في الخلفية (`public/offline-sw.js` · `components/local/AppInstall.tsx`). تحديثات ويندوز (الإصدارات `build-N`، لوحة «التحديثات»، `update.ps1`) مؤرشفة في `windows-archive/` |
 
 ## 6) المزامنة بالتفصيل
 
@@ -514,7 +510,7 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 | `0109_builtin_password.sql` | The built-in account's password can be changed |
 | `0110_auto_backup.sql` | Automatic backups |
 | `0111_sync_renames.sql` | Two computers, one code |
-| `0112_auto_update.sql` | Updates |
+| `0112_auto_update.sql` | Updates (نسخة ويندوز، مؤرشفة) |
 | `0113_remote_access.sql` | Reaching the main computer from other computers |
 | `0114_arabic_search.sql` | Search that forgives Arabic spelling |
 | `0115_device_license.sql` | This computer's activation code |
@@ -547,8 +543,9 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 
 | الملف | المحتوى |
 | --- | --- |
-| [`docs/INSTALL.md`](./docs/INSTALL.md) | تثبيت ويندوز ولينكس، التحديث، النقل، ربط الحواسيب |
-| [`docs/WINDOWS-TRIAL.md`](./docs/WINDOWS-TRIAL.md) | قائمة فحص لتجربة البرنامج على حواسيب حقيقية: التثبيت، الحاسوب الثاني، الهاتف عبر Tailscale، التحديث |
+| [`docs/MAP.md`](./docs/MAP.md) | خريطة المشروع: كل خاصية وأين ملفاتها، ومسار البيانات في كل جزء |
+| [`docs/FILES.md`](./docs/FILES.md) | مولَّد (`npm run map`): كل ملف مصدر بسطر يشرحه |
+| [`windows-archive/README.md`](./windows-archive/README.md) | نسخة ويندوز المغلقة: ما فيها، ومن أين جاءت، وكيف تُعاد |
 | [`docs/HOSTED-SETUP.md`](./docs/HOSTED-SETUP.md) | القاعدة المستضافة (Supabase) والنسخة التجريبية على Vercel |
 | [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) | متغيّرات البيئة والنشر |
 | [`docs/ERPNEXT-PARITY.md`](./docs/ERPNEXT-PARITY.md) | مقابلة خواص ERPNext بما في البرنامج |
@@ -564,4 +561,4 @@ node scripts/test-browser.mjs [filter]   # اختبارات المتصفّح (~3
 4. البرنامج مغلق أمام الشبكة؛ لا يُفتح عبرها إلا باب المزامنة المشفّر (3310)، وبوّابة الأجهزة الأخرى (3300) إذا شغّلها المسؤول، وكل متصفّح فيها يُربط برمز لمرة واحدة.
 5. كل migration تُختبر بـ `npm test`، وكل تغيير في الواجهة باختبارات المتصفّح.
 6. أيّ زر أو نموذج يفشل يقول السبب بالعربية: أزرار الصفوف داخل `ValidatedForm`، والنماذج تعرض الخطأ بـ `SaveError`، ورسائل قاعدة البيانات تُترجم في `rest.ts` و`errors.ts`. القيم المخزّنة مثل `spare_part` تُعرض عبر `tValue`.
-7. الدمج في `main` يتمّ مباشرة بعد نجاح الفحص (CI) دون سؤال المالك، ولا يُدفع شيء إلى `main` مباشرة لأن كل دمج يصير تحديثاً لحواسيب ويندوز.
+7. الدمج في `main` يتمّ مباشرة بعد نجاح الفحص (CI) دون سؤال المالك، ولا يُدفع شيء إلى `main` مباشرة لأن كل دمج يُنشر على Vercel ويصل كل متصفح.

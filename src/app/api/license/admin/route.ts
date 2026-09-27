@@ -7,7 +7,7 @@ import type { LicenseAction } from "@/lib/license/core";
 import { passwordMatches, startOwnerSession, endOwnerSession, isOwner, ipOf } from "@/lib/license/owner";
 import { isTransactionPooler } from "@/lib/db/pglite";
 import { databaseHost, probeDatabase } from "@/lib/db/probe";
-import { currentBuild } from "@/lib/update/updates";
+import { currentBuild } from "@/lib/version";
 
 /** The owner's endpoints for the code manager (/licenses). */
 export const dynamic = "force-dynamic";

@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 /**
  * Instructions (تعليمات), under Setup.
  *
- * Each tab is its own address (/help?tab=install), so another page can point
+ * Each tab is its own address (/help?tab=offline), so another page can point
  * straight at the part that answers its question — Settings links to the
  * settings tab — and the tabs work as plain links, with no script needed.
  */

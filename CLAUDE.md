@@ -9,8 +9,10 @@ is in `README.md`.
 A medical-device / lab-supplies business app (sales, purchasing, stock, kits
 with expiry, installed devices, maintenance, banking, reports) for **one company
 in Iraq**. Next.js 14 App Router + an **embedded Postgres (PGlite)** on each
-computer. Installed on Windows PCs with `install-windows.cmd`. Computers sync with
-each other (office network) and with a hosted Supabase Postgres (branches).
+computer. **Web first:** Vercel deploys `main`; the web app `/app` runs the whole program in the
+browser (its own PGlite) and syncs with the company database. The installed Windows version is
+**closed** in `windows-archive/` (not built, tested or released; kept as it is for later — see its
+README). Computers still sync with each other (office network) and with a hosted Postgres.
 
 ## Non-negotiable rules
 
@@ -27,7 +29,7 @@ each other (office network) and with a hosted Supabase Postgres (branches).
 - Commit messages end with the attribution lines the session gives. No model names.
 - **Merging: the owner does not want to be asked.** Work on the session branch, open a PR, and merge it
   into `main` yourself (squash) as soon as CI passes — no approval step. Never push straight to `main`:
-  every change to `main` becomes a release that Windows computers install, so it must pass CI first.
+  every change to `main` is deployed by Vercel to every browser, so it must pass CI first.
   A red CI is fixed, never merged. Still ask before anything destructive to data or the hosted DB.
 
 ## Commands
@@ -107,8 +109,8 @@ browser ── Next.js (127.0.0.1:3000) ── pages (RSC) + server actions
 | Long lists | every list that grows (labs, products, suppliers, appointments, issues, visits, entries, receipts, orders, audit log…) shows one page (`PAGE_SIZE` 50): `listWindow(searchParams)` + `ListFooter` (`components/desk/ListPaging.tsx`), `.select(…, { count: "exact" }).search([cols], q).range(from, to)` — `search()` in `rest.ts` (any column contains the term, `fn_ar_norm` on both sides). `ListShell paging={…}` swaps its on-screen filter for that server search; Panel lists use `ListSearch`. Stat cards over a whole table read a light status-only query, never the page. The dashboard reads counts and light sums, not whole tables. Measured with 3000 rows each: /labs 4.3 s·4.9 MB → 0.2 s·139 KB |
 | Customer portal | `/portal`, `actions/portal.ts`, `createPortalClient()` |
 | Instructions (تعليمات) | `src/app/help/page.tsx`, `components/help/topics.tsx` (content), `parts.tsx` |
-| Installer (Windows) | `install-windows.cmd` → `scripts/windows/install.ps1` (PS 5.1, UTF-8 BOM, CRLF), `run-server.cmd`, `run-hidden.vbs`, `open-app.vbs` (UTF-16); Linux: `scripts/service/install-linux.sh` |
-| Updates | releases: `.github/workflows/release.yml` (after CI passes on main: tag `build-N`, asset `spir-margin.zip` with `version.json`); app: `src/lib/update/release.ts` (pure), `updates.ts` (check every 6 h, `startUpdate`, `updateTick`), `actions/updates.ts`, `components/settings/UpdatesPanel.tsx`, `/api/update/status`, bell notice in `layout.tsx`; Windows: `scripts/windows/update.ps1` (stage in `updates/stage-N`, build, stop, rename-swap, health check, rollback) + `update-windows.cmd`; web: Vercel deploys main |
+| Installer (Windows) — **archived** | `windows-archive/` (closed: excluded from `tsconfig.json`, tests and workflows): `install-windows.cmd` → `scripts/windows/install.ps1`, `run-server.cmd`, `run-hidden.vbs`, `open-app.vbs`; Linux `scripts/service/`; `docs/INSTALL.md`, `WINDOWS-TRIAL.md`; restore steps in its README. Never reference it from `src/` |
+| Updates | web: Vercel deploys `main`; the web app downloads a new release in the background (`public/offline-sw.js`, `AppInstall.tsx`). The Windows release pipeline (`release.yml`), in-app updater (`src/lib/update/*`, `UpdatesPanel`, `/api/update/status`) and `update.ps1` are archived in `windows-archive/`; `src/lib/version.ts` still reads `version.json` if present |
 | Workspace pages per group | `src/app/w/[slug]` |
 
 ## Pages (route → server-action files in `src/app/actions/`)
@@ -130,7 +132,7 @@ browser ── Next.js (127.0.0.1:3000) ── pages (RSC) + server actions
 - **Cold chain** (التبريد والمعايرة): `/cold-chain/temperatures` Temperatures [coldchain] (+ `/[unit]?month=` printable month sheet); `/cold-chain/units` Fridges & stores [coldchain]; `/cold-chain/equipment` Instruments & calibration [coldchain] (+ `/[id]` tasks and log)
 - **Guides** (الأدلة والتدريب): `/guides` Guides [guides] (+ `/new`, `/[id]` printable SOP with attachments, `/[id]/edit`); `/guides/quiz` Quiz [guides]; `/guides/trainees` Trainees [guides]
 - **Monitoring** (المراقبة): `/monitoring/errors` Error Monitor [monitoring]; `/monitoring/changes` Change & Deletion Log; `/monitoring/sync` Sync Health [monitoring, pos, selling, sync]
-- **Setup** (الإعداد): `/masters` Masters [masters]; `/users` Users [users]; `/settings` Settings [autobackup, backup, branding, builtin, settings, updates]; `/audit-log` Audit Log; `/sync` Sync [links, peer, remote, sync]; `/help` Instructions
+- **Setup** (الإعداد): `/masters` Masters [masters]; `/users` Users [users]; `/settings` Settings [autobackup, backup, branding, builtin, settings]; `/audit-log` Audit Log; `/sync` Sync [links, peer, remote, sync]; `/help` Instructions
 
 Reached from another page, not the menu (parent in brackets):
 `/journal-entries` [journal] and `/taxes` [tax] and `/cost-centers` (read only) — from `/accounts`;
@@ -144,7 +146,7 @@ Also outside the menu: `/app` (the web app, hash-routed, runs on the browser's o
 purchase-orders, sale-requests through `components/print/DocumentSheet.tsx`; authorizations through `AuthorizationSheet.tsx`).
 
 Route handlers (no page): `/api/backup` (download a backup), `/api/backup/file` (an automatic backup by name),
-`/api/attachments/[id]`, `/api/update/status`, `/login/expired`, and CSV exports `/<list>/export` for
+`/api/attachments/[id]`, `/login/expired`, and CSV exports `/<list>/export` for
 sales-orders, sales-invoices, sales-returns, quotations, purchases, journal-entries, delivery-notes, contracts,
 serials, devices.
 
@@ -206,7 +208,7 @@ instrumentation and the tests; a file nothing reaches, and a dependency nothing 
   inputs (logo first); `role="alert"` also matches Next's empty route announcer;
   a click before hydration is lost — retry or wait.
 - `pkill -f next` also kills your own shell; find PIDs with `ps` + `awk`.
-- `.ps1` must stay UTF-8 **with BOM** + CRLF; `.vbs` with Arabic must be UTF-16 (`tests/windows-installer.test.mjs`).
+- (archived Windows files) `.ps1` must stay UTF-8 **with BOM** + CRLF; `.vbs` with Arabic must be UTF-16 — `.gitattributes` keeps them intact.
 - Restore must never delete data before the file is proven valid (it is opened in memory first).
 - Next names itself `localhost:PORT` in redirects; the gateway rewrites those to relative
   paths (`ownAddressToPath`) or remote devices are sent to their own localhost.
@@ -244,7 +246,7 @@ instrumentation and the tests; a file nothing reaches, and a dependency nothing 
   listed for `prepare` (engine files come from `local.json` `files`) or it will be missing offline. Relaxed durability
   means "the query answered" is not "it is on disk": never keep a flag outside the database that claims a write
   (the schema check reads `_spir_migrations`).
-- An update must never move `.pglite-data`, `.env.local`, `backups`, `logs` or `updates` (`$Keep` in
+- (archived updater) An update must never move `.pglite-data`, `.env.local`, `backups`, `logs` or `updates` (`$Keep` in
   `update.ps1`); the build in the stage folder writes its own `.env.local` and `.pglite-data` — never swap them in.
 
 ## Tests
@@ -268,6 +270,6 @@ instrumentation and the tests; a file nothing reaches, and a dependency nothing 
 
 ## Docs
 
-`docs/INSTALL.md` (Windows/Linux install, Arabic) · `docs/WINDOWS-TRIAL.md` (real-machine checklist) · `docs/HOSTED-SETUP.md` (Supabase +
+`windows-archive/README.md` (the closed Windows version) · `docs/HOSTED-SETUP.md` (Supabase +
 Vercel demo) · `docs/DEPLOYMENT.md` · `supabase/migrations/README.md` (migration rules) ·
 `tests/browser/README.md`.
