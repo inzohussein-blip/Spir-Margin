@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { createPgRestClient } from "@/lib/db/rest";
+import { deviceLocked } from "@/lib/license/device";
 import { SESSION_COOKIE, verifySessionToken, type SessionUser } from "@/lib/auth/session";
 import { isSessionCurrent } from "@/lib/auth/revocation";
 
@@ -67,6 +68,11 @@ function guardFor(audience: Audience) {
     const user = await requester();
     if (user === "background") return;
     if (!user) throw new AccessDenied();
+    // A computer waiting for its activation code, or locked, serves no data to
+    // anyone signed in — pages already send them to the welcome screen; this
+    // closes the actions of a page that was open before. Background work (sync)
+    // carries on, so nothing recorded is lost.
+    if (await deviceLocked()) throw new AccessDenied("This computer is locked. Enter the activation code on the welcome page.");
     if (audience === "staff" && user.role === "customer") {
       throw new AccessDenied("Not available from the customer portal");
     }

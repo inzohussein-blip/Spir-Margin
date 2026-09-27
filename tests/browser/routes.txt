@@ -40,6 +40,7 @@
 /devices
 /devices/new
 /help
+/help?tab=activation
 /help?tab=backup
 /help?tab=install
 /help?tab=offline
@@ -62,6 +63,7 @@
 /landed-costs/new
 /leads
 /leads/new
+/licenses
 /login
 /maintenance-board
 /maintenance-forecast

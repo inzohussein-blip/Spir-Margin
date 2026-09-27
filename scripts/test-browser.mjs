@@ -59,6 +59,9 @@ const server = spawn("npm", ["start"], {
     SPIR_SEED: "demo",
     SPIR_UPDATE_API: "http://127.0.0.1:3396",
     SPIR_UPDATE_REPO: "acme/spir",
+    // Activation codes off on this server whatever the build's default:
+    // e2e-license.mjs starts servers of its own for them.
+    SPIR_LICENSE_SERVER: "",
     ...process.env,
     PORT: String(PORT),
     PGLITE_DATA_DIR: dataDir,

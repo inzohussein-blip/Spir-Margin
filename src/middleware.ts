@@ -8,9 +8,12 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/session";
 // 404 cleanly is what makes them drop the registration; redirecting it into the
 // app would keep a dead worker alive. `/offline-sw.js` and the page it shows
 // when the program is not running must load for anyone, signed in or not.
+// `/licenses` and `/api/license` are the codes server: the owner's page has a
+// sign-in of its own (LICENSE_ADMIN_PASSWORD), and computers activating a code
+// have no account there.
 const PUBLIC_PATHS = [
   "/login", "/welcome", "/manifest.webmanifest", "/sw.js",
-  "/offline-sw.js", "/offline.html",
+  "/offline-sw.js", "/offline.html", "/licenses", "/api/license",
 ];
 
 export async function middleware(req: NextRequest) {
@@ -21,8 +24,10 @@ export async function middleware(req: NextRequest) {
 
   const user = await verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
 
-  // Signed-in users have no reason to see the landing screen or the login page.
-  if (user && (pathname === "/login" || isWelcome)) {
+  // Signed-in users have no reason to see the landing screen or the login page —
+  // unless it is to enter or renew this computer's activation code there.
+  const forLicense = isWelcome && (req.nextUrl.searchParams.has("activate") || req.nextUrl.searchParams.has("license"));
+  if (user && (pathname === "/login" || (isWelcome && !forLicense))) {
     return NextResponse.redirect(new URL(user.role === "customer" ? "/portal" : "/", req.url));
   }
 

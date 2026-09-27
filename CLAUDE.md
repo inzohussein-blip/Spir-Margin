@@ -81,6 +81,8 @@ browser ── Next.js (127.0.0.1:3000) ── pages (RSC) + server actions
 | Office network (LAN) | `src/lib/sync/lan.ts` (listener :3310, ops hello/pull/push/clone/meta/snap, client), `seal.ts` (AES-256-GCM), `code.ts` (`SPIR1-…` sync codes) |
 | Sync UI | `src/app/sync/page.tsx`, `src/app/actions/links.ts` (link/unlink/main computer/show code), `components/sync/*`, `components/settings/PeerPanel.tsx` + `actions/peer.ts` (hosted URL, pooler guard) |
 | Remote access (0113) | `src/lib/remote/gateway.ts` (listener :3300 on 0.0.0.0, pairing page `/__spir/pair`, device cookie, proxies to 127.0.0.1:PORT, rewrites own-address redirects), `tokens.ts` (pure: pair codes, cookie, Tailscale 100.64/10, limiter), `devices.ts` (`_spir_devices`: browsers + computers with their own sync secret, revoke), `request.ts` (`isRemoteRequest`, `secureCookies`), `actions/remote.ts` (local admin only), `components/sync/RemoteAccessPanel.tsx`; LAN listener picks a computer's secret from header `x-spir-device` (code field `d`) |
+| Activation codes (0115) | codes server (the web version on Vercel): `src/lib/license/core.ts` (framework-free, node:crypto only: codes as hashes, seats, ES256 licenses, key sealed with AUTH_SECRET, company DB link sealed, backup), `server.ts` (runner: `LICENSE_DATABASE_URL` Neon or embedded; 2FA TOTP `totp.ts`), `env.ts` (`codesServerEnabled` = `LICENSE_ADMIN_PASSWORD` + durable storage), `owner.ts` (owner cookie), `/api/license` (+`/activate`, `/check`, `/admin`), `/licenses` (code manager page). Computer: `device.ts` (`_spir_license`, offline verify, `licenseTick` 6 h, `DEFAULT_LICENSE_SERVER` / `SPIR_LICENSE_SERVER`), `state.ts` (pure `judge`, `planCompanyLink`), `modules.ts` (the five stations → nav groups), `company-db.ts` (code's DB → `_spir_peer`), `actions/license.ts`, `components/license/LicensePanel.tsx`; gate in `layout.tsx` (→ `/welcome?activate=1`) and `supabase/server.ts` guard; closed stations in `features.ts` (hidden for admins too) |
+| Welcome page | `src/app/welcome/page.tsx`: branding, the stations (project colours), data location, contact + version, the activation window |
 | Second copy of the records | `src/lib/backup/copies.ts` (pure: a copy elsewhere within 3 days — upstream sync, an office computer's sync, an automatic backup to an outside folder), `copies-server.ts`; bell notice (admins) in `layout.tsx`, «copy» step in the setup checklist |
 | First steps of a new company | `src/lib/setup-checklist.ts`, `components/dashboard/SetupChecklist.tsx` (home page, admins) |
 | Sync status / health | `components/offline/DbSyncStatus.tsx` (header chip), `/monitoring/sync`, `components/monitoring/DatabaseSyncPanel.tsx` |
@@ -125,7 +127,7 @@ Reached from another page, not the menu (parent in brackets):
 `/sales-team` (read only) — from `/opportunities`; `/sales/new` [crud] — from the dashboard;
 `/reports/purchases`, `/reports/sales-by-lab`, `/reports/sales-by-product` — from `/reports`.
 
-Also outside the menu: `/login` [auth], `/welcome`, `/account` [auth], `/portal` [auth, portal], `/w/<group>`, and every
+Also outside the menu: `/login` [auth], `/welcome` [license], `/licenses` (the code manager: public, its own owner sign-in, bare), `/account` [auth], `/portal` [auth, portal], `/w/<group>`, and every
 `/<list>/new`, `/<list>/[id]`, and `/<doc>/[id]/print` (quotations, sales-orders, sales-invoices,
 purchase-orders, sale-requests through `components/print/DocumentSheet.tsx`; authorizations through `AuthorizationSheet.tsx`).
 
@@ -154,7 +156,7 @@ instrumentation and the tests; a file nothing reaches, and a dependency nothing 
   numbers · 0102 Arabic errors · 0103 session cut-off · 0104 closes Supabase REST
   (anon/authenticated) · 0105 sync links · 0106 trigger sync guard · 0107 no default
   accounts · 0108 prune standalone · 0109 built-in password · 0110 auto backup ·
-  0111 sync renames · 0112 auto update · 0113 remote access · 0114 Arabic search. Full list with titles in `README.md`.
+  0111 sync renames · 0112 auto update · 0113 remote access · 0114 Arabic search · 0115 device license. Full list with titles in `README.md`.
 
 ## Sync model (read before touching sync)
 
@@ -212,6 +214,13 @@ instrumentation and the tests; a file nothing reaches, and a dependency nothing 
   constraint messages into Arabic.
 - A stored choice (`spare_part`, `under_warranty`, "Sales Invoice") is shown with `tValue(locale, v)`,
   never `v.replace(/_/g, " ")`; `RecordDetail` does it for `…type/status/purpose…` columns.
+- Activation codes are OFF unless a codes server is set: `DEFAULT_LICENSE_SERVER` is empty in the code and the
+  browser runner forces `SPIR_LICENSE_SERVER=""`, so no suite but `e2e-license.mjs` (its own servers :3395/:3394/:3393)
+  ever meets the activation window. A server set but never reached counts as ON (the first registration needs
+  the internet). `_spir_license` is kept across a restore; only a real refusal (stopped/expired/moved/deleted) locks.
+- A code's database link is applied by `planCompanyLink` only where it cannot hurt: never over the company's own
+  link, an office computer's main computer, or a deployed `DATABASE_URL`; a link from the code cannot be changed
+  on the Sync page (the provider changes it on `/licenses`).
 - An update must never move `.pglite-data`, `.env.local`, `backups`, `logs` or `updates` (`$Keep` in
   `update.ps1`); the build in the stage folder writes its own `.env.local` and `.pglite-data` — never swap them in.
 
@@ -224,7 +233,8 @@ instrumentation and the tests; a file nothing reaches, and a dependency nothing 
 - Browser (`tests/browser/*.mjs`, harness `harness.mjs`): `crawl.mjs` visits every
   route in `routes.txt` (Latin text / Arabic-Indic digits / console errors); `record-pages.mjs`
   (runs last) opens the first record of every list and its print page with the same checks;
-  `e2e-action-errors.mjs` checks refused buttons say why;
+  `e2e-action-errors.mjs` checks refused buttons say why; `e2e-license.mjs` runs a codes server and two
+  computers (owner sign-in, a code with one seat, wrong/right code, closed station, seats, stop, message, freed seat);
   `e2e-lan-sync.mjs` starts two extra servers (:3398, :3397) and links them through
   the UI; `e2e-builtin.mjs` restores 123 via the reset file at the end.
 
