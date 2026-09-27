@@ -20,11 +20,12 @@ import { judge, isLocked, type DeviceState, type Payload } from "./state";
  */
 
 /**
- * The codes server every build asks, unless SPIR_LICENSE_SERVER says
- * otherwise (set it to "" to switch codes off, as the tests do). Empty: codes
- * are off in this build.
+ * The codes server every build asks — the owner's web version on Vercel —
+ * unless SPIR_LICENSE_SERVER says otherwise (set it to "" to switch codes
+ * off, as the tests do). Until that site has LICENSE_ADMIN_PASSWORD and its
+ * codes database, it answers that codes are off and nothing is locked.
  */
-export const DEFAULT_LICENSE_SERVER = "";
+export const DEFAULT_LICENSE_SERVER = "https://spir-margin-three.vercel.app";
 
 export function licenseServer(): string {
   // The web version is the codes server itself, not an installed computer.
@@ -156,8 +157,14 @@ async function call(path: string, init?: RequestInit, timeoutMs = 10_000): Promi
 export async function fetchEnabled(timeoutMs = 8_000): Promise<void> {
   if (!licenseServer()) return;
   try {
-    const { body } = await call("/api/license", undefined, timeoutMs);
-    if (!body || typeof body.enabled !== "boolean") return;
+    const { status, body } = await call("/api/license", undefined, timeoutMs);
+    if (!body || typeof body.enabled !== "boolean") {
+      // It answered, but not as a codes server (a password-protected or older
+      // deployment, a wrong address): codes stay off rather than lock every
+      // computer. A server error changes nothing; the next ask decides again.
+      if (status < 500) await write({ enabled: false });
+      return;
+    }
     await write({ enabled: body.enabled, contact: typeof body.contact === "string" ? body.contact.slice(0, 300) : "" });
   } catch { /* offline — the last answer stands */ }
   g.__spirLicenseAsked = Date.now();
