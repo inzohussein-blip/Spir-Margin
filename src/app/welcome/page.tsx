@@ -40,6 +40,9 @@ export default async function WelcomePage({ searchParams }: { searchParams?: Rec
   const name = brand.companyName || "Spir-Margin";
   const open = license.kind === "ok" ? license.mods : null;
   const showStatus = !!searchParams?.license;
+  // The page someone was opening when they were sent here: "the whole system" takes them back to it.
+  const raw = typeof searchParams?.next === "string" ? searchParams.next : "";
+  const next = raw.startsWith("/") && !raw.startsWith("//") && !raw.startsWith("/\\") && !raw.startsWith("/login") && !raw.startsWith("/welcome") ? raw : "";
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-surface-gray-1">
@@ -106,7 +109,7 @@ export default async function WelcomePage({ searchParams }: { searchParams?: Rec
           })}
 
           {/* The whole system: the dashboard, with every station the code opens. */}
-          <Link href="/login" data-station="all" className="group relative flex flex-col justify-between rounded-2xl border-2 border-brand/30 bg-gradient-to-br from-brand to-brand-dark p-6 text-white shadow-sm transition-transform hover:-translate-y-0.5">
+          <Link href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"} data-station="all" className="group relative flex flex-col justify-between rounded-2xl border-2 border-brand/30 bg-gradient-to-br from-brand to-brand-dark p-6 text-white shadow-sm transition-transform hover:-translate-y-0.5">
             <div>
               <span className="grid size-12 place-items-center rounded-xl bg-white/15"><ShieldCheckIcon size={22} /></span>
               <div className="mt-4 text-lg font-bold">{t(locale, "The whole system")}</div>
