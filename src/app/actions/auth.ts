@@ -120,6 +120,41 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   redirect(next);
 }
 
+/**
+ * «The whole system» with the company's activation code: on the computer the
+ * code activated it signs in as the administrator, who then makes accounts
+ * for the staff on the Users page. Like the built-in account, never from
+ * another device, and throttled like any sign-in.
+ */
+export async function codeLoginAction(_prev: LoginState, formData: FormData): Promise<LoginState> {
+  const code = String(formData.get("code") ?? "").trim();
+  const next = safeNext(String(formData.get("next") ?? ""));
+  if (!code) return { error: "Enter your company's activation code" };
+  if (isRemoteRequest()) {
+    return { error: "The activation code opens the system only on the computer itself. Sign in with your own account." };
+  }
+  const key = "activation-code";
+  const locked = await lockoutRemaining(key).catch(() => 0);
+  if (locked > 0) return { error: "Too many attempts. Try again later.", lockedFor: locked };
+
+  let ok = false;
+  try {
+    const { codeOpensThisComputer } = await import("@/lib/license/device");
+    ok = await codeOpensThisComputer(code);
+  } catch (e) {
+    console.error("[auth] activation-code sign-in failed:", e);
+    return { error: "Sign-in is unavailable right now" };
+  }
+  if (!ok) {
+    await recordFailure(key).catch(() => undefined);
+    return { error: "This is not this computer's activation code." };
+  }
+  await recordSuccess(key).catch(() => undefined);
+  const bad = await trySetSession(BUILT_IN_USER);
+  if (bad) return bad;
+  redirect(next);
+}
+
 export async function logoutAction() {
   cookies().delete(SESSION_COOKIE);
   redirect("/welcome");

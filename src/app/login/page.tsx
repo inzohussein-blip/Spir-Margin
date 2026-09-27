@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { KeyRoundIcon, HardDriveIcon } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { CodeLoginForm } from "@/components/auth/CodeLoginForm";
+import { deviceState } from "@/lib/license/device";
 import { getLocale } from "@/lib/i18n-server";
 import { DEMO_EMAIL, DEMO_PASSWORD } from "@/lib/auth/demo-credentials";
 import { t } from "@/lib/i18n";
@@ -21,7 +23,7 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams?: { next?: string; ended?: string };
+  searchParams?: { next?: string; ended?: string; with?: string };
 }) {
   const locale = getLocale();
   // Once an administrator has changed it, the password is theirs to know.
@@ -30,6 +32,10 @@ export default async function LoginPage({
   // From another device (the remote-access gateway) the built-in account is
   // refused, so it is neither offered nor described.
   const remote = isRemoteRequest();
+  // On an activated computer the company's code opens the whole system (as the administrator).
+  const licensed = !remote && (await deviceState().catch(() => ({ kind: "off" as const }))).kind === "ok";
+  const withCode = licensed && searchParams?.with === "code";
+  const q = (extra: string) => `/login?${extra}${next ? `${extra ? "&" : ""}next=${encodeURIComponent(next)}` : ""}`;
 
   return (
     <div className="relative grid min-h-screen place-items-center overflow-hidden bg-surface-gray-1 p-4">
@@ -62,9 +68,30 @@ export default async function LoginPage({
           </p>
         ) : null}
 
-        <LoginForm defaultEmail={remote ? "" : DEMO_EMAIL} next={next} />
+        {withCode ? (
+          <>
+            <p className="mb-4 rounded-lg border border-brand/20 bg-brand-light/40 p-3 text-xs leading-relaxed text-ink-gray-7">
+              {t(locale, "Enter your company's activation code to open the whole system as its administrator. Then give each employee an account of their own on the Users page.")}
+            </p>
+            <CodeLoginForm next={next} />
+            <div className="mt-4 text-center text-xs">
+              <Link href={q("")} className="text-brand hover:underline">{t(locale, "Sign in with an account instead")}</Link>
+            </div>
+          </>
+        ) : (
+          <>
+            <LoginForm defaultEmail={remote ? "" : DEMO_EMAIL} next={next} />
+            {licensed && (
+              <div className="mt-3 text-center text-xs">
+                <Link href={q("with=code")} className="inline-flex items-center gap-1 text-brand hover:underline" data-testid="use-code">
+                  <KeyRoundIcon size={12} /> {t(locale, "Open the whole system with the activation code")}
+                </Link>
+              </div>
+            )}
+          </>
+        )}
 
-        {remote ? (
+        {withCode ? null : remote ? (
           <p className="mt-5 rounded-lg border border-outline-gray-2 bg-surface-gray-1 p-3 text-xs leading-relaxed text-ink-gray-6">
             {t(locale, "You are signing in from another device. Use the account an administrator made for you on the main computer.")}
           </p>

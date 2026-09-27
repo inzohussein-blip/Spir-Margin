@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   ArrowLeftIcon, CloudIcon, DatabaseIcon, FactoryIcon, HardDriveIcon, LandmarkIcon, LockIcon, PackageIcon,
-  PhoneIcon, RefreshCwIcon, ShieldCheckIcon, ShoppingCartIcon, WifiOffIcon, WrenchIcon, type LucideIcon,
+  KeyRoundIcon, PhoneIcon, RefreshCwIcon, ShieldCheckIcon, ShoppingCartIcon, WifiOffIcon, WrenchIcon, type LucideIcon,
 } from "lucide-react";
 import { getLocale } from "@/lib/i18n-server";
 import { isRemoteConfigured } from "@/lib/db/pglite";
@@ -12,6 +12,7 @@ import { STATIONS } from "@/lib/license/modules";
 import { deviceState, deviceInfo, licenseTick } from "@/lib/license/device";
 import type { DeviceState } from "@/lib/license/state";
 import { LicensePanel } from "@/components/license/LicensePanel";
+import { PROVIDER_PHONE } from "@/lib/license/provider";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,9 @@ export default async function WelcomePage({ searchParams }: { searchParams?: Rec
   const showStatus = !!searchParams?.license;
   // The page someone was opening when they were sent here: "the whole system" takes them back to it.
   const raw = typeof searchParams?.next === "string" ? searchParams.next : "";
+  const licensed = license.kind === "ok";
   const next = raw.startsWith("/") && !raw.startsWith("//") && !raw.startsWith("/\\") && !raw.startsWith("/login") && !raw.startsWith("/welcome") ? raw : "";
+  const allHref = `/login?${[licensed ? "with=code" : "", next ? `next=${encodeURIComponent(next)}` : ""].filter(Boolean).join("&")}`.replace(/\?$/, "");
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-surface-gray-1">
@@ -80,45 +83,46 @@ export default async function WelcomePage({ searchParams }: { searchParams?: Rec
           </p>
         </div>
 
-        {/* ── Stations ─────────────────────────────────────────────── */}
-        <section className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3" data-testid="stations">
+        {/* ── Stations: the whole system first, then each station ───── */}
+        <section className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="stations">
+          {/* The whole system: opened with the company's activation code where there is one. */}
+          <Link href={allHref} data-station="all" className="group relative flex flex-col rounded-2xl border-2 border-brand/30 bg-gradient-to-br from-brand to-brand-dark p-4 text-white shadow-sm transition-transform hover:-translate-y-0.5">
+            <div className="flex items-center gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/15"><ShieldCheckIcon size={20} /></span>
+              <div className="text-base font-bold">{t(locale, "The whole system")}</div>
+            </div>
+            <p className="mt-2 flex-1 text-xs leading-relaxed text-white/85">
+              {licensed
+                ? t(locale, "Opens with your company's activation code. Inside, give each employee an account of their own.")
+                : t(locale, "The dashboard, the stations your code opens, reports, settings and sync — with your account.")}
+            </p>
+            <span className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-brand-dark">
+              {licensed ? <><KeyRoundIcon size={14} /> {t(locale, "Open with the code")}</> : <>{t(locale, "Sign in")} <ArrowLeftIcon size={14} /></>}
+            </span>
+          </Link>
+
           {STATIONS.map((s) => {
             const Icon = ICONS[s.id] ?? ShoppingCartIcon;
             const closed = open != null && !open.includes(s.id);
             const body = (
               <>
-                {closed && (
-                  <span className="absolute end-4 top-4 inline-flex items-center gap-1 rounded-full bg-surface-gray-2 px-2 py-0.5 text-xs font-medium text-ink-gray-6">
-                    <LockIcon size={11} /> {t(locale, "Not in your code")}
-                  </span>
-                )}
-                <span className={`grid size-12 place-items-center rounded-xl bg-gradient-to-br ${s.tone.icon} text-white shadow-sm`}><Icon size={22} /></span>
-                <div className="mt-4 text-lg font-bold text-ink-gray-9">{t(locale, s.label)}</div>
-                <p className="mt-1 flex-1 text-sm leading-relaxed text-ink-gray-6">{t(locale, s.desc)}</p>
-                <span className={`mt-5 inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-semibold text-white ${closed ? "bg-ink-gray-4" : s.tone.button}`}>
-                  {closed ? <><LockIcon size={15} /> {t(locale, "Not in your code")}</> : <>{t(locale, "Go in")} <ArrowLeftIcon size={15} className="rtl:rotate-180" /></>}
+                <div className="flex items-center gap-3">
+                  <span className={`grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${s.tone.icon} text-white shadow-sm`}><Icon size={20} /></span>
+                  <div className="text-base font-bold text-ink-gray-9">{t(locale, s.label)}</div>
+                </div>
+                <p className="mt-2 flex-1 text-xs leading-relaxed text-ink-gray-6">{t(locale, s.desc)}</p>
+                <span className={`mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-white ${closed ? "bg-ink-gray-4" : s.tone.button}`}>
+                  {closed ? <><LockIcon size={14} /> {t(locale, "Not in your code")}</> : <>{t(locale, "Go in")} <ArrowLeftIcon size={14} /></>}
                 </span>
               </>
             );
-            const cls = `group relative flex flex-col rounded-2xl border-2 bg-surface-white/95 p-6 shadow-sm backdrop-blur-xl transition-colors ${s.tone.ring}`;
+            const cls = `group relative flex flex-col rounded-2xl border-2 bg-surface-white/95 p-4 shadow-sm backdrop-blur-xl transition-colors ${s.tone.ring}`;
             return closed ? (
               <div key={s.id} data-station={s.id} data-closed="1" aria-disabled="true" className={`${cls} pointer-events-none opacity-60 grayscale`}>{body}</div>
             ) : (
               <Link key={s.id} data-station={s.id} href={`/login?next=${encodeURIComponent(s.href)}`} className={cls}>{body}</Link>
             );
           })}
-
-          {/* The whole system: the dashboard, with every station the code opens. */}
-          <Link href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"} data-station="all" className="group relative flex flex-col justify-between rounded-2xl border-2 border-brand/30 bg-gradient-to-br from-brand to-brand-dark p-6 text-white shadow-sm transition-transform hover:-translate-y-0.5">
-            <div>
-              <span className="grid size-12 place-items-center rounded-xl bg-white/15"><ShieldCheckIcon size={22} /></span>
-              <div className="mt-4 text-lg font-bold">{t(locale, "The whole system")}</div>
-              <p className="mt-1 text-sm leading-relaxed text-white/80">{t(locale, "The dashboard, the stations your code opens, reports, settings and sync — with your account.")}</p>
-            </div>
-            <span className="mt-5 inline-flex items-center justify-center gap-1.5 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-brand-dark">
-              {t(locale, "Sign in")} <ArrowLeftIcon size={15} className="rtl:rotate-180" />
-            </span>
-          </Link>
         </section>
 
         {/* ── Where the data is right now ──────────────────────────── */}
@@ -158,11 +162,14 @@ export default async function WelcomePage({ searchParams }: { searchParams?: Rec
         </section>
 
         {/* ── Contact and version ──────────────────────────────────── */}
-        <div className="mt-10 flex flex-col items-center gap-2 border-t border-outline-gray-2 pt-6 text-center">
-          {info.contact && (
-            <div className="inline-flex items-center gap-2 rounded-full border border-outline-gray-2 bg-surface-white px-4 py-2 text-sm font-semibold shadow-sm" dir="auto">
-              <PhoneIcon size={14} className="text-brand" /> {info.contact}
-            </div>
+        <div className="mt-10 flex flex-col items-center gap-2 border-t border-outline-gray-2 pt-6 text-center" data-testid="provider-contact">
+          <div className="text-sm font-semibold text-ink-gray-8">{t(locale, "For subscription, activation and support")}</div>
+          <a href={`tel:${PROVIDER_PHONE}`} dir="ltr"
+            className="inline-flex items-center gap-2 rounded-full border border-outline-gray-2 bg-surface-white px-4 py-2 text-base font-bold tabular-nums shadow-sm hover:border-brand">
+            <PhoneIcon size={15} className="text-brand" /> {PROVIDER_PHONE}
+          </a>
+          {info.contact && !info.contact.includes(PROVIDER_PHONE) && (
+            <div className="text-xs text-ink-gray-6" dir="auto">{info.contact}</div>
           )}
           {info.version && (
             <div className="text-[11px] text-ink-gray-5" data-testid="app-version">
@@ -172,7 +179,7 @@ export default async function WelcomePage({ searchParams }: { searchParams?: Rec
         </div>
       </main>
 
-      <LicensePanel state={license} contact={info.contact} message={info.message} showStatus={showStatus} now={Date.now()} />
+      <LicensePanel state={license} contact={info.contact || `${t(locale, "For subscription, activation and support")}: ${PROVIDER_PHONE}`} message={info.message} showStatus={showStatus} now={Date.now()} />
     </div>
   );
 }
