@@ -29,12 +29,16 @@ export interface SyncState {
 export type Phase = "starting" | "need_code" | "opening" | "first_sync" | "sign_in" | "ready" | "locked" | "failed";
 
 interface PGliteLike {
-  query<T>(sql: string, params?: unknown[]): Promise<{ rows: T[]; affectedRows?: number }>;
+  query<T>(sql: string, params?: unknown[], options?: { parsers?: Record<number, (v: string) => unknown> }): Promise<{ rows: T[]; affectedRows?: number }>;
   exec(sql: string): Promise<unknown>;
   close(): Promise<void>;
 }
 
 const SESSION_MS = 12 * 3600_000;
+// Dates and times stay text, as on the server (a JS Date would shift the day).
+// PGliteWorker parses results on this side of the worker, so they go with each query.
+const asText = (v: string) => v;
+const TEXT_PARSERS = { 1082: asText, 1083: asText, 1114: asText, 1184: asText, 1266: asText };
 const SYNC_EVERY_MS = 60_000;
 const CHECK_EVERY_MS = 6 * 3600_000;
 const REFUSED = new Set(["not_found", "other_device", "stopped", "expired"]);
@@ -135,7 +139,7 @@ export class LocalRuntime extends EventTarget {
       dataDir: `idb://spir-${l.lid}`,
     });
     const pg = this.pg;
-    this.db = { query: (sql, params) => pg.query(sql, params) as never };
+    this.db = { query: (sql, params) => pg.query(sql, params, { parsers: TEXT_PARSERS }) as never };
 
     const key = `spir.local.schema.${l.lid}`;
     if (localStorage.getItem(key) !== manifest.hash) {

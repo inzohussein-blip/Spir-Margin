@@ -132,19 +132,25 @@ const A = await context();
   if (pg) check("the first sync completes", await settled(p), await syncState(p));
   else check("without a company database the records stay here", (await syncState(p)) === "local");
 
-  // A lab, through the form; a product, through the same client the screens use.
-  await p.goto(CODES + "/app#/labs/new");
-  await p.fill("[data-testid=local-lab-form] input[name=code]", "WL-1");
-  await p.fill("[data-testid=local-lab-form] input[name=name]", "مختبر الويب");
-  await p.click("[data-testid=local-lab-form] button");
-  await p.getByTestId("local-labs").getByText("مختبر الويب").waitFor();
-  check("a lab is added", true);
-  const inserted = await p.evaluate(async () => {
-    const rt = window.__spirLocalRuntime;
-    const { error } = await rt.client.from("products").insert({ item_code: "WEB-KIT", name: "عدّة الويب", product_type: "spare_part", default_buy_price: 4, default_sell_price: 10 });
-    return error?.message ?? "";
-  });
-  check("a product is added", !inserted, inserted);
+  // A lab and a product, through the generic forms.
+  await p.goto(CODES + "/app#/e/labs/new");
+  await p.fill("[data-testid=form-labs] input[name=code]", "WL-1");
+  await p.fill("[data-testid=form-labs] input[name=name]", "مختبر الويب");
+  await p.click("[data-testid=form-labs] button:has-text('حفظ')");
+  await p.getByTestId("record-labs").waitFor();
+  check("a lab is added through its form", (await p.getByTestId("record-title").innerText()) === "مختبر الويب");
+  await p.goto(CODES + "/app#/e/products/new");
+  await p.fill("[data-testid=form-products] input[name=item_code]", "WEB-KIT");
+  await p.fill("[data-testid=form-products] input[name=name]", "عدّة الويب");
+  await p.selectOption("[data-testid=form-products] select[name=product_type]", "spare_part");
+  await p.fill("[data-testid=form-products] input[name=default_buy_price]", "4");
+  await p.fill("[data-testid=form-products] input[name=default_sell_price]", "10");
+  await p.click("[data-testid=form-products] button:has-text('حفظ')");
+  await p.getByTestId("record-products").waitFor();
+  check("a product is added through its form", (await p.getByTestId("record-title").innerText()) === "عدّة الويب");
+  await p.goto(CODES + "/app#/e/labs");
+  await p.getByTestId("list-labs").getByText("مختبر الويب").waitFor();
+  check("the labs list shows it", true);
   if (pg) {
     check("both go up to the company's database", await settled(p) && pg.sql("select count(*) from labs where code = 'WL-1'") === "1" && pg.sql("select count(*) from products where item_code = 'WEB-KIT'") === "1");
   }
@@ -177,6 +183,78 @@ const A = await context();
   check("today's sales count it", (await p.getByTestId("sales-today").innerText()) === "1", await p.getByTestId("sales-today").innerText());
 }
 
+{
+  // Documents through the generic form: an invoice with a line, submitted and paid.
+  const { p } = A;
+  p.on("dialog", (d) => void d.accept());
+  const pick = async (sel, term, option) => {
+    await p.click(sel);
+    await p.fill(sel, term);
+    await p.getByRole("option", { name: option }).first().click();
+  };
+  await p.goto(CODES + "/app#/e/sales-invoices/new");
+  await pick("[data-testid=form-sales-invoices] input[data-ref=lab_id]", "الويب", /مختبر الويب/);
+  await pick("[data-line='0'] input[data-ref=product_id]", "عدّة", /عدّة الويب/);
+  const rate = await p.inputValue("[data-line='0'] input[name=rate]");
+  check("picking a product fills its price", Number(rate) === 10, rate);
+  await p.fill("[data-line='0'] input[name=qty]", "3");
+  await p.click("[data-testid=form-sales-invoices] button:has-text('حفظ')");
+  await p.getByTestId("record-sales-invoices").waitFor();
+  const title = await p.getByTestId("record-title").innerText();
+  check("the invoice is numbered by itself", /-SI-\d{4}-\d{4}$/.test(title), title);
+  check("its total is the line's", (await p.locator("[data-field=total_amount]").innerText()) === "30");
+  const date = await p.locator("[data-field=posting_date]").innerText();
+  check("dates read as dates (YYYY-MM-DD)", /^\d{4}-\d{2}-\d{2}$/.test(date.trim()), date);
+  await p.click("[data-action=submit]");
+  await p.locator("[data-status=unpaid]").waitFor({ timeout: 20_000 }).catch(() => {});
+  check("submitting makes it unpaid", await p.locator("[data-status=unpaid]").count() > 0);
+  await p.click("[data-action=pay]");
+  check("the payment is filled with what is outstanding", Number(await p.inputValue("input[name=p_amount]")) === 30);
+  await p.click("form:has(input[name=p_amount]) button:has-text('تسجيل دفعة')");
+  await p.locator("[data-status=paid]").waitFor({ timeout: 20_000 }).catch(() => {});
+  check("the payment settles it", await p.locator("[data-status=paid]").count() > 0);
+
+  // Staff: an employee, and their check-in today.
+  await p.goto(CODES + "/app#/e/employees/new");
+  await p.fill("[data-testid=form-employees] input[name=full_name]", "سارة");
+  await p.click("[data-testid=form-employees] button:has-text('حفظ')");
+  await p.getByTestId("record-employees").waitFor();
+  await p.goto(CODES + "/app#/attendance");
+  await p.locator("[data-employee='سارة'] button:has-text('تسجيل دخول')").click();
+  await p.waitForFunction(() => /\d\d:\d\d/.test(document.querySelector("[data-employee='سارة'] [data-in]")?.textContent ?? ""), null, { timeout: 15_000 }).catch(() => {});
+  check("an employee checks in", /\d\d:\d\d/.test(await p.locator("[data-employee='سارة'] [data-in]").innerText()));
+
+  // Cold chain: a fridge, and its morning reading out of range.
+  await p.goto(CODES + "/app#/e/cold-units/new");
+  await p.fill("[data-testid=form-cold-units] input[name=name]", "ثلاجة الكواشف");
+  await p.click("[data-testid=form-cold-units] button:has-text('حفظ')");
+  await p.getByTestId("record-cold-units").waitFor();
+  await p.goto(CODES + "/app#/temperatures");
+  const am = p.locator("[data-unit='ثلاجة الكواشف'] input[data-slot=AM]");
+  await am.fill("11");
+  await am.blur();
+  await p.waitForFunction(() => document.querySelector("[data-unit='ثلاجة الكواشف'] input[data-slot=AM]")?.className.includes("red"), null, { timeout: 15_000 }).catch(() => {});
+  check("a reading out of the safe range is marked", (await am.getAttribute("class")).includes("red"));
+
+  if (pg) {
+    check("the invoice, the check-in and the reading go up", await settled(p)
+      && pg.sql("select status from sales_invoices where total_amount = 30") === "paid"
+      && pg.sql("select count(*) from hr_attendance") === "1" && pg.sql("select value::int from cc_readings") === "11",
+      [pg.sql("select status from sales_invoices"), pg.sql("select count(*) from hr_attendance"), pg.sql("select count(*) from cc_readings")].join(" / "));
+  }
+
+  // Every list of every station opens.
+  const lists = await p.$$eval("[data-testid=local-nav] a[href^='#/e/']", (as) => [...new Set(as.map((a) => a.getAttribute("href")))]);
+  const broken = [];
+  for (const href of lists) {
+    await p.goto(CODES + "/app" + href);
+    const id = href.split("/")[2];
+    const ok = await p.getByTestId(`list-${id}`).waitFor({ timeout: 15_000 }).then(() => true, () => false);
+    if (!ok || (await p.locator(`[data-testid=list-${id}] [role=alert]`).count())) broken.push(id);
+  }
+  check(`all ${lists.length} lists open`, lists.length > 20 && broken.length === 0, broken.join(", "));
+}
+
 if (pg) {
   // A second browser, same code: it takes the company's records at its first open.
   const B = await context();
@@ -189,6 +267,9 @@ if (pg) {
   await p.getByText("مختبر الويب").first().waitFor({ timeout: 30_000 }).catch(() => {});
   const body = await text(p);
   check("a second browser receives the first one's lab and sale", body.includes("مختبر الويب") && body.includes("عدّة الويب"));
+  await p.goto(CODES + "/app#/e/sales-invoices");
+  await p.locator("[data-testid=list-sales-invoices] [data-status=paid]").first().waitFor({ timeout: 20_000 }).catch(() => {});
+  check("and the paid invoice", await p.locator("[data-testid=list-sales-invoices] [data-status=paid]").count() === 1);
   await B.ctx.close();
 }
 

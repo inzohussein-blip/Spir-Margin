@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { HomeIcon, LogOutIcon, RefreshCwIcon } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { HomeIcon, ListIcon, LogOutIcon, RefreshCwIcon, type LucideIcon } from "lucide-react";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
 import { useRoute, useRuntime } from "./hooks";
 import { Activate, Booting, Failed, Locked, SignIn } from "./Gate";
 import { SyncChip } from "./parts";
-import { Home, InvoiceDetail, Invoices, LabNew, Labs, LOCAL_PAGES, Products, Sales, SyncInfo } from "./screens";
+import { Home, Sales, SyncInfo } from "./screens";
+import { EntityForm, EntityList, EntityRecord, ICONS } from "./entity";
+import { Attendance, Guides, Temperatures } from "./daily";
+import { entityById, stationPages } from "@/lib/local/registry";
+import { STATIONS } from "@/lib/license/modules";
 import { LocalPos } from "./Pos";
 
 /**
@@ -67,46 +71,71 @@ async function keepForOffline() {
   } catch { /* best effort */ }
 }
 
+/** The page for an address after the #. */
+function route(path: string): { page: ReactNode; station: string | null } {
+  const m = /^\/e\/([^/]+)(?:\/([^/]+))?(?:\/(edit))?$/.exec(path);
+  if (m) {
+    const e = entityById(m[1]);
+    if (!e) return { page: <Home />, station: null };
+    const [, , rid, edit] = m;
+    const page = !rid ? <EntityList key={e.id} e={e} />
+      : rid === "new" ? <EntityForm key={`${e.id}-new`} e={e} />
+      : edit ? <EntityForm key={`${e.id}-${rid}-edit`} e={e} id={rid} />
+      : <EntityRecord key={`${e.id}-${rid}`} e={e} id={rid} />;
+    return { page, station: e.station };
+  }
+  const guide = /^\/guides\/([^/]+)$/.exec(path)?.[1];
+  if (guide) return { page: <Guides id={guide} />, station: "guides" };
+  switch (path) {
+    case "/sales": return { page: <Sales />, station: "sales" };
+    case "/attendance": return { page: <Attendance />, station: "hr" };
+    case "/temperatures": return { page: <Temperatures />, station: "coldchain" };
+    case "/guides": return { page: <Guides />, station: "guides" };
+    case "/sync": return { page: <SyncInfo />, station: null };
+    default: return { page: <Home />, station: null };
+  }
+}
+
 function Shell() {
   const locale = useLocale();
   const T = (k: string) => t(locale, k);
   const rt = useRuntime(["user", "license"]);
-  const { path, go } = useRoute();
+  const { path } = useRoute();
 
   // The point of sale is full-screen, with its own header.
   if (path === "/pos") return <LocalPos />;
 
-  const links = [...(LOCAL_PAGES.sales ?? []), { href: "#/sync", label: "Sync", icon: RefreshCwIcon }];
-  const invoice = /^\/invoices\/([^/]+)$/.exec(path)?.[1];
-  const page = invoice ? <InvoiceDetail id={invoice} />
-    : path === "/sales" ? <Sales />
-    : path === "/labs" ? <Labs />
-    : path === "/labs/new" ? <LabNew go={go} />
-    : path === "/products" ? <Products />
-    : path === "/invoices" ? <Invoices />
-    : path === "/sync" ? <SyncInfo />
-    : <Home />;
+  const { page, station } = route(path);
+  const mods = rt.license?.mods ?? [];
+  const stations = STATIONS.filter((s) => !mods.length || mods.includes(s.id));
+  const link = (href: string, label: string, icon: string | LucideIcon, key = href) => {
+    const Icon = typeof icon === "string" ? ICONS[icon] ?? ListIcon : icon;
+    const target = href.slice(1);
+    const on = target === "/" ? path === "/" : path === target || path.startsWith(target + "/");
+    return (
+      <a key={key} href={href} className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm ${on ? "bg-brand-light font-semibold text-brand" : "text-ink-gray-7 hover:bg-surface-gray-1"}`}>
+        <Icon size={15} /> {T(label)}
+      </a>
+    );
+  };
+  const here = station ? stationPages(station) : [];
 
   return (
     <div className="flex min-h-screen" data-testid="local-app">
-      <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-e border-outline-gray-2 bg-surface-white md:flex">
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-e border-outline-gray-2 bg-surface-white md:flex">
         <div className="flex items-center gap-2.5 px-5 py-4 text-lg font-bold text-ink-gray-8">
           <span className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm">S</span>
           Spir-Margin
         </div>
-        <nav className="flex-1 space-y-0.5 px-3">
-          <a href="#/" className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${path === "/" ? "bg-brand-light font-semibold text-brand" : "text-ink-gray-7 hover:bg-surface-gray-1"}`}>
-            <HomeIcon size={16} /> {T("Main menu")}
-          </a>
-          {links.map((l) => {
-            const Icon = l.icon;
-            const on = path === l.href.slice(1) || path.startsWith(l.href.slice(1) + "/");
-            return (
-              <a key={l.href} href={l.href} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${on ? "bg-brand-light font-semibold text-brand" : "text-ink-gray-7 hover:bg-surface-gray-1"}`}>
-                <Icon size={16} /> {T(l.label)}
-              </a>
-            );
-          })}
+        <nav className="flex-1 space-y-0.5 px-3 pb-6" data-testid="local-nav">
+          {link("#/", "Main menu", HomeIcon)}
+          {stations.map((s) => (
+            <div key={s.id} className="pt-3">
+              <div className="px-3 pb-1 text-[11px] font-semibold text-ink-gray-4">{T(s.label)}</div>
+              {stationPages(s.id).map((p) => link(p.href, p.label, p.icon, `${s.id}${p.href}`))}
+            </div>
+          ))}
+          <div className="pt-3">{link("#/sync", "Sync", RefreshCwIcon)}</div>
         </nav>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
@@ -123,9 +152,11 @@ function Shell() {
             </button>
           </div>
         </header>
-        <nav className="flex gap-1 overflow-x-auto border-b border-outline-gray-2 bg-surface-white px-3 py-2 md:hidden">
-          {links.map((l) => <a key={l.href} href={l.href} className="shrink-0 rounded-md px-2.5 py-1 text-sm text-ink-gray-7 hover:bg-surface-gray-1">{T(l.label)}</a>)}
-        </nav>
+        {here.length > 0 && (
+          <nav className="flex gap-1 overflow-x-auto border-b border-outline-gray-2 bg-surface-white px-3 py-2 md:hidden">
+            {here.map((l) => <a key={l.href} href={l.href} className="shrink-0 rounded-md px-2.5 py-1 text-sm text-ink-gray-7 hover:bg-surface-gray-1">{T(l.label)}</a>)}
+          </nav>
+        )}
         <main className="mx-auto w-full max-w-6xl flex-1 p-4 md:p-6">{page}</main>
       </div>
     </div>
