@@ -93,8 +93,9 @@ export const STATION_IDS = STATIONS.map((s) => s.id);
 
 /**
  * The station a person went in through (from the welcome page), kept in a
- * cookie: the sidebar then shows that station's sections only, with the way
- * back to the main menu. «The whole system» clears it.
+ * cookie the sidebar sets when a station's home is opened: the sidebar then
+ * shows that station's sections only, with the way back to the main menu.
+ * The dashboard («the whole system») clears it.
  */
 export const STATION_COOKIE = "spir_station";
 export const stationById = (id: string | null | undefined) => STATIONS.find((s) => s.id === id) ?? null;

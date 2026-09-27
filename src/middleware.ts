@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/session";
-import { STATION_COOKIE, STATION_IDS } from "@/lib/license/modules";
 
 // Paths reachable without a session. The PWA manifest must be fetchable by the
 // browser before login so the app is installable (add to home screen).
@@ -73,24 +72,12 @@ export async function middleware(req: NextRequest) {
       && (req.headers.get("accept") ?? "").includes("text/html");
     if (pathname === "/" && fresh) return tag(NextResponse.redirect(new URL("/welcome", req.url)));
     // «The whole system»: the dashboard, with every section in the sidebar.
+    // (The station itself is remembered by the sidebar, in the browser: a
+    // cookie set here would also be set by Next's prefetch of every station
+    // card on the main menu.)
     if (pathname === "/station/all") {
       headers.set("x-pathname", "/");
-      const res = NextResponse.rewrite(new URL("/", req.url), { request: { headers } });
-      res.cookies.delete(STATION_COOKIE);
-      return tag(res);
-    }
-    // A station: its sections only, until the main menu or the whole system.
-    const station = pathname.startsWith("/station/") ? pathname.split("/")[2] : null;
-    if (station && STATION_IDS.includes(station)) {
-      const res = NextResponse.next({ request: { headers } });
-      // Readable by the page: the sidebar (kept across navigations) follows it.
-      res.cookies.set(STATION_COOKIE, station, { path: "/", sameSite: "lax", maxAge: 30 * 86_400 });
-      return tag(res);
-    }
-    if (pathname === "/") {
-      const res = NextResponse.next({ request: { headers } });
-      if (req.cookies.has(STATION_COOKIE)) res.cookies.delete(STATION_COOKIE);
-      return tag(res);
+      return tag(NextResponse.rewrite(new URL("/", req.url), { request: { headers } }));
     }
   }
   return tag(NextResponse.next({ request: { headers } }));

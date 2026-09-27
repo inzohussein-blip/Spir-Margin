@@ -41,7 +41,7 @@ await saved.waitFor({ state: "visible", timeout: 60000 }).catch(() => {});
 check("branding saves", (await saved.count()) > 0);
 
 // ── Shortcuts in the navigation ─────────────────────────────────────
-await p.goto(H + "/", { waitUntil: "domcontentloaded", timeout: 120000 });
+await p.goto(H + "/station/all", { waitUntil: "domcontentloaded", timeout: 120000 });
 await p.locator("aside").first().waitFor({ state: "visible", timeout: 60000 });
 const nav = await p.locator("aside").first().innerText().catch(() => "");
 check("a Shortcuts group is in the sidebar", nav.includes("اختصارات"), nav.split("\n").slice(0, 6).join(" / "));
