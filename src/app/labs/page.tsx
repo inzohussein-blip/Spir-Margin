@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { ListShell } from "@/components/desk/ListShell";
+import { listWindow, type ListQuery } from "@/components/desk/ListPaging";
 import { Indicator } from "@/components/desk/Indicator";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -9,17 +10,21 @@ import type { Lab } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function LabsPage() {
+export default async function LabsPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase.from("labs").select("*").order("name");
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase.from("labs").select("*", { count: "exact" })
+    .search(["code", "name", "city", "contact_name", "phone"], q).order("name").range(from, to);
   const labs = (data as Lab[]) ?? [];
+  const total = count ?? labs.length;
 
   return (
     <ListShell
       title={t(locale, "Labs")}
       breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Selling") }]}
-      count={labs.length}
+      count={total}
+      paging={{ basePath: "/labs", page, total, q }}
       newHref="/labs/new"
       newLabel={t(locale, "New lab")}
     >

@@ -1,4 +1,6 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, ListFooter, type ListQuery } from "@/components/desk/ListPaging";
+import { ListSearch } from "@/components/desk/ListSearch";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -26,14 +28,16 @@ const statusBadge: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
-export default async function InstallationNotesPage() {
+export default async function InstallationNotesPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("installation_notes")
-    .select("id, inst_no, inst_date, status, remarks, labs(name), installation_note_items(id)")
-    .order("inst_date", { ascending: false });
+    .select("id, inst_no, inst_date, status, remarks, labs(name), installation_note_items(id)", { count: "exact" }).search(["inst_no", "remarks"], q)
+    .order("inst_date", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
 
   return (
     <div className="space-y-6">
@@ -45,7 +49,8 @@ export default async function InstallationNotesPage() {
         </div>
       </div>
 
-      <Panel title={`${t(locale, "Notes")} (${rows.length})`}>
+      <Panel title={`${t(locale, "Notes")} (${total})`}>
+        <ListSearch basePath="/installation-notes" q={q} />
         {rows.length === 0 ? (
           <EmptyRow text={t(locale, "No installation notes yet — record installing devices at a lab")} />
         ) : (
@@ -95,6 +100,7 @@ export default async function InstallationNotesPage() {
             </table>
           </div>
         )}
+        <ListFooter basePath="/installation-notes" page={page} total={total} q={q} />
       </Panel>
     </div>
   );

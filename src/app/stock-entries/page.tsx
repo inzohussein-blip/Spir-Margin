@@ -1,4 +1,6 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, ListFooter, type ListQuery } from "@/components/desk/ListPaging";
+import { ListSearch } from "@/components/desk/ListSearch";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -32,14 +34,16 @@ const purposeBadge: Record<string, string> = {
   transfer: "bg-blue-100 text-blue-700",
 };
 
-export default async function StockEntriesPage() {
+export default async function StockEntriesPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("stock_entries")
-    .select("id, entry_no, purpose, status, posting_date, from_wh:from_warehouse(name), to_wh:to_warehouse(name), stock_entry_items(id)")
-    .order("posting_date", { ascending: false });
+    .select("id, entry_no, purpose, status, posting_date, from_wh:from_warehouse(name), to_wh:to_warehouse(name), stock_entry_items(id)", { count: "exact" }).search(["entry_no"], q)
+    .order("posting_date", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
 
   return (
     <div className="space-y-6">
@@ -51,7 +55,8 @@ export default async function StockEntriesPage() {
         </div>
       </div>
 
-      <Panel title={`${t(locale, "Stock entries")} (${rows.length})`}>
+      <Panel title={`${t(locale, "Stock entries")} (${total})`}>
+        <ListSearch basePath="/stock-entries" q={q} />
         {rows.length === 0 ? (
           <EmptyRow text={t(locale, "No stock entries yet — receive, issue, or transfer kit batches between warehouses")} />
         ) : (
@@ -109,6 +114,7 @@ export default async function StockEntriesPage() {
             </table>
           </div>
         )}
+        <ListFooter basePath="/stock-entries" page={page} total={total} q={q} />
       </Panel>
     </div>
   );

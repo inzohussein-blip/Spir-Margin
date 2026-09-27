@@ -1,4 +1,6 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, ListFooter, type ListQuery } from "@/components/desk/ListPaging";
+import { ListSearch } from "@/components/desk/ListSearch";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -31,17 +33,19 @@ const statusBadge: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
-export default async function WarrantyPage() {
+export default async function WarrantyPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const [{ data }, { data: billing }] = await Promise.all([
+  const { page, from, to, q } = listWindow(searchParams);
+  const [{ data, count }, { data: billing }] = await Promise.all([
     supabase
       .from("warranty_claims")
-      .select("id, complaint_date, status, complaint, warranty_amc_status, products(name), labs(name)")
-      .order("complaint_date", { ascending: false }),
+      .select("id, complaint_date, status, complaint, warranty_amc_status, products(name), labs(name)", { count: "exact" }).search(["complaint"], q)
+      .order("complaint_date", { ascending: false }).range(from, to),
     supabase.from("v_warranty_billing").select("*"),
   ]);
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
   const bill = (billing as unknown as { billed_to: string; total_charge: number }[]) ?? [];
   const byParty = (p: string) => Number(bill.find((b) => b.billed_to === p)?.total_charge ?? 0);
 
@@ -56,7 +60,8 @@ export default async function WarrantyPage() {
         <StatCard label={t(locale, "Hospital receivable")} value={money(byParty("hospital"))} accent="brand" />
         <StatCard label={t(locale, "Insurance receivable")} value={money(byParty("insurance"))} accent="green" />
       </div>
-      <Panel title={`${t(locale, "All Claims")} (${rows.length})`}>
+      <Panel title={`${t(locale, "All Claims")} (${total})`}>
+        <ListSearch basePath="/warranty" q={q} />
         {rows.length === 0 ? (
           <EmptyRow text={t(locale, "No warranty claims")} />
         ) : (
@@ -100,6 +105,7 @@ export default async function WarrantyPage() {
             </table>
           </div>
         )}
+        <ListFooter basePath="/warranty" page={page} total={total} q={q} />
       </Panel>
     </div>
   );

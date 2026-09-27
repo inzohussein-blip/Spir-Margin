@@ -75,25 +75,31 @@ export default async function DashboardPage() {
     contractsRes,
     pmRes,
     authRes,
+    invSumRes,
+    poSumRes,
   ] = await Promise.all([
     supabase.from("v_profit_summary").select("*").single(),
-    supabase.from("v_active_labs").select("*").order("name"),
+    // Lists show a few rows; the figures come from counts and light sums, so
+    // the home page stays small however many labs and invoices there are.
+    supabase.from("v_active_labs").select("*", { count: "exact" }).order("name").limit(12),
     supabase.from("v_maintenance_alerts").select("*").limit(10),
     supabase.from("v_expiring_kits").select("*").limit(10),
     supabase
       .from("sales_invoices")
-      .select("id, invoice_no, outstanding, status, labs(name)")
+      .select("id, invoice_no, outstanding, status, labs(name)", { count: "exact" })
       .neq("status", "cancelled")
       .gt("outstanding", 0)
-      .order("outstanding", { ascending: false }),
+      .order("outstanding", { ascending: false })
+      .limit(8),
     supabase
       .from("purchase_orders")
-      .select("id, po_no, total_amount, status, companies:supplier_id(name)")
+      .select("id, po_no, total_amount, status, companies:supplier_id(name)", { count: "exact" })
       .in("status", ["draft", "submitted"])
-      .order("total_amount", { ascending: false }),
-    supabase.from("work_orders").select("status").in("status", ["draft", "in_process"]),
-    supabase.from("asset_repairs").select("status").eq("status", "pending"),
-    supabase.from("issues").select("status").in("status", ["open", "replied", "on_hold"]),
+      .order("total_amount", { ascending: false })
+      .limit(8),
+    supabase.from("work_orders").select("id", { count: "exact" }).in("status", ["draft", "in_process"]).limit(1),
+    supabase.from("asset_repairs").select("id", { count: "exact" }).eq("status", "pending").limit(1),
+    supabase.from("issues").select("id", { count: "exact" }).in("status", ["open", "replied", "on_hold"]).limit(1),
     supabase.from("v_expiring_contracts").select("*").limit(10),
     // upcoming preventive-maintenance visits (next 60 days, not yet done)
     supabase
@@ -117,6 +123,8 @@ export default async function DashboardPage() {
       .lte("valid_to", horizon)
       .order("valid_to")
       .limit(10),
+    supabase.from("sales_invoices").select("outstanding").neq("status", "cancelled").gt("outstanding", 0),
+    supabase.from("purchase_orders").select("total_amount").in("status", ["draft", "submitted"]),
   ]);
 
   const profit = (profitRes.data as ProfitSummary) ?? {
@@ -135,9 +143,12 @@ export default async function DashboardPage() {
     }[]) ?? [];
   const invoices = (invRes.data as InvoiceRow[]) ?? [];
   const pos = (poRes.data as PoRow[]) ?? [];
-  const openWorkOrders = (woRes.data as { status: string }[])?.length ?? 0;
-  const pendingRepairs = (repairRes.data as { status: string }[])?.length ?? 0;
-  const openIssues = (issuesRes.data as { status: string }[])?.length ?? 0;
+  const openWorkOrders = woRes.count ?? 0;
+  const pendingRepairs = repairRes.count ?? 0;
+  const openIssues = issuesRes.count ?? 0;
+  const activeLabs = labsRes.count ?? labs.length;
+  const openInvoices = invRes.count ?? invoices.length;
+  const openPos = poRes.count ?? pos.length;
   const expiringContracts =
     (contractsRes.data as { id: string; contract_no: string; end_date: string; days_left: number; lab_name: string | null; asset_code: string | null }[]) ??
     [];
@@ -145,8 +156,8 @@ export default async function DashboardPage() {
   const daysUntil = (d: string) =>
     Math.round((new Date(d).getTime() - Date.now()) / 86400_000);
 
-  const outstandingTotal = invoices.reduce((s, i) => s + Number(i.outstanding), 0);
-  const poTotal = pos.reduce((s, p) => s + Number(p.total_amount), 0);
+  const outstandingTotal = ((invSumRes.data as { outstanding: number }[]) ?? []).reduce((s, i) => s + Number(i.outstanding), 0);
+  const poTotal = ((poSumRes.data as { total_amount: number }[]) ?? []).reduce((s, p) => s + Number(p.total_amount), 0);
 
   return (
     <div className="space-y-6">
@@ -172,7 +183,7 @@ export default async function DashboardPage() {
         />
         <StatCard
           label={t(locale, "Active Labs")}
-          value={String(labs.length)}
+          value={String(activeLabs)}
           hint={t(locale, "labs with a live subscription")}
           accent="brand"
         />
@@ -195,12 +206,12 @@ export default async function DashboardPage() {
         <StatCard
           label={t(locale, "Outstanding Receivables")}
           value={money(outstandingTotal)}
-          hint={`${invoices.length} ${t(locale, "open invoices")}`}
+          hint={`${openInvoices} ${t(locale, "open invoices")}`}
           accent="amber"
         />
         <StatCard
           label={t(locale, "Open Purchase Orders")}
-          value={String(pos.length)}
+          value={String(openPos)}
           hint={`${t(locale, "value")} ${money(poTotal)}`}
           accent="brand"
         />
@@ -294,6 +305,11 @@ export default async function DashboardPage() {
                 </li>
               ))}
             </ul>
+          )}
+          {activeLabs > labs.length && (
+            <Link href="/labs" className="block px-4 py-2 text-center text-xs font-medium text-brand hover:underline">
+              {t(locale, "All labs")} ({activeLabs})
+            </Link>
           )}
         </Panel>
 

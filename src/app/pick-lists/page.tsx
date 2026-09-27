@@ -1,4 +1,5 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, type ListQuery } from "@/components/desk/ListPaging";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EmptyRow } from "@/components/dashboard/Panel";
@@ -21,29 +22,35 @@ interface Row {
   pick_list_items: { id: string; qty: number; picked_qty: number }[];
 }
 
-export default async function PickListsPage() {
+export default async function PickListsPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("pick_lists")
-    .select("id, pick_no, purpose, posting_date, status, labs:lab_id(name), pick_list_items(id, qty, picked_qty)")
-    .order("posting_date", { ascending: false });
+    .select("id, pick_no, purpose, posting_date, status, labs:lab_id(name), pick_list_items(id, qty, picked_qty)", { count: "exact" }).search(["pick_no"], q)
+    .order("posting_date", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
-  const open = rows.filter((r) => r.status === "open");
-  const draft = rows.filter((r) => r.status === "draft");
+  const total = count ?? rows.length;
+  // The cards count every pick list, not just this page.
+  const { data: allData } = await supabase.from("pick_lists").select("status");
+  const all = (allData as { status: string }[]) ?? [];
+  const open = all.filter((r) => r.status === "open");
+  const draft = all.filter((r) => r.status === "draft");
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label={t(locale, "Draft")} value={String(draft.length)} accent="amber" />
         <StatCard label={t(locale, "Open (on floor)")} value={String(open.length)} accent="brand" />
-        <StatCard label={t(locale, "Total")} value={String(rows.length)} accent="green" />
+        <StatCard label={t(locale, "Total")} value={String(all.length)} accent="green" />
       </div>
 
       <ListShell
         title={t(locale, "Pick Lists")}
         breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Stock") }]}
-        count={rows.length}
+        count={total}
+        paging={{ basePath: "/pick-lists", page, total, q }}
         newHref="/pick-lists/new"
         newLabel={t(locale, "New pick list")}
         actions={<Link href="/delivery-notes" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Delivery notes")}</Link>}

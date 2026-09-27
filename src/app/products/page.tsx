@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { listWindow, type ListQuery } from "@/components/desk/ListPaging";
 import { createClient } from "@/lib/supabase/server";
 import { EmptyRow } from "@/components/dashboard/Panel";
 import { ListShell } from "@/components/desk/ListShell";
@@ -26,22 +27,25 @@ const typeBadge: Record<string, string> = {
   spare_part: "bg-surface-gray-2 text-ink-gray-6",
 };
 
-export default async function ProductsPage() {
+export default async function ProductsPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("products")
     .select(
       "id, item_code, name, product_type, item_group, brand, uom, default_buy_price, default_sell_price, is_disabled"
-    )
-    .order("name");
+    , { count: "exact" }).search(["item_code", "name", "item_group", "brand"], q)
+    .order("name").range(from, to);
   const products = (data as ProductRow[]) ?? [];
+  const total = count ?? products.length;
 
   return (
     <ListShell
       title={t(locale, "Products (Items)")}
       breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Stock") }]}
-      count={products.length}
+      count={total}
+      paging={{ basePath: "/products", page, total, q }}
       newHref="/products/new"
       newLabel={t(locale, "New product")}
     >

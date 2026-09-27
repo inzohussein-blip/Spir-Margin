@@ -1,4 +1,6 @@
 import { PlusIcon } from "lucide-react";
+import { listWindow, ListFooter, type ListQuery } from "@/components/desk/ListPaging";
+import { ListSearch } from "@/components/desk/ListSearch";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Panel, EmptyRow } from "@/components/dashboard/Panel";
@@ -23,14 +25,16 @@ const roleBadge: Record<string, string> = {
   customer: "bg-emerald-100 text-emerald-700",
 };
 
-export default async function CompaniesPage() {
+export default async function CompaniesPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("companies")
-    .select("id, name, role, supplier_type, tax_id, country, phone")
-    .order("name");
+    .select("id, name, role, supplier_type, tax_id, country, phone", { count: "exact" }).search(["name", "tax_id", "country", "phone"], q)
+    .order("name").range(from, to);
   const rows = (data as CompanyRow[]) ?? [];
+  const total = count ?? rows.length;
 
   return (
     <div className="space-y-6">
@@ -41,7 +45,8 @@ export default async function CompaniesPage() {
           className="inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
         ><PlusIcon size={15} /> {t(locale, "New company")}</Link>
       </div>
-      <Panel title={`${t(locale, "Suppliers & partners")} (${rows.length})`}>
+      <Panel title={`${t(locale, "Suppliers & partners")} (${total})`}>
+        <ListSearch basePath="/companies" q={q} />
         {rows.length === 0 ? (
           <EmptyRow text={t(locale, "No companies yet")} />
         ) : (
@@ -86,6 +91,7 @@ export default async function CompaniesPage() {
             </table>
           </div>
         )}
+        <ListFooter basePath="/companies" page={page} total={total} q={q} />
       </Panel>
     </div>
   );

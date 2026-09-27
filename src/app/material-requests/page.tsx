@@ -1,4 +1,5 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, ListFooter, type ListQuery } from "@/components/desk/ListPaging";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -20,14 +21,16 @@ const statusBadge: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
-export default async function MaterialRequestsPage() {
+export default async function MaterialRequestsPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("material_requests")
-    .select("id, transaction_date, required_by, status, material_request_items(id)")
-    .order("transaction_date", { ascending: false });
+    .select("id, transaction_date, required_by, status, material_request_items(id)", { count: "exact" })
+    .order("transaction_date", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -37,7 +40,7 @@ export default async function MaterialRequestsPage() {
           <Link href="/material-requests/new" className="inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"><PlusIcon size={15} /> {t(locale, "New request")}</Link>
         </div>
       </div>
-      <Panel title={`${t(locale, "Requests")} (${rows.length})`}>
+      <Panel title={`${t(locale, "Requests")} (${total})`}>
         {rows.length === 0 ? (
           <EmptyRow text={t(locale, "No material requests — request items, then convert to a purchase")} />
         ) : (
@@ -70,6 +73,7 @@ export default async function MaterialRequestsPage() {
             </table>
           </div>
         )}
+        <ListFooter basePath="/material-requests" page={page} total={total} />
       </Panel>
     </div>
   );

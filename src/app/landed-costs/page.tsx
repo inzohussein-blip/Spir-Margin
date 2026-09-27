@@ -1,4 +1,5 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, type ListQuery } from "@/components/desk/ListPaging";
 import { createClient } from "@/lib/supabase/server";
 import { ListShell } from "@/components/desk/ListShell";
 import { EmptyRow } from "@/components/dashboard/Panel";
@@ -22,20 +23,23 @@ interface Row {
   purchase_receipts: { receipt_no: string } | null;
 }
 
-export default async function LandedCostsPage() {
+export default async function LandedCostsPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("landed_cost_vouchers")
-    .select("id, voucher_no, total_extra, allocation_method, status, created_at, purchase_receipts(receipt_no)")
-    .order("created_at", { ascending: false });
+    .select("id, voucher_no, total_extra, allocation_method, status, created_at, purchase_receipts(receipt_no)", { count: "exact" }).search(["voucher_no"], q)
+    .order("created_at", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
 
   return (
     <ListShell
       title={t(locale, "Landed Costs")}
       breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Buying") }]}
-      count={rows.length}
+      count={total}
+      paging={{ basePath: "/landed-costs", page, total, q }}
       newHref="/landed-costs/new"
       newLabel={t(locale, "New landed cost")}
       filterPlaceholder={t(locale, "Filter by voucher / receipt…")}

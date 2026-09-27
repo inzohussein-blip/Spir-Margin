@@ -1,4 +1,6 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, ListFooter, type ListQuery } from "@/components/desk/ListPaging";
+import { ListSearch } from "@/components/desk/ListSearch";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -30,14 +32,16 @@ const statusBadge: Record<string, string> = {
   do_not_contact: "bg-red-100 text-red-700",
 };
 
-export default async function LeadsPage() {
+export default async function LeadsPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("leads")
-    .select("id, lead_name, company_name, status, city, territory, mobile_no, converted_lab_id")
-    .order("created_at", { ascending: false });
+    .select("id, lead_name, company_name, status, city, territory, mobile_no, converted_lab_id", { count: "exact" }).search(["lead_name", "company_name", "city", "territory", "mobile_no"], q)
+    .order("created_at", { ascending: false }).range(from, to);
   const rows = (data as Row[]) ?? [];
+  const total = count ?? rows.length;
 
   return (
     <div className="space-y-6">
@@ -45,7 +49,8 @@ export default async function LeadsPage() {
         <h1 className="text-2xl font-bold text-ink-gray-8">{t(locale, "Leads")}</h1>
         <Link href="/leads/new" className="inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"><PlusIcon size={15} /> {t(locale, "New lead")}</Link>
       </div>
-      <Panel title={`${t(locale, "Pipeline")} (${rows.length})`}>
+      <Panel title={`${t(locale, "Pipeline")} (${total})`}>
+        <ListSearch basePath="/leads" q={q} />
         {rows.length === 0 ? (
           <EmptyRow text={t(locale, "No leads — track prospective labs before they convert")} />
         ) : (
@@ -89,6 +94,7 @@ export default async function LeadsPage() {
             </table>
           </div>
         )}
+        <ListFooter basePath="/leads" page={page} total={total} q={q} />
       </Panel>
     </div>
   );

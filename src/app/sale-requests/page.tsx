@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { listWindow, type ListQuery } from "@/components/desk/ListPaging";
 import { createClient } from "@/lib/supabase/server";
 import { ListShell } from "@/components/desk/ListShell";
 import { EmptyRow } from "@/components/dashboard/Panel";
@@ -19,17 +20,18 @@ const STATUS: Record<string, "active" | "pending" | "inactive"> = {
   confirmed: "active", delivered: "active", draft: "pending", cancelled: "inactive",
 };
 
-export default async function SaleRequestsPage() {
+export default async function SaleRequestsPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("sale_requests")
-    .select("id, request_no, request_date, status, customer_name, currency, discount, labs(name)")
-    .order("request_date", { ascending: false })
-    .limit(200);
+    .select("id, request_no, request_date, status, customer_name, currency, discount, labs(name)", { count: "exact" }).search(["request_no", "customer_name"], q)
+    .order("request_date", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
 
-  const totals = await supabase.from("v_sale_request_totals").select("id, total");
+  const totals = await supabase.from("v_sale_request_totals").select("id, total").in("id", rows.map((r) => r.id));
   const totalById = new Map(
     ((totals.data as { id: string; total: number }[]) ?? []).map((r) => [r.id, Number(r.total)]),
   );
@@ -37,7 +39,8 @@ export default async function SaleRequestsPage() {
   return (
     <ListShell
       title={t(locale, "Sales requests")}
-      count={rows.length}
+      count={total}
+      paging={{ basePath: "/sale-requests", page, total, q }}
       newHref="/sale-requests/new"
       newLabel={t(locale, "New sales request")}
     >

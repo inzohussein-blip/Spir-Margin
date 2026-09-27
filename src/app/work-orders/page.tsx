@@ -1,4 +1,5 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, type ListQuery } from "@/components/desk/ListPaging";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EmptyRow } from "@/components/dashboard/Panel";
@@ -30,16 +31,21 @@ const statusBadge: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
-export default async function WorkOrdersPage() {
+export default async function WorkOrdersPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("work_orders")
-    .select("id, wo_no, status, qty, produced_qty, planned_end, products(name), boms(bom_no)")
-    .order("created_at", { ascending: false });
+    .select("id, wo_no, status, qty, produced_qty, planned_end, products(name), boms(bom_no)", { count: "exact" }).search(["wo_no"], q)
+    .order("created_at", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
-  const open = rows.filter((r) => r.status === "draft" || r.status === "in_process").length;
-  const done = rows.filter((r) => r.status === "completed").length;
+  const total = count ?? rows.length;
+  // The cards count every work order, not just this page.
+  const { data: allData } = await supabase.from("work_orders").select("status");
+  const all = (allData as { status: string }[]) ?? [];
+  const open = all.filter((r) => r.status === "draft" || r.status === "in_process").length;
+  const done = all.filter((r) => r.status === "completed").length;
 
   return (
     <div className="space-y-6">
@@ -47,13 +53,14 @@ export default async function WorkOrdersPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label={t(locale, "Open")} value={String(open)} accent="amber" />
         <StatCard label={t(locale, "Completed")} value={String(done)} accent="green" />
-        <StatCard label={t(locale, "Total")} value={String(rows.length)} accent="brand" />
+        <StatCard label={t(locale, "Total")} value={String(all.length)} accent="brand" />
       </div>
 
       <ListShell
         title={t(locale, "Work Orders")}
         breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Manufacturing") }]}
-        count={rows.length}
+        count={total}
+        paging={{ basePath: "/work-orders", page, total, q }}
         newHref="/work-orders/new"
         newLabel={t(locale, "New work order")}
         actions={<Link href="/boms" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "BOMs")}</Link>}

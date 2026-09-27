@@ -1,4 +1,5 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, type ListQuery } from "@/components/desk/ListPaging";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { EmptyRow } from "@/components/dashboard/Panel";
@@ -23,29 +24,35 @@ interface Row {
   blanket_order_items: { id: string; qty: number; rate: number; ordered_qty: number }[];
 }
 
-export default async function BlanketOrdersPage() {
+export default async function BlanketOrdersPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("blanket_orders")
-    .select("id, order_no, order_type, from_date, to_date, status, labs:lab_id(name), companies:supplier_id(name), blanket_order_items(id, qty, rate, ordered_qty)")
-    .order("from_date", { ascending: false });
+    .select("id, order_no, order_type, from_date, to_date, status, labs:lab_id(name), companies:supplier_id(name), blanket_order_items(id, qty, rate, ordered_qty)", { count: "exact" }).search(["order_no"], q)
+    .order("from_date", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
-  const active = rows.filter((r) => r.status === "active");
+  const total = count ?? rows.length;
+  // The cards count every order, not just this page.
+  const { data: allData } = await supabase.from("blanket_orders").select("status");
+  const all = (allData as { status: string }[]) ?? [];
+  const active = all.filter((r) => r.status === "active");
   const agreedValue = (r: Row) => (r.blanket_order_items ?? []).reduce((s, l) => s + Number(l.qty) * Number(l.rate), 0);
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label={t(locale, "Active")} value={String(active.length)} accent="green" />
-        <StatCard label={t(locale, "Draft")} value={String(rows.filter((r) => r.status === "draft").length)} accent="amber" />
-        <StatCard label={t(locale, "Total")} value={String(rows.length)} accent="brand" />
+        <StatCard label={t(locale, "Draft")} value={String(all.filter((r) => r.status === "draft").length)} accent="amber" />
+        <StatCard label={t(locale, "Total")} value={String(all.length)} accent="brand" />
       </div>
 
       <ListShell
         title={t(locale, "Blanket Orders")}
         breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Selling") }]}
-        count={rows.length}
+        count={total}
+        paging={{ basePath: "/blanket-orders", page, total, q }}
         newHref="/blanket-orders/new"
         newLabel={t(locale, "New blanket order")}
         filterPlaceholder="Filter by order / party…"

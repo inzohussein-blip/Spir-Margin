@@ -1,4 +1,5 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, type ListQuery } from "@/components/desk/ListPaging";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { EmptyRow } from "@/components/dashboard/Panel";
@@ -29,28 +30,34 @@ const statusBadge: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
-export default async function AppointmentsPage() {
+export default async function AppointmentsPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("appointments")
-    .select("id, appointment_no, purpose, scheduled_time, status, contact_name, labs(name), devices(asset_code)")
-    .order("scheduled_time", { ascending: true });
+    .select("id, appointment_no, purpose, scheduled_time, status, contact_name, labs(name), devices(asset_code)", { count: "exact" }).search(["appointment_no", "purpose", "contact_name"], q)
+    .order("scheduled_time", { ascending: true }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
-  const upcoming = rows.filter((r) => (r.status === "open" || r.status === "confirmed") && new Date(r.scheduled_time) >= new Date()).length;
+  const total = count ?? rows.length;
+  // The cards count every appointment, not just this page.
+  const { data: allData } = await supabase.from("appointments").select("status, scheduled_time");
+  const all = (allData as { status: string; scheduled_time: string }[]) ?? [];
+  const upcoming = all.filter((r) => (r.status === "open" || r.status === "confirmed") && new Date(r.scheduled_time) >= new Date()).length;
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label={t(locale, "Upcoming")} value={String(upcoming)} accent="brand" />
-        <StatCard label={t(locale, "Completed")} value={String(rows.filter((r) => r.status === "completed").length)} accent="green" />
-        <StatCard label={t(locale, "Total")} value={String(rows.length)} accent="amber" />
+        <StatCard label={t(locale, "Completed")} value={String(all.filter((r) => r.status === "completed").length)} accent="green" />
+        <StatCard label={t(locale, "Total")} value={String(all.length)} accent="amber" />
       </div>
 
       <ListShell
         title={t(locale, "Appointments")}
         breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "CRM") }]}
-        count={rows.length}
+        count={total}
+        paging={{ basePath: "/appointments", page, total, q }}
         newHref="/appointments/new"
         newLabel={t(locale, "New appointment")}
       >

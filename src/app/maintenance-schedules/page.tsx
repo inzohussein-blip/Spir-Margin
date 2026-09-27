@@ -1,4 +1,6 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, ListFooter, type ListQuery } from "@/components/desk/ListPaging";
+import { ListSearch } from "@/components/desk/ListSearch";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -28,14 +30,16 @@ const statusBadge: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
-export default async function MaintenanceSchedulesPage() {
+export default async function MaintenanceSchedulesPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("maintenance_schedules")
-    .select("id, schedule_no, periodicity, start_date, no_of_visits, status, devices(asset_code, products(name)), labs(name), maintenance_schedule_details(id, completion_status)")
-    .order("created_at", { ascending: false });
+    .select("id, schedule_no, periodicity, start_date, no_of_visits, status, devices(asset_code, products(name)), labs(name), maintenance_schedule_details(id, completion_status)", { count: "exact" }).search(["schedule_no"], q)
+    .order("created_at", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
+  const total = count ?? rows.length;
 
   return (
     <div className="space-y-6">
@@ -47,7 +51,8 @@ export default async function MaintenanceSchedulesPage() {
         </div>
       </div>
 
-      <Panel title={`${t(locale, "Schedules")} (${rows.length})`}>
+      <Panel title={`${t(locale, "Schedules")} (${total})`}>
+        <ListSearch basePath="/maintenance-schedules" q={q} />
         {rows.length === 0 ? (
           <EmptyRow text={t(locale, "No schedules yet — plan recurring preventive maintenance for a device")} />
         ) : (
@@ -108,6 +113,7 @@ export default async function MaintenanceSchedulesPage() {
             </table>
           </div>
         )}
+        <ListFooter basePath="/maintenance-schedules" page={page} total={total} q={q} />
       </Panel>
     </div>
   );

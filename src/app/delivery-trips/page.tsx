@@ -1,4 +1,5 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, type ListQuery } from "@/components/desk/ListPaging";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EmptyRow } from "@/components/dashboard/Panel";
@@ -25,29 +26,35 @@ interface Row {
   delivery_trip_stops: { id: string; arrived: boolean }[];
 }
 
-export default async function DeliveryTripsPage() {
+export default async function DeliveryTripsPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("delivery_trips")
-    .select("id, trip_no, driver_name, vehicle, departure_date, status, delivery_trip_stops(id, arrived)")
-    .order("departure_date", { ascending: false });
+    .select("id, trip_no, driver_name, vehicle, departure_date, status, delivery_trip_stops(id, arrived)", { count: "exact" }).search(["trip_no", "driver_name", "vehicle"], q)
+    .order("departure_date", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
-  const inTransit = rows.filter((r) => r.status === "in_transit");
-  const done = rows.filter((r) => r.status === "completed");
+  const total = count ?? rows.length;
+  // The cards count every trip, not just this page.
+  const { data: allData } = await supabase.from("delivery_trips").select("status");
+  const all = (allData as { status: string }[]) ?? [];
+  const inTransit = all.filter((r) => r.status === "in_transit");
+  const done = all.filter((r) => r.status === "completed");
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label={t(locale, "In transit")} value={String(inTransit.length)} accent="amber" />
         <StatCard label={t(locale, "Completed")} value={String(done.length)} accent="green" />
-        <StatCard label={t(locale, "Total")} value={String(rows.length)} accent="brand" />
+        <StatCard label={t(locale, "Total")} value={String(all.length)} accent="brand" />
       </div>
 
       <ListShell
         title={t(locale, "Delivery Trips")}
         breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Stock") }]}
-        count={rows.length}
+        count={total}
+        paging={{ basePath: "/delivery-trips", page, total, q }}
         newHref="/delivery-trips/new"
         newLabel={t(locale, "New trip")}
         actions={<Link href="/delivery-notes" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Delivery notes")}</Link>}

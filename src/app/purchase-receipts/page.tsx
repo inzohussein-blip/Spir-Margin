@@ -1,4 +1,5 @@
 import { ValidatedForm } from "@/components/form/ValidatedForm";
+import { listWindow, type ListQuery } from "@/components/desk/ListPaging";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EmptyRow } from "@/components/dashboard/Panel";
@@ -21,16 +22,21 @@ interface Row {
   purchase_receipt_items: { id: string; qty: number; rate: number }[];
 }
 
-export default async function PurchaseReceiptsPage() {
+export default async function PurchaseReceiptsPage({ searchParams }: { searchParams?: ListQuery }) {
   const locale = getLocale();
   const supabase = createClient();
-  const { data } = await supabase
+  const { page, from, to, q } = listWindow(searchParams);
+  const { data, count } = await supabase
     .from("purchase_receipts")
-    .select("id, receipt_no, posting_date, status, notes, companies:supplier_id(name), purchase_receipt_items(id, qty, rate)")
-    .order("posting_date", { ascending: false });
+    .select("id, receipt_no, posting_date, status, notes, companies:supplier_id(name), purchase_receipt_items(id, qty, rate)", { count: "exact" }).search(["receipt_no", "notes"], q)
+    .order("posting_date", { ascending: false }).range(from, to);
   const rows = (data as unknown as Row[]) ?? [];
-  const draft = rows.filter((r) => r.status === "draft");
-  const received = rows.filter((r) => r.status === "received");
+  const total = count ?? rows.length;
+  // The cards count every receipt, not just this page.
+  const { data: allData } = await supabase.from("purchase_receipts").select("status");
+  const all = (allData as { status: string }[]) ?? [];
+  const draft = all.filter((r) => r.status === "draft");
+  const received = all.filter((r) => r.status === "received");
   const lineValue = (r: Row) => (r.purchase_receipt_items ?? []).reduce((s, l) => s + Number(l.qty) * Number(l.rate), 0);
 
   return (
@@ -38,13 +44,14 @@ export default async function PurchaseReceiptsPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label={t(locale, "Draft")} value={String(draft.length)} accent="amber" />
         <StatCard label={t(locale, "Received")} value={String(received.length)} accent="green" />
-        <StatCard label={t(locale, "Total")} value={String(rows.length)} accent="brand" />
+        <StatCard label={t(locale, "Total")} value={String(all.length)} accent="brand" />
       </div>
 
       <ListShell
         title={t(locale, "Purchase Receipts")}
         breadcrumbs={[{ label: t(locale, "Home"), href: "/" }, { label: t(locale, "Buying") }]}
-        count={rows.length}
+        count={total}
+        paging={{ basePath: "/purchase-receipts", page, total, q }}
         newHref="/purchase-receipts/new"
         newLabel={t(locale, "New receipt")}
         actions={<Link href="/purchase-orders" className="rounded-md border border-outline-gray-2 px-3 py-1.5 text-sm font-medium text-ink-gray-7 hover:bg-surface-gray-1">{t(locale, "Purchase orders")}</Link>}
