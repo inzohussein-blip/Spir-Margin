@@ -1,7 +1,7 @@
 import "server-only";
 import os from "node:os";
 import { getDb } from "@/lib/db/pglite";
-import { currentBuild } from "@/lib/update/updates";
+import { currentBuild } from "@/lib/version";
 import { verifyLicense, hashCode, type Jwk, type DeviceSync } from "./core";
 import { judge, isLocked, type DeviceState, type Payload } from "./state";
 import { webMode, webDeviceState, webMessage, webActivate, webForget } from "./web";

@@ -54,11 +54,8 @@ const dataDir = mkdtempSync(join(tmpdir(), "spir-browser-test-"));
 // silently tested by the next run.
 const server = spawn("npm", ["start"], {
   // The suites exercise the demo records; a real install starts empty.
-  // Updates are asked of a stand-in for GitHub that e2e-updates.mjs runs.
   env: {
     SPIR_SEED: "demo",
-    SPIR_UPDATE_API: "http://127.0.0.1:3396",
-    SPIR_UPDATE_REPO: "acme/spir",
     // Activation codes off on this server whatever the build's default:
     // e2e-license.mjs starts servers of its own for them.
     SPIR_LICENSE_SERVER: "",

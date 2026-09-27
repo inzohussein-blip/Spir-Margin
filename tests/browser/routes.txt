@@ -52,7 +52,6 @@
 /help?tab=coldchain
 /help?tab=guides
 /help?tab=hr
-/help?tab=install
 /help?tab=offline
 /help?tab=settings
 /help?tab=start

@@ -7,15 +7,15 @@ next-env.d.ts
 .pglite-data/
 tests/browser/artifacts/
 
-# Server log written by scripts/windows/run-server.cmd
+# Server log (the installed version's run-server.cmd, archived in windows-archive/)
 logs/
 
 # automatic backups (Settings → Automatic backups)
 /backups/
 RESET-ADMIN-PASSWORD*
 
-# Updates (Settings → Updates): the updater's work folder, and the release
-# number that comes inside each release zip — never committed.
+# The installed version's updater folder and release number (archived in
+# windows-archive/) — never committed.
 /updates/
 /version.json
 

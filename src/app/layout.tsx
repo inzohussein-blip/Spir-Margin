@@ -22,7 +22,6 @@ import { readSession } from "@/lib/auth/current-user";
 import { deviceState, deviceInfo } from "@/lib/license/device";
 import { isLocked, daysLeft, WARN_DAYS, type DeviceState } from "@/lib/license/state";
 import { getNotifications } from "@/lib/notifications";
-import { updateAvailable } from "@/lib/update/updates";
 import { currentCopyState } from "@/lib/backup/copies-server";
 import { getAccessContext, blockReason, navFeatureState } from "@/lib/features";
 import { getLocale } from "@/lib/i18n-server";
@@ -82,8 +81,6 @@ export default async function RootLayout({
   if (session?.ended) redirect(`/login/expired?next=${encodeURIComponent(pathname || "/")}`);
   const user = session?.user ?? null;
   const notifications = user && !isFocused ? await getNotifications(locale) : [];
-  // A new release, for whoever can install it (Settings → Updates).
-  const release = user?.role === "admin" && !isFocused ? updateAvailable() : null;
   // The records on this computer alone, with no recent copy anywhere else.
   const copies = user?.role === "admin" && !isFocused && !process.env.VERCEL ? await currentCopyState() : null;
   if (copies?.atRisk) {
@@ -126,14 +123,6 @@ export default async function RootLayout({
     }
     const { message } = await deviceInfo().catch(() => ({ message: "" }));
     if (message) notifications.unshift({ title: t(locale, "Message from the provider"), sub: message, href: "/welcome?license=1", severity: "blue" });
-  }
-  if (release) {
-    notifications.unshift({
-      title: `${t(locale, "A new release is available")}: ${t(locale, "Release")} ${release.number}`,
-      sub: t(locale, "Install it from Settings"),
-      href: "/settings#updates",
-      severity: "blue",
-    });
   }
 
   // Feature availability (admins bypass; core features are always on).

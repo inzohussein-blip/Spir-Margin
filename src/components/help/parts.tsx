@@ -58,7 +58,7 @@ export function Note({ kind = "info", children }: { kind?: "info" | "warn"; chil
 
 /**
  * A file name, command or address. Always left-to-right, so a command such as
- * `install-windows.cmd -Update` reads in its real order inside Arabic text.
+ * `npm run build` reads in its real order inside Arabic text.
  */
 export function Code({ children }: { children: ReactNode }) {
   return (
