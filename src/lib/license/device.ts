@@ -226,13 +226,13 @@ export async function refreshLicense(force = false): Promise<void> {
   if (!licenseServer()) return;
   const r = await readRow();
   if (!r.token) return;
-  if (!force && r.checked_at && Date.now() - r.checked_at < REFRESH_MS && r.version === appVersion()) return;
   const p = payloadOf(r);
   if (!p) return;
+  if (!force && r.checked_at && Date.now() - r.checked_at < REFRESH_MS && r.version === appVersion()) return;
   try {
     const { status, body } = await call("/api/license/check", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ lid: p.lid, device: r.device_id, version: appVersion(), syncHost: await ownDatabaseHost() }),
+      body: JSON.stringify({ lid: p.lid, device: r.device_id, version: appVersion(), syncHost: await ownDatabaseHost(), sync: await syncReport() }),
     });
     if (!body) return;
     if (body.ok === true && typeof body.token === "string" && body.pub) await store(body);
@@ -240,6 +240,18 @@ export async function refreshLicense(force = false): Promise<void> {
       await write({ blocked: String(body.error), checked_at: Date.now() });
     }
   } catch { /* offline — try again next time */ }
+}
+
+/** How this computer's sync stands, for the owner's list: never an address or a record. */
+async function syncReport(): Promise<{ kind: string; at: number | null; pending: number; error: string } | null> {
+  try {
+    const { syncStatus } = await import("@/lib/sync/engine");
+    const s = await syncStatus();
+    const at = s.lastSyncAt ? Date.parse(s.lastSyncAt) : NaN;
+    return { kind: s.kind ?? "none", at: Number.isFinite(at) ? at : null, pending: s.pending, error: (s.lastError ?? "").slice(0, 200) };
+  } catch {
+    return null;
+  }
 }
 
 /** The host of a hosted database this computer linked on its own (reported to the owner, never the address). */

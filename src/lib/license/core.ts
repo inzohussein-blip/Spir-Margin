@@ -41,6 +41,8 @@ export interface LicensePayload {
   until: number;
   /** How many computers the code allows (shown on the device). */
   seats: number;
+  /** Days this computer may run without reaching the server (none: no limit). */
+  off?: number;
   iat?: number;
 }
 
@@ -51,6 +53,23 @@ export interface LicenseDevice {
   activated_at: number;
   last_seen_at: number | null;
   app_version: string;
+  /** What the computer said about its own sync at its last check. */
+  sync_kind: string;
+  sync_at: number | null;
+  sync_pending: number | null;
+  sync_error: string;
+}
+
+/** A computer's report of its sync, sent with each check. */
+export interface SyncReport { kind: "hosted" | "lan" | "none"; at: number | null; pending: number; error: string }
+
+export function cleanSyncReport(v: unknown): SyncReport | null {
+  if (!v || typeof v !== "object") return null;
+  const r = v as Record<string, unknown>;
+  const kind = r.kind === "hosted" || r.kind === "lan" ? r.kind : "none";
+  const at = Number(r.at);
+  const pending = Math.max(0, Math.min(10_000_000, Math.round(Number(r.pending) || 0)));
+  return { kind, at: Number.isFinite(at) && at > 0 ? at : null, pending, error: typeof r.error === "string" ? r.error.slice(0, 200) : "" };
 }
 
 export interface SyncInfo {
@@ -77,8 +96,30 @@ export interface LicenseRow {
   paid_at: number | null;
   message: string;
   is_trial: boolean;
+  /** The company's phone (WhatsApp messages from the panel). */
+  phone: string;
+  /** Days a computer may stay offline before it must check with the server (0: no limit). */
+  max_offline_days: number;
   sync: SyncInfo | null;
   devices: LicenseDevice[];
+}
+
+/** What the owner did on the panel, and from where. */
+export interface OwnerAction { at: number; ip: string; agent: string; license_id: string; company: string; action: string; detail: string }
+
+/** The owner's prices: per station per month, per extra computer per month. */
+export interface PricePlan { currency: string; stations: Record<string, number>; seat: number; trialDays: number }
+export const MAX_OFFLINE_DAYS = 365;
+
+export function cleanPlan(v: unknown): PricePlan {
+  const r = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
+  const money = (x: unknown) => Math.max(0, Math.min(1e12, Math.round(Number(x) || 0)));
+  const stations: Record<string, number> = {};
+  const src = (r.stations && typeof r.stations === "object" ? r.stations : {}) as Record<string, unknown>;
+  for (const [k, x] of Object.entries(src)) if (/^[a-z]{2,20}$/.test(k)) stations[k] = money(x);
+  const currency = typeof r.currency === "string" && /^[\p{L}A-Za-z$ ]{1,12}$/u.test(r.currency.trim()) ? r.currency.trim() : "IQD";
+  const trialDays = Math.max(1, Math.min(60, Math.round(Number(r.trialDays) || 7)));
+  return { currency, stations, seat: money(r.seat), trialDays };
 }
 
 export interface LicenseEvent { license_id: string; at: number; kind: string; detail: string }
@@ -189,6 +230,17 @@ export async function ensureTables(run: Runner): Promise<void> {
     last_seen_at bigint,
     app_version text not null default '',
     primary key (license_id, device_id))`);
+  // The company's phone, the offline limit, and each computer's report of its sync.
+  await run.query(`alter table _spir_lic add column if not exists phone text not null default ''`);
+  await run.query(`alter table _spir_lic add column if not exists max_offline_days integer not null default 0`);
+  await run.query(`alter table _spir_lic_devices add column if not exists sync_kind text not null default ''`);
+  await run.query(`alter table _spir_lic_devices add column if not exists sync_at bigint`);
+  await run.query(`alter table _spir_lic_devices add column if not exists sync_pending integer`);
+  await run.query(`alter table _spir_lic_devices add column if not exists sync_error text not null default ''`);
+  await run.query(`create table if not exists _spir_lic_actions (
+    id text primary key, at bigint not null, ip text not null default '', agent text not null default '',
+    license_id text not null default '', company text not null default '', action text not null, detail text not null default '')`);
+  await run.query(`create index if not exists _spir_lic_actions_at on _spir_lic_actions (at desc)`);
   await run.query(`create table if not exists _spir_lic_config (key text primary key, value text not null default '')`);
   await run.query(`create table if not exists _spir_lic_events (
     id text primary key, license_id text not null, at bigint not null, kind text not null, detail text not null default '')`);
@@ -254,7 +306,7 @@ const bool = (v: unknown) => v === true || v === "t" || v === "true";
 
 type RawLicense = Record<string, unknown>;
 const COLS = `id, company, note, code_hint, duration_days, seats, modules, status, activated_at, expires_at,
-  created_at, price, paid, paid_at, message, is_trial, sync_info`;
+  created_at, price, paid, paid_at, message, is_trial, sync_info, phone, max_offline_days`;
 
 function toRow(r: RawLicense, devices: LicenseDevice[], cleanModules: (v: unknown) => string[]): LicenseRow {
   let mods: unknown = [];
@@ -278,6 +330,8 @@ function toRow(r: RawLicense, devices: LicenseDevice[], cleanModules: (v: unknow
     paid_at: num(r.paid_at),
     message: String(r.message ?? ""),
     is_trial: bool(r.is_trial),
+    phone: String(r.phone ?? ""),
+    max_offline_days: Number(r.max_offline_days ?? 0) || 0,
     sync,
     devices,
   };
@@ -291,6 +345,10 @@ function toDevice(r: Record<string, unknown>): LicenseDevice {
     activated_at: Number(r.activated_at),
     last_seen_at: num(r.last_seen_at),
     app_version: String(r.app_version ?? ""),
+    sync_kind: String(r.sync_kind ?? ""),
+    sync_at: num(r.sync_at),
+    sync_pending: num(r.sync_pending),
+    sync_error: String(r.sync_error ?? ""),
   };
 }
 
@@ -307,7 +365,7 @@ export class Licenses {
     const out = new Map<string, LicenseDevice[]>();
     if (!ids.length) return out;
     const r = await this.run.query<Record<string, unknown>>(
-      `select license_id, device_id, label, name, activated_at, last_seen_at, app_version
+      `select license_id, device_id, label, name, activated_at, last_seen_at, app_version, sync_kind, sync_at, sync_pending, sync_error
          from _spir_lic_devices where license_id = any($1) order by activated_at`,
       [ids],
     );
@@ -345,16 +403,20 @@ export class Licenses {
   }
 
   // ── Owner actions ─────────────────────────────────────────────────────────
-  async create(v: { company: string; days: number; seats: number; modules: unknown; note?: string; trial?: boolean }): Promise<{ row: LicenseRow; code: string }> {
+  async create(v: {
+    company: string; days: number; seats: number; modules: unknown; note?: string; trial?: boolean;
+    phone?: string; maxOfflineDays?: number; price?: string;
+  }): Promise<{ row: LicenseRow; code: string }> {
     const code = newCode();
     const id = crypto.randomUUID();
     const days = Math.max(1, Math.min(MAX_DAYS, Math.round(v.days)));
     const seats = Math.max(1, Math.min(MAX_SEATS, Math.round(v.seats || 1)));
     await this.run.query(
-      `insert into _spir_lic (id, code_hash, code_hint, company, note, duration_days, seats, modules, created_at, is_trial)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      `insert into _spir_lic (id, code_hash, code_hint, company, note, duration_days, seats, modules, created_at, is_trial, phone, max_offline_days, price)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
       [id, hashCode(code), code.slice(-4), v.company.trim().slice(0, 120), (v.note ?? "").trim().slice(0, 300), days, seats,
-        JSON.stringify(this.cleanModules(v.modules)), Date.now(), !!v.trial],
+        JSON.stringify(this.cleanModules(v.modules)), Date.now(), !!v.trial, cleanPhone(v.phone), offlineDays(v.maxOfflineDays),
+        String(v.price ?? "").trim().slice(0, 40)],
     );
     await this.log(id, "created", `${v.trial ? "trial · " : ""}${days}d · ${seats}`);
     return { row: (await this.get(id))!, code };
@@ -414,6 +476,18 @@ export class Licenses {
         if (paid !== cur.paid || price !== cur.price) await this.log(id, paid ? "paid" : "unpaid", price);
         break;
       }
+      case "phone": {
+        const phone = cleanPhone(a.phone);
+        await this.run.query(`update _spir_lic set phone = $2 where id = $1`, [id, phone]);
+        if (phone !== cur.phone) await this.log(id, "phone", phone || "—");
+        break;
+      }
+      case "offline": {
+        const days = offlineDays(a.days);
+        await this.run.query(`update _spir_lic set max_offline_days = $2 where id = $1`, [id, days]);
+        if (days !== cur.max_offline_days) await this.log(id, "offline", String(days));
+        break;
+      }
       case "message": {
         const text = String(a.text ?? "").trim().slice(0, 300);
         await this.run.query(`update _spir_lic set message = $2 where id = $1`, [id, text]);
@@ -438,7 +512,10 @@ export class Licenses {
   // ── Computer side ────────────────────────────────────────────────────────
   private async issue(row: LicenseRow, device: string): Promise<DeviceResult> {
     const { priv, pub } = await signingKeys(this.run, this.secret);
-    const token = signLicense({ lid: row.id, co: row.company, dev: device, mods: row.modules, until: row.expires_at!, seats: row.seats }, priv);
+    const token = signLicense({
+      lid: row.id, co: row.company, dev: device, mods: row.modules, until: row.expires_at!, seats: row.seats,
+      ...(row.max_offline_days > 0 ? { off: row.max_offline_days } : {}),
+    }, priv);
     return { ok: true, token, pub, row, sync: await this.deviceSync(row.id), vkey: await this.verifyKey(row.id) };
   }
 
@@ -485,7 +562,7 @@ export class Licenses {
   }
 
   /** Periodic check from an activated computer: the current state, signed again. */
-  async check(lid: string, device: string, version = ""): Promise<DeviceResult> {
+  async check(lid: string, device: string, version = "", report: SyncReport | null = null): Promise<DeviceResult> {
     const row = await this.get(lid);
     if (!row) return { ok: false, error: "not_found" };
     if (!row.devices.some((d) => d.device_id === device)) return { ok: false, error: "other_device", row };
@@ -494,6 +571,12 @@ export class Licenses {
       `update _spir_lic_devices set last_seen_at = $3${v ? ", app_version = $4" : ""} where license_id = $1 and device_id = $2`,
       v ? [lid, device, Date.now(), v] : [lid, device, Date.now()],
     );
+    if (report) {
+      await this.run.query(
+        `update _spir_lic_devices set sync_kind = $3, sync_at = $4, sync_pending = $5, sync_error = $6 where license_id = $1 and device_id = $2`,
+        [lid, device, report.kind, report.at, report.pending, report.error],
+      );
+    }
     if (row.status === "stopped") return { ok: false, error: "stopped", row };
     if (row.expires_at != null && row.expires_at <= Date.now()) return { ok: false, error: "expired", row };
     return this.issue(row, device);
@@ -583,6 +666,41 @@ export class Licenses {
     }
   }
 
+  // ── What the owner did, and from where ─────────────────────────────────
+  async logAction(a: Omit<OwnerAction, "at">): Promise<void> {
+    try {
+      await this.run.query(
+        `insert into _spir_lic_actions (id, at, ip, agent, license_id, company, action, detail) values ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [crypto.randomUUID(), Date.now(), a.ip.slice(0, 64), a.agent.slice(0, 80), a.license_id.slice(0, 64), a.company.slice(0, 120),
+          a.action.slice(0, 40), a.detail.slice(0, 200)],
+      );
+      await this.run.query(`delete from _spir_lic_actions where at < $1`, [Date.now() - 400 * DAY]);
+    } catch { /* the log never blocks the action */ }
+  }
+  async actions(limit = 200): Promise<OwnerAction[]> {
+    try {
+      const r = await this.run.query<Record<string, unknown>>(
+        `select at, ip, agent, license_id, company, action, detail from _spir_lic_actions order by at desc limit $1`, [limit]);
+      return r.rows.map((x) => ({
+        at: Number(x.at), ip: String(x.ip ?? ""), agent: String(x.agent ?? ""), license_id: String(x.license_id ?? ""),
+        company: String(x.company ?? ""), action: String(x.action ?? ""), detail: String(x.detail ?? ""),
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  // ── The owner's prices ───────────────────────────────────────────────────
+  async plan(): Promise<PricePlan> {
+    const raw = await getConfig(this.run, "price_plan").catch(() => null);
+    try { return cleanPlan(raw ? JSON.parse(raw) : {}); } catch { return cleanPlan({}); }
+  }
+  async setPlan(v: unknown): Promise<PricePlan> {
+    const p = cleanPlan(v);
+    await setConfig(this.run, "price_plan", JSON.stringify(p));
+    return p;
+  }
+
   // ── Backup of the codes ──────────────────────────────────────────────────
   // Codes as hashes (the codes themselves are never stored), devices, history
   // and the contact line. The signing key is left out: after a restore the
@@ -591,7 +709,11 @@ export class Licenses {
     const licenses = (await this.run.query<Record<string, unknown>>(`select * from _spir_lic order by created_at`)).rows;
     const devices = (await this.run.query<Record<string, unknown>>(`select * from _spir_lic_devices order by activated_at`)).rows;
     const events = (await this.run.query<Record<string, unknown>>(`select * from _spir_lic_events order by at`)).rows;
-    return { app: "spir-codes", version: 1, exported_at: new Date().toISOString(), licenses, devices, events, contact: (await getConfig(this.run, "contact")) ?? "" };
+    const actions = (await this.run.query<Record<string, unknown>>(`select * from _spir_lic_actions order by at`)).rows;
+    return {
+      app: "spir-codes", version: 1, exported_at: new Date().toISOString(), licenses, devices, events, actions,
+      contact: (await getConfig(this.run, "contact")) ?? "", plan: await this.plan(),
+    };
   }
 
   /** Merge a backup in: codes and devices are added or updated; nothing is deleted. */
@@ -606,6 +728,7 @@ export class Licenses {
         if (c === "paid" || c === "is_trial") return bool(v);
         if (c === "modules") return typeof v === "string" ? v : JSON.stringify(this.cleanModules(v));
         if (c === "seats") return Math.max(1, Math.min(MAX_SEATS, Number(v) || 1));
+        if (c === "max_offline_days") return offlineDays(v);
         return v ?? (TEXT_COLS.has(c) ? "" : c === "status" ? "active" : null);
       });
       await this.run.query(
@@ -631,14 +754,26 @@ export class Licenses {
         [e.id, e.license_id, Number(e.at), String(e.kind ?? ""), String(e.detail ?? "")]);
       ne++;
     }
+    for (const a of b.actions ?? []) {
+      if (typeof a.id !== "string" || typeof a.action !== "string") continue;
+      await this.run.query(
+        `insert into _spir_lic_actions (id, at, ip, agent, license_id, company, action, detail) values ($1, $2, $3, $4, $5, $6, $7, $8) on conflict (id) do nothing`,
+        [a.id, Number(a.at) || Date.now(), String(a.ip ?? ""), String(a.agent ?? ""), String(a.license_id ?? ""), String(a.company ?? ""), a.action, String(a.detail ?? "")]);
+    }
     if (typeof b.contact === "string" && b.contact.trim()) await setConfig(this.run, "contact", b.contact.trim().slice(0, 300));
+    if (b.plan) await this.setPlan(b.plan);
     return { licenses: nl, devices: nd, events: ne };
   }
 }
 
 const LIC_COLS = ["id", "code_hash", "code_hint", "company", "note", "duration_days", "seats", "modules", "status", "activated_at",
-  "expires_at", "created_at", "price", "paid", "paid_at", "message", "is_trial", "sync_config", "sync_info", "verify_key"] as const;
-const TEXT_COLS = new Set<string>(["note", "code_hint", "price", "message", "sync_config", "sync_info", "verify_key"]);
+  "expires_at", "created_at", "price", "paid", "paid_at", "message", "is_trial", "sync_config", "sync_info", "verify_key", "phone", "max_offline_days"] as const;
+const TEXT_COLS = new Set<string>(["note", "code_hint", "price", "message", "sync_config", "sync_info", "verify_key", "phone"]);
+
+/** A phone as the owner typed it: digits, spaces, + and dashes only. */
+export const cleanPhone = (v: unknown) => String(v ?? "")
+  .replace(/[٠-٩]/g, (c) => String(c.charCodeAt(0) - 0x0660)).replace(/[^\d+\- ]/g, "").trim().slice(0, 30);
+export const offlineDays = (v: unknown) => Math.max(0, Math.min(MAX_OFFLINE_DAYS, Math.round(Number(v) || 0)));
 
 export interface CodesBackup {
   app: "spir-codes";
@@ -647,7 +782,9 @@ export interface CodesBackup {
   licenses: Record<string, unknown>[];
   devices: Record<string, unknown>[];
   events: Record<string, unknown>[];
+  actions?: Record<string, unknown>[];
   contact: string;
+  plan?: PricePlan;
 }
 
 /** What a computer receives about its company's database: the connection itself (the computer is trusted — it stores its own link the same way). */
@@ -668,5 +805,7 @@ export type LicenseAction =
   | { action: "rename"; company: string; note?: string }
   | { action: "payment"; price: string; paid: boolean }
   | { action: "message"; text: string }
+  | { action: "phone"; phone: string }
+  | { action: "offline"; days: number }
   | { action: "new_code" }
   | { action: "delete" };

@@ -6,7 +6,9 @@
  *   need        no license yet: the activation window (needs the internet once)
  *   ok          a genuine license for this computer, in date
  *   grace       a computer that held records before codes arrived: 30 days
- *   locked      expired, stopped, moved away, grace over, or the clock turned back
+ *   locked      expired, stopped, moved away, grace over, the clock turned back,
+ *               or offline longer than the code allows (its license is signed
+ *               with the day it was issued, so the count cannot be forged)
  *
  * A server that has never answered is taken as ON when one is configured:
  * the first registration is the one moment that needs the internet, and a
@@ -19,14 +21,20 @@ export const WARN_DAYS = 14;
 export const CLOCK_SLACK_MS = 12 * 3600_000;
 const DAY = 86_400_000;
 
-export interface Payload { lid: string; co: string; dev: string; mods: string[]; until: number; seats: number }
+export interface Payload {
+  lid: string; co: string; dev: string; mods: string[]; until: number; seats: number;
+  /** Days the computer may run without reaching the server; absent: no limit. */
+  off?: number;
+  /** When the server signed it (seconds). */
+  iat?: number;
+}
 
 export type DeviceState =
   | { kind: "off" }
   | { kind: "need" }
-  | { kind: "ok"; company: string; until: number; mods: string[]; seats: number }
+  | { kind: "ok"; company: string; until: number; mods: string[]; seats: number; checkBy?: number }
   | { kind: "grace"; until: number }
-  | { kind: "locked"; reason: "expired" | "stopped" | "gone" | "grace_over" | "clock"; company?: string; until?: number };
+  | { kind: "locked"; reason: "expired" | "stopped" | "gone" | "grace_over" | "clock" | "offline"; company?: string; until?: number };
 
 export interface JudgeInput {
   /** A codes server is set for this build. */
@@ -57,7 +65,9 @@ export function judge(i: JudgeInput): DeviceState {
       return { kind: "locked", reason, company: p.co, until: p.until };
     }
     if (p.until <= now) return { kind: "locked", reason: "expired", company: p.co, until: p.until };
-    return { kind: "ok", company: p.co, until: p.until, mods: p.mods, seats: p.seats };
+    const checkBy = offlineUntil(p);
+    if (checkBy != null && checkBy <= now) return { kind: "locked", reason: "offline", company: p.co, until: p.until };
+    return { kind: "ok", company: p.co, until: p.until, mods: p.mods, seats: p.seats, ...(checkBy != null ? { checkBy } : {}) };
   }
   if (i.legacy) {
     if (rolledBack) return { kind: "locked", reason: "clock" };
@@ -67,6 +77,14 @@ export function judge(i: JudgeInput): DeviceState {
     return { kind: "grace", until };
   }
   return { kind: "need" };
+}
+
+/** The moment a license with an offline limit must have been renewed by (null: no limit). */
+export function offlineUntil(p: Payload): number | null {
+  const off = Number(p.off);
+  const iat = Number(p.iat);
+  if (!(off > 0) || !(iat > 0)) return null;
+  return iat * 1000 + off * DAY;
 }
 
 /** The app is closed on this computer until a code is entered. */

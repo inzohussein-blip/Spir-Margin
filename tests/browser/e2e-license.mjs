@@ -102,8 +102,11 @@ await owner.getByRole("alert").filter({ hasText: /./ }).first().waitFor({ timeou
 check("a wrong owner password is refused", (await text(owner)).includes("كلمة المرور غير صحيحة"));
 await owner.fill('input[name="password"]', OWNER_PASSWORD);
 await owner.locator('form button').click();
+await owner.getByTestId("panel-nav").waitFor({ timeout: 20_000 }).catch(() => {});
+check("the owner reaches the code manager, in sections", (await owner.getByTestId("panel-nav").locator("[data-section]").count()) === 8);
+check("with the filter tiles and their counts", (await owner.locator('[data-filter="all"]').getAttribute("data-count")) === "0");
+await owner.locator('[data-section="new"]').click();
 await owner.getByTestId("create-code").waitFor({ timeout: 20_000 }).catch(() => {});
-check("the owner reaches the code manager", (await owner.getByTestId("create-code").count()) === 1);
 
 // ---------------------------------------------------------------- 2. a code: one computer, no manufacturing
 const form = owner.getByTestId("create-code");
@@ -115,6 +118,9 @@ await form.getByRole("button", { name: "إنشاء الرمز" }).click();
 await owner.getByTestId("new-code").waitFor({ timeout: 20_000 }).catch(() => {});
 const code = ((await owner.locator("[data-code]").innerText().catch(() => "")) ?? "").trim();
 check("a new code is shown once, readable", /^[2-9A-Z]{4}-[2-9A-Z]{4}-[2-9A-Z]{4}$/.test(code), code);
+check("with its activation message ready for WhatsApp", (await owner.getByTestId("activation-message").innerText()).includes(code)
+  && ((await owner.getByTestId("whatsapp-activation").getAttribute("href")) ?? "").startsWith("https://wa.me/"));
+check("the tiles count it as not used yet", (await owner.locator('[data-filter="waiting"]').getAttribute("data-count")) === "1");
 const row = () => owner.locator('[data-code-row="شركة الاختبار"]');
 await row().locator('[data-state="waiting"]').waitFor({ timeout: 20_000 }).catch(() => {});
 check("the code is listed as not activated yet", (await row().locator('[data-state="waiting"]').count()) === 1);
@@ -178,6 +184,8 @@ check("the owner sees the computer that joined", (await row().locator("[data-sea
 await row().locator("button[aria-expanded]").click();
 await row().locator("[data-device]").first().waitFor({ timeout: 10_000 }).catch(() => {});
 check("with its name and version", (await row().locator("[data-device]").count()) === 1);
+check("and how its sync stands", /دون مزامنة|لم يُبلِّغ/.test(await row().locator("[data-device] [data-sync]").first().innerText()));
+check("its time bar", (await row().locator("[data-timebar]").getAttribute("data-left")) === "30");
 await row().locator('input[type="number"]').first().fill("2");
 await row().getByRole("button", { name: "حفظ عدد الحواسيب" }).click();
 await owner.waitForTimeout(1500);
@@ -226,6 +234,36 @@ await row().locator("[data-device]").last().getByRole("button", { name: /تحر�
 await owner.waitForTimeout(1500);
 await checkNow(b, pcB.url);
 check("a freed seat locks that computer only", (await b.locator('[data-reason="gone"]').count()) === 1, (await text(b)).slice(0, 200));
+
+// ---------------------------------------------------------------- 5b. payments, receipt, prices, the owner's log
+await owner.reload({ waitUntil: "networkidle" });
+await row().locator("button[aria-expanded]").click();
+await row().getByPlaceholder("المبلغ").fill("150000");
+await row().getByRole("button", { name: "تعليم كمدفوع" }).click();
+await row().locator("[data-receipt]").waitFor({ timeout: 15_000 }).catch(() => {});
+const receiptHref = await row().locator("[data-receipt]").getAttribute("href").catch(() => null);
+check("a paid code has a receipt", !!receiptHref);
+if (receiptHref) {
+  const rp = await owner.context().newPage();
+  await rp.goto(codes.url + receiptHref, { waitUntil: "networkidle" });
+  check("the receipt shows the company and the amount", (await rp.getByTestId("receipt").innerText().catch(() => "")).includes("شركة الاختبار")
+    && (await rp.locator("[data-amount]").innerText()).includes("150000"));
+  check("the receipt has no Arabic-Indic digits", !/[٠-٩]/.test(await text(rp)));
+  await rp.close();
+}
+await owner.locator('[data-section="money"]').click();
+check("payments: received this month", /150,000/.test(await owner.getByTestId("money").innerText()));
+await owner.locator('[data-section="prices"]').click();
+await owner.locator('[data-plan-station="sales"]').fill("50000");
+await owner.getByTestId("save-plan").click();
+await owner.waitForTimeout(1200);
+check("the price of a code is worked out from the prices", /\d/.test(await owner.getByTestId("quote-total").innerText()));
+await owner.locator('[data-section="security"]').click();
+const log = owner.getByTestId("owner-actions");
+await log.waitFor({ timeout: 10_000 }).catch(() => {});
+check("the owner's log keeps what was done", (await log.locator('[data-action="create"]').count()) === 1
+  && (await log.locator('[data-action="payment"]').count()) >= 1 && (await log.locator('[data-action="plan"]').count()) === 1);
+check("the panel shows no Arabic-Indic digits", !/[٠-٩]/.test(await text(owner)));
 
 // ---------------------------------------------------------------- 6. offline: the license is checked on the computer
 await a.goto(pcA.url + "/welcome?license=1", { waitUntil: "networkidle" });

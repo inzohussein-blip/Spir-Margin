@@ -224,3 +224,38 @@ test("printed documents: the code's verify key signs them; a changed fact fails"
   assert.equal(dv.docValid(token, "0".repeat(64)), false, "another company's key fails");
   assert.equal(dv.openDoc("garbage"), null);
 });
+
+test("phone, offline limit, each computer's sync report, the owner's log and prices — and they survive a backup", async () => {
+  const { row, code } = await lic.create({ company: "مختبر الهاتف", days: 90, seats: 1, modules: ["sales"], phone: "٠٧٨٠ 399 3585 abc", maxOfflineDays: 30, price: "150,000 IQD" });
+  assert.deepEqual([row.phone, row.max_offline_days, row.price], ["0780 399 3585", 30, "150,000 IQD"]);
+  const a = await lic.activate(code, "device-phone-1", "PC");
+  assert.equal(core.verifyLicense(a.token, a.pub).off, 30, "the license carries the offline limit");
+  await lic.update(row.id, { action: "offline", days: 9999 });
+  assert.equal((await lic.get(row.id)).max_offline_days, core.MAX_OFFLINE_DAYS);
+  await lic.update(row.id, { action: "offline", days: 0 });
+  const b = await lic.check(row.id, "device-phone-1", "build-9", core.cleanSyncReport({ kind: "lan", at: 1_700_000_000_000, pending: 12.7, error: "x".repeat(500) }));
+  assert.equal(core.verifyLicense(b.token, b.pub).off, undefined, "no limit: none in the license");
+  const d = (await lic.get(row.id)).devices[0];
+  assert.deepEqual([d.sync_kind, d.sync_at, d.sync_pending, d.sync_error.length], ["lan", 1_700_000_000_000, 13, 200]);
+  assert.equal(core.cleanSyncReport("nope"), null);
+  assert.equal(core.cleanSyncReport({ kind: "evil" }).kind, "none");
+
+  await lic.logAction({ ip: "1.2.3.4", agent: "Chrome", license_id: row.id, company: row.company, action: "extend", detail: "+30" });
+  const acts = await lic.actions();
+  assert.deepEqual([acts[0].ip, acts[0].action, acts[0].company], ["1.2.3.4", "extend", "مختبر الهاتف"]);
+
+  const plan = await lic.setPlan({ currency: "IQD", stations: { sales: "50000", "bad key!": 5, hr: -3 }, seat: 10000, trialDays: 999 });
+  assert.deepEqual(plan, { currency: "IQD", stations: { sales: 50000, hr: 0 }, seat: 10000, trialDays: 60 });
+  assert.deepEqual(await lic.plan(), plan);
+
+  const backup = JSON.parse(JSON.stringify(await lic.exportAll()));
+  const fresh = new PGlite();
+  await core.ensureTables(fresh);
+  const other = new core.Licenses(fresh, SECRET, stations.cleanStations);
+  await other.importAll(backup);
+  const back = await other.get(row.id);
+  assert.deepEqual([back.phone, back.max_offline_days], ["0780 399 3585", 0]);
+  assert.equal((await other.actions()).length, acts.length);
+  assert.deepEqual(await other.plan(), plan);
+  await fresh.close();
+});

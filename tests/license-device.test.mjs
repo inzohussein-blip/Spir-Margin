@@ -93,3 +93,14 @@ test("an unusable or garbled address is ignored", () => {
   assert.deepEqual(plan({ incoming: "postgresql://u:p@pooler.example:6543/postgres" }), { action: "none" });
   assert.deepEqual(plan({ incoming: "not a url" }), { action: "none" });
 });
+
+test("a code with an offline limit: the computer must reach the server within that many days", () => {
+  const iat = Math.floor((NOW - 10 * DAY) / 1000);
+  const ok = s.judge({ ...base, payload: lic({ off: 30, iat }) });
+  assert.equal(ok.kind, "ok");
+  assert.equal(ok.checkBy, iat * 1000 + 30 * DAY, "the day it must be checked by is shown ahead");
+  const late = s.judge({ ...base, payload: lic({ off: 7, iat }) });
+  assert.deepEqual([late.kind, late.reason], ["locked", "offline"]);
+  assert.equal(s.judge({ ...base, payload: lic({ iat }) }).kind, "ok", "no limit on the code: no limit");
+  assert.equal(s.offlineUntil(lic({ off: 0, iat })), null);
+});
