@@ -113,6 +113,21 @@ export async function webActivate(code: string, version: string): Promise<{ ok: 
   }
 }
 
+/** This browser's code and its document-signing key, and the site's own address. */
+export async function webVerifyKey(): Promise<{ lid: string; key: string; base: string } | null> {
+  if (!codesServerEnabled()) return null;
+  const token = readCookie(LICENSE_COOKIE);
+  if (!token) return null;
+  const { licenses, pub } = await codes();
+  const p = verifyLicense(token, pub) as Payload | null;
+  if (!p) return null;
+  let host = "";
+  try { host = headers().get("x-forwarded-host") ?? headers().get("host") ?? ""; } catch { /* outside a request */ }
+  if (!host) return null;
+  const proto = /^(localhost|127\.)/.test(host) ? "http" : "https";
+  return { lid: p.lid, key: await licenses.verifyKey(p.lid), base: `${proto}://${host}` };
+}
+
 /** "Check now": forget the last answer for this browser. */
 export function webForget(): void {
   const device = readCookie(DEVICE_COOKIE);

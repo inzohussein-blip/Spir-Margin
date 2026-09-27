@@ -201,3 +201,26 @@ test("stations map onto the sidebar groups", () => {
   for (const g of ["Selling", "CRM", "Shortcuts", "Accounting", "Reports", "Tools", "Home", "Setup", "Monitoring"]) assert.ok(!closed.has(g), g);
   assert.equal(stations.closedGroups(stations.STATION_IDS).size, 0);
 });
+
+test("printed documents: the code's verify key signs them; a changed fact fails", async () => {
+  const dv = await importTs("src/lib/license/doc-verify.ts");
+  const { row, code } = await lic.create({ company: "شركة الفواتير", days: 30, seats: 1 });
+  const res = await lic.activate(code, "dev-print", "حاسوب");
+  assert.equal(res.ok, true);
+  assert.match(res.vkey, /^[0-9a-f]{64}$/, "the license brings the key");
+  assert.equal(await lic.verifyKey(row.id), res.vkey, "and it stays the same");
+  await lic.update(row.id, { action: "new_code" });
+  assert.equal(await lic.verifyKey(row.id), res.vkey, "a new code keeps the key: printed papers stay valid");
+
+  const facts = { k: "فاتورة", n: "SI-0042", d: "2026-09-27", a: 1250.5, c: "USD", p: "مختبر النور" };
+  const token = dv.signDoc(row.id, res.vkey, facts);
+  assert.ok(token.length < 400, "short enough for a small QR");
+  const open = dv.openDoc(token);
+  assert.deepEqual([open.l, open.n, open.a, open.p], [row.id, "SI-0042", 1250.5, "مختبر النور"]);
+  assert.equal(dv.docValid(token, res.vkey), true);
+  const [body, sig] = token.split(".");
+  const forged = Buffer.from(JSON.stringify({ ...JSON.parse(Buffer.from(body, "base64url").toString()), a: 12.5 })).toString("base64url");
+  assert.equal(dv.docValid(`${forged}.${sig}`, res.vkey), false, "a changed total fails");
+  assert.equal(dv.docValid(token, "0".repeat(64)), false, "another company's key fails");
+  assert.equal(dv.openDoc("garbage"), null);
+});

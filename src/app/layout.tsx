@@ -56,6 +56,7 @@ export default async function RootLayout({
     pathname.startsWith("/login/") ||
     pathname === "/welcome" ||
     pathname === "/licenses" ||
+    pathname.startsWith("/verify/") ||
     pathname.startsWith("/welcome/");
   // Focused pages keep auth but provide their own chrome (POS terminal, and the
   // customer portal, which must never show the staff desk shell).
@@ -65,7 +66,7 @@ export default async function RootLayout({
   // This computer's activation code (src/lib/license): waiting for it, or
   // locked, every page but the welcome screen (where the code is entered)
   // and the codes server's own page sends there.
-  const licenseFree = pathname === "/welcome" || pathname.startsWith("/welcome/") || pathname === "/licenses" || pathname.startsWith("/login/expired");
+  const licenseFree = pathname === "/welcome" || pathname.startsWith("/welcome/") || pathname === "/licenses" || pathname.startsWith("/verify/") || pathname.startsWith("/login/expired");
   const license = await deviceState().catch(() => ({ kind: "off" }) as DeviceState);
   if (!licenseFree && isLocked(license)) redirect("/welcome?activate=1");
   const session = isBare ? null : await readSession();

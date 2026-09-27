@@ -71,6 +71,9 @@
 /kits
 /kits/new
 /kits/withdraw
+/labels
+/labels?kind=batches
+/labels?kind=serials
 /labs
 /labs/new
 /landed-costs
@@ -159,6 +162,7 @@
 /tools/converter
 /tools/profit
 /users
+/verify/not-a-real-token
 /w/cold-chain
 /w/hr
 /w/shortcuts

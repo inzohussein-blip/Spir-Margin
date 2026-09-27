@@ -5,6 +5,7 @@ import { currentBuild } from "@/lib/update/updates";
 import { verifyLicense, hashCode, type Jwk, type DeviceSync } from "./core";
 import { judge, isLocked, type DeviceState, type Payload } from "./state";
 import { webMode, webDeviceState, webMessage, webActivate, webForget } from "./web";
+import { signDoc, type DocFacts } from "./doc-verify";
 
 /**
  * This computer's activation code — the device side.
@@ -56,6 +57,7 @@ interface Row {
   grace_start: number | null;
   sync_host: string;
   code_hash: string;
+  verify_key: string;
 }
 
 type G = { __spirLicense?: { state: DeviceState; at: number } | null; __spirLicenseAsked?: number };
@@ -84,6 +86,7 @@ async function readRow(): Promise<Row> {
     grace_start: num(r.grace_start),
     sync_host: String(r.sync_host ?? ""),
     code_hash: String(r.code_hash ?? ""),
+    verify_key: String(r.verify_key ?? ""),
   };
 }
 
@@ -181,6 +184,7 @@ async function store(d: Record<string, unknown>): Promise<void> {
   await write({
     token: String(d.token), pub: d.pub, checked_at: Date.now(), message: typeof d.message === "string" ? d.message.slice(0, 300) : "",
     blocked: null, version: appVersion(), enabled: true,
+    ...(typeof d.vkey === "string" && d.vkey ? { verify_key: d.vkey } : {}),
     // The server's clock resets a computer whose clock was set wrongly forward.
     ...(typeof d.now === "number" ? { seen_at: d.now } : {}),
   });
@@ -272,6 +276,31 @@ export async function codeOpensThisComputer(code: string): Promise<boolean> {
   if (r.code_hash && r.code_hash === hashCode(code)) return true;
   const res = await activateCode(code);
   return res.ok && (await deviceState()).kind === "ok";
+}
+
+/**
+ * The address a printed document's QR points to: its facts signed with this
+ * code's verify key, checked on the codes server's /verify page. Null when
+ * there is no key yet (codes off, or a license from before keys existed —
+ * the next check brings one).
+ */
+export async function docVerifyUrl(facts: DocFacts): Promise<string | null> {
+  try {
+    if (webMode()) {
+      const { webVerifyKey } = await import("./web");
+      const k = await webVerifyKey();
+      if (!k) return null;
+      return `${k.base}/verify/${signDoc(k.lid, k.key, facts)}`;
+    }
+    const server = licenseServer();
+    if (!server) return null;
+    const r = await readRow();
+    const p = payloadOf(r);
+    if (!p || !r.verify_key) return null;
+    return `${server}/verify/${signDoc(p.lid, r.verify_key, facts)}`;
+  } catch {
+    return null;
+  }
 }
 
 /** "Check now" on the lock screen and the welcome page: ask again at once. */

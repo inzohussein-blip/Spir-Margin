@@ -178,6 +178,8 @@ export async function ensureTables(run: Runner): Promise<void> {
     is_trial boolean not null default false,
     sync_config text not null default '',
     sync_info text not null default '')`);
+  // The key the company's printed documents are signed with (their QR).
+  await run.query(`alter table _spir_lic add column if not exists verify_key text not null default ''`);
   await run.query(`create table if not exists _spir_lic_devices (
     license_id text not null,
     device_id text not null,
@@ -437,7 +439,17 @@ export class Licenses {
   private async issue(row: LicenseRow, device: string): Promise<DeviceResult> {
     const { priv, pub } = await signingKeys(this.run, this.secret);
     const token = signLicense({ lid: row.id, co: row.company, dev: device, mods: row.modules, until: row.expires_at!, seats: row.seats }, priv);
-    return { ok: true, token, pub, row, sync: await this.deviceSync(row.id) };
+    return { ok: true, token, pub, row, sync: await this.deviceSync(row.id), vkey: await this.verifyKey(row.id) };
+  }
+
+  /** The code's key for signing its printed documents (made on first use; kept across a new code). */
+  async verifyKey(id: string): Promise<string> {
+    const r = await this.run.query<{ verify_key: string }>(`select verify_key from _spir_lic where id = $1`, [id]);
+    const have = r.rows[0]?.verify_key ?? "";
+    if (have) return have;
+    const key = crypto.randomBytes(32).toString("hex");
+    await this.run.query(`update _spir_lic set verify_key = $2 where id = $1 and verify_key = ''`, [id, key]);
+    return (await this.run.query<{ verify_key: string }>(`select verify_key from _spir_lic where id = $1`, [id])).rows[0]?.verify_key ?? key;
   }
 
   /**
@@ -625,8 +637,8 @@ export class Licenses {
 }
 
 const LIC_COLS = ["id", "code_hash", "code_hint", "company", "note", "duration_days", "seats", "modules", "status", "activated_at",
-  "expires_at", "created_at", "price", "paid", "paid_at", "message", "is_trial", "sync_config", "sync_info"] as const;
-const TEXT_COLS = new Set<string>(["note", "code_hint", "price", "message", "sync_config", "sync_info"]);
+  "expires_at", "created_at", "price", "paid", "paid_at", "message", "is_trial", "sync_config", "sync_info", "verify_key"] as const;
+const TEXT_COLS = new Set<string>(["note", "code_hint", "price", "message", "sync_config", "sync_info", "verify_key"]);
 
 export interface CodesBackup {
   app: "spir-codes";
@@ -642,7 +654,7 @@ export interface CodesBackup {
 export interface DeviceSync { conn: string; at: number }
 
 export type DeviceResult =
-  | { ok: true; token: string; pub: Jwk; row: LicenseRow; sync: DeviceSync | null }
+  | { ok: true; token: string; pub: Jwk; row: LicenseRow; sync: DeviceSync | null; vkey: string }
   | { ok: false; error: "not_found" | "other_device" | "stopped" | "expired" | "seats_full"; row?: LicenseRow };
 
 export type LicenseAction =

@@ -1,4 +1,4 @@
--- Spir-Margin — combined schema (all 117 migrations). Run ONCE on an EMPTY DB.
+-- Spir-Margin — combined schema (all 118 migrations). Run ONCE on an EMPTY DB.
 --
 -- GENERATED FILE — do not edit by hand. Rebuild with:
 --     npm run schema
@@ -9245,6 +9245,18 @@ create trigger trg_cc_log_calibrated after insert on cc_equipment_log
 select _spir_attach_change_log();
 select _spir_guard_triggers();
 
+-- ===== migration: 0119_license_verify_key.sql =====
+-- =====================================================================
+-- Migration 0119 : The key this computer signs its printed documents with
+--
+-- Delivered by the codes server with the license. A printed invoice,
+-- quotation or order carries a QR with the document's facts signed with it;
+-- anyone can scan it and the codes server's /verify page says whether the
+-- facts are the company's. Signing needs no internet. Local to the computer.
+-- =====================================================================
+
+alter table _spir_license add column if not exists verify_key text not null default '';
+
 select _spir_attach_change_log();
 
 create table if not exists _spir_migrations (
@@ -9368,7 +9380,8 @@ insert into _spir_migrations(filename) values
   ('0115_device_license.sql'),
   ('0116_license_code_sign_in.sql'),
   ('0117_hr.sql'),
-  ('0118_cold_chain.sql')
+  ('0118_cold_chain.sql'),
+  ('0119_license_verify_key.sql')
 on conflict do nothing;
 create table if not exists _spir_meta (k text primary key);
 insert into _spir_meta(k) values ('bootstrapped') on conflict do nothing;
