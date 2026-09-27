@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { navGroups } from "@/lib/nav";
+import { navGroups, groupSlug } from "@/lib/nav";
 import { getLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
 
@@ -51,6 +51,10 @@ const NUMBER_CARDS: Record<string, { label: string; table: string }[]> = {
     { label: "Opportunities", table: "opportunities" },
     { label: "Contracts", table: "contracts" },
   ],
+  "cold-chain": [
+    { label: "Fridges & stores", table: "cc_storage_units" },
+    { label: "Instruments", table: "cc_equipment" },
+  ],
   hr: [
     { label: "Employees", table: "hr_employees" },
     { label: "Leaves", table: "hr_leaves" },
@@ -63,7 +67,7 @@ const NUMBER_CARDS: Record<string, { label: string; table: string }[]> = {
 };
 
 export default async function WorkspacePage({ params }: { params: { slug: string } }) {
-  const group = navGroups.find((g) => g.label.toLowerCase() === params.slug.toLowerCase());
+  const group = navGroups.find((g) => groupSlug(g.label) === params.slug.toLowerCase());
   if (!group) notFound();
 
   const locale = getLocale();

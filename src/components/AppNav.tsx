@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRightIcon, LockIcon } from "lucide-react";
-import { navGroups } from "@/lib/nav";
+import { navGroups, groupSlug } from "@/lib/nav";
 import { t, type Locale } from "@/lib/i18n";
 
 export function AppNav({
@@ -71,7 +71,7 @@ export function AppNav({
         return (
           <div key={group.label} className="mt-2">
             <div className="flex items-center px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-ink-gray-4">
-              <Link href={`/w/${group.label.toLowerCase()}`} className="flex-1 hover:text-ink-gray-6">
+              <Link href={`/w/${groupSlug(group.label)}`} className="flex-1 hover:text-ink-gray-6">
                 {t(locale, group.label)}
               </Link>
               <button

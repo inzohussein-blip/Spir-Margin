@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   ArrowLeftIcon, CloudIcon, DatabaseIcon, FactoryIcon, HardDriveIcon, LandmarkIcon, LockIcon, PackageIcon,
-  KeyRoundIcon, PhoneIcon, RefreshCwIcon, ShieldCheckIcon, ShoppingCartIcon, UsersRoundIcon, WifiOffIcon, WrenchIcon, type LucideIcon,
+  KeyRoundIcon, PhoneIcon, RefreshCwIcon, ShieldCheckIcon, ShoppingCartIcon, ThermometerSnowflakeIcon, UsersRoundIcon, WifiOffIcon, WrenchIcon, type LucideIcon,
 } from "lucide-react";
 import { getLocale } from "@/lib/i18n-server";
 import { isRemoteConfigured } from "@/lib/db/pglite";
@@ -17,7 +17,7 @@ import { PROVIDER_PHONE } from "@/lib/license/provider";
 export const dynamic = "force-dynamic";
 
 const ICONS: Record<string, LucideIcon> = {
-  sales: ShoppingCartIcon, supply: PackageIcon, service: WrenchIcon, manufacturing: FactoryIcon, accounts: LandmarkIcon, hr: UsersRoundIcon,
+  sales: ShoppingCartIcon, supply: PackageIcon, service: WrenchIcon, manufacturing: FactoryIcon, accounts: LandmarkIcon, hr: UsersRoundIcon, coldchain: ThermometerSnowflakeIcon,
 };
 
 /**

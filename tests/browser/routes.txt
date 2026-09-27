@@ -25,6 +25,9 @@
 /blanket-orders/new
 /boms
 /boms/new
+/cold-chain/equipment
+/cold-chain/temperatures
+/cold-chain/units
 /companies
 /companies/new
 /contracts
@@ -42,6 +45,7 @@
 /help
 /help?tab=activation
 /help?tab=backup
+/help?tab=coldchain
 /help?tab=hr
 /help?tab=install
 /help?tab=offline
@@ -155,6 +159,7 @@
 /tools/converter
 /tools/profit
 /users
+/w/cold-chain
 /w/hr
 /w/shortcuts
 /warehouses

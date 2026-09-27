@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import {
   LayoutGridIcon, RocketIcon, MonitorDownIcon, SettingsIcon, WifiOffIcon,
   HardDriveIcon, UsersIcon, LifeBuoyIcon, BuildingIcon, CloudIcon, ToggleLeftIcon,
-  ShieldIcon, RefreshCwIcon, PrinterIcon, KeyRoundIcon, SearchIcon, GlobeIcon, type LucideIcon,
+  ShieldIcon, RefreshCwIcon, PrinterIcon, KeyRoundIcon, SearchIcon, GlobeIcon, ThermometerSnowflakeIcon, type LucideIcon,
 } from "lucide-react";
 import { navGroups } from "@/lib/nav";
 import { t, type Locale } from "@/lib/i18n";
@@ -833,6 +833,37 @@ export const HELP_TOPICS: HelpTopic[] = [
             <li>اختيارياً (من القواعد): خصم أجر يوم (الراتب ÷ 30) عن كل يوم غياب أو إجازة بدون راتب.</li>
           </Bullets>
           <Note>المحطة جزء من رمز التفعيل باسم «{t(locale, "Staff & shifts")}»؛ رمز لا يشملها يخفي صفحاتها.</Note>
+        </HelpSection>
+      </div>
+    ),
+  },
+  {
+    id: "coldchain",
+    title: "التبريد والمعايرة",
+    icon: ThermometerSnowflakeIcon,
+    render: (locale) => (
+      <div className="space-y-4">
+        <HelpSection title="سجل درجات الحرارة" icon={ThermometerSnowflakeIcon}>
+          <Steps>
+            <li>
+              من <UiPath parts={[t(locale, "Cold chain"), t(locale, "Fridges & stores")]} href="/cold-chain/units" /> أضف كل ثلاجة وفريزر
+              ومخزن مع المدى الآمن (للثلاجة عادة 2 إلى 8 درجات).
+            </li>
+            <li>
+              في <UiPath parts={[t(locale, "Cold chain"), t(locale, "Temperatures")]} href="/cold-chain/temperatures" /> اكتب القراءة صباحاً
+              ومساءً لكل وحدة واضغط «حفظ القراءات».
+            </li>
+            <li>القراءة خارج المدى تظهر بالأحمر ويبقى التنبيه حتى تكتب الإجراء المتخذ (نقل الكواشف، إصلاح الباب…).</li>
+            <li>«سجل الشهر» لكل وحدة يُطبع ويُوقَّع، وهو السجل الذي تطلبه جهات التفتيش.</li>
+          </Steps>
+        </HelpSection>
+        <HelpSection title="معايرة أجهزة الشركة">
+          <Bullets>
+            <li>أضف أجهزة القياس التي تملكها الشركة مع مدة المعايرة بالأشهر وتاريخ آخر معايرة.</li>
+            <li>أضف لكل جهاز مهامه الدورية (يومي، أسبوعي…) واضغط «أُنجزت اليوم» عند إنجازها.</li>
+            <li>سجّل الصيانة والأعطال والمعايرات؛ تسجيل «معايرة» ينقل تاريخ المعايرة القادمة تلقائياً.</li>
+          </Bullets>
+          <Note>المحطة جزء من رمز التفعيل باسم «{t(locale, "Cold chain & calibration")}».</Note>
         </HelpSection>
       </div>
     ),
