@@ -26,11 +26,15 @@
  *     requests, form posts or server actions.
  *
  * The web app (/app) is different: it is one page holding the company's
- * database in the browser, meant to open without the internet at all. Its
- * page is kept for anyone (it holds no one's data — `x-spir-user: shell`),
- * the database engine under /pglite/<version>/ is kept for good (the version
- * is in the path), and its schema files under /spir/ are asked for first and
- * kept for when there is no answer.
+ * database in the browser, meant to open without the internet at all. On its
+ * first online open the page asks this worker to "prepare": the whole app —
+ * the page, every script and style it names, the database engine
+ * (/pglite/<version>/) and the schema files (/spir/) — is downloaded once into
+ * one versioned cache (spir-app-<version>), with progress sent to the page.
+ * The version is a hash of what the page names, so a new release is a new
+ * cache: it is downloaded in the background while the old one keeps working,
+ * then switched in whole (never a mix of two releases), and the page is told
+ * an update is ready. Its page holds no one's data, so it is kept for anyone.
  */
 const OFFLINE = "spir-offline-v2";
 const PAGES = "spir-pages-v2";
@@ -38,9 +42,9 @@ const ASSETS = "spir-assets-v2";
 const PAGE = "/offline.html";
 const MAX_PAGES = 80;
 const MAX_ASSETS = 500;
-const SHELL = "spir-shell-v1";
-const ENGINE = "spir-engine-v1";
-const KEEP = new Set([OFFLINE, PAGES, ASSETS, SHELL, ENGINE]);
+const APP_META = "spir-app-meta";
+const APP_PREFIX = "spir-app-";
+const KEEP = new Set([OFFLINE, PAGES, ASSETS, APP_META]);
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -54,7 +58,8 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
-      for (const key of await caches.keys()) if (!KEEP.has(key)) await caches.delete(key);
+      const meta = await appMeta();
+      for (const key of await caches.keys()) if (!KEEP.has(key) && key !== meta?.cache) await caches.delete(key);
       await self.clients.claim();
     })(),
   );
@@ -86,13 +91,11 @@ async function page(request) {
   try {
     const res = await fetch(request);
     const who = res.headers.get("x-spir-user");
-    if (who === "shell") {
-      if (res.ok && !res.redirected) await (await caches.open(SHELL)).put(key, res.clone());
-    } else if (who === "0") {
+    if (who === "0") {
       // Nobody signed in: no one's pages stay on this browser.
       await caches.delete(PAGES);
       await setOwner("");
-    } else if (who && res.ok && !res.redirected && (res.headers.get("content-type") || "").includes("text/html")) {
+    } else if (who && who !== "shell" && res.ok && !res.redirected && (res.headers.get("content-type") || "").includes("text/html")) {
       if (who !== (await ownerOf())) {
         await caches.delete(PAGES);
         await setOwner(who);
@@ -103,35 +106,139 @@ async function page(request) {
     }
     return res;
   } catch {
-    const kept = (await (await caches.open(PAGES)).match(key)) || (await (await caches.open(SHELL)).match(key, { ignoreSearch: true }));
+    const kept = await (await caches.open(PAGES)).match(key);
     if (kept) return kept;
     return (await caches.match(PAGE)) || Response.error();
   }
 }
 
-/** Asked of the server first; the kept copy when there is no answer. */
-async function fresh(request) {
-  const cache = await caches.open(SHELL);
-  try {
-    const res = await fetch(request);
-    if (res.ok) await cache.put(request, res.clone());
-    return res;
-  } catch {
-    return (await cache.match(request, { ignoreSearch: true })) || Response.error();
-  }
-}
-
-async function asset(request, name = ASSETS) {
-  const cache = await caches.open(name);
-  const hit = await cache.match(request);
+async function asset(request) {
+  const hit = await caches.match(request);
   if (hit) return hit;
   const res = await fetch(request);
   if (res.ok) {
-    cache.put(request, res.clone());
-    if (name === ASSETS) trim(ASSETS, MAX_ASSETS);
+    (await caches.open(ASSETS)).put(request, res.clone());
+    trim(ASSETS, MAX_ASSETS);
   }
   return res;
 }
+
+// ── The web app (/app) ───────────────────────────────────────────────────
+let metaMemo;
+async function appMeta() {
+  if (metaMemo !== undefined) return metaMemo;
+  try {
+    const r = await (await caches.open(APP_META)).match("/__spir-app");
+    metaMemo = r ? await r.json() : null;
+  } catch { metaMemo = null; }
+  if (metaMemo && !(await caches.has(metaMemo.cache))) metaMemo = null;
+  return metaMemo;
+}
+async function setAppMeta(m) {
+  metaMemo = m;
+  await (await caches.open(APP_META)).put("/__spir-app", new Response(JSON.stringify(m), { headers: { "content-type": "application/json" } }));
+}
+const withTimeout = (p, ms) => Promise.race([p, new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), ms))]);
+
+/** The app's page: the server's (a release shows at once), or the kept copy when it does not answer soon. */
+async function appPage(request) {
+  const meta = await appMeta();
+  const kept = meta ? await (await caches.open(meta.cache)).match("/app") : undefined;
+  if (!(self.navigator && self.navigator.onLine === false)) {
+    try {
+      const res = await withTimeout(fetch(request), kept ? 4000 : 30000);
+      if (res.ok || !kept) return res;
+    } catch { /* no answer: the kept copy */ }
+  }
+  if (kept) return kept;
+  try { return await fetch(request); } catch { return (await caches.match(PAGE)) || Response.error(); }
+}
+
+/** A file of the app that may change between releases (/spir/…): the server's, else the kept one. */
+async function appFile(request) {
+  try {
+    const res = await withTimeout(fetch(request), 8000);
+    if (res.ok) return res;
+  } catch { /* offline */ }
+  return (await caches.match(request, { ignoreSearch: true })) || Response.error();
+}
+
+async function sha(text) {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
+}
+const staticRefs = (text) => [...text.matchAll(/\/_next\/static\/[^"'\\\s)]+/g)].map((m) => m[0].replace(/\\$/, ""));
+
+/** Download the whole app once (or a new release), then switch to it. */
+async function prepare(tell) {
+  const meta = await appMeta();
+  let html, local;
+  try {
+    const res = await fetch("/app", { cache: "no-store", credentials: "same-origin" });
+    if (!res.ok || res.redirected) throw new Error("status " + res.status);
+    html = await res.text();
+    local = await (await fetch("/spir/local.json", { cache: "no-store" })).json();
+  } catch {
+    return { status: meta ? "ready" : "offline", at: meta?.at ?? null };
+  }
+  const scripts = [...new Set(staticRefs(html))].sort();
+  const version = await sha(scripts.join("|") + "|" + local.pglite + "|" + local.hash);
+  if (meta && meta.version === version) return { status: "ready", at: meta.at, version };
+
+  const name = APP_PREFIX + version;
+  const cache = await caches.open(name);
+  const files = [...(local.files || []), "/spir/local.json", "/spir/migrations.json", "/spir/db-worker.js", "/manifest.webmanifest", "/icon.svg", "/icon-192.png"];
+  const queue = [...scripts];
+  const seen = new Set(queue);
+  const total = () => files.length + queue.length + 1;
+  let done = 0;
+  const step = () => { done++; if (!meta) tell({ status: "progress", done, total: total() }); };
+  const put = async (key, res) => {
+    const body = await res.blob();
+    await cache.put(key, new Response(body, { status: 200, headers: { "content-type": res.headers.get("content-type") || "application/octet-stream" } }));
+  };
+  try {
+    await put("/app", new Response(html, { headers: { "content-type": "text/html; charset=utf-8" } }));
+    step();
+    for (const f of files) {
+      // The engine's path carries its version: a copy already kept is the same file.
+      const have = f.startsWith("/pglite/") ? await caches.match(f) : undefined;
+      const res = have || (await fetch(f, { cache: "no-store" }));
+      if (!res.ok) throw new Error(f + " → " + res.status);
+      await put(f, res);
+      step();
+    }
+    for (let i = 0; i < queue.length; i++) {
+      const u = queue[i];
+      const res = (await caches.match(u)) || (await fetch(u));
+      if (!res.ok) throw new Error(u + " → " + res.status);
+      // Scripts and styles name further files (lazy chunks, fonts): keep those too.
+      if (/\.(js|css)$/.test(u)) {
+        const text = await res.clone().text();
+        for (const r of staticRefs(text)) if (!seen.has(r)) { seen.add(r); queue.push(r); }
+      }
+      await put(u, res);
+      step();
+    }
+  } catch (e) {
+    await caches.delete(name);
+    return { status: "error", error: String((e && e.message) || e) };
+  }
+  const at = Date.now();
+  await setAppMeta({ version, cache: name, at });
+  for (const key of await caches.keys()) if (key.startsWith(APP_PREFIX) && key !== name) await caches.delete(key);
+  return { status: meta ? "updated" : "installed", at, version, scripts };
+}
+
+let preparing = null;
+self.addEventListener("message", (event) => {
+  const data = event.data || {};
+  if (data.type !== "spir-prepare") return;
+  const source = event.source;
+  const tell = (msg) => { try { source && source.postMessage({ type: "spir-app", ...msg }); } catch { /* page gone */ } };
+  preparing = preparing || prepare(tell).finally(() => { preparing = null; });
+  event.waitUntil(preparing.then(tell, (e) => tell({ status: "error", error: String((e && e.message) || e) })));
+});
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
@@ -139,10 +246,9 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
   if (request.mode === "navigate") {
-    event.respondWith(page(request));
+    event.respondWith(url.pathname === "/app" ? appPage(request) : page(request));
     return;
   }
-  if (url.pathname.startsWith("/_next/static/")) event.respondWith(asset(request));
-  else if (url.pathname.startsWith("/pglite/")) event.respondWith(asset(request, ENGINE));
-  else if (url.pathname.startsWith("/spir/")) event.respondWith(fresh(request));
+  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/pglite/")) event.respondWith(asset(request));
+  else if (url.pathname.startsWith("/spir/")) event.respondWith(appFile(request));
 });

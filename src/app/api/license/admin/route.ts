@@ -22,7 +22,7 @@ export async function GET() {
   return json({
     enabled: true, owner: true, storage,
     licenses: await licenses.list(), events: await licenses.events(), signIns: await licenses.signIns(),
-    actions: await licenses.actions(), plan: await licenses.plan(),
+    actions: await licenses.actions(), plan: await licenses.plan(), prefs: await licenses.prefs(), errors: await licenses.errors(),
     twoFactor: await twoFactorStatus(), contact: await getContact(), version: currentBuild()?.number ?? null, now: Date.now(),
   });
 }
@@ -103,6 +103,12 @@ export async function POST(req: NextRequest) {
     await note("plan");
     return json({ ok: true, plan });
   }
+  if (b.op === "prefs") {
+    const prefs = await licenses.setPrefs(b.prefs);
+    await note("prefs");
+    return json({ ok: true, prefs });
+  }
+  if (b.op === "errors_clear") { await licenses.clearErrors(); await note("errors_clear"); return json({ ok: true }); }
   if (b.op === "selftest") return json({ ok: true, storage: await storageStatus(true) });
   if (b.op === "totp_setup") {
     const r = await startTwoFactorSetup();

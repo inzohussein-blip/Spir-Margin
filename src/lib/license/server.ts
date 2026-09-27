@@ -1,7 +1,7 @@
 import "server-only";
 import { getDb } from "@/lib/db/pglite";
 import { Licenses, ensureTables, getConfig, setConfig, sealText, unsealText, type Runner, type Sealed } from "./core";
-import { cleanStations } from "./modules";
+import { cleanStations, STATIONS } from "./modules";
 import { newTotpSecret, totpMatch, totpUri } from "./totp";
 import { licenseDbUrl, licenseStorage } from "./env";
 
@@ -53,7 +53,7 @@ export async function codesDb(): Promise<{ run: Runner; licenses: Licenses }> {
   const run = await runner();
   g.__spirCodesReady ??= ensureTables(run).catch((e) => { g.__spirCodesReady = null; throw e; });
   await g.__spirCodesReady;
-  return { run, licenses: new Licenses(run, sealSecret(), cleanStations) };
+  return { run, licenses: new Licenses(run, sealSecret(), cleanStations, STATIONS.map((s) => s.id)) };
 }
 
 // ── Contact line (activation and lock screens) ──────────────────────────────

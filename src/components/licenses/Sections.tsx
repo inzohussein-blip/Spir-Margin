@@ -262,6 +262,7 @@ const ACTION_LABEL: Record<string, string> = {
   seats: "Computers changed", reset_device: "A computer's seat freed", device_name: "Named a computer", modules: "Stations changed",
   rename: "Renamed", payment: "Payment", message: "Message", new_code: "New code", delete: "Deleted", phone: "Phone",
   offline: "Days offline", backup: "Downloaded a backup", restore: "Restored a backup", plan: "Prices changed",
+  prefs: "General settings changed", errors_clear: "Error log cleared",
   totp_on: "Two-step sign-in on", totp_off: "Two-step sign-in off", contact: "Contact line", sync: "Database link", unsync: "Unlinked",
 };
 

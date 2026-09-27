@@ -12,9 +12,9 @@
 import { PgRestClient, plainDbError, introspect, type Db, type FkMeta, type DbError } from "@/lib/db/rest-core";
 import { describeDbError } from "@/lib/db/errors";
 import { migrateLocal, type Migration } from "./migrate";
-import { syncOnce, pendingCount } from "@/lib/sync/core";
+import { syncOnce } from "@/lib/sync/core";
 import { cloudPeer, type CloudRequest } from "@/lib/cloud/serve";
-import { loadLicense, saveLicense, localState, deviceId, browserLabel, hashCode, type LocalLicense } from "./license";
+import { loadLicense, saveLicense, loadSite, saveSite, localState, deviceId, browserLabel, hashCode, type LocalLicense, type SiteInfo } from "./license";
 import type { DeviceState } from "@/lib/license/state";
 
 export interface LocalUser { email: string; name: string; role: string; at: number }
@@ -47,6 +47,7 @@ export class LocalRuntime extends EventTarget {
   phase: Phase = "starting";
   failure = "";
   license: LocalLicense | null = null;
+  site: SiteInfo = typeof window === "undefined" ? { enabled: true, contact: "", signup: false, errorLog: false, warnDays: 14 } : loadSite();
   state: DeviceState = { kind: "need" };
   blocked: string | null = null;
   user: LocalUser | null = null;
@@ -70,6 +71,7 @@ export class LocalRuntime extends EventTarget {
 
   // ── start ──────────────────────────────────────────────────────────────
   async start(): Promise<void> {
+    void this.refreshSite();
     try {
       this.license = loadLicense();
       if (!this.license) return this.set("need_code");
@@ -104,6 +106,7 @@ export class LocalRuntime extends EventTarget {
       lid: "", device: deviceId(), token: String(body.token), pub: body.pub as JsonWebKey,
       company: String(body.company ?? ""), until: Number(body.until ?? 0), mods: (body.mods as string[]) ?? [],
       cloud: !!body.cloud, codeHash: await hashCode(code), message: String(body.message ?? ""),
+      seats: Number(body.seats ?? 1), trial: !!body.trial,
       checkedAt: Date.now(), seen: Math.max(Date.now(), Number(body.now ?? 0)),
     };
     const payload = JSON.parse(atob(license.token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))) as { lid: string };
@@ -131,7 +134,7 @@ export class LocalRuntime extends EventTarget {
   private async open(): Promise<void> {
     const l = this.license!;
     this.set("opening", "engine");
-    const manifest = (await (await fetch("/spir/local.json", { cache: "no-cache" })).json()) as { pglite: string; hash: string };
+    const manifest = (await (await fetch("/spir/local.json", { cache: "no-cache" })).json()) as { pglite: string; hash: string; migrations: number };
     const mod = (await import(/* webpackIgnore: true */ `/pglite/${manifest.pglite}/worker/index.js`)) as {
       PGliteWorker: { create(w: Worker, o: Record<string, unknown>): Promise<PGliteLike> };
     };
@@ -141,14 +144,18 @@ export class LocalRuntime extends EventTarget {
     const pg = this.pg;
     this.db = { query: (sql, params) => pg.query(sql, params, { parsers: TEXT_PARSERS }) as never };
 
-    const key = `spir.local.schema.${l.lid}`;
-    if (localStorage.getItem(key) !== manifest.hash) {
+    // The database itself says how far its schema is (its migrations ledger):
+    // saves reach the disk a moment after each answer (relaxed durability, in
+    // db-worker.js), so a flag kept anywhere else could claim a migration that
+    // never reached the disk.
+    const applied = await pg.query<{ n: number }>(`select count(*)::int as n from _spir_migrations`).then((r) => r.rows[0]?.n ?? 0, () => 0);
+    if (applied < manifest.migrations) {
       this.set("opening", "schema");
       const bundle = (await (await fetch("/spir/migrations.json", { cache: "no-cache" })).json()) as Migration[];
       await migrateLocal({ exec: (s) => pg.exec(s), query: (s, p) => pg.query(s, p) as never }, bundle);
-      try { localStorage.setItem(key, manifest.hash); } catch { /* next start checks again */ }
     }
     this.meta = await introspect(this.db);
+    this.guardUnload();
     this.client = new PgRestClient({
       open: async () => ({ db: this.db!, meta: this.meta! }),
       error: (e: unknown): DbError => {
@@ -176,12 +183,27 @@ export class LocalRuntime extends EventTarget {
   }
 
   /** Who the audit trail names for the next change (the trigger reads app.actor). */
+  private actor: { email: string; at: number } | null = null;
+  /** When the last change was made: a page closed within a second of it is asked to wait (it is still being saved). */
+  private lastWrite = 0;
+  private guarded = false;
+  private guardUnload() {
+    if (this.guarded) return;
+    this.guarded = true;
+    window.addEventListener("beforeunload", (e) => { if (Date.now() - this.lastWrite < 1500) e.preventDefault(); });
+  }
   async setActor(): Promise<void> {
-    if (this.db && this.user) await this.db.query("select set_config('app.actor', $1, false)", [this.user.email]);
+    if (!this.db || !this.user) return;
+    // A session setting: set once, and again now and then (another tab may
+    // have become the one that holds the database since).
+    if (this.actor?.email === this.user.email && Date.now() - this.actor.at < 60_000) return;
+    await this.db.query("select set_config('app.actor', $1, false)", [this.user.email]);
+    this.actor = { email: this.user.email, at: Date.now() };
   }
 
   /** Call a function after a write the builder did not see (an rpc). */
   afterWrite(): void {
+    this.lastWrite = Date.now();
     this.changed();
     void this.refreshPending();
     if (this.soon) clearTimeout(this.soon);
@@ -233,7 +255,12 @@ export class LocalRuntime extends EventTarget {
   private async refreshPending() {
     if (!this.db) return;
     try {
-      this.sync = { ...this.sync, pending: await pendingCount(this.db, "cloud") };
+      // Read only: counting must not write (every write here is a save to disk).
+      const r = await this.db.query<{ n: number }>(
+        `select count(*)::int as n from _spir_changes
+          where seq > coalesce((select pushed_through from _spir_sync_state where peer = 'cloud'), 0)
+            and received_from is distinct from 'cloud'`);
+      this.sync = { ...this.sync, pending: r.rows[0]?.n ?? 0 };
       this.dispatchEvent(new Event("sync"));
     } catch { /* not yet */ }
   }
@@ -256,6 +283,7 @@ export class LocalRuntime extends EventTarget {
         Object.assign(l, {
           token: body.token, pub: body.pub, until: Number(body.until ?? l.until), mods: (body.mods as string[]) ?? l.mods,
           cloud: !!body.cloud, message: String(body.message ?? ""), checkedAt: Date.now(),
+          seats: Number(body.seats ?? l.seats ?? 1), trial: !!body.trial,
           company: String(body.company ?? l.company),
         });
         if (typeof body.now === "number") l.seen = body.now;
@@ -287,6 +315,46 @@ export class LocalRuntime extends EventTarget {
     this.timer = setInterval(() => void tick(), SYNC_EVERY_MS);
     window.addEventListener("online", () => void tick());
     void tick();
+  }
+
+  // ── the site: what its owner offers, a trial, errors ───────────────────
+  /** Ask the site what it offers (self-registration, the error log…); the last answer stays for offline opens. */
+  async refreshSite(): Promise<void> {
+    if (!navigator.onLine) return;
+    try {
+      const r = await fetch("/api/license", { cache: "no-store" });
+      const b = (await r.json()) as Partial<SiteInfo>;
+      if (typeof b.enabled !== "boolean") return;
+      this.site = { enabled: b.enabled, contact: String(b.contact ?? ""), signup: !!b.signup, errorLog: !!b.errorLog, warnDays: Number(b.warnDays ?? 14) };
+      saveSite(this.site);
+      this.dispatchEvent(new Event("license"));
+    } catch { /* offline: the last answer stands */ }
+  }
+
+  /** Register a company for a trial: the site answers with its new code. */
+  async signup(company: string, phone: string, city: string): Promise<{ ok: true; code: string; days: number } | { ok: false; error: string }> {
+    try {
+      const r = await fetch("/api/license/signup", {
+        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ company, phone, city }),
+      });
+      const b = (await r.json().catch(() => ({}))) as { ok?: boolean; code?: string; days?: number; error?: string };
+      return b.ok && b.code ? { ok: true, code: b.code, days: Number(b.days ?? 0) } : { ok: false, error: String(b.error ?? "error") };
+    } catch {
+      return { ok: false, error: "offline" };
+    }
+  }
+
+  private reported = new Set<string>();
+  /** An error on this page, for the site's owner (only while the owner keeps the error log; a few per visit). */
+  reportError(message: string): void {
+    if (!this.site.errorLog || !navigator.onLine || this.reported.size >= 10) return;
+    const m = message.slice(0, 1000);
+    if (this.reported.has(m)) return;
+    this.reported.add(m);
+    void fetch("/api/license/errors", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ lid: this.license?.lid ?? "", device: this.license?.device ?? deviceId(), path: location.hash || "/", message: m }),
+    }).catch(() => undefined);
   }
 
   // ── signing in, on this browser ────────────────────────────────────────
@@ -328,6 +396,7 @@ export class LocalRuntime extends EventTarget {
 
   signOut() {
     this.user = null;
+    this.actor = null;
     try { localStorage.removeItem(this.sessionKey()); } catch { /* ignore */ }
     this.set("sign_in");
   }

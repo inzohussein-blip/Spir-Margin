@@ -40,8 +40,8 @@ type Ev = { license_id: string; at: number; kind: string; detail: string };
 type Change = (c: Record<string, unknown>, done?: string) => void;
 
 /** A short status the owner sends the company (WhatsApp): period, computers, stations. */
-export function statusMessage(r: Row, now: number, T: (k: string) => string): string {
-  const st = stateOf(r, now);
+export function statusMessage(r: Row, now: number, T: (k: string) => string, warn?: number): string {
+  const st = stateOf(r, now, warn);
   return [
     `${r.company} — ${T(STATE_LABEL[st])}`,
     r.expires_at ? `${T("until")} ${fmt(r.expires_at)}` : `${r.duration_days} ${T("days from the first computer")}`,
@@ -50,14 +50,15 @@ export function statusMessage(r: Row, now: number, T: (k: string) => string): st
   ].join("\n");
 }
 
-export function CodeCard({ r, rows, evs, now, latest, plan, busy, onChange, onError, onSaved, say }: {
+export function CodeCard({ r, warn, rows, evs, now, latest, plan, busy, onChange, onError, onSaved, say }: {
+  warn?: number;
   r: Row; rows: Row[]; evs: Ev[]; now: number; latest: number | null; plan: Plan; busy: boolean;
   onChange: Change; onError: (x: Record<string, unknown>) => void; onSaved: (m: string) => void; say: (ok: boolean, text: string) => void;
 }) {
   const locale = useLocale();
   const T = (k: string) => t(locale, k);
   const [open, setOpen] = useState(false);
-  const st = stateOf(r, now);
+  const st = stateOf(r, now, warn);
   const left = timeLeft(r, now);
   const inactive = r.devices.filter((d) => inactiveDevice(d, now)).length;
   const outdated = r.devices.filter((d) => outdatedDevice(d, latest)).length;
@@ -118,7 +119,7 @@ export function CodeCard({ r, rows, evs, now, latest, plan, busy, onChange, onEr
               {r.phone && <a href={waLink(r.phone, reminder)} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-emerald-200 px-2 py-1.5 text-xs text-emerald-700 hover:bg-emerald-50">{T("WhatsApp")}</a>}
             </span>
           )}
-          <SmallBtn onClick={() => copy(statusMessage(r, now, T))} icon={<CopyIcon size={13} />} label={T("Status message")} />
+          <SmallBtn onClick={() => copy(statusMessage(r, now, T, warn))} icon={<CopyIcon size={13} />} label={T("Status message")} />
           <button onClick={() => setOpen(!open)} aria-expanded={open}
             className="inline-flex items-center gap-1 rounded-lg border border-outline-gray-2 px-2 py-1.5 text-xs hover:bg-surface-gray-1">
             {T("Details")} <ChevronDownIcon size={13} className={open ? "rotate-180" : ""} />

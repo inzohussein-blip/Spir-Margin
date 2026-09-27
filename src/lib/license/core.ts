@@ -122,6 +122,38 @@ export function cleanPlan(v: unknown): PricePlan {
   return { currency, stations, seat: money(r.seat), trialDays };
 }
 
+/** The owner's general settings (the code manager's «الإعدادات العامة»). */
+export interface OwnerPrefs {
+  /** A company can register itself on the web app and get a trial code at once. */
+  selfSignup: boolean;
+  /** The stations a self-registered trial opens. */
+  signupModules: string[];
+  /** Computers (browsers) a self-registered trial allows. */
+  signupSeats: number;
+  /** Errors in the web app are kept for the owner («سجل الأخطاء»). */
+  errorLog: boolean;
+  /** Days before the end a code counts as ending soon (panel, reminders, the app's notice). */
+  warnDays: number;
+}
+export function cleanPrefs(v: unknown, all: string[]): OwnerPrefs {
+  const r = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
+  const within = (x: unknown, min: number, max: number, dflt: number) => {
+    const n = Math.round(Number(x));
+    return Number.isFinite(n) && n >= min && n <= max ? n : dflt;
+  };
+  const mods = Array.isArray(r.signupModules) ? r.signupModules.filter((m): m is string => typeof m === "string" && all.includes(m)) : all;
+  return {
+    selfSignup: r.selfSignup === true,
+    signupModules: mods.length ? [...new Set(mods)] : all,
+    signupSeats: within(r.signupSeats, 1, 10, 1),
+    errorLog: r.errorLog === true,
+    warnDays: within(r.warnDays, 1, 90, 14),
+  };
+}
+
+/** One error seen in the web app, for the owner. */
+export interface ErrorEntry { at: number; license_id: string; company: string; device: string; path: string; message: string; agent: string }
+
 export interface LicenseEvent { license_id: string; at: number; kind: string; detail: string }
 
 // ── Codes ────────────────────────────────────────────────────────────────────
@@ -247,6 +279,10 @@ export async function ensureTables(run: Runner): Promise<void> {
   await run.query(`create index if not exists _spir_lic_events_license on _spir_lic_events (license_id, at desc)`);
   await run.query(`create table if not exists _spir_lic_attempts (id text primary key, k text not null, at bigint not null)`);
   await run.query(`create index if not exists _spir_lic_attempts_k on _spir_lic_attempts (k, at)`);
+  await run.query(`create table if not exists _spir_lic_errors (
+    id text primary key, at bigint not null, license_id text not null default '', device text not null default '',
+    path text not null default '', message text not null default '', agent text not null default '')`);
+  await run.query(`create index if not exists _spir_lic_errors_at on _spir_lic_errors (at desc)`);
   await run.query(`create table if not exists _spir_lic_owner_log (
     id text primary key, at bigint not null, ok boolean not null, ip text not null default '', agent text not null default '')`);
 }
@@ -359,6 +395,8 @@ export class Licenses {
     private secret: string,
     /** Keeps only station ids this app knows; an empty/garbled value gives the default set. */
     private cleanModules: (v: unknown) => string[],
+    /** Every station id (the owner's defaults choose among them). */
+    private allModules: string[] = [],
   ) {}
 
   private async devicesOf(ids: string[]): Promise<Map<string, LicenseDevice[]>> {
@@ -630,7 +668,7 @@ export class Licenses {
   }
 
   // ── Attempt limits (in the database: they hold across server instances) ──
-  async blocked(kind: "activate" | "owner", ip: string, max: number, windowMs = 10 * 60_000): Promise<boolean> {
+  async blocked(kind: AttemptKind, ip: string, max: number, windowMs = 10 * 60_000): Promise<boolean> {
     try {
       const r = await this.run.query<{ n: string | number }>(`select count(*) as n from _spir_lic_attempts where k = $1 and at > $2`,
         [`${kind}:${ip}`, Date.now() - windowMs]);
@@ -639,13 +677,13 @@ export class Licenses {
       return false; // never lock anyone out because the counter is unreachable
     }
   }
-  async noteAttempt(kind: "activate" | "owner", ip: string): Promise<void> {
+  async noteAttempt(kind: AttemptKind, ip: string): Promise<void> {
     try {
       await this.run.query(`insert into _spir_lic_attempts (id, k, at) values ($1, $2, $3)`, [crypto.randomUUID(), `${kind}:${ip}`, Date.now()]);
       await this.run.query(`delete from _spir_lic_attempts where at < $1`, [Date.now() - DAY]);
     } catch { /* ignore */ }
   }
-  async clearAttempts(kind: "activate" | "owner", ip: string): Promise<void> {
+  async clearAttempts(kind: AttemptKind, ip: string): Promise<void> {
     try { await this.run.query(`delete from _spir_lic_attempts where k = $1`, [`${kind}:${ip}`]); } catch { /* ignore */ }
   }
 
@@ -700,6 +738,43 @@ export class Licenses {
     await setConfig(this.run, "price_plan", JSON.stringify(p));
     return p;
   }
+
+  // ── The owner's general settings ─────────────────────────────────────────
+  async prefs(): Promise<OwnerPrefs> {
+    const raw = await getConfig(this.run, "owner_prefs").catch(() => null);
+    try { return cleanPrefs(raw ? JSON.parse(raw) : {}, this.allModules); } catch { return cleanPrefs({}, this.allModules); }
+  }
+  async setPrefs(v: unknown): Promise<OwnerPrefs> {
+    const p = cleanPrefs(v, this.allModules);
+    await setConfig(this.run, "owner_prefs", JSON.stringify(p));
+    return p;
+  }
+
+  // ── Errors seen in the web app ───────────────────────────────────────────
+  /** Kept only while the owner has the error log on; the newest 2000. */
+  async recordError(e: { license_id: string; device: string; path: string; message: string; agent: string }): Promise<void> {
+    try {
+      await this.run.query(
+        `insert into _spir_lic_errors (id, at, license_id, device, path, message, agent) values ($1, $2, $3, $4, $5, $6, $7)`,
+        [crypto.randomUUID(), Date.now(), e.license_id.slice(0, 64), e.device.slice(0, 64), e.path.slice(0, 200), e.message.slice(0, 1000), e.agent.slice(0, 120)],
+      );
+      await this.run.query(`delete from _spir_lic_errors where id in (select id from _spir_lic_errors order by at desc offset 2000)`);
+    } catch { /* the log never breaks the app */ }
+  }
+  async errors(limit = 300): Promise<ErrorEntry[]> {
+    try {
+      const r = await this.run.query<Record<string, unknown>>(
+        `select e.at, e.license_id, coalesce(l.company, '') as company, e.device, e.path, e.message, e.agent
+           from _spir_lic_errors e left join _spir_lic l on l.id = e.license_id order by e.at desc limit $1`, [limit]);
+      return r.rows.map((x) => ({
+        at: Number(x.at), license_id: String(x.license_id ?? ""), company: String(x.company ?? ""), device: String(x.device ?? ""),
+        path: String(x.path ?? ""), message: String(x.message ?? ""), agent: String(x.agent ?? ""),
+      }));
+    } catch {
+      return [];
+    }
+  }
+  async clearErrors(): Promise<void> { await this.run.query(`delete from _spir_lic_errors`); }
 
   // ── Backup of the codes ──────────────────────────────────────────────────
   // Codes as hashes (the codes themselves are never stored), devices, history
@@ -789,6 +864,7 @@ export interface CodesBackup {
 
 /** What a computer receives about its company's database: the connection itself (the computer is trusted — it stores its own link the same way). */
 export interface DeviceSync { conn: string; at: number }
+export type AttemptKind = "activate" | "owner" | "signup" | "error";
 
 export type DeviceResult =
   | { ok: true; token: string; pub: Jwk; row: LicenseRow; sync: DeviceSync | null; vkey: string }

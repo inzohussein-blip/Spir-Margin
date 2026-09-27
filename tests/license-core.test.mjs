@@ -259,3 +259,25 @@ test("phone, offline limit, each computer's sync report, the owner's log and pri
   assert.deepEqual(await other.plan(), plan);
   await fresh.close();
 });
+
+test("the owner's general settings: safe defaults, kept within bounds, only known stations", async () => {
+  const all = stations.STATIONS.map((s) => s.id);
+  const own = new core.Licenses(db, SECRET, stations.cleanStations, all);
+  const d = await own.prefs();
+  assert.deepEqual(d, { selfSignup: false, signupModules: all, signupSeats: 1, errorLog: false, warnDays: 14 }, "everything extra is off until the owner turns it on");
+  const p = await own.setPrefs({ selfSignup: true, signupModules: ["sales", "nope", "sales"], signupSeats: 99, errorLog: true, warnDays: 0 });
+  assert.deepEqual(p, { selfSignup: true, signupModules: ["sales"], signupSeats: 1, errorLog: true, warnDays: 14 });
+  assert.deepEqual(await own.prefs(), p, "kept");
+});
+
+test("the error log keeps the company's name, the newest first, and clears", async () => {
+  const { row } = await lic.create({ company: "شركة الأخطاء", days: 30, seats: 1, modules: ["sales"] });
+  await lic.recordError({ license_id: row.id, device: "dev1", path: "#/pos", message: "first", agent: "Chrome" });
+  await lic.recordError({ license_id: "", device: "dev2", path: "#/", message: "x".repeat(5000), agent: "Firefox" });
+  const list = await lic.errors();
+  assert.equal(list.length, 2);
+  assert.equal(list.find((e) => e.message === "first").company, "شركة الأخطاء");
+  assert.equal(list.find((e) => e.device === "dev2").message.length, 1000, "a long message is cut");
+  await lic.clearErrors();
+  assert.deepEqual(await lic.errors(), []);
+});
