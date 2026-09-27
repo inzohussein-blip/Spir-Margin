@@ -4,6 +4,7 @@ import { getLocale } from "@/lib/i18n-server";
 import { getBranding, brandingLines } from "@/lib/branding";
 import { fmtDate, fmtNum } from "@/lib/format";
 import { t } from "@/lib/i18n";
+import { VerifyQr } from "./VerifyQr";
 
 export interface AuthItem {
   description: string;
@@ -181,8 +182,9 @@ export async function AuthorizationSheet({ doc, items }: { doc: AuthDoc; items: 
             </div>
           ) : null}
 
-          {/* Signature */}
-          <div className="mt-12 flex justify-end">
+          {/* Signature, and the QR a checkpoint scans to check the letter is genuine */}
+          <div className="mt-12 flex items-end justify-between gap-4">
+            {cancelled ? <span /> : <VerifyQr facts={{ k: t(locale, "Transport authorisation"), n: doc.auth_no, d: doc.issue_date, p: doc.bearer_name }} />}
             <div className="w-64 text-center">
               <div className="text-sm font-semibold">{t(locale, "Authorised signatory")}</div>
               <div className="mt-12 border-t border-ink-gray-8 pt-2 text-xs text-ink-gray-5">

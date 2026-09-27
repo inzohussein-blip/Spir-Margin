@@ -7,6 +7,7 @@ import { getUsdIqdRate } from "@/app/actions/currency";
 import { getLocale } from "@/lib/i18n-server";
 import { getBranding, brandingLines } from "@/lib/branding";
 import { t } from "@/lib/i18n";
+import { VerifyQr } from "./VerifyQr";
 
 export interface PartyBlock {
   heading: string;
@@ -215,8 +216,9 @@ export async function DocumentSheet({
           </div>
         ) : null}
 
-        <div className="mt-8 border-t border-outline-gray-2 pt-4 text-center text-xs text-ink-gray-4">
-          {footer ?? brand.footerNote ?? `${t(locale, "Thank you for your business")} — ${name}`}
+        <div className="mt-8 flex items-center gap-4 border-t border-outline-gray-2 pt-4 text-xs text-ink-gray-4">
+          <VerifyQr facts={{ k: docType, n: docNo, d: date, a: main?.value, c: currency, p: parties[0]?.name }} />
+          <span className="flex-1 text-center">{footer ?? brand.footerNote ?? `${t(locale, "Thank you for your business")} — ${name}`}</span>
         </div>
         </div>
       </div>

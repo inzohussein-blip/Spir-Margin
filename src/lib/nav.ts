@@ -9,7 +9,7 @@ import {
   BarChart3Icon, TrendingUpIcon, CalculatorIcon, RepeatIcon, SettingsIcon,
   AlertTriangleIcon, HistoryIcon, RefreshCwIcon, ReceiptTextIcon, BookOpenTextIcon,
   ClockIcon, CalendarRangeIcon, PlaneIcon, BanknoteIcon, WalletIcon, TimerIcon,
-  ThermometerSnowflakeIcon, RefrigeratorIcon, GaugeIcon,
+  ThermometerSnowflakeIcon, RefrigeratorIcon, GaugeIcon, BarcodeIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -62,6 +62,7 @@ export const navGroups: NavGroup[] = [
     { href: "/delivery-trips", label: "Delivery Trips", icon: MapPinIcon },
     { href: "/stock-balance", label: "Stock Balance", icon: ClipboardListIcon },
     { href: "/prices", label: "Prices", icon: TagIcon },
+    { href: "/labels", label: "Barcode labels", icon: BarcodeIcon },
   ]},
   { label: "Manufacturing", items: [
     { href: "/boms", label: "BOMs", icon: FactoryIcon },
