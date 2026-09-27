@@ -5,6 +5,7 @@ import { KeyRoundIcon, LockIcon, LoaderIcon, RefreshCwIcon, AlertTriangleIcon } 
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
 import type { LocalRuntime } from "@/lib/local/runtime";
+import { useRuntime } from "./hooks";
 
 /** The screens before the app: starting, the code, signing in, locked, failed. */
 
@@ -54,30 +55,92 @@ const ACTIVATE_ERROR: Record<string, string> = {
 };
 
 export function Activate({ rt }: { rt: LocalRuntime }) {
+  useRuntime(["license"]); // the site's answer (self-registration, contact) arrives after the first paint
   const locale = useLocale();
   const T = (k: string) => t(locale, k);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [trial, setTrial] = useState(false);
+  const go = async (c: string) => {
+    setBusy(true); setErr("");
+    const r = await rt.activate(c);
+    setBusy(false);
+    if (!r.ok) setErr(T(ACTIVATE_ERROR[r.error] ?? ACTIVATE_ERROR.error));
+  };
+  if (trial) return <Trial rt={rt} onBack={() => setTrial(false)} />;
   return (
     <Frame icon={<KeyRoundIcon size={20} />} title={T("Activate the web app")}>
       <p className="text-sm leading-relaxed text-ink-gray-6">
         {T("Enter your company's activation code once. The app then settles in this browser and works with the internet or without it; what you do offline is sent when the connection returns.")}
       </p>
-      <form data-testid="local-activate" className="mt-4 space-y-3" onSubmit={async (e) => {
-        e.preventDefault();
-        setBusy(true); setErr("");
-        const r = await rt.activate(code);
-        setBusy(false);
-        if (!r.ok) setErr(T(ACTIVATE_ERROR[r.error] ?? ACTIVATE_ERROR.error));
-      }}>
-        <input name="code" value={code} onChange={(e) => setCode(e.target.value)} dir="ltr" autoFocus placeholder="XXXX-XXXX-XXXX"
+      <form data-testid="local-activate" className="mt-4 space-y-3" onSubmit={(e) => { e.preventDefault(); void go(code); }}>
+        <input name="code" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} dir="ltr" autoFocus placeholder="XXXX-XXXX-XXXX" autoComplete="off" spellCheck={false}
           className="w-full rounded-lg border border-outline-gray-2 px-3 py-2.5 text-center font-mono tracking-widest outline-none focus:border-brand" />
         <button disabled={busy || code.trim().length < 8} className="w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-60">
           {busy ? T("Activating…") : T("Activate")}
         </button>
         {err && <p role="alert" className="text-sm text-red-600">{err}</p>}
       </form>
+      {rt.site.signup && (
+        <button type="button" data-testid="try-free" onClick={() => setTrial(true)} className="mt-4 w-full rounded-lg border border-brand/30 bg-brand-light px-4 py-2.5 text-sm font-semibold text-brand-dark hover:border-brand">
+          {T("No code yet? Try it free")}
+        </button>
+      )}
+      {rt.site.contact && <p className="mt-4 border-t border-outline-gray-1 pt-3 text-center text-xs text-ink-gray-5" dir="auto">{rt.site.contact}</p>}
+    </Frame>
+  );
+}
+
+const SIGNUP_ERROR: Record<string, string> = {
+  bad_request: "Write the company's name and a phone number.",
+  closed: "Registration is closed on this site. Contact the provider for a code.",
+  too_many: "Too many attempts — wait a few minutes.",
+  offline: "Registration needs the internet.",
+  disabled: "Activation codes are not available on this site.",
+};
+
+/** Self-registration: the company's name and phone give a trial code at once, which then opens the app. */
+function Trial({ rt, onBack }: { rt: LocalRuntime; onBack: () => void }) {
+  const locale = useLocale();
+  const T = (k: string) => t(locale, k);
+  const [f, setF] = useState({ company: "", phone: "", city: "" });
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [got, setGot] = useState<{ code: string; days: number } | null>(null);
+  const cls = "w-full rounded-lg border border-outline-gray-2 px-3 py-2.5 text-sm outline-none focus:border-brand";
+  if (got) {
+    return (
+      <Frame icon={<KeyRoundIcon size={20} />} title={T("Your trial code")}>
+        <p className="text-sm text-ink-gray-6">{T("Keep this code: it opens the app on your other devices, and the provider renews it when you subscribe.")}</p>
+        <div data-testid="trial-code" dir="ltr" className="mt-3 select-all rounded-xl border-2 border-dashed border-brand/40 bg-brand-light/50 p-3 text-center font-mono text-xl font-bold tracking-widest text-brand-dark">{got.code}</div>
+        <p className="mt-2 text-center text-xs text-ink-gray-5">{T("Trial")}: <span className="tabular-nums">{got.days}</span> {T("days")}</p>
+        <button disabled={busy} onClick={async () => { setBusy(true); const r = await rt.activate(got.code); setBusy(false); if (!r.ok) setErr(T(ACTIVATE_ERROR[r.error] ?? ACTIVATE_ERROR.error)); }}
+          className="mt-4 w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-60">
+          {busy ? T("Activating…") : T("I wrote it down — open the app")}
+        </button>
+        {err && <p role="alert" className="mt-2 text-sm text-red-600">{err}</p>}
+      </Frame>
+    );
+  }
+  return (
+    <Frame icon={<KeyRoundIcon size={20} />} title={T("Try it free")}>
+      <p className="text-sm text-ink-gray-6">{T("Write your company's name and phone: you get a trial code at once, and the app opens on this browser.")}</p>
+      <form data-testid="local-signup" className="mt-4 space-y-3" onSubmit={async (e) => {
+        e.preventDefault();
+        setBusy(true); setErr("");
+        const r = await rt.signup(f.company.trim(), f.phone.trim(), f.city.trim());
+        setBusy(false);
+        if (r.ok) setGot({ code: r.code, days: r.days });
+        else setErr(T(SIGNUP_ERROR[r.error] ?? "Could not register. Try again."));
+      }}>
+        <input name="company" required value={f.company} onChange={(e) => setF({ ...f, company: e.target.value })} placeholder={T("Company name")} className={cls} autoFocus />
+        <input name="phone" required value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder={T("Phone")} dir="ltr" inputMode="tel" className={cls} />
+        <input name="city" value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} placeholder={T("City")} className={cls} />
+        <button disabled={busy} className="w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-60">{busy ? T("Registering…") : T("Get a trial code")}</button>
+        {err && <p role="alert" className="text-sm text-red-600">{err}</p>}
+      </form>
+      <button type="button" onClick={onBack} className="mt-3 w-full text-center text-sm text-brand">{T("I have a code")}</button>
     </Frame>
   );
 }
@@ -153,6 +216,7 @@ export function Locked({ rt }: { rt: LocalRuntime }) {
       }} className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-60">
         <RefreshCwIcon size={14} className={busy ? "animate-spin" : ""} /> {T("Check now")}
       </button>
+      {rt.site.contact && <p className="mt-4 border-t border-outline-gray-1 pt-3 text-xs text-ink-gray-5" dir="auto">{rt.site.contact}</p>}
     </Frame>
   );
 }

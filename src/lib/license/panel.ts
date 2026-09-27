@@ -25,11 +25,11 @@ export interface PanelRow {
 }
 
 export type CodeState = "active" | "waiting" | "expiring" | "expired" | "stopped";
-export function stateOf(r: PanelRow, now: number): CodeState {
+export function stateOf(r: PanelRow, now: number, warn = WARN_DAYS): CodeState {
   if (r.status === "stopped") return "stopped";
   if (r.expires_at == null) return "waiting";
   if (r.expires_at <= now) return "expired";
-  if (r.expires_at - now <= WARN_DAYS * DAY) return "expiring";
+  if (r.expires_at - now <= warn * DAY) return "expiring";
   return "active";
 }
 
@@ -45,20 +45,20 @@ export const outdatedDevice = (d: PanelDevice, latest: number | null) => {
 export const FILTERS = ["all", "active", "expiring", "expired", "waiting", "stopped", "unpaid", "trial", "outdated", "inactive"] as const;
 export type Filter = (typeof FILTERS)[number];
 
-export function matches(r: PanelRow, f: Filter, now: number, latest: number | null): boolean {
+export function matches(r: PanelRow, f: Filter, now: number, latest: number | null, warn = WARN_DAYS): boolean {
   switch (f) {
     case "all": return true;
     case "unpaid": return !r.paid && !r.is_trial;
     case "trial": return r.is_trial;
     case "outdated": return r.devices.some((d) => outdatedDevice(d, latest));
     case "inactive": return r.devices.some((d) => inactiveDevice(d, now));
-    default: return stateOf(r, now) === f;
+    default: return stateOf(r, now, warn) === f;
   }
 }
 
-export function counts(rows: PanelRow[], now: number, latest: number | null): Record<Filter, number> {
+export function counts(rows: PanelRow[], now: number, latest: number | null, warn = WARN_DAYS): Record<Filter, number> {
   const out = {} as Record<Filter, number>;
-  for (const f of FILTERS) out[f] = rows.filter((r) => matches(r, f, now, latest)).length;
+  for (const f of FILTERS) out[f] = rows.filter((r) => matches(r, f, now, latest, warn)).length;
   return out;
 }
 

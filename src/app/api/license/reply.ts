@@ -11,7 +11,7 @@ export function deviceReply(r: DeviceResult, opts?: { browser?: boolean }) {
     ? {
         ok: true, token: r.token, pub: r.pub, now: Date.now(), message: r.row.message || "",
         sync: opts?.browser ? null : r.sync, cloud: !!r.sync, vkey: r.vkey,
-        company: r.row.company, until: r.row.expires_at, mods: r.row.modules,
+        company: r.row.company, until: r.row.expires_at, mods: r.row.modules, seats: r.row.seats, trial: r.row.is_trial,
       }
     : { ok: false, error: r.error, company: r.row?.company, until: r.row?.expires_at ?? null, now: Date.now() };
   const status = r.ok ? 200 : r.error === "not_found" ? 404 : 403;

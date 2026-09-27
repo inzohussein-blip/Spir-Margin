@@ -103,7 +103,16 @@ check("a wrong owner password is refused", (await text(owner)).includes("كلم�
 await owner.fill('input[name="password"]', OWNER_PASSWORD);
 await owner.locator('form button').click();
 await owner.getByTestId("panel-nav").waitFor({ timeout: 20_000 }).catch(() => {});
-check("the owner reaches the code manager, in sections", (await owner.getByTestId("panel-nav").locator("[data-section]").count()) === 8);
+check("the owner reaches the code manager, in sections", (await owner.getByTestId("panel-nav").locator("[data-section]").count()) === 10);
+await owner.locator('[data-section="settings"]').click();
+await owner.getByTestId("prefs").waitFor();
+check("its general settings start with everything extra off", !(await owner.locator('input[name="selfSignup"]').isChecked()) && !(await owner.locator('input[name="errorLog"]').isChecked()));
+await owner.locator('input[name="errorLog"]').check();
+await owner.getByTestId("save-prefs").click();
+await owner.getByRole("status").filter({ hasText: /./ }).first().waitFor({ timeout: 15_000 }).catch(() => {});
+await owner.locator('[data-section="errors"]').click();
+check("switching the error log on shows its (empty) log", (await text(owner)).includes("لا أخطاء") && !(await text(owner)).includes("سجل الأخطاء موقوف"));
+await owner.locator('[data-section="codes"]').click();
 check("with the filter tiles and their counts", (await owner.locator('[data-filter="all"]').getAttribute("data-count")) === "0");
 await owner.locator('[data-section="new"]').click();
 await owner.getByTestId("create-code").waitFor({ timeout: 20_000 }).catch(() => {});

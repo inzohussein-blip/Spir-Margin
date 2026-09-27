@@ -19,8 +19,26 @@ export interface LocalLicense {
   /** A fingerprint of the code (never the code): signing in with it opens the whole app. */
   codeHash: string;
   message?: string;
+  /** Computers (browsers) the code allows, and whether it is a trial. */
+  seats?: number;
+  trial?: boolean;
   checkedAt: number;
   seen: number;
+}
+
+/** What the site's owner has switched on for the web app (GET /api/license), kept for offline opens. */
+export interface SiteInfo { enabled: boolean; contact: string; signup: boolean; errorLog: boolean; warnDays: number }
+const SITE_KEY = "spir.local.site";
+export function loadSite(): SiteInfo {
+  try {
+    const s = JSON.parse(localStorage.getItem(SITE_KEY) ?? "null") as Partial<SiteInfo> | null;
+    return { enabled: s?.enabled !== false, contact: s?.contact ?? "", signup: !!s?.signup, errorLog: !!s?.errorLog, warnDays: s?.warnDays ?? 14 };
+  } catch {
+    return { enabled: true, contact: "", signup: false, errorLog: false, warnDays: 14 };
+  }
+}
+export function saveSite(s: SiteInfo): void {
+  try { localStorage.setItem(SITE_KEY, JSON.stringify(s)); } catch { /* this visit only */ }
 }
 
 const KEY = "spir.local.license";

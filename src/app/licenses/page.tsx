@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   KeyRoundIcon, LogOutIcon, RefreshCwIcon, PlusIcon, ShieldCheckIcon, PhoneIcon, LockIcon, HardDriveIcon,
-  FileSpreadsheetIcon, WalletIcon, TagIcon, DatabaseIcon, ActivityIcon, type LucideIcon,
+  FileSpreadsheetIcon, WalletIcon, TagIcon, DatabaseIcon, ActivityIcon, SlidersHorizontalIcon, BugIcon, type LucideIcon,
 } from "lucide-react";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
@@ -16,6 +16,7 @@ import {
 import { Card, SignIn, BackupCard, ContactCard, TwoFactorCard, api, fmt, ERRORS, type TwoFactor } from "@/components/licenses/parts";
 import { CodeCard, STATE_LABEL } from "@/components/licenses/CodeCard";
 import { CreateForm, FreshCode, MoneySection, PricesSection, SignInsCard, ActionsCard, type Fresh, type OwnerAction } from "@/components/licenses/Sections";
+import { ErrorsSection, SettingsSection, type ErrorEntry, type Prefs } from "@/components/licenses/Settings";
 
 /**
  * The code manager («إدارة الرموز») — the owner's page on the codes server
@@ -33,7 +34,7 @@ type Data = {
   enabled: boolean; owner: boolean; needsDb?: boolean;
   storage?: { source: string; ok: boolean; codes?: number; error?: string; sealed: boolean; roundTripMs?: number };
   licenses?: Row[]; events?: Ev[]; signIns?: { at: number; ok: boolean; ip: string; agent: string }[];
-  actions?: OwnerAction[]; plan?: Plan;
+  actions?: OwnerAction[]; plan?: Plan; prefs?: Prefs; errors?: ErrorEntry[];
   twoFactor?: TwoFactor; contact?: string; version?: number | null; now?: number;
 };
 
@@ -42,6 +43,8 @@ const SECTIONS: { id: string; label: string; icon: LucideIcon }[] = [
   { id: "new", label: "New code", icon: PlusIcon },
   { id: "money", label: "Payments", icon: WalletIcon },
   { id: "prices", label: "Prices", icon: TagIcon },
+  { id: "settings", label: "General settings", icon: SlidersHorizontalIcon },
+  { id: "errors", label: "Error log", icon: BugIcon },
   { id: "security", label: "Security", icon: ShieldCheckIcon },
   { id: "backup", label: "Backup", icon: DatabaseIcon },
   { id: "contact", label: "Contact line", icon: PhoneIcon },
@@ -100,11 +103,12 @@ export default function LicensesPage() {
 
   const now = data?.now ?? Date.now();
   const latest = data?.version ?? null;
+  const warn = data?.prefs?.warnDays ?? 14;
   const list = useMemo(() => data?.licenses ?? [], [data]);
   const rows = useMemo(() => sortRows(list.filter((r) => {
     if (q && !arabicIncludes(`${r.company} ${r.note} ${r.code_hint} ${r.phone} ${r.devices.map((d) => `${d.name} ${d.label}`).join(" ")}`, q)) return false;
-    return matches(r, filter, now, latest);
-  }), sort), [list, q, filter, sort, now, latest]);
+    return matches(r, filter, now, latest, warn);
+  }), sort), [list, q, filter, sort, now, latest, warn]);
 
   if (!data) return <Shell><p className="text-sm text-ink-gray-5">{T("Loading…")}</p></Shell>;
 
@@ -126,7 +130,7 @@ export default function LicensesPage() {
 
   const plan = data.plan ?? EMPTY_PLAN;
   const evs = data.events ?? [];
-  const c = countAll(list, now, latest);
+  const c = countAll(list, now, latest, warn);
 
   return (
     <Shell
@@ -147,7 +151,7 @@ export default function LicensesPage() {
           {SECTIONS.map((s) => {
             const Icon = s.icon;
             const on = section === s.id;
-            const badge = s.id === "codes" ? c.expiring + c.expired : s.id === "money" ? c.unpaid : 0;
+            const badge = s.id === "codes" ? c.expiring + c.expired : s.id === "money" ? c.unpaid : s.id === "errors" ? (data.errors?.length ?? 0) : 0;
             return (
               <button key={s.id} data-section={s.id} aria-current={on ? "page" : undefined} onClick={() => go(s.id)}
                 className={`inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm ${on ? "bg-brand-light font-semibold text-brand-dark" : "text-ink-gray-7 hover:bg-surface-gray-1"}`}>
@@ -189,7 +193,7 @@ export default function LicensesPage() {
                 <select name="sort" aria-label={T("Sort")} value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="rounded-lg border border-outline-gray-2 bg-surface-white px-3 py-2 text-sm">
                   {SORTS.map((s) => <option key={s} value={s}>{T(SORT_LABEL[s])}</option>)}
                 </select>
-                <button onClick={() => downloadCsv(list, now, T)} className="inline-flex items-center gap-1.5 rounded-lg border border-outline-gray-2 bg-surface-white px-3 py-2 text-sm hover:bg-surface-gray-1">
+                <button onClick={() => downloadCsv(list, now, T, warn)} className="inline-flex items-center gap-1.5 rounded-lg border border-outline-gray-2 bg-surface-white px-3 py-2 text-sm hover:bg-surface-gray-1">
                   <FileSpreadsheetIcon size={15} /> {T("Export CSV")}
                 </button>
                 <button onClick={() => go("new")} className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark">
@@ -199,7 +203,7 @@ export default function LicensesPage() {
               <div className="space-y-3" data-testid="codes">
                 {rows.length === 0 && <p className="rounded-lg border border-dashed border-outline-gray-2 p-6 text-center text-sm text-ink-gray-5">{T(list.length ? "No codes match" : "No codes yet")}</p>}
                 {rows.map((r) => (
-                  <CodeCard key={r.id} r={r} rows={list} evs={evs.filter((e) => e.license_id === r.id)} now={now} latest={latest} plan={plan} busy={busy}
+                  <CodeCard key={r.id} r={r} warn={warn} rows={list} evs={evs.filter((e) => e.license_id === r.id)} now={now} latest={latest} plan={plan} busy={busy}
                     onChange={(change, done) => act(r.id, change, done)} onError={fail} onSaved={(m) => { say(true, T(m)); load(); }} say={say} />
                 ))}
               </div>
@@ -213,6 +217,12 @@ export default function LicensesPage() {
           {section === "money" && <MoneySection rows={list} now={now} plan={plan} onPaid={(id, price) => act(id, { action: "payment", price, paid: true }, "Saved successfully")} />}
 
           {section === "prices" && <PricesSection plan={plan} onError={fail} onSaved={() => { say(true, T("Saved successfully")); load(); }} />}
+
+          {section === "settings" && data.prefs && (
+            <SettingsSection prefs={data.prefs} trialDays={plan.trialDays} onError={fail} onSaved={() => { say(true, T("Saved successfully")); load(); }} />
+          )}
+
+          {section === "errors" && <ErrorsSection on={!!data.prefs?.errorLog} errors={data.errors ?? []} onCleared={load} />}
 
           {section === "security" && (
             <div className="grid gap-4 lg:grid-cols-2">
@@ -283,11 +293,11 @@ function Shell({ children, actions }: { children: ReactNode; actions?: ReactNode
   );
 }
 
-function downloadCsv(rows: Row[], now: number, T: (k: string) => string) {
+function downloadCsv(rows: Row[], now: number, T: (k: string) => string, warn: number) {
   const cell = (s: string) => (/[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
   const head = [T("Company"), T("Status"), T("Computers"), T("until"), T("Stations"), T("Payment"), T("Phone"), T("Note")];
   const body = rows.map((r) => [
-    r.company, T(STATE_LABEL[stateOf(r, now)]), `${r.devices.length}/${r.seats}`, fmt(r.expires_at),
+    r.company, T(STATE_LABEL[stateOf(r, now, warn)]), `${r.devices.length}/${r.seats}`, fmt(r.expires_at),
     STATIONS.filter((s) => r.modules.includes(s.id)).map((s) => T(s.label)).join(" · "),
     `${r.paid ? T("Paid") : T("Not paid")}${r.price ? ` ${r.price}` : ""}`, r.phone, r.note,
   ]);

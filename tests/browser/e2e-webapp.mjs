@@ -129,6 +129,8 @@ const A = await context();
   await p.getByTestId("local-app").waitFor({ timeout: 180_000 });
   check("the code opens the app on the browser's own database", true, `${((Date.now() - t0) / 1000).toFixed(1)} s`);
   check("the company's name is shown", (await p.getByTestId("local-company").innerText()) === "شركة الويب");
+  const installed = await p.waitForFunction(() => !!localStorage.getItem("spir.app.ready"), null, { timeout: 120_000 }).then(() => true, () => false);
+  check("the whole app is saved in the browser on the first open", installed);
   if (pg) check("the first sync completes", await settled(p), await syncState(p));
   else check("without a company database the records stay here", (await syncState(p)) === "local");
 
@@ -243,8 +245,13 @@ const A = await context();
       [pg.sql("select status from sales_invoices"), pg.sql("select count(*) from hr_attendance"), pg.sql("select count(*) from cc_readings")].join(" / "));
   }
 
-  // Every list of every station opens.
-  const lists = await p.$$eval("[data-testid=local-nav] a[href^='#/e/']", (as) => [...new Set(as.map((a) => a.getAttribute("href")))]);
+  // Every list of every station opens (each station's own home lists its pages).
+  const lists = new Set();
+  for (const st of ["sales", "supply", "service", "manufacturing", "accounts", "hr", "coldchain", "guides"]) {
+    await p.goto(CODES + `/app#/s/${st}`);
+    await p.getByTestId(`station-${st}`).waitFor({ timeout: 15_000 }).catch(() => {});
+    for (const h of await p.$$eval(`[data-testid=station-${st}] a[href^='#/e/']`, (as) => as.map((a) => a.getAttribute("href")))) lists.add(h);
+  }
   const broken = [];
   for (const href of lists) {
     await p.goto(CODES + "/app" + href);
@@ -252,7 +259,85 @@ const A = await context();
     const ok = await p.getByTestId(`list-${id}`).waitFor({ timeout: 15_000 }).then(() => true, () => false);
     if (!ok || (await p.locator(`[data-testid=list-${id}] [role=alert]`).count())) broken.push(id);
   }
-  check(`all ${lists.length} lists open`, lists.length > 20 && broken.length === 0, broken.join(", "));
+  check(`all ${lists.size} lists open`, lists.size > 20 && broken.length === 0, broken.join(", "));
+
+  // A station is its own interface: its pages only, the others one click away.
+  await p.goto(CODES + "/app#/s/hr");
+  await p.getByTestId("station-hr").waitFor();
+  const navHrefs = await p.$$eval("[data-testid=local-nav] a[href^='#/e/']", (as) => as.map((a) => a.getAttribute("href")));
+  check("a station's sidebar shows its own pages only", navHrefs.length > 0 && navHrefs.every((h) => ["#/e/employees", "#/e/leaves", "#/e/advances", "#/e/shifts"].includes(h)), navHrefs.join(" "));
+  await p.goto(CODES + "/app#/license");
+  check("and it stays on the pages outside every station", (await p.getByTestId("local-app").getAttribute("data-station")) === "hr");
+
+  // The code, in the open.
+  await p.getByTestId("local-license").waitFor();
+  check("the license page shows the days left", Number(await p.getByTestId("days-left").innerText()) >= 29);
+  check("and every station the code opens", await p.locator("[data-testid=license-stations] [data-open='1']").count() === 8);
+
+  // This device: saved for offline use, and the look.
+  await p.goto(CODES + "/app#/device");
+  await p.getByTestId("offline-ready").waitFor();
+  check("the device page says the app works without the internet", (await p.getByTestId("offline-ready").innerText()).includes("نعم"));
+  await p.click("[data-theme-mode=dark]");
+  check("the dark look applies", await p.evaluate(() => document.documentElement.classList.contains("dark")));
+  await p.click("[data-theme-mode=auto]");
+
+  // Arabic only: no English words on the app's own pages (codes, numbers and
+  // anything written left-to-right aside).
+  const latin = [];
+  for (const h of ["#/", "#/s/sales", "#/s/hr", "#/license", "#/device", "#/e/sales-invoices", "#/e/sales-invoices/new"]) {
+    await p.goto(CODES + "/app" + h);
+    await p.waitForTimeout(700);
+    const words = await p.evaluate(() => {
+      const out = [];
+      const walk = document.createTreeWalker(document.querySelector("[data-testid=local-app]") ?? document.body, NodeFilter.SHOW_TEXT);
+      while (walk.nextNode()) {
+        const n = walk.currentNode;
+        if (n.parentElement?.closest("[dir=ltr], script, style")) continue;
+        for (const w of n.textContent.match(/[A-Za-z]{3,}/g) ?? []) if (!["Spir", "Margin"].includes(w)) out.push(w);
+      }
+      return out;
+    });
+    if (words.length) latin.push(`${h}: ${words.join(" ")}`);
+  }
+  check("the app's pages are in Arabic", latin.length === 0, latin.join(" | "));
+
+  // The provider writes: the note shows after the next check.
+  const codes = await (await fetch(CODES + "/api/license/admin", { headers: { cookie } })).json();
+  const row = codes.licenses.find((r) => r.company === "شركة الويب");
+  await owner({ op: "update", id: row.id, change: { action: "message", text: "رسالة من المزوّد للتجربة" } });
+  await p.goto(CODES + "/app#/license");
+  await p.getByRole("button", { name: "تحقّق الآن" }).click();
+  await p.getByTestId("notice-message").waitFor({ timeout: 20_000 }).catch(() => {});
+  check("the provider's message reaches the app", (await p.getByTestId("notice-message").innerText().catch(() => "")).includes("رسالة من المزوّد"));
+
+  // The owner keeps an error log: the app's errors reach it.
+  await owner({ op: "prefs", prefs: { errorLog: true, selfSignup: true, signupSeats: 1, warnDays: 14 } });
+  await p.evaluate(async () => { const rt = window.__spirLocalRuntime; await rt.refreshSite(); rt.reportError("خطأ تجريبي من المتصفح"); });
+  await p.waitForTimeout(1500);
+  const logged = await (await fetch(CODES + "/api/license/admin", { headers: { cookie } })).json();
+  check("an error in the app reaches the owner's log, with the company", logged.errors?.some((e) => e.message.includes("خطأ تجريبي") && e.company === "شركة الويب"), JSON.stringify(logged.errors?.slice(0, 1)));
+}
+
+{
+  // Self-registration: a new company tries the app without a code.
+  const C = await context();
+  const { p } = C;
+  await p.goto(CODES + "/app");
+  await p.getByTestId("try-free").click();
+  await p.fill("[data-testid=local-signup] input[name=company]", "مختبر التجربة الذاتية");
+  await p.fill("[data-testid=local-signup] input[name=phone]", "07701234567");
+  await p.click("[data-testid=local-signup] button");
+  await p.getByTestId("trial-code").waitFor({ timeout: 30_000 });
+  const trialCode = (await p.getByTestId("trial-code").innerText()).trim();
+  check("self-registration gives a trial code at once", /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(trialCode), trialCode);
+  await p.getByRole("button", { name: /حفظته/ }).click();
+  await p.getByTestId("local-app").waitFor({ timeout: 180_000 });
+  check("and the code opens the app", (await p.getByTestId("local-company").innerText()) === "مختبر التجربة الذاتية");
+  const all = await (await fetch(CODES + "/api/license/admin", { headers: { cookie } })).json();
+  const trial = all.licenses.find((r) => r.company === "مختبر التجربة الذاتية");
+  check("the owner sees it as a trial from self-registration", !!trial?.is_trial && trial.note.includes("تسجيل ذاتي") && trial.devices.length === 1);
+  await C.ctx.close();
 }
 
 if (pg) {
