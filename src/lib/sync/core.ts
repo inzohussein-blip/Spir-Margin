@@ -143,8 +143,8 @@ const asJson = (v: unknown) => (v === null || v === undefined ? null : typeof v 
 
 async function applyOne(db: Db, c: ChangeRow): Promise<void> {
   await db.query(
-    `select _spir_apply_change($1, $2, $3::jsonb, $4::jsonb, $5::timestamptz, $6::uuid)`,
-    [c.table_name, c.op, asJson(c.pk), asJson(c.row), c.changed_at, c.origin],
+    `select _spir_apply_change($1, $2, $3::jsonb, $4::jsonb, $5::timestamptz, $6::uuid, $7::bigint)`,
+    [c.table_name, c.op, asJson(c.pk), asJson(c.row), c.changed_at, c.origin, c.origin_seq ?? "0"],
   );
 }
 

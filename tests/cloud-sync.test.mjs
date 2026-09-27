@@ -60,3 +60,26 @@ test("a browser arriving after the company's log was pruned takes a full copy", 
   assert.equal(await count(browser, `select count(*)::int n from labs where code like 'OLD-%' or code = 'KEEP'`), 6);
   await company.close(); await browser.close();
 });
+
+test("an invoice made, submitted and paid in a browser arrives paid", async () => {
+  const company = await bootWithMigrations();
+  const browser = await browserDb();
+  const peer = cloud.cloudPeer(wire(company), await core.nodeId(browser));
+  const one = async (sql, p = []) => (await browser.query(sql, p)).rows[0];
+  const lab = await one(`insert into labs (code, name) values ('P-1', 'مختبر') returning id`);
+  const prod = await one(`insert into products (item_code, name, product_type, default_sell_price) values ('P-P', 'صنف', 'spare_part', 10) returning id`);
+  assert.equal((await core.syncOnce(browser, peer)).ok, true);
+  const inv = await one(`insert into sales_invoices (invoice_no, lab_id) values ('SI-P-1', $1) returning id`, [lab.id]);
+  await browser.query(`insert into sales_invoice_items (invoice_id, product_id, qty, rate) values ($1, $2, 3, 10)`, [inv.id, prod.id]);
+  await browser.query(`select fn_submit_sales_invoice($1)`, [inv.id]);
+  await browser.query(`select fn_record_invoice_payment($1, 30)`, [inv.id]);
+  const here = await one(`select status, paid_amount::int as paid from sales_invoices where id = $1`, [inv.id]);
+  assert.deepEqual(here, { status: "paid", paid: 30 });
+  const r = await core.syncOnce(browser, peer);
+  assert.equal(r.ok, true, r.error);
+  const rejects = (await company.query(`select * from _spir_sync_rejects`)).rows.concat((await browser.query(`select * from _spir_sync_rejects`)).rows);
+  assert.deepEqual(rejects, []);
+  const there = (await company.query(`select status, paid_amount::int as paid from sales_invoices where id = $1`, [inv.id])).rows[0];
+  assert.deepEqual(there, { status: "paid", paid: 30 });
+  await company.close(); await browser.close();
+});
