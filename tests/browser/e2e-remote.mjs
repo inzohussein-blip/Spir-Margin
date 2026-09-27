@@ -79,7 +79,10 @@ check("a wrong code is refused", (await p.locator('[role="alert"]').innerText().
 await p.fill('input[name="code"]', pairCode);
 await p.getByRole("button", { name: "اربط" }).click();
 await p.waitForURL((u) => !u.pathname.startsWith("/__spir"), { timeout: 60_000 }).catch(() => {});
-check("the right code lets it through to the sign-in page", new URL(p.url()).pathname === "/login", p.url());
+check("the right code lets it through to the welcome screen", new URL(p.url()).pathname === "/welcome", p.url());
+await p.locator('[data-station="all"]').click();
+await p.waitForURL((u) => u.pathname === "/login", { timeout: 60_000 }).catch(() => {});
+check("and from there to the sign-in page", new URL(p.url()).pathname === "/login", p.url());
 const loginText = await p.locator("main").innerText().catch(() => "");
 check("which does not offer the built-in account", !loginText.includes("admin@spir.local") && loginText.includes("من جهاز آخر"));
 

@@ -29,7 +29,7 @@ const cookieOptions = () => ({
 /** Only allow same-origin relative paths — never accept `//evil.com/...`. */
 function safeNext(raw: string): string {
   if (!raw) return "/";
-  if (!raw.startsWith("/") || raw.startsWith("//")) return "/";
+  if (!raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) return "/";
   if (raw === "/login" || raw.startsWith("/login/")) return "/";
   if (raw === "/welcome" || raw.startsWith("/welcome/")) return "/";
   return raw;
@@ -122,7 +122,7 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
 
 export async function logoutAction() {
   cookies().delete(SESSION_COOKIE);
-  redirect("/login");
+  redirect("/welcome");
 }
 
 export async function changePasswordAction(_prev: unknown, formData: FormData) {

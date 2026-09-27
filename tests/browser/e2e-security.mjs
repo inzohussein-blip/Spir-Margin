@@ -19,7 +19,7 @@ const forged = await new SignJWT({ email: ACCOUNT.email, role: "admin", full_nam
   .sign(OLD_PUBLIC_KEY);
 const res = await fetch(H + "/labs", { headers: { cookie: `spir_session=${forged}` }, redirect: "manual" });
 check("a session forged with the old public key is refused",
-  res.status >= 300 && res.status < 400 && (res.headers.get("location") ?? "").includes("/login"),
+  res.status >= 300 && res.status < 400 && /\/(login|welcome)/.test(res.headers.get("location") ?? ""),
   `${res.status} ${res.headers.get("location") ?? ""}`);
 
 // 2. A real session must not be verifiable with that key — i.e. this install

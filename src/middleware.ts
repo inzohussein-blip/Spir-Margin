@@ -31,10 +31,13 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL(user.role === "customer" ? "/portal" : "/", req.url));
   }
 
-  // Everything else requires a session.
+  // Everything else requires a session. A person opening a page is shown the
+  // welcome screen first (the stations, then sign-in); anything else — an API
+  // call, a form post — goes straight to sign-in as before.
   if (!user && !isPublic) {
-    const url = new URL("/login", req.url);
-    if (pathname !== "/") url.searchParams.set("next", pathname);
+    const page = (req.method === "GET" || req.method === "HEAD") && !pathname.startsWith("/api/");
+    const url = new URL(page ? "/welcome" : "/login", req.url);
+    if (pathname !== "/") url.searchParams.set("next", pathname + req.nextUrl.search);
     return NextResponse.redirect(url);
   }
 

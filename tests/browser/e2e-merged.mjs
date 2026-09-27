@@ -21,7 +21,12 @@ await p.screenshot({ path: `${SHOT}/merged-welcome.png`, fullPage: true });
 
 // 2. Protected route sends you to sign-in, not to a picker.
 await p.goto(H + "/labs", { waitUntil: "networkidle", timeout: 120000 });
-check("2a protected route redirects to login", new URL(p.url()).pathname === "/login", p.url());
+check("2a protected route shows the welcome screen first", new URL(p.url()).pathname === "/welcome" && new URL(p.url()).searchParams.get("next") === "/labs", p.url());
+await p.locator('[data-station="all"]').click();
+await p.waitForURL((u) => u.pathname === "/login", { timeout: 60_000 }).catch(() => {});
+await p.locator('input[name="email"]').waitFor({ timeout: 60_000 }).catch(() => {});
+await p.waitForLoadState("networkidle").catch(() => {});
+check("2b then sign-in, keeping the page asked for", new URL(p.url()).pathname === "/login" && new URL(p.url()).searchParams.get("next") === "/labs", p.url());
 
 // 3. Sign-in shows the built-in account and accepts it with no database configured.
 const lt = await p.locator("body").innerText();
