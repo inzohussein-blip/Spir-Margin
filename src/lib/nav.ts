@@ -98,6 +98,8 @@ export const navGroups: NavGroup[] = [
     { href: "/reports/receivables", label: "Receivables Aging", icon: CoinsIcon },
     { href: "/reports/profitability", label: "Profitability", icon: TrendingUpIcon },
     { href: "/stock-balance", label: "Stock Balance", icon: ClipboardListIcon },
+    { href: "/insights", label: "Insights", icon: TrendingUpIcon },
+    { href: "/calendar", label: "Calendar", icon: CalendarDaysIcon },
   ]},
   { label: "Tools", items: [
     { href: "/tools/calculator", label: "Calculator", icon: CalculatorIcon },
