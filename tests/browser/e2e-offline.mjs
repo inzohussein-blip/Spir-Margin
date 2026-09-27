@@ -6,8 +6,10 @@
 // without a network in the browser's storage — out of the stock, the reports
 // and the backups — until the network came back.
 //
-// The one real outage is the program itself not answering. Then the app must
-// say so in Arabic and recover by itself, not show the browser's error page.
+// The one real outage is the program itself not answering (or, on the web
+// version, the internet). Then a page opened before is shown from its saved
+// copy with a bar that says so; one never opened gets an Arabic page that
+// recovers by itself — never the browser's error page.
 import { H, launch, signIn, results } from "./harness.mjs";
 
 const { check, done } = results("offline");
@@ -68,7 +70,7 @@ async function ringUpOneSale(page) {
   await ctx.close();
 }
 
-// ── 3. The program is not running at all: an Arabic page that recovers ────
+// ── 3. The program is not running at all: saved copies, and a page that recovers ─
 {
   const ctx = await browser.newContext({ locale: "ar-EG" });
   ctx.setDefaultTimeout(90_000);
@@ -85,18 +87,24 @@ async function ringUpOneSale(page) {
   // not enough: once the worker is in control, the request it makes on the
   // page's behalf is not flagged as a navigation.)
   await ctx.route("**/*", (r) => (down ? r.abort("connectionrefused") : r.continue()));
+  // A page opened before: its saved copy, saying it is one.
   await p.goto(H + "/labs").catch(() => {});
-  const shown = await p.getByText("البرنامج لا يستجيب بعد").waitFor({ timeout: 20_000 }).then(() => true, () => false);
+  const banner = await p.getByTestId("offline-banner").waitFor({ timeout: 30_000 }).then(() => true, () => false);
+  check("a page opened before is shown from its saved copy", banner && (await p.locator("h1").first().innerText().catch(() => "")).length > 0);
+  check("with the bar saying there is no connection", banner && (await p.getByTestId("offline-banner").innerText()).includes("لا اتصال بالخادم"));
+  // A page never opened: the Arabic waiting page.
+  await p.goto(H + "/boms").catch(() => {});
+  const shown = await p.getByText("لا اتصال بالبرنامج الآن").waitFor({ timeout: 20_000 }).then(() => true, () => false);
   check("with the program stopped, an Arabic explanation is shown", shown,
     shown ? "" : `${p.url()} :: ${(await p.locator("body").innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 200)}`);
   check("it is not the browser's own error page", !(await p.locator("body").innerText()).includes("ERR_"));
 
   down = false; // the program comes back
   const back = await p
-    .waitForFunction(() => !document.body.innerText.includes("البرنامج لا يستجيب بعد"), null, { timeout: 30_000 })
+    .waitForFunction(() => !document.body.innerText.includes("لا اتصال بالبرنامج الآن"), null, { timeout: 30_000 })
     .then(() => true, () => false);
   check("when the program starts, the page opens the app by itself", back);
-  check("and it is the page that was asked for", new URL(p.url()).pathname === "/labs", p.url());
+  check("and it is the page that was asked for", new URL(p.url()).pathname === "/boms", p.url());
   await ctx.close();
 }
 

@@ -182,3 +182,6 @@
 /insights
 /calendar
 /calendar?month=2026-02
+/station/sales
+/station/hr
+/station/all

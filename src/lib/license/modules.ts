@@ -91,6 +91,16 @@ export const STATIONS: Station[] = [
 
 export const STATION_IDS = STATIONS.map((s) => s.id);
 
+/**
+ * The station a person went in through (from the welcome page), kept in a
+ * cookie: the sidebar then shows that station's sections only, with the way
+ * back to the main menu. «The whole system» clears it.
+ */
+export const STATION_COOKIE = "spir_station";
+export const stationById = (id: string | null | undefined) => STATIONS.find((s) => s.id === id) ?? null;
+/** Where a station's own home page is. */
+export const stationHome = (id: string) => `/station/${id}`;
+
 /** A new code opens every station; the owner narrows it per subscriber. */
 export const DEFAULT_STATIONS = [...STATION_IDS];
 

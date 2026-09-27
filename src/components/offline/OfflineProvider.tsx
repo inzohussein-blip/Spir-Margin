@@ -34,6 +34,8 @@ function soInput(p: SalesOrderPayload) {
 
 interface OfflineContextValue {
   online: boolean;
+  /** The server answered the last time it was asked (false: the page on screen may be a saved copy). */
+  serverUp: boolean;
   pending: OutboxItem[];
   syncing: boolean;
   /** Submit a POS sale — sent now when online, queued (and auto-synced) when not. */
@@ -54,6 +56,7 @@ function newId(): string {
 export function OfflineProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [online, setOnline] = useState(true);
+  const [serverUp, setServerUp] = useState(true);
   const [pending, setPending] = useState<OutboxItem[]>([]);
   const [syncing, setSyncing] = useState(false);
   const flushing = useRef(false);
@@ -144,6 +147,38 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
     }
   }, [refresh]);
 
+  // Whether the server answers, asked on load, on network changes, when the
+  // window comes back, and every 15 s while it does not — so a page shown
+  // from the offline worker's saved copy says so, and says when it is live again.
+  useEffect(() => {
+    let alive = true;
+    let timer: number | undefined;
+    const ask = async () => {
+      let up = false;
+      try {
+        const r = await fetch("/api/ping", { cache: "no-store", signal: AbortSignal.timeout(5000) });
+        up = r.ok;
+      } catch { up = false; }
+      if (!alive) return;
+      setServerUp(up);
+      window.clearTimeout(timer);
+      if (!up) timer = window.setTimeout(ask, 15_000);
+    };
+    void ask();
+    const again = () => void ask();
+    const onVisible = () => { if (document.visibilityState === "visible") void ask(); };
+    window.addEventListener("online", again);
+    window.addEventListener("offline", again);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+      window.removeEventListener("online", again);
+      window.removeEventListener("offline", again);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
+
   useEffect(() => {
     setOnline(navigator.onLine);
     refresh();
@@ -187,7 +222,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   }, [refresh, flush]);
 
   return (
-    <OfflineContext.Provider value={{ online, pending, syncing, submitSale, submitSalesOrder, flush }}>
+    <OfflineContext.Provider value={{ online, serverUp, pending, syncing, submitSale, submitSalesOrder, flush }}>
       {children}
     </OfflineContext.Provider>
   );

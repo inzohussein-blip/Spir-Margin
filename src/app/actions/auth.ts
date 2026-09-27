@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { STATION_COOKIE } from "@/lib/license/modules";
 import { redirect } from "next/navigation";
 import { createPublicClient, createUserClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -28,10 +29,10 @@ const cookieOptions = () => ({
 
 /** Only allow same-origin relative paths — never accept `//evil.com/...`. */
 function safeNext(raw: string): string {
-  if (!raw) return "/";
-  if (!raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) return "/";
-  if (raw === "/login" || raw.startsWith("/login/")) return "/";
-  if (raw === "/welcome" || raw.startsWith("/welcome/")) return "/";
+  // With nowhere asked for, the main menu (the welcome page's stations).
+  if (!raw) return "/welcome";
+  if (!raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) return "/welcome";
+  if (raw === "/login" || raw.startsWith("/login/")) return "/welcome";
   return raw;
 }
 
@@ -157,6 +158,7 @@ export async function codeLoginAction(_prev: LoginState, formData: FormData): Pr
 
 export async function logoutAction() {
   cookies().delete(SESSION_COOKIE);
+  cookies().delete(STATION_COOKIE);
   redirect("/welcome");
 }
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppNav } from "@/components/AppNav";
 import { MobileSidebar } from "@/components/MobileSidebar";
@@ -14,6 +14,7 @@ import { OfflineProvider } from "@/components/offline/OfflineProvider";
 import { SyncStatus } from "@/components/offline/SyncStatus";
 import { DbSyncStatus } from "@/components/offline/DbSyncStatus";
 import { ServiceWorkerRegistrar } from "@/components/offline/ServiceWorkerRegistrar";
+import { OfflineBanner } from "@/components/offline/OfflineBanner";
 import { ErrorReporter } from "@/components/monitoring/ErrorReporter";
 import { Toasts } from "@/components/desk/Toasts";
 import { FeatureUnavailable } from "@/components/settings/FeatureUnavailable";
@@ -25,6 +26,7 @@ import { updateAvailable } from "@/lib/update/updates";
 import { currentCopyState } from "@/lib/backup/copies-server";
 import { getAccessContext, blockReason, navFeatureState } from "@/lib/features";
 import { getLocale } from "@/lib/i18n-server";
+import { STATION_COOKIE, stationById } from "@/lib/license/modules";
 import { t } from "@/lib/i18n";
 import "./globals.css";
 
@@ -137,6 +139,11 @@ export default async function RootLayout({
   const nav = access ? navFeatureState(access) : { hidden: [], off: [] };
   const blockedFeatures = [...nav.hidden, ...nav.off];
   const blocked = access ? blockReason(pathname, access) : null;
+  // The station gone in through, if any (not on the dashboard, which is the whole system).
+  const st = showShell && pathname !== "/"
+    ? stationById(/^\/station\/([a-z]+)/.exec(pathname)?.[1] ?? cookies().get(STATION_COOKIE)?.value)
+    : null;
+  const station = st ? { id: st.id, label: st.label, groups: st.groups } : null;
 
   return (
     <html lang={locale} dir={dir}>
@@ -171,6 +178,7 @@ export default async function RootLayout({
         <OfflineProvider>
         <ErrorReporter />
         <ServiceWorkerRegistrar />
+        <OfflineBanner />
         <Toasts />
         <NavProgress />
         {isBare || !user || isFocused ? (
@@ -182,7 +190,7 @@ export default async function RootLayout({
                 <span className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm">S</span>
                 Spir-Margin
               </div>
-              <AppNav locale={locale} hidden={nav.hidden} off={nav.off} />
+              <AppNav locale={locale} hidden={nav.hidden} off={nav.off} station={station} />
             </aside>
             <div className="flex min-w-0 flex-1 flex-col">
               <header className="no-print sticky top-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-outline-gray-2 bg-surface-white/85 px-4 shadow-sm backdrop-blur-xl md:px-6">
@@ -192,7 +200,7 @@ export default async function RootLayout({
                       <span className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm">S</span>
                       Spir-Margin
                     </div>
-                    <AppNav locale={locale} hidden={nav.hidden} off={nav.off} />
+                    <AppNav locale={locale} hidden={nav.hidden} off={nav.off} station={station} />
                   </MobileSidebar>
                   <NewButton locale={locale} blocked={blockedFeatures} />
                   <div className="hidden min-w-0 sm:block">
