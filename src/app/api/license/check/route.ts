@@ -13,16 +13,17 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   if (!codesServerEnabled()) return NextResponse.json({ ok: false, error: "disabled" }, { status: 400 });
-  let lid = "", device = "", version = "", syncHost: string | null = null, report: SyncReport | null = null;
+  let lid = "", device = "", version = "", syncHost: string | null = null, report: SyncReport | null = null, browser = false;
   try {
     const b = await req.json();
     lid = String(b?.lid ?? ""); device = String(b?.device ?? ""); version = String(b?.version ?? "");
     if (typeof b?.syncHost === "string") syncHost = b.syncHost.slice(0, 200);
     report = cleanSyncReport(b?.sync);
+    browser = b?.kind === "browser";
   } catch { /* empty */ }
   if (!lid || !device) return NextResponse.json({ ok: false, error: "bad_request" }, { status: 400 });
   const { licenses } = await codesDb();
   const r = await licenses.check(lid, device, version, report);
   if (r.ok && syncHost != null && !r.sync) await licenses.noteDeviceSync(lid, syncHost);
-  return deviceReply(r);
+  return deviceReply(r, { browser });
 }

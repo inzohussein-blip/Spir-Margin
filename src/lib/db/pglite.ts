@@ -23,15 +23,8 @@ import path from "node:path";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-export interface Db {
-  query<T = any>(sql: string, params?: unknown[]): Promise<{ rows: T[]; affectedRows?: number }>;
-}
-
-export interface FkMeta {
-  outgoing: Record<string, { column: string; ftable: string }[]>;
-  columns: Record<string, Set<string>>;
-  tables: Set<string>;
-}
+import { introspect, type Db, type FkMeta } from "./rest-core";
+export type { Db, FkMeta };
 
 const MIGRATIONS_DIR = path.join(process.cwd(), "supabase", "migrations");
 const FULL_SEED_FILE = path.join(process.cwd(), "supabase", "seed.sql");
@@ -104,30 +97,6 @@ const fresh = (): DbSingleton => ({ fkMeta: null, dbRef: null, bootPromise: null
 const g = globalThis as unknown as { __spirLocal?: DbSingleton; __spirRemote?: DbSingleton };
 const local: DbSingleton = (g.__spirLocal ??= fresh());
 const remote: DbSingleton = (g.__spirRemote ??= fresh());
-
-async function introspect(db: Db): Promise<FkMeta> {
-  const cols = await db.query<{ table_name: string; column_name: string }>(
-    `select table_name, column_name from information_schema.columns where table_schema = 'public'`
-  );
-  const fks = await db.query<{ table_name: string; column_name: string; foreign_table_name: string }>(
-    `select tc.table_name, kcu.column_name, ccu.table_name as foreign_table_name
-     from information_schema.table_constraints tc
-     join information_schema.key_column_usage kcu
-       on tc.constraint_name = kcu.constraint_name and tc.table_schema = kcu.table_schema
-     join information_schema.constraint_column_usage ccu
-       on ccu.constraint_name = tc.constraint_name and ccu.table_schema = tc.table_schema
-     where tc.constraint_type = 'FOREIGN KEY' and tc.table_schema = 'public'`
-  );
-  const meta: FkMeta = { outgoing: {}, columns: {}, tables: new Set() };
-  for (const r of cols.rows) {
-    meta.tables.add(r.table_name);
-    (meta.columns[r.table_name] ??= new Set()).add(r.column_name);
-  }
-  for (const r of fks.rows) {
-    (meta.outgoing[r.table_name] ??= []).push({ column: r.column_name, ftable: r.foreign_table_name });
-  }
-  return meta;
-}
 
 // ---- embedded PGlite backend ----------------------------------------------
 
@@ -519,6 +488,26 @@ export async function getRemoteDb(): Promise<Db | null> {
     console.warn("[sync] hosted database unreachable:", (e as Error).message);
     return null;
   }
+}
+
+/**
+ * A company's own hosted database, by its address — for the site's cloud
+ * sync (/api/cloud), which serves each company's browsers on the database its
+ * activation code carries. Opened (and migrated) once per address per server
+ * instance; a failed first contact is forgotten so the next request re-dials.
+ */
+type CompanyG = { __spirCompanyDbs?: Map<string, Promise<Db>> };
+export function companyDb(url: string): Promise<Db> {
+  const all = ((globalThis as CompanyG).__spirCompanyDbs ??= new Map());
+  let p = all.get(url);
+  if (!p) {
+    p = bootPostgres(url).catch((e) => {
+      all.delete(url);
+      throw e;
+    });
+    all.set(url, p);
+  }
+  return p;
 }
 
 /** Drop the cached peer so the next sync re-dials (used after a failure). */

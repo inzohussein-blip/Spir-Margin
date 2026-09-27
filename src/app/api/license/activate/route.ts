@@ -12,10 +12,11 @@ export async function POST(req: NextRequest) {
   const { licenses } = await codesDb();
   const ip = ipOf(req.headers);
   if (await licenses.blocked("activate", ip, 10)) return NextResponse.json({ ok: false, error: "too_many" }, { status: 429 });
-  let code = "", device = "", label = "", version = "";
+  let code = "", device = "", label = "", version = "", browser = false;
   try {
     const b = await req.json();
     code = String(b?.code ?? ""); device = String(b?.device ?? ""); label = String(b?.label ?? ""); version = String(b?.version ?? "");
+    browser = b?.kind === "browser";
   } catch { /* empty */ }
   if (normalizeCode(code).length < 8 || !/^[\w-]{8,80}$/.test(device)) {
     return NextResponse.json({ ok: false, error: "bad_request" }, { status: 400 });
@@ -27,5 +28,5 @@ export async function POST(req: NextRequest) {
   } else {
     await licenses.clearAttempts("activate", ip);
   }
-  return deviceReply(r);
+  return deviceReply(r, { browser });
 }

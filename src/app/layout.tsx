@@ -53,7 +53,10 @@ export default async function RootLayout({
   const locale = getLocale();
   const dir = locale === "ar" ? "rtl" : "ltr";
   // The login page and platform picker render standalone — no sidebar/header shell.
+  // The web app (/app) brings its own everything: sign-in, code, database.
+  const isApp = pathname === "/app";
   const isBare =
+    isApp ||
     pathname === "/login" ||
     pathname.startsWith("/login/") ||
     pathname === "/welcome" ||
@@ -69,8 +72,8 @@ export default async function RootLayout({
   // This computer's activation code (src/lib/license): waiting for it, or
   // locked, every page but the welcome screen (where the code is entered)
   // and the codes server's own page sends there.
-  const licenseFree = pathname === "/welcome" || pathname.startsWith("/welcome/") || pathname === "/licenses" || pathname.startsWith("/licenses/") || pathname.startsWith("/verify/") || pathname.startsWith("/login/expired");
-  const license = await deviceState().catch(() => ({ kind: "off" }) as DeviceState);
+  const licenseFree = isApp || pathname === "/welcome" || pathname.startsWith("/welcome/") || pathname === "/licenses" || pathname.startsWith("/licenses/") || pathname.startsWith("/verify/") || pathname.startsWith("/login/expired");
+  const license = isApp ? ({ kind: "off" } as DeviceState) : await deviceState().catch(() => ({ kind: "off" }) as DeviceState);
   if (!licenseFree && isLocked(license)) redirect("/welcome?activate=1");
   const session = isBare ? null : await readSession();
   // The middleware can only check the cookie's signature. A session that the

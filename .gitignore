@@ -18,3 +18,7 @@ RESET-ADMIN-PASSWORD*
 # number that comes inside each release zip — never committed.
 /updates/
 /version.json
+
+# The web version's local app: generated before every build (scripts/prepare-local-app.mjs)
+/public/pglite/
+/public/spir/

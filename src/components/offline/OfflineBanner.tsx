@@ -1,6 +1,7 @@
 "use client";
 
 import { WifiOffIcon } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useOffline } from "./OfflineProvider";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
@@ -13,7 +14,9 @@ import { t } from "@/lib/i18n";
 export function OfflineBanner() {
   const locale = useLocale();
   const { serverUp, pending } = useOffline();
-  if (serverUp) return null;
+  // The web app works on its own database; its sync chip says where it stands.
+  const app = usePathname() === "/app";
+  if (serverUp || app) return null;
   return (
     <div role="status" data-testid="offline-banner"
       className="no-print sticky top-0 z-50 flex flex-wrap items-center justify-center gap-2 border-b border-amber-300 bg-amber-50 px-4 py-2 text-center text-sm text-amber-900">

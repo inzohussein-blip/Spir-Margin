@@ -13,6 +13,7 @@ import { t } from "@/lib/i18n";
 import { arabicIncludes, foldArabic } from "@/lib/text/arabic";
 import { remember, recall } from "@/lib/remember";
 import { KitHint } from "@/components/form/KitHint";
+import { useDataActions } from "@/components/data/DataActions";
 
 interface Product {
   id: string;
@@ -35,7 +36,11 @@ export function PosTerminal({
   iqdRate: number;
 }) {
   const locale = useLocale();
-  const { submitSale, online } = useOffline();
+  const offline = useOffline();
+  // The web version's local app books the sale in the browser's own database.
+  const actions = useDataActions();
+  const submitSale = actions.submitSale ?? offline.submitSale;
+  const online = actions.submitSale ? true : offline.online;
   const [labId, setLabId] = useState("");
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<Line[]>([]);
@@ -132,7 +137,7 @@ export function PosTerminal({
       {/* top bar */}
       <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-outline-gray-2 bg-surface-white px-4">
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-1 rounded-md px-2 py-1 text-sm text-ink-gray-5 hover:bg-surface-gray-2">
+          <Link href={actions.homeHref ?? "/"} className="flex items-center gap-1 rounded-md px-2 py-1 text-sm text-ink-gray-5 hover:bg-surface-gray-2">
             <ArrowLeftIcon size={16} /> {t(locale, "Back to app")}
           </Link>
           <div className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-ink-gray-8">
@@ -141,7 +146,7 @@ export function PosTerminal({
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <SyncStatus />
+          {actions.statusSlot ?? <SyncStatus />}
           <select value={labId} onChange={(e) => setLabId(e.target.value)} className={inputCls}>
             <option value="">{t(locale, "Select a customer (lab)…")}</option>
             {labs.map((l) => <option key={l.id} value={l.id}>{l.name} ({l.code})</option>)}
